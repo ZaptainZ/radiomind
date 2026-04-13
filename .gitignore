@@ -20,3 +20,4 @@ htmlcov/
 .claude/settings.json
 .claude/settings.local.json
 .claude/hooks/
+rust-core/target/

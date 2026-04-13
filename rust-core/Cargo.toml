@@ -1,0 +1,20 @@
+[package]
+name = "radiomind-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "RadioMind storage daemon — bionic memory core in Rust"
+
+[dependencies]
+rusqlite = { version = "0.35", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+rand = "0.9"
+log = "0.4"
+env_logger = "0.11"
+ctrlc = "3"
+
+[[bin]]
+name = "radiomind-daemon"
+path = "src/main.rs"
