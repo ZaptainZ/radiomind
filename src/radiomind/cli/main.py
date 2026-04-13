@@ -308,6 +308,93 @@ def rh_consolidate() -> None:
     mind.shutdown()
 
 
+@cli.group("community")
+def community() -> None:
+    """Community knowledge sharing (Stigmergy model)."""
+
+
+@community.command("sync")
+@click.option("--source", default=None, help="RadioHeader community path")
+def community_sync(source: str | None) -> None:
+    """Sync community entries from RadioHeader's community pool."""
+    from pathlib import Path
+    from radiomind.community.pool import CommunityPool
+
+    mind = _get_mind()
+    pool = CommunityPool(mind, community_dir=mind.config.home / "community")
+    pool.open()
+
+    rh_path = Path(source) if source else None
+    result = pool.sync_from_radioheader(rh_path)
+    click.echo(f"Imported: {result.imported}, Skipped: {result.skipped}")
+    if result.errors:
+        for e in result.errors[:3]:
+            click.echo(f"  Error: {e}")
+
+    pool.close()
+    mind.shutdown()
+
+
+@community.command("contribute")
+@click.option("--min-confidence", default=0.7, help="Min habit confidence to contribute")
+def community_contribute(min_confidence: float) -> None:
+    """Contribute personal insights to the community (with PII filtering)."""
+    from radiomind.community.pool import CommunityPool
+
+    mind = _get_mind()
+    pool = CommunityPool(mind)
+    pool.open()
+
+    result = pool.contribute(min_confidence=min_confidence)
+    click.echo(f"Contributed: {result.contributed}")
+    click.echo(f"Filtered (PII): {result.filtered_pii}")
+    click.echo(f"Skipped (privacy): {result.skipped_privacy}")
+    click.echo(f"Skipped (duplicate): {result.skipped_duplicate}")
+
+    pool.close()
+    mind.shutdown()
+
+
+@community.command("vote")
+@click.argument("entry_id")
+@click.argument("vote", type=click.Choice(["+1", "-1"]))
+def community_vote(entry_id: str, vote: str) -> None:
+    """Vote on a community entry."""
+    from radiomind.community.pool import CommunityPool
+
+    mind = _get_mind()
+    pool = CommunityPool(mind)
+    pool.open()
+
+    v = 1 if vote == "+1" else -1
+    result = pool.vote(entry_id, v)
+    click.echo(f"Score: {result['final_score']} (verified: {result['verified']})")
+
+    pool.close()
+    mind.shutdown()
+
+
+@community.command("stats")
+def community_stats() -> None:
+    """Show community sharing statistics."""
+    from radiomind.community.pool import CommunityPool
+
+    mind = _get_mind()
+    pool = CommunityPool(mind)
+    pool.open()
+
+    s = pool.stats()
+    click.echo(f"Community entries: {s['total_entries']}")
+    click.echo(f"  Verified: {s['verified']}")
+    click.echo(f"  Archivable: {s['archivable']}")
+    click.echo(f"  Total votes: {s['total_votes']}")
+    click.echo(f"  Pool files: {s['pool_files']}")
+    click.echo(f"  Contributions: {s['contributions']}")
+
+    pool.close()
+    mind.shutdown()
+
+
 @cli.command("mcp-server")
 def mcp_server() -> None:
     """Start RadioMind MCP server (stdio transport).
