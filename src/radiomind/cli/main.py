@@ -308,6 +308,17 @@ def rh_consolidate() -> None:
     mind.shutdown()
 
 
+@cli.command("mcp-server")
+def mcp_server() -> None:
+    """Start RadioMind MCP server (stdio transport).
+
+    For Claude Desktop:
+      claude mcp add radiomind -- radiomind mcp-server
+    """
+    from radiomind.mcp_server import main as mcp_main
+    mcp_main()
+
+
 @cli.command()
 @click.argument("key", required=False)
 @click.argument("value", required=False)

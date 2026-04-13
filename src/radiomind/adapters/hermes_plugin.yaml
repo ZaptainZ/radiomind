@@ -1,0 +1,9 @@
+name: radiomind
+version: 0.1.0
+description: "Bionic memory provider with cross-domain experience distillation, three-body debate refinement, and dream-state memory pruning."
+hooks:
+  - system_prompt_block
+  - prefetch
+  - sync_turn
+  - on_session_end
+  - on_memory_write
