@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from radiomind.core.config import Config
@@ -144,6 +145,35 @@ class RadioMind:
         result = self._dream_refine.dream()
         self._meta.refresh_self()
         return result
+
+    # --- Training (L3 → LoRA) ---
+
+    def generate_training_data(self, output_path: str | None = None) -> tuple[int, str]:
+        """Generate JSONL training data from habits + memories."""
+        self._check_init()
+        from radiomind.training.data_gen import TrainingDataGenerator
+
+        path = output_path or str(self.config.home / "models" / "train.jsonl")
+        gen = TrainingDataGenerator(self._store, self._habits)
+        count = gen.generate(Path(path))
+        return count, path
+
+    def train(self, **kwargs) -> "TrainResult":
+        """Run LoRA fine-tuning on accumulated knowledge."""
+        self._check_init()
+        from radiomind.training.lora import TrainConfig, train_lora
+
+        count, data_path = self.generate_training_data()
+        if count == 0:
+            from radiomind.training.lora import TrainResult
+            return TrainResult(success=False, error="No training data. Ingest conversations first.")
+
+        tc = TrainConfig.from_config(self.config)
+        for k, v in kwargs.items():
+            if hasattr(tc, k):
+                setattr(tc, k, v)
+
+        return train_lora(Path(data_path), tc)
 
     # --- Meta ---
 

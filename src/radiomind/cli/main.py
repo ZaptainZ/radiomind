@@ -164,6 +164,76 @@ def status() -> None:
     mind.shutdown()
 
 
+@cli.command()
+@click.option("--model", default=None, help="MLX model to fine-tune (e.g. mlx-community/Qwen2.5-0.5B-Instruct-4bit)")
+@click.option("--iters", default=None, type=int, help="Training iterations (default: 500)")
+@click.option("--data-only", is_flag=True, help="Only generate training data, don't train.")
+def train(model: str | None, iters: int | None, data_only: bool) -> None:
+    """Run LoRA fine-tuning on accumulated knowledge (requires MLX)."""
+    mind = _get_mind()
+
+    if data_only:
+        count, path = mind.generate_training_data()
+        click.echo(f"Generated {count} training examples → {path}")
+        mind.shutdown()
+        return
+
+    from radiomind.training.lora import check_mlx_available
+    available, msg = check_mlx_available()
+    if not available:
+        click.echo(msg)
+        click.echo("\nYou can still generate training data with: radiomind train --data-only")
+        mind.shutdown()
+        return
+
+    kwargs = {}
+    if model:
+        kwargs["model"] = model
+    if iters:
+        kwargs["iterations"] = iters
+
+    click.echo("Generating training data...")
+    count, data_path = mind.generate_training_data()
+    click.echo(f"  {count} examples generated")
+
+    if count < 3:
+        click.echo("Too few examples. Ingest more conversations first.")
+        mind.shutdown()
+        return
+
+    click.echo("Starting LoRA fine-tuning (this may take a few minutes)...")
+    result = mind.train(**kwargs)
+
+    if result.success:
+        click.echo(f"Training complete in {result.duration_s:.1f}s")
+        click.echo(f"  Model: {result.model}")
+        click.echo(f"  Adapter: {result.adapter_path}")
+        click.echo(f"\nTo load in Ollama:")
+        click.echo(f"  radiomind deploy")
+    else:
+        click.echo(f"Training failed: {result.error}")
+
+    mind.shutdown()
+
+
+@cli.command()
+def deploy() -> None:
+    """Deploy trained LoRA adapter to Ollama."""
+    from radiomind.training.lora import export_to_ollama
+    from radiomind.core.config import Config
+
+    cfg = Config.load()
+    adapter_path = cfg.home / "models" / "lora" / "adapters"
+
+    if not adapter_path.exists():
+        click.echo("No trained adapter found. Run 'radiomind train' first.")
+        return
+
+    click.echo("Deploying adapter to Ollama...")
+    success, msg = export_to_ollama(adapter_path)
+    click.echo(msg)
+
+
 @cli.command("learn")
 @click.argument("text")
 def learn_text(text: str) -> None:
