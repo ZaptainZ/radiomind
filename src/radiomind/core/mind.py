@@ -1,0 +1,202 @@
+"""RadioMind — main entry point. Wires all components together."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from radiomind.core.config import Config
+from radiomind.core.gate import gate
+from radiomind.core.llm import LLMRouter
+from radiomind.core.types import (
+    Habit,
+    MemoryEntry,
+    MemoryLevel,
+    Message,
+    RefinementResult,
+    SearchResult,
+    SelfProfile,
+    UserProfile,
+)
+from radiomind.meta.profiles import ProfileManager
+from radiomind.refinement.chat import ChatRefinement
+from radiomind.refinement.dream import DreamRefinement
+from radiomind.storage.database import MemoryStore
+from radiomind.storage.hdc import HabitStore
+from radiomind.storage.pyramid import PyramidAggregator, PyramidSearch
+
+
+class RadioMind:
+    """Bionic memory core for AI agents.
+
+    Usage::
+
+        mind = RadioMind()
+        mind.initialize()
+        mind.ingest(messages)
+        results = mind.search("query")
+        mind.shutdown()
+    """
+
+    def __init__(self, config: Config | None = None):
+        self.config = config or Config.load()
+        self._initialized = False
+        self._store: MemoryStore | None = None
+        self._habits: HabitStore | None = None
+        self._llm: LLMRouter | None = None
+        self._pyramid: PyramidSearch | None = None
+        self._aggregator: PyramidAggregator | None = None
+        self._chat_refine: ChatRefinement | None = None
+        self._dream_refine: DreamRefinement | None = None
+        self._meta: ProfileManager | None = None
+
+    def initialize(self, config_overrides: dict[str, Any] | None = None) -> None:
+        if config_overrides:
+            for k, v in config_overrides.items():
+                self.config.set(k, v)
+
+        home = self.config.home
+        (home / "data").mkdir(parents=True, exist_ok=True)
+
+        self._store = MemoryStore(self.config.db_path)
+        self._store.open()
+
+        hdc_dim = self.config.get("hdc.dim", 10000)
+        self._habits = HabitStore(home / "data" / "hdc", dim=hdc_dim)
+        self._habits.open()
+
+        self._llm = LLMRouter(self.config)
+
+        self._pyramid = PyramidSearch(self._store)
+        self._aggregator = PyramidAggregator(self._store, self._llm)
+
+        chat_cfg = self.config.get("refinement.chat", {})
+        self._chat_refine = ChatRefinement(self._store, self._habits, self._llm, config=chat_cfg)
+
+        dream_cfg = self.config.get("refinement.dream", {})
+        self._dream_refine = DreamRefinement(self._store, self._habits, self._llm, config=dream_cfg)
+
+        self._meta = ProfileManager(home / "data" / "meta", self.config, store=self._store)
+        self._meta.open()
+
+        self._initialized = True
+
+    def shutdown(self) -> None:
+        if self._meta:
+            self._meta.close()
+        if self._habits:
+            self._habits.close()
+        if self._store:
+            self._store.close()
+        self._initialized = False
+
+    # --- L1: Ingest ---
+
+    def ingest(self, messages: list[Message]) -> list[MemoryEntry]:
+        self._check_init()
+        result = gate(messages)
+
+        added = []
+        for entry in result.entries:
+            mid = self._store.add(entry)
+            if mid > 0:
+                added.append(entry)
+        result.entries = added
+
+        # Update user profile from conversation
+        for msg in messages:
+            if msg.role == "user":
+                self._meta.update_from_text(msg.content)
+
+        # Check if any domain needs aggregation
+        for domain in result.domains_detected:
+            if self._llm.is_available():
+                self._aggregator.check_and_aggregate(domain)
+
+        return result.entries
+
+    # --- L2: Search ---
+
+    def search(self, query: str, domain: str | None = None) -> list[SearchResult]:
+        self._check_init()
+        return self._pyramid.search(query, domain=domain)
+
+    def search_pyramid(self, query: str, start_level: int = 2) -> list[SearchResult]:
+        self._check_init()
+        return self._pyramid.search_pyramid(query)
+
+    # --- L3: Habits ---
+
+    def query_habits(self, query: str) -> list[Habit]:
+        self._check_init()
+        results = self._habits.query([query], top_k=5)
+        return [h for h, score in results if score > 0.1]
+
+    # --- Refinement ---
+
+    def trigger_chat(self, domain: str | None = None) -> RefinementResult:
+        self._check_init()
+        result = self._chat_refine.refine(domain=domain)
+        self._meta.refresh_self()
+        return result
+
+    def trigger_dream(self) -> RefinementResult:
+        self._check_init()
+        result = self._dream_refine.dream()
+        self._meta.refresh_self()
+        return result
+
+    # --- Meta ---
+
+    def get_user_profile(self) -> UserProfile:
+        self._check_init()
+        return self._meta.user
+
+    def get_self_profile(self) -> SelfProfile:
+        self._check_init()
+        return self._meta.self_profile
+
+    def get_context_digest(self, token_budget: int | None = None) -> str:
+        self._check_init()
+        budget = token_budget or self.config.get("meta.digest_token_budget", 250)
+        return self._meta.get_digest(token_budget=budget)
+
+    # --- External Knowledge (L4) ---
+
+    def learn(self, text: str) -> list[MemoryEntry]:
+        """Ingest external knowledge as L2 facts (walks same consolidation path)."""
+        self._check_init()
+        entry = MemoryEntry(
+            content=text,
+            level=MemoryLevel.FACT,
+            metadata={"source": "learn", "type": "external"},
+        )
+        self._store.add(entry)
+        return [entry]
+
+    # --- Stats ---
+
+    def stats(self) -> dict[str, Any]:
+        self._check_init()
+        db_stats = self._store.stats()
+        db_stats["habits"] = self._habits.count
+        db_stats["llm_available"] = self._llm.is_available()
+        db_stats["llm_backends"] = self._llm.available_backends()
+        db_stats["llm_usage"] = {
+            "total_calls": self._llm.usage.total_calls,
+            "total_tokens": self._llm.usage.total_prompt_tokens + self._llm.usage.total_completion_tokens,
+        }
+        return db_stats
+
+    # --- Config ---
+
+    def update_config(self, key: str, value: Any) -> None:
+        self.config.set(key, value)
+        self.config.save()
+        if self._meta:
+            self._meta.refresh_self()
+
+    # --- Internal ---
+
+    def _check_init(self) -> None:
+        if not self._initialized:
+            raise RuntimeError("RadioMind not initialized. Call initialize() first.")
