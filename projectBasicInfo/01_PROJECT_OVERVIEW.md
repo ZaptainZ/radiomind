@@ -577,29 +577,57 @@ class RadioMindHermesProvider(MemoryProvider):
 
 ---
 
-## 九、MVP 范围（v0.1）
+## 九、实现进度
 
-### 目标: 证明"炼化"机制的价值（草稿→笔记→习惯的完整路径）
+### 已完成 (v0.1-v0.3, Python 全功能)
 
-**v0.1 包含**:
-- [ ] Python 包（先验证核心逻辑，Rust 重写留 v0.2+）
-- [ ] L1 记忆草稿: 对话输入 + 注意力门控
-- [ ] L2 记忆笔记: 3D 金字塔 (SQLite + sqlite-vec)
-- [ ] L3 习惯记忆: HDC 超维编码（纯 NumPy，~50 行）
-- [ ] "聊天"炼化: 三体博弈（本地 Ollama 0.5B 模型）
-- [ ] "做梦"炼化: 修剪 + 神游（本地 Ollama）
-- [ ] Meta 双侧写: 用户侧写 + 系统自画像
-- [ ] CLI 接口: `radiomind ingest`, `search`, `chat`, `dream`, `status`
-- [ ] 标准 Python API（供宿主 Agent 调用）
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| L1 注意力门控 | ✅ | 15+ 提取模式, 领域自然生长, 隐私自动标记 |
+| L2 3D 金字塔 | ✅ | SQLite FTS5, domain×time×level, 注意力式检索 |
+| L3 HDC 超维编码 | ✅ | 10,000-bit, bind/bundle/similarity, 持久化 |
+| 三体聊天炼化 | ✅ | 守护者/探索者/精简者, Qwen API 验证 |
+| 做梦炼化 | ✅ | SHY 修剪 + DMN 神游, 候选洞察 |
+| Meta 双侧写 | ✅ | 用户 + 系统自画像, Context Digest |
+| LoRA 微调 | ✅ | MLX, 25s Apple Silicon, 训练数据生成 |
+| RadioHeader 适配 | ✅ | 迁移 734 条 + 搜索/巩固桥接 |
+| Hermes Provider | ✅ | 完整 MemoryProvider API + 4 工具 |
+| MCP Server | ✅ | 8 工具, Claude Desktop/Cursor 兼容 |
+| 隐私分级 | ✅ | open/guarded/sealed, 跨域流动控制 |
+| 知识图谱 | ✅ | SQLite 三元组, 时间有效性, 自动提取 |
+| Embedding | ✅ | ONNX MiniLM (可选), 静默降级 |
+| 社区共享 | ✅ | Stigmergy 评分, PII 过滤, 社区池同步 |
+| CLI | ✅ | 18+ 命令 |
+| Python API | ✅ | RadioMind 主类, 标准接口 |
 
-**v0.1 不包含**:
-- LoRA 微调闭环（v0.2 — 需要 MLX 集成）
-- Hermes Memory Provider 适配（v0.2）
-- RadioHeader 适配（v0.2 — 替换现有 memory 层）
-- Rust 重写（v0.3）
-- MCP Server（v0.3）
-- 社区共享（远期）
-- RadioHand Agent 框架（独立项目）
+**测试**: 180 tests, ~9800 行代码, 7 commits
+
+### 进行中: Rust 核心重写
+
+**目标**: 将存储/检索/HDC/守护进程的热路径用 Rust 重写，Python 层通过 IPC 调用
+
+**Rust 侧 (稳定，极少修改)**:
+- SQLite CRUD + FTS5 + 金字塔检索 + 隐私过滤
+- HDC 向量运算 (bind/bundle/similarity)
+- 知识图谱查询
+- Embedding 编码 (ONNX C API)
+- 守护进程 + IPC (Unix socket JSON Lines)
+- 健康检查 + 信号处理
+
+**Python 侧 (逻辑层，频繁变化)**:
+- LLM 调用/路由
+- 炼化 prompt (三体聊天/做梦)
+- L1 注意力门控 (正则模式)
+- Profile 提取
+- LoRA/MLX 训练
+- 适配器 (Hermes/RadioHeader)
+- 社区共享
+- MCP Server
+- CLI
+
+### 未来 (独立项目)
+
+- RadioHand: 通用个人 Agent 框架（含记忆口令身份验证）
 
 ---
 
@@ -624,10 +652,10 @@ class RadioMindHermesProvider(MemoryProvider):
 
 ## 十一、项目元信息
 
-- **Tech stack**: Python (v0.1) → Rust + Python (v0.3+) | SQLite + HDC + MLX
+- **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
-- **Status**: 架构设计完成，所有设计决策已确认，待进入 v0.1 开发
-- **Repository**: 待创建
+- **Status**: Python 全功能完成 (180 tests), Rust 核心重写进行中
+- **Repository**: 本地 git, 待推 GitHub
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
   - HomeGenie (运行时参考): `~/DarkForce/HomeGenie/`
