@@ -214,12 +214,16 @@ class MemoryStore:
     # --- Search ---
 
     def search_fts(self, query: str, limit: int = 10) -> list[SearchResult]:
+        # Escape special FTS5 characters to prevent parse errors
+        safe_query = self._sanitize_fts_query(query)
+        if not safe_query:
+            return []
         rows = self.conn.execute(
             """SELECT m.*, rank FROM memories_fts
                JOIN memories m ON memories_fts.rowid = m.id
                WHERE memories_fts MATCH ? AND m.status = 'active'
                ORDER BY rank LIMIT ?""",
-            (query, limit),
+            (safe_query, limit),
         ).fetchall()
         return [
             SearchResult(entry=self._row_to_entry(r), score=-r["rank"], method="fts")
@@ -308,6 +312,18 @@ class MemoryStore:
         }
 
     # --- Internal ---
+
+    @staticmethod
+    def _sanitize_fts_query(query: str) -> str:
+        """Escape special FTS5 operators to prevent parse errors."""
+        import re
+        tokens = query.split()
+        safe_tokens = []
+        for t in tokens:
+            cleaned = re.sub(r'[^\w\u4e00-\u9fff]', ' ', t).strip()
+            if cleaned:
+                safe_tokens.append(f'"{cleaned}"' if ' ' in cleaned else cleaned)
+        return " ".join(safe_tokens)
 
     @staticmethod
     def _row_to_entry(row: sqlite3.Row) -> MemoryEntry:

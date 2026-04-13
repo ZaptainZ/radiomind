@@ -244,6 +244,70 @@ def learn_text(text: str) -> None:
     mind.shutdown()
 
 
+@cli.command("migrate-radioheader")
+@click.option("--path", default=None, help="RadioHeader home (default: ~/.claude/radioheader)")
+def migrate_radioheader(path: str | None) -> None:
+    """Import RadioHeader topics/shortwave/registry into RadioMind."""
+    from pathlib import Path
+    from radiomind.adapters.radioheader import RadioHeaderAdapter
+
+    mind = _get_mind()
+    rh_home = Path(path) if path else None
+    adapter = RadioHeaderAdapter(mind, radioheader_home=rh_home)
+
+    click.echo("Migrating RadioHeader data into RadioMind...")
+    result = adapter.migrate()
+    click.echo(f"  Topics:    {result.topics_imported} imported")
+    click.echo(f"  Shortwave: {result.shortwave_imported} imported")
+    click.echo(f"  Projects:  {result.projects_imported} imported")
+    click.echo(f"  Skipped:   {result.skipped_duplicates} duplicates")
+    if result.errors:
+        click.echo(f"  Errors:    {len(result.errors)}")
+        for e in result.errors[:5]:
+            click.echo(f"    - {e}")
+
+    s = mind.stats()
+    click.echo(f"\nRadioMind now has {s['total_active']} memories across {s['domain_count']} domains")
+    mind.shutdown()
+
+
+@cli.command("rh-search")
+@click.argument("query")
+@click.option("--limit", "-n", default=10, help="Max results.")
+def rh_search(query: str, limit: int) -> None:
+    """Search using RadioHeader-compatible output format."""
+    from radiomind.adapters.radioheader import RadioHeaderAdapter
+
+    mind = _get_mind()
+    adapter = RadioHeaderAdapter(mind)
+    result = adapter.search(query, limit=limit)
+
+    click.echo(json.dumps(result, ensure_ascii=False, indent=2))
+    mind.shutdown()
+
+
+@cli.command("rh-consolidate")
+def rh_consolidate() -> None:
+    """Run RadioHeader-compatible consolidation (dream + digest)."""
+    from radiomind.adapters.radioheader import RadioHeaderAdapter
+
+    mind = _get_mind()
+
+    if not mind._llm.is_available():
+        click.echo("No LLM backend available.")
+        mind.shutdown()
+        return
+
+    adapter = RadioHeaderAdapter(mind)
+    click.echo("Running consolidation...")
+    result = adapter.consolidate()
+    click.echo(f"  Merged: {result['merged']}")
+    click.echo(f"  Pruned: {result['pruned']}")
+    click.echo(f"  Insights: {result['insights']}")
+    click.echo(f"  Digest: {result['digest_written']}")
+    mind.shutdown()
+
+
 @cli.command()
 @click.argument("key", required=False)
 @click.argument("value", required=False)
