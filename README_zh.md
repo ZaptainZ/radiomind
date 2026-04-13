@@ -4,7 +4,9 @@
 
 > *不是又一个向量数据库。RadioMind 通过仿生的"聊天"和"做梦"机制，将零散对话炼化为深层习惯记忆，并确保 Agent 真正使用它们。*
 
-[English](README.md) · [架构](#架构四层仿生记忆) · [快速开始](#快速开始) · [接入方式](#接入方式)
+[English](README.md) · [架构](#架构四层仿生记忆) · [快速开始](#快速开始) · [接入方式](#接入方式) · [文档](docs/)
+
+**文档：** [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
 ---
 

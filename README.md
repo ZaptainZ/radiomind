@@ -4,7 +4,9 @@
 
 > *Not another vector database. RadioMind distills scattered conversations into deep habits through biologically-inspired "chatting" and "dreaming", then enforces their use.*
 
-[中文版](README_zh.md) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Integration](#integration)
+[中文版](README_zh.md) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Integration](#integration) · [Docs](docs/)
+
+**Documentation:** [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
 ---
 

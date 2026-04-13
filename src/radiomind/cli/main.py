@@ -308,6 +308,23 @@ def rh_consolidate() -> None:
     mind.shutdown()
 
 
+@cli.command()
+@click.option("--host", default="0.0.0.0", help="Bind host")
+@click.option("--port", default=8730, help="Bind port")
+def serve(host: str, port: int) -> None:
+    """Start REST API server (FastAPI + Uvicorn).
+
+    API docs: http://localhost:8730/docs
+    """
+    try:
+        from radiomind.server import run_server
+        click.echo(f"Starting RadioMind REST API on {host}:{port}")
+        click.echo(f"API docs: http://localhost:{port}/docs")
+        run_server(host=host, port=port)
+    except ImportError:
+        click.echo("FastAPI not installed. Run: pip install 'radiomind[server]'")
+
+
 @cli.group("community")
 def community() -> None:
     """Community knowledge sharing (Stigmergy model)."""
