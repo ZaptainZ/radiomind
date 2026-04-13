@@ -9,7 +9,9 @@ import re
 import time
 from dataclasses import dataclass, field
 
-from radiomind.core.types import MemoryEntry, MemoryLevel, Message
+from radiomind.core.types import MemoryEntry, MemoryLevel, Message, PrivacyLevel
+
+GUARDED_DOMAINS = {"health", "finance"}
 
 # Patterns that signal memory-worthy content (inspired by HomeGenie's 15 rules)
 EXTRACTION_PATTERNS: list[tuple[str, str]] = [
@@ -126,10 +128,12 @@ def gate(messages: list[Message]) -> ExtractionResult:
                 continue
             seen_content.add(content)
 
+            privacy = PrivacyLevel.GUARDED if domain in GUARDED_DOMAINS else PrivacyLevel.OPEN
             entry = MemoryEntry(
                 content=content,
                 domain=domain,
                 level=MemoryLevel.FACT,
+                privacy=privacy,
                 created_at=msg.timestamp,
                 metadata={"category": category, "source": "gate"},
             )

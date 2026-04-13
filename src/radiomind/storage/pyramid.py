@@ -7,7 +7,7 @@ Efficiency gain: ~7x vs flat search.
 from __future__ import annotations
 
 from radiomind.core.llm import LLMRouter
-from radiomind.core.types import MemoryEntry, MemoryLevel, SearchResult
+from radiomind.core.types import MemoryEntry, MemoryLevel, PrivacyLevel, SearchResult
 from radiomind.storage.database import MemoryStore
 
 AGGREGATE_THRESHOLD = 10  # facts needed before triggering pattern extraction
@@ -52,12 +52,13 @@ class PyramidSearch:
         fts_results = self._store.search_fts(query, limit=max_results * 2)
         like_results = self._store.search_like(query, limit=max_results)
 
-        # Merge and deduplicate, FTS results first (higher quality)
+        # Merge, deduplicate, and apply privacy filtering
         for r in fts_results + like_results:
             if r.entry.id not in seen_ids:
                 if domain is None or r.entry.domain == domain:
-                    seen_ids.add(r.entry.id)
-                    all_results.append(r)
+                    if self._privacy_allows(r.entry, domain):
+                        seen_ids.add(r.entry.id)
+                        all_results.append(r)
 
         # Sort: principles first, then patterns, then facts (pyramid order)
         all_results.sort(key=lambda r: (-r.entry.level, -r.score))
@@ -72,6 +73,26 @@ class PyramidSearch:
     def drill_down(self, entry_id: int) -> list[MemoryEntry]:
         """Expand a higher-level entry to its children (drill down the pyramid)."""
         return self._store.get_children(entry_id)
+
+    @staticmethod
+    def _privacy_allows(entry: MemoryEntry, search_domain: str | None) -> bool:
+        """Check if privacy level allows this entry in search results.
+
+        domain=None means "search all" (user's own query), not "cross-domain".
+        Privacy filtering only kicks in when searching FROM a specific different domain.
+        """
+        if search_domain is None:
+            # User-initiated search across all domains: sealed hidden, everything else visible
+            return entry.privacy != PrivacyLevel.SEALED
+        if entry.domain == search_domain:
+            # Searching within same domain: always visible
+            return True
+        # Cross-domain: check privacy
+        if entry.privacy == PrivacyLevel.SEALED:
+            return False
+        if entry.privacy == PrivacyLevel.GUARDED:
+            return entry.level >= MemoryLevel.PATTERN
+        return True
 
     def search_pyramid(
         self,

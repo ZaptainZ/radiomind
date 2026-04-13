@@ -23,6 +23,7 @@ from radiomind.refinement.chat import ChatRefinement
 from radiomind.refinement.dream import DreamRefinement
 from radiomind.storage.database import MemoryStore
 from radiomind.storage.hdc import HabitStore
+from radiomind.storage.knowledge_graph import KnowledgeGraph
 from radiomind.storage.pyramid import PyramidAggregator, PyramidSearch
 
 
@@ -49,6 +50,8 @@ class RadioMind:
         self._chat_refine: ChatRefinement | None = None
         self._dream_refine: DreamRefinement | None = None
         self._meta: ProfileManager | None = None
+        self._kg: KnowledgeGraph | None = None
+        self._embedder = None
 
     def initialize(self, config_overrides: dict[str, Any] | None = None) -> None:
         if config_overrides:
@@ -79,11 +82,25 @@ class RadioMind:
         self._meta = ProfileManager(home / "data" / "meta", self.config, store=self._store)
         self._meta.open()
 
+        self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
+        self._kg.open()
+
+        # Optional: load embedding encoder (silent fallback)
+        try:
+            from radiomind.storage.embedding import EmbeddingEncoder
+            self._embedder = EmbeddingEncoder(home / "models" / "embedding")
+            if not self._embedder.load():
+                self._embedder = None
+        except Exception:
+            self._embedder = None
+
         self._initialized = True
 
     def shutdown(self) -> None:
         if self._meta:
             self._meta.close()
+        if self._kg:
+            self._kg.close()
         if self._habits:
             self._habits.close()
         if self._store:
@@ -98,15 +115,21 @@ class RadioMind:
 
         added = []
         for entry in result.entries:
+            if self._embedder:
+                entry.embedding = self._embedder.encode(entry.content)
             mid = self._store.add(entry)
             if mid > 0:
                 added.append(entry)
         result.entries = added
 
-        # Update user profile from conversation
+        # Update user profile + knowledge graph from conversation
         for msg in messages:
             if msg.role == "user":
                 self._meta.update_from_text(msg.content)
+                if self._kg:
+                    triples = self._kg.extract_triples_from_text(msg.content)
+                    for subj, rel, obj in triples:
+                        self._kg.add_triple(subj, rel, obj)
 
         # Check if any domain needs aggregation
         for domain in result.domains_detected:
@@ -215,6 +238,8 @@ class RadioMind:
             "total_calls": self._llm.usage.total_calls,
             "total_tokens": self._llm.usage.total_prompt_tokens + self._llm.usage.total_completion_tokens,
         }
+        db_stats["knowledge_graph_triples"] = self._kg.count() if self._kg else 0
+        db_stats["embedding_available"] = self._embedder is not None
         return db_stats
 
     # --- Config ---

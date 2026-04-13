@@ -8,9 +8,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from radiomind.core.types import MemoryEntry, MemoryLevel, MemoryStatus, SearchResult
+from radiomind.core.types import MemoryEntry, MemoryLevel, MemoryStatus, PrivacyLevel, SearchResult
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS memories (
     level INTEGER NOT NULL DEFAULT 0,
     parent_id INTEGER REFERENCES memories(id),
     status TEXT NOT NULL DEFAULT 'active',
+    privacy TEXT NOT NULL DEFAULT 'open',
     embedding BLOB,
     hit_count INTEGER NOT NULL DEFAULT 0,
     last_hit_at REAL NOT NULL DEFAULT 0,
@@ -83,8 +84,18 @@ class MemoryStore:
         row = self.conn.execute(
             "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"
         ).fetchone()
+        current_version = row[0] if row else 0
+
+        if current_version < 2:
+            # Migration: add privacy column if missing
+            cols = [r[1] for r in self.conn.execute("PRAGMA table_info(memories)").fetchall()]
+            if "privacy" not in cols:
+                self.conn.execute("ALTER TABLE memories ADD COLUMN privacy TEXT NOT NULL DEFAULT 'open'")
+
         if row is None:
             self.conn.execute("INSERT INTO schema_version VALUES (?)", (SCHEMA_VERSION,))
+        elif current_version < SCHEMA_VERSION:
+            self.conn.execute("UPDATE schema_version SET version = ?", (SCHEMA_VERSION,))
         self.conn.commit()
 
     # --- CRUD ---
@@ -102,9 +113,9 @@ class MemoryStore:
 
         cur = self.conn.execute(
             """INSERT INTO memories
-               (content, domain, timestamp, level, parent_id, status, embedding,
+               (content, domain, timestamp, level, parent_id, status, privacy, embedding,
                 hit_count, last_hit_at, decay_count, created_at, metadata)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 entry.content,
                 entry.domain,
@@ -112,6 +123,7 @@ class MemoryStore:
                 int(entry.level),
                 entry.parent_id,
                 entry.status.value,
+                entry.privacy.value,
                 entry.embedding,
                 entry.hit_count,
                 entry.last_hit_at,
@@ -142,7 +154,7 @@ class MemoryStore:
             raise ValueError("Cannot update entry without id")
         self.conn.execute(
             """UPDATE memories SET content=?, domain=?, level=?, parent_id=?,
-               status=?, embedding=?, hit_count=?, last_hit_at=?,
+               status=?, privacy=?, embedding=?, hit_count=?, last_hit_at=?,
                decay_count=?, metadata=?
                WHERE id=?""",
             (
@@ -151,6 +163,7 @@ class MemoryStore:
                 int(entry.level),
                 entry.parent_id,
                 entry.status.value,
+                entry.privacy.value,
                 entry.embedding,
                 entry.hit_count,
                 entry.last_hit_at,
@@ -327,6 +340,7 @@ class MemoryStore:
 
     @staticmethod
     def _row_to_entry(row: sqlite3.Row) -> MemoryEntry:
+        privacy_val = row["privacy"] if "privacy" in row.keys() else "open"
         return MemoryEntry(
             id=row["id"],
             content=row["content"],
@@ -334,6 +348,7 @@ class MemoryStore:
             level=MemoryLevel(row["level"]),
             parent_id=row["parent_id"],
             status=MemoryStatus(row["status"]),
+            privacy=PrivacyLevel(privacy_val),
             embedding=row["embedding"],
             hit_count=row["hit_count"],
             last_hit_at=row["last_hit_at"],

@@ -21,6 +21,12 @@ class MemoryStatus(StrEnum):
     ARCHIVED = "archived"
 
 
+class PrivacyLevel(StrEnum):
+    OPEN = "open"        # free cross-domain flow
+    GUARDED = "guarded"  # cross-domain: patterns/principles only, no facts
+    SEALED = "sealed"    # never flows out of its domain
+
+
 @dataclass
 class Message:
     role: str  # "user" | "assistant" | "system"
@@ -36,6 +42,7 @@ class MemoryEntry:
     level: MemoryLevel = MemoryLevel.FACT
     parent_id: int | None = None
     status: MemoryStatus = MemoryStatus.ACTIVE
+    privacy: PrivacyLevel = PrivacyLevel.OPEN
     embedding: bytes | None = None
     id: int | None = None
     hit_count: int = 0
