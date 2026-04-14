@@ -22,7 +22,8 @@ RadioMind is different. Inspired by neuroscience — hippocampal encoding, neoco
 | Cross-domain experience flow | ❌ | ✅ Shortwave distillation |
 | Active refinement | ❌ | ✅ Three-body debate + dream pruning |
 | Enforce memory usage | ❌ | ✅ Search→Apply→Trace contract |
-| LoRA internalization | ❌ (Hermes exports data, no loop) | ✅ Full loop: habits → JSONL → MLX → adapter |
+| LoRA internalization | ❌ | ✅ Full loop: habits → JSONL → MLX → adapter |
+| Host AI as thinker | ❌ | ✅ Step refinement — zero extra LLM cost |
 | Privacy-aware cross-domain | ❌ | ✅ open / guarded / sealed per domain |
 | Self-awareness | ❌ | ✅ Dual profiling (user + system) |
 
@@ -57,21 +58,37 @@ RadioMind mirrors the human brain's complementary learning systems:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Neuroscience mapping:**
+### Two Refinement Modes
 
-| Brain Structure | Function | RadioMind |
-|----------------|----------|-----------|
-| Prefrontal cortex | Working memory | L1 attention gate |
-| Hippocampus | Fast episodic encoding | L2 3D pyramid |
-| Neocortex | Slow semantic consolidation | L3 HDC + LoRA |
-| Sleep (SHY) | Synaptic pruning | "Dream" refinement |
-| Social learning | Retrieval practice + discussion | "Chat" refinement |
-| Cultural memory | Books, education | L4 Shortwave |
-| Metacognition | Self-awareness | Dual profiling |
+RadioMind supports two ways to run the three-body debate and dream pruning:
 
-### Three-Body Debate ("Chat" Refinement)
+| | Host-driven (recommended) | Self-driven |
+|---|---|---|
+| **Who thinks** | Host AI (Claude, GPT, etc.) | RadioMind's own LLM |
+| **Extra LLM cost** | Zero — uses host's existing quota | API calls or local Ollama |
+| **Reasoning quality** | Host-level (Claude/GPT) | Economy model level |
+| **Best for** | Claude Code, Codex, Hermes, MCP | CLI cron jobs, standalone |
+| **How** | `radiomind_refine_step` (MCP/CLI) | `mind.refine()` / `radiomind chat` |
 
-Inspired by Three Kingdoms: two agents compromise or merge, three agents check and balance each other. ICLR 2025 DMAD confirms heterogeneous 3-agent teams achieve 91% vs 82% for 2-agent.
+**Host-driven mode** breaks refinement into steps. RadioMind provides prompts, the host AI does the reasoning:
+
+```
+prepare → RadioMind returns Guardian prompt
+       → Host AI reasons, responds
+guardian → RadioMind returns Explorer prompt
+       → Host AI reasons, responds  
+explorer → RadioMind returns Reducer prompt
+       → Host AI reasons, responds
+reducer → RadioMind returns synthesis prompt
+       → Host AI synthesizes
+synthesize → RadioMind writes insights to L3
+
+RadioMind = organizer | Host AI = thinker
+```
+
+### Three-Body Debate
+
+Inspired by Three Kingdoms: three agents with competing interests produce more robust insights than two. ICLR 2025 DMAD confirms 91% vs 82% accuracy.
 
 ```
 Guardian (魏) ─── consistency ───┐
@@ -89,7 +106,7 @@ Like sleep consolidation (Tononi & Cirelli's Synaptic Homeostasis Hypothesis):
 
 ### Rust Daemon
 
-Hot paths run in a Rust daemon (`radiomind-daemon`) for 10M+ memory scale and 7×24 uptime:
+Hot paths run in a Rust daemon for 10M+ memory scale and 7×24 uptime:
 
 ```
 Python logic layer (LLM calls, prompts, training)
@@ -109,47 +126,62 @@ import radiomind
 # Just connect — LLM is auto-detected from env vars, Ollama, or host framework
 mind = radiomind.connect()
 
-# Or pass your framework's LLM directly (OpenAI, Anthropic, any callable)
+# Or pass your framework's LLM directly (auto-detects OpenAI, Anthropic, any callable)
 # mind = radiomind.connect(llm=openai_client)
 
-# 1. Add conversations → auto-extracts facts, detects domains, builds profile
+# 1. Add — auto-extracts facts, detects domains, builds user profile
 mind.add([
     {"role": "user", "content": "My name is Alice"},
     {"role": "user", "content": "I run every morning"},
     {"role": "user", "content": "I hate overtime work"},
 ])
 
-# 2. Search → pyramid retrieval (principles → patterns → facts) + HDC habits
+# 2. Search — pyramid retrieval (principles → patterns → facts) + HDC habits
 results = mind.search("exercise")
 
-# 3. Digest → compressed user context for system prompt injection (~250 tokens)
+# 3. Digest — compressed user context for system prompt injection (~250 tokens)
 print(mind.digest())
-# User: name: Alice
-# Style: morning runner, dislikes overtime
-# Memory: 3 entries across health, work
 
-# 4. Refine → three-body debate + dream pruning (LLM auto-detected)
+# 4. Refine — three-body debate + dream pruning (LLM auto-detected)
 mind.refine()
 
 mind.close()
 ```
 
-That's the entire API. **4 methods, zero LLM config.** Everything else happens automatically.
+**4 methods, zero LLM config.** Everything else happens automatically.
 
 Need more control? Access the [advanced API](docs/api-reference.md) via `mind.advanced`.
 
 ## Integration
 
-6 ways to connect RadioMind to your stack:
+7 ways to connect RadioMind to your stack:
 
 | Method | Setup | Best for |
 |--------|-------|----------|
 | **Python API** | `radiomind.connect()` or `connect(llm=client)` | Python agents, any framework |
+| **Step Refinement** | `mind.refine_step("prepare", domain="health")` | CC, Codex, Hermes — host AI thinks |
 | **REST API** | `radiomind serve` | Any language, remote access |
-| **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor |
+| **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor, VS Code |
 | **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |
 | **RadioHeader** | `radiomind migrate-radioheader` | Existing RadioHeader users |
 | **CLI** | `radiomind search "query"` | Shell scripts, cron |
+
+### Step Refinement (host AI mode)
+
+When running inside an AI framework, the host AI does the thinking:
+
+```bash
+# MCP tool — Claude Desktop/Cursor calls this automatically
+radiomind_refine_step(step="prepare", domain="health")
+# → Returns Guardian prompt for the host AI to reason about
+
+# CLI — for RadioHeader hooks
+radiomind refine-step prepare --domain health
+radiomind refine-step guardian --response "These memories are consistent..."
+radiomind refine-step explorer --response "I notice a new pattern..."
+radiomind refine-step reducer --response "Can be merged into one habit..."
+radiomind refine-step synthesize --response "INSIGHT: ..."
+```
 
 ### REST API (cross-language)
 
@@ -172,17 +204,16 @@ RadioMind **auto-detects** your LLM. No configuration needed for most users.
 
 | Priority | Source | You do... |
 |----------|--------|-----------|
-| 1 | Host framework | `radiomind.connect(llm=your_client)` — auto-wraps OpenAI, Anthropic, any callable |
-| 2 | Environment variable | Just have `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` etc. in your env |
-| 3 | Local Ollama | Just have Ollama running on localhost |
-| 4 | `config.toml` | Only for advanced model routing — most users never need this |
-| 5 | No LLM | `add`/`search`/`digest` still work. `refine` is a no-op |
+| 1 | Host AI (step mode) | Nothing — host AI IS the LLM, zero extra cost |
+| 2 | Framework LLM | `radiomind.connect(llm=client)` — auto-wraps OpenAI, Anthropic, any callable |
+| 3 | Environment variable | Just have `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` etc. in your env |
+| 4 | Local Ollama | Just have Ollama running on localhost |
+| 5 | `config.toml` | Only for advanced model routing — most users never need this |
+| 6 | No LLM | `add`/`search`/`digest` still work. `refine` is a no-op |
 
 Supported env vars: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DASHSCOPE_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `MOONSHOT_API_KEY`, `ZHIPUAI_API_KEY`, `SILICONFLOW_API_KEY`, `MISTRAL_API_KEY`, `FIREWORKS_API_KEY`.
 
 ## Radio Family
-
-RadioMind is part of the Radio ecosystem:
 
 | Project | Role | Status |
 |---------|------|--------|
