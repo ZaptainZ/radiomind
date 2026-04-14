@@ -4,10 +4,11 @@
 - 定位: 独立的仿生记忆-思考核心，为 AI Agent 提供可插拔的深层记忆能力
 - 关系: RadioHeader / RadioHand 的默认记忆模块，也可接入 Hermes/OpenClaw 等
 - Tech stack: Rust (守护进程) + Python (逻辑层) + SQLite + HDC + MLX
-- Status: 全功能完成 (227 tests), GitHub: github.com/ZaptainZ/radiomind
+- Status: 全功能完成 (227 tests, ~8200 行, 25 commits), GitHub: github.com/ZaptainZ/radiomind
 - API 三层: 极简 (radiomind.connect → 4方法) / 协议 (REST+MCP+Hermes) / 高级 (RadioMind 全量)
 - 炼化双模式: 宿主驱动 (refine_step, 零LLM费用) / 自驱动 (refine, 需要LLM)
 - LLM 零配置: 宿主AI → 环境变量(11 provider) → Ollama → config.toml → 纯记忆
+- 安装: 支持 uv/pip/venv/pipx，兼容 PEP 668 系统 Python
 - Terminology:
   - L1 记忆草稿: 对话历史的注意力门控层
   - L2 记忆笔记: 3D 金字塔结构化存储 (domain × time × level)

@@ -647,6 +647,9 @@ class RadioMindHermesProvider(MemoryProvider):
 | 产品命名 | Radio 家族: Header(规则) + Mind(记忆) + Hand(执行) | 头定规则、脑存记忆、手去执行 |
 | 项目范围 | 本项目只聚焦 RadioMind 记忆模块 | RadioHand 为独立项目 |
 | v0.1 语言 | Python 先行 → v0.3 Rust 核心 | Python 跨平台兼容所有目标 Agent 框架 |
+| 炼化模式 | 宿主驱动(refine_step) + 自驱动(refine) | CC/Codex 场景零 LLM 费用 |
+| LLM 解析 | 宿主AI → 环境变量 → Ollama → config.toml → 纯记忆 | 用户零配置 |
+| 安装兼容 | uv/pip/venv/pipx 四种方式 | 兼容 PEP 668 系统 Python |
 
 ---
 
@@ -654,8 +657,9 @@ class RadioMindHermesProvider(MemoryProvider):
 
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
-- **Status**: Python 全功能完成 (180 tests), Rust 核心重写进行中
-- **Repository**: 本地 git, 待推 GitHub
+- **Status**: 全功能完成，已发布 GitHub
+- **Stats**: 227 tests, ~8200 行代码 (Python 7276 + Rust 898), 25 commits
+- **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
   - HomeGenie (运行时参考): `~/DarkForce/HomeGenie/`
@@ -665,3 +669,6 @@ class RadioMindHermesProvider(MemoryProvider):
   - `.claude/rules/`: 项目规则
   - `projectBasicInfo/`: 项目文档
   - `projectBasicInfo/logs/`: 实施记录
+  - `docs/`: quickstart, integration, api-reference
+  - `src/radiomind/`: Python 源码 (36 files)
+  - `rust-core/`: Rust 守护进程源码
