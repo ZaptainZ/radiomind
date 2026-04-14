@@ -88,7 +88,11 @@ pip install radiomind
 ```python
 import radiomind
 
+# 直接连接 — LLM 从环境变量、Ollama 或宿主框架自动检测
 mind = radiomind.connect()
+
+# 或直接传入你框架的 LLM（OpenAI、Anthropic、任何 callable 自动识别）
+# mind = radiomind.connect(llm=openai_client)
 
 # 1. 添加对话 → 自动提取事实、检测领域、构建用户画像
 mind.add([
@@ -106,13 +110,13 @@ print(mind.digest())
 # Style: 早起跑步, 讨厌加班
 # Memory: 3 entries across health, work
 
-# 4. 炼化 → 三体辩论 + 做梦修剪（需配置 LLM）
+# 4. 炼化 → 三体辩论 + 做梦修剪（LLM 自动检测）
 mind.refine()
 
 mind.close()
 ```
 
-4 个方法，就是全部。内部的 3D 金字塔、HDC 编码、三体辩论、做梦修剪全自动完成。
+**4 个方法，零 LLM 配置。** 内部的 3D 金字塔、HDC 编码、三体辩论、做梦修剪全自动完成。
 
 需要更多控制？通过 `mind.advanced` 访问[高级 API](docs/api-reference.md)。
 
@@ -122,7 +126,7 @@ mind.close()
 
 | 方式 | 设置 | 适用场景 |
 |------|------|---------|
-| **Python API** | `radiomind.connect()` | Python Agent、LangChain |
+| **Python API** | `radiomind.connect()` 或 `connect(llm=client)` | Python Agent、任何框架 |
 | **REST API** | `radiomind serve` | 跨语言、远程调用 |
 | **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor |
 | **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |

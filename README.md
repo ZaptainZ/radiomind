@@ -106,7 +106,11 @@ pip install radiomind
 ```python
 import radiomind
 
+# Just connect — LLM is auto-detected from env vars, Ollama, or host framework
 mind = radiomind.connect()
+
+# Or pass your framework's LLM directly (OpenAI, Anthropic, any callable)
+# mind = radiomind.connect(llm=openai_client)
 
 # 1. Add conversations → auto-extracts facts, detects domains, builds profile
 mind.add([
@@ -124,13 +128,13 @@ print(mind.digest())
 # Style: morning runner, dislikes overtime
 # Memory: 3 entries across health, work
 
-# 4. Refine → three-body debate + dream pruning (needs LLM configured)
+# 4. Refine → three-body debate + dream pruning (LLM auto-detected)
 mind.refine()
 
 mind.close()
 ```
 
-That's the entire API. 4 methods. Everything else happens automatically inside.
+That's the entire API. **4 methods, zero LLM config.** Everything else happens automatically.
 
 Need more control? Access the [advanced API](docs/api-reference.md) via `mind.advanced`.
 
@@ -140,7 +144,7 @@ Need more control? Access the [advanced API](docs/api-reference.md) via `mind.ad
 
 | Method | Setup | Best for |
 |--------|-------|----------|
-| **Python API** | `radiomind.connect()` | Python agents, LangChain |
+| **Python API** | `radiomind.connect()` or `connect(llm=client)` | Python agents, any framework |
 | **REST API** | `radiomind serve` | Any language, remote access |
 | **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor |
 | **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |
