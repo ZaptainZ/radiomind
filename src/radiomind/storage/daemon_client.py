@@ -69,6 +69,11 @@ class DaemonClient:
                 raise RuntimeError(f"Daemon error: {response['error']}")
             return response.get("result")
         except (BrokenPipeError, ConnectionResetError, OSError):
+            if self._sock:
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
             self._sock = None
             raise ConnectionError("Lost connection to daemon")
 

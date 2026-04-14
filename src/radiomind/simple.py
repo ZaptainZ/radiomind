@@ -114,7 +114,7 @@ class SimpleRadioMind:
 
         Returns empty result if no LLM backend is available.
         """
-        if not self._mind._llm or not self._mind._llm.is_available():
+        if not self._mind.is_llm_available():
             return RefineResult()
 
         insights = 0

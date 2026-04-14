@@ -70,6 +70,13 @@ class MemoryStore:
             self._conn.close()
             self._conn = None
 
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
     @property
     def conn(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -244,9 +251,10 @@ class MemoryStore:
         ]
 
     def search_like(self, query: str, limit: int = 10) -> list[SearchResult]:
-        pattern = f"%{query}%"
+        escaped = query.replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
         rows = self.conn.execute(
-            "SELECT * FROM memories WHERE content LIKE ? AND status='active' "
+            "SELECT * FROM memories WHERE content LIKE ? ESCAPE '\\' AND status='active' "
             "ORDER BY timestamp DESC LIMIT ?",
             (pattern, limit),
         ).fetchall()

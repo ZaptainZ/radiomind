@@ -13,10 +13,12 @@ pub fn random_hv(dim: usize) -> HyperVector {
     (0..dim).map(|_| if rng.random_bool(0.5) { 1i8 } else { -1i8 }).collect()
 }
 
+#[allow(dead_code)]
 pub fn bind(a: &HyperVector, b: &HyperVector) -> HyperVector {
     a.iter().zip(b.iter()).map(|(x, y)| x * y).collect()
 }
 
+#[allow(dead_code)]
 pub fn bundle(vecs: &[&HyperVector]) -> HyperVector {
     if vecs.is_empty() {
         return vec![];
@@ -31,10 +33,14 @@ pub fn bundle(vecs: &[&HyperVector]) -> HyperVector {
 }
 
 pub fn similarity(a: &HyperVector, b: &HyperVector) -> f64 {
+    if a.is_empty() {
+        return 0.0;
+    }
     let dot: i64 = a.iter().zip(b.iter()).map(|(x, y)| (*x as i64) * (*y as i64)).sum();
     dot as f64 / a.len() as f64
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Habit {
     pub description: String,
@@ -44,6 +50,7 @@ pub struct Habit {
     pub verified_at: Option<f64>,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct HabitEntry {
     pub habit: Habit,

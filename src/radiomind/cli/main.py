@@ -73,7 +73,7 @@ def ingest(file: str) -> None:
     mind = _get_mind()
     messages = []
 
-    with open(file) as f:
+    with open(file, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -97,7 +97,7 @@ def chat_refine(domain: str | None) -> None:
     """Trigger chat refinement (three-body debate)."""
     mind = _get_mind()
 
-    if not mind._llm.is_available():
+    if not mind.is_llm_available():
         click.echo("No LLM backend available. Is Ollama running?")
         mind.shutdown()
         return
@@ -117,7 +117,7 @@ def dream() -> None:
     """Trigger dream refinement (pruning + wandering)."""
     mind = _get_mind()
 
-    if not mind._llm.is_available():
+    if not mind.is_llm_available():
         click.echo("No LLM backend available. Is Ollama running?")
         mind.shutdown()
         return
@@ -293,7 +293,7 @@ def rh_consolidate() -> None:
 
     mind = _get_mind()
 
-    if not mind._llm.is_available():
+    if not mind.is_llm_available():
         click.echo("No LLM backend available.")
         mind.shutdown()
         return

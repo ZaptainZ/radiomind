@@ -208,4 +208,10 @@ class HabitStore:
         else:
             self._vectors = []
 
+        # Consistency check: truncate to shorter list
+        if len(self._habits) != len(self._vectors):
+            min_len = min(len(self._habits), len(self._vectors))
+            self._habits = self._habits[:min_len]
+            self._vectors = self._vectors[:min_len]
+
         self._bundle = None

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::storage::database::{MemoryEntry, MemoryStore, SearchResult, Triple, Stats};
+use crate::storage::database::{MemoryEntry, MemoryStore, SearchResult};
 use crate::hdc;
 
 #[derive(Debug, Deserialize)]

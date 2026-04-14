@@ -248,6 +248,9 @@ class RadioMind:
         if self._meta:
             self._meta.refresh_self()
 
+    def is_llm_available(self) -> bool:
+        return self._llm is not None and self._llm.is_available()
+
     # --- Internal ---
 
     def _check_init(self) -> None:

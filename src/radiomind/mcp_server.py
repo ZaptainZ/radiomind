@@ -200,7 +200,7 @@ class MCPServer:
             return {"content": [{"type": "text", "text": text}]}
 
         elif tool_name == "radiomind_chat":
-            if not mind._llm.is_available():
+            if not mind.is_llm_available():
                 return {"content": [{"type": "text", "text": "No LLM backend available."}]}
             result = mind.trigger_chat(domain=args.get("domain"))
             text = f"Chat refinement done in {result.duration_s:.1f}s.\n"
@@ -210,7 +210,7 @@ class MCPServer:
             return {"content": [{"type": "text", "text": text}]}
 
         elif tool_name == "radiomind_dream":
-            if not mind._llm.is_available():
+            if not mind.is_llm_available():
                 return {"content": [{"type": "text", "text": "No LLM backend available."}]}
             result = mind.trigger_dream()
             text = f"Dream done in {result.duration_s:.1f}s. Merged: {result.merged}, Pruned: {result.pruned}\n"
@@ -240,7 +240,10 @@ def main():
 
         try:
             request = json.loads(line)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            err = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": f"Parse error: {e}"}}
+            sys.stdout.write(json.dumps(err) + "\n")
+            sys.stdout.flush()
             continue
 
         response = server.handle_request(request)

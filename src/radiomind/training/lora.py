@@ -83,7 +83,8 @@ def train_lora(
     if not data_path.exists():
         return TrainResult(success=False, error=f"Training data not found: {data_path}")
 
-    line_count = sum(1 for _ in open(data_path))
+    with open(data_path, encoding="utf-8") as f:
+        line_count = sum(1 for _ in f)
     if line_count < 3:
         return TrainResult(
             success=False,
@@ -100,12 +101,11 @@ def train_lora(
     import shutil
     shutil.copy2(data_path, train_dir / "train.jsonl")
 
-    with open(data_path) as f:
+    with open(data_path, encoding="utf-8") as f:
         lines = f.readlines()
-    # Valid set needs at least batch_size examples; use same data if too few
     valid_count = max(config.batch_size, len(lines) // 5)
     valid_lines = (lines * ((valid_count // len(lines)) + 1))[:valid_count] if lines else []
-    with open(train_dir / "valid.jsonl", "w") as f:
+    with open(train_dir / "valid.jsonl", "w", encoding="utf-8") as f:
         f.writelines(valid_lines)
 
     adapter_dir = output_dir / "adapters"

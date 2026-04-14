@@ -36,7 +36,10 @@ def parse_topic_file(path: Path) -> list[dict[str, str]]:
     Format: free text with [source:ProjectName] tags and ## headings.
     """
     entries = []
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return entries
     current_section = path.stem
 
     for line in text.split("\n"):
@@ -46,7 +49,7 @@ def parse_topic_file(path: Path) -> list[dict[str, str]]:
                 current_section = line.lstrip("#").strip()
             continue
 
-        source_match = re.match(r"\[(?:source|来源):?\s*(\w+)\]\s*(.*)", line)
+        source_match = re.match(r"\[(?:source|来源):?\s*([\w-]+)\]\s*(.*)", line)
         if source_match:
             project = source_match.group(1)
             content = source_match.group(2).strip()
@@ -70,7 +73,10 @@ def parse_shortwave_file(path: Path) -> dict[str, Any] | None:
 
     Returns dict with id, domain, tags, refs, and body fields.
     """
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return None
 
     fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)", text, re.DOTALL)
     if not fm_match:

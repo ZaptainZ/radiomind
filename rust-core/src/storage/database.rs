@@ -328,6 +328,7 @@ impl MemoryStore {
         Ok(entries)
     }
 
+    #[allow(dead_code)]
     pub fn count_by_domain_level(&self, domain: &str, level: i32) -> i64 {
         self.conn
             .query_row(
@@ -393,9 +394,11 @@ impl MemoryStore {
             .query_row("SELECT COUNT(*) FROM memories WHERE status='archived'", [], |r| r.get(0))
             .unwrap_or(0);
 
-        let domains: Vec<String> = {
-            let mut stmt = self.conn.prepare("SELECT name FROM domains").unwrap();
-            stmt.query_map([], |r| r.get(0)).unwrap().filter_map(|r| r.ok()).collect()
+        let domains: Vec<String> = match self.conn.prepare("SELECT name FROM domains") {
+            Ok(mut stmt) => stmt.query_map([], |r| r.get(0))
+                .map(|rows| rows.filter_map(|r| r.ok()).collect())
+                .unwrap_or_default(),
+            Err(_) => vec![],
         };
 
         Stats {
