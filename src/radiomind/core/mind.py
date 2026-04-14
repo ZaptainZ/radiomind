@@ -79,7 +79,19 @@ class RadioMind:
 
         self._llm = LLMRouter(self.config)
         if self._external_llm is not None:
-            self._llm.set_external(self._external_llm)
+            # Explicit LLM passed by user/framework
+            from radiomind.core.llm_auto import auto_detect
+            detected = auto_detect(self._external_llm)
+            if detected:
+                self._llm._backends["external"] = detected
+                self.config.set("llm.default_backend", "external")
+        elif not self._llm.is_available():
+            # No config and no explicit LLM — auto-detect from environment
+            from radiomind.core.llm_auto import auto_detect
+            detected = auto_detect()
+            if detected:
+                self._llm._backends["auto"] = detected
+                self.config.set("llm.default_backend", "auto")
 
         self._pyramid = PyramidSearch(self._store)
         self._aggregator = PyramidAggregator(self._store, self._llm)
