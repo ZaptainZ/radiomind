@@ -172,59 +172,54 @@ Health data that "running helps sleep" can influence work advice as a principle 
 
 ## Setup
 
-### Recommended: let your AI agent install it
+### One-line install + activate
+
+```bash
+pip install radiomind && radiomind setup
+```
+
+`radiomind setup` auto-detects your platform and configures everything:
+
+| Platform | What it configures |
+|----------|-------------------|
+| Claude Code | Hooks (auto-save every 15 msgs + emergency save) + MCP (9 tools) |
+| Codex CLI | hooks.json + MCP |
+| Cursor | MCP config in `~/.cursor/mcp.json` |
+| Windsurf | Prints MCP config to paste |
+
+Claude Code users can also install as a plugin:
+
+```bash
+claude plugin add radiomind
+```
+
+If [RadioHeader](https://github.com/ZaptainZ/radioheader) is installed, RadioMind detects it and skips hooks that RadioHeader already handles.
+
+### Recommended: let your AI agent do it
 
 Copy this to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
 
 ```text
-Install RadioMind as my persistent memory module. Pick the best method for my environment:
-
-Option A — If uv is available:
-  uv pip install radiomind
-
-Option B — If inside a virtualenv or conda:
-  pip install radiomind
-
-Option C — If bare system Python (pip fails with "externally-managed"):
-  python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind
-  Then add to my shell profile: export PATH="$HOME/.radiomind-env/bin:$PATH"
-
-Option D — For CLI-only use:
-  pipx install radiomind
-
-After install, verify:
-  python3 -c "import radiomind; print(radiomind.__version__)"
-
-If I use Claude Desktop or Cursor, also run:
-  claude mcp add radiomind -- radiomind mcp-server
-
-RadioMind auto-detects LLM from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) or local Ollama. No config file needed.
+Install RadioMind as my persistent memory module:
+1. Install (pick whichever works):
+   - uv pip install radiomind
+   - pip install radiomind
+   - If pip fails with "externally-managed": python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind && add to PATH
+2. Activate: radiomind setup
+3. Verify: radiomind status
+RadioMind auto-detects LLM from environment variables or local Ollama. No config needed.
 ```
 
-### Manual install
-
-Pick whichever works in your environment:
+### Manual install options
 
 ```bash
-# Best: uv (fast, handles environments automatically)
-uv pip install radiomind
-
-# Standard: inside a virtualenv or conda
-pip install radiomind
-
-# System Python blocked by PEP 668? Create a dedicated env:
-python3 -m venv ~/.radiomind-env
-~/.radiomind-env/bin/pip install radiomind
-# Add to ~/.zshrc or ~/.bashrc:
-#   export PATH="$HOME/.radiomind-env/bin:$PATH"
-
-# CLI-only (installs in isolated environment):
-pipx install radiomind
+uv pip install radiomind             # fastest
+pip install radiomind                # standard (venv/conda)
+pipx install radiomind               # CLI-only, auto-isolated
 ```
 
-Optional extras:
-
 ```bash
+# Optional extras
 pip install 'radiomind[server]'      # REST API (FastAPI)
 pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon MLX)
 pip install 'radiomind[embedding]'   # Vector search (ONNX MiniLM)
@@ -260,12 +255,14 @@ mind = radiomind.connect(llm=anthropic_client)
 
 ## Plug into your stack
 
-| Method | One-line setup | Best for |
-|--------|---------------|----------|
-| **Python** | `radiomind.connect()` | Any Python agent |
-| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor, VS Code |
-| **REST** | `radiomind serve --port 8730` | Any language, remote |
-| **CLI** | `radiomind search "query"` | Scripts, cron, hooks |
+| Method | Setup | Best for |
+|--------|-------|----------|
+| **Auto** | `radiomind setup` | Claude Code, Codex, Cursor, Windsurf — auto-detects platform |
+| **Plugin** | `claude plugin add radiomind` | Claude Code — hooks + MCP in one step |
+| **Python** | `radiomind.connect()` | Any Python agent, LangChain, custom |
+| **MCP** | `radiomind mcp-server` | Any MCP-compatible tool |
+| **REST** | `radiomind serve --port 8730` | Any language, remote access |
+| **CLI** | `radiomind search "query"` | Scripts, cron, automation |
 
 9 MCP tools, 6 REST endpoints, 20+ CLI commands. See [Integration Guide](docs/integration.md).
 

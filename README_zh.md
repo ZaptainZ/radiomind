@@ -172,59 +172,54 @@ Python 自动检测 daemon，未运行时回退到直连 SQLite。
 
 ## 安装
 
-### 推荐：让你的 AI 助手自动安装
+### 一行安装 + 激活
 
-复制以下提示词，发给你正在使用的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
+```bash
+pip install radiomind && radiomind setup
+```
+
+`radiomind setup` 自动检测你的平台并配置一切：
+
+| 平台 | 自动配置 |
+|------|---------|
+| Claude Code | Hooks（每 15 条消息自动保存 + 压缩前紧急保存）+ MCP（9 工具） |
+| Codex CLI | hooks.json + MCP |
+| Cursor | MCP 配置写入 `~/.cursor/mcp.json` |
+| Windsurf | 输出 MCP 配置供粘贴 |
+
+Claude Code 用户也可以用 plugin 方式安装：
+
+```bash
+claude plugin add radiomind
+```
+
+如果已安装 [RadioHeader](https://github.com/ZaptainZ/radioheader)，RadioMind 会检测到并跳过 RadioHeader 已处理的 hook。
+
+### 推荐：让你的 AI 助手来安装
+
+复制以下提示词，发给你的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
 
 ```text
-帮我安装 RadioMind 持久记忆模块，根据我的环境选择最佳方式：
-
-方式 A — 如果有 uv：
-  uv pip install radiomind
-
-方式 B — 如果在 virtualenv 或 conda 中：
-  pip install radiomind
-
-方式 C — 如果是系统 Python（pip 报 "externally-managed" 错误）：
-  python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind
-  然后添加到 shell 配置：export PATH="$HOME/.radiomind-env/bin:$PATH"
-
-方式 D — 只用命令行工具：
-  pipx install radiomind
-
-安装后验证：
-  python3 -c "import radiomind; print(radiomind.__version__)"
-
-如果我用的是 Claude Desktop 或 Cursor，还需运行：
-  claude mcp add radiomind -- radiomind mcp-server
-
-RadioMind 自动从环境变量（OPENAI_API_KEY、ANTHROPIC_API_KEY 等）或本地 Ollama 检测 LLM，不需要配置文件。
+帮我安装 RadioMind 持久记忆模块：
+1. 安装（选适合的方式）：
+   - uv pip install radiomind
+   - pip install radiomind
+   - 如果 pip 报 "externally-managed"：python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind，并添加到 PATH
+2. 激活：radiomind setup
+3. 验证：radiomind status
+RadioMind 自动从环境变量或本地 Ollama 检测 LLM，不需要配置文件。
 ```
 
 ### 手动安装
 
-选择适合你环境的方式：
-
 ```bash
-# 推荐：uv（快速，自动管理环境）
-uv pip install radiomind
-
-# 标准：在 virtualenv 或 conda 中
-pip install radiomind
-
-# 系统 Python 被 PEP 668 阻止？创建独立环境：
-python3 -m venv ~/.radiomind-env
-~/.radiomind-env/bin/pip install radiomind
-# 添加到 ~/.zshrc 或 ~/.bashrc：
-#   export PATH="$HOME/.radiomind-env/bin:$PATH"
-
-# 只用命令行工具（自动隔离环境）：
-pipx install radiomind
+uv pip install radiomind             # 最快
+pip install radiomind                # 标准（venv/conda）
+pipx install radiomind               # 仅 CLI，自动隔离
 ```
 
-可选扩展：
-
 ```bash
+# 可选扩展
 pip install 'radiomind[server]'      # REST API (FastAPI)
 pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon MLX)
 pip install 'radiomind[embedding]'   # 向量搜索 (ONNX MiniLM)
@@ -260,12 +255,14 @@ mind = radiomind.connect(llm=anthropic_client)
 
 ## 接入你的技术栈
 
-| 方式 | 一行接入 | 适用场景 |
-|------|---------|---------|
-| **Python** | `radiomind.connect()` | 任何 Python Agent |
-| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor、VS Code |
+| 方式 | 设置 | 适用场景 |
+|------|------|---------|
+| **自动** | `radiomind setup` | Claude Code、Codex、Cursor、Windsurf — 自动检测平台 |
+| **Plugin** | `claude plugin add radiomind` | Claude Code — hooks + MCP 一步到位 |
+| **Python** | `radiomind.connect()` | 任何 Python Agent、LangChain、自定义 |
+| **MCP** | `radiomind mcp-server` | 任何 MCP 兼容工具 |
 | **REST** | `radiomind serve --port 8730` | 任何语言、远程调用 |
-| **CLI** | `radiomind search "query"` | 脚本、定时任务、Hook |
+| **CLI** | `radiomind search "query"` | 脚本、定时任务、自动化 |
 
 9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
 
