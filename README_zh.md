@@ -144,27 +144,19 @@ curl localhost:8730/v1/digest
 
 完整接入指南见 [Integration Guide](docs/integration.md)。
 
-## 配置
+## LLM — 零配置
 
-`~/.radiomind/config.toml` — 一切不写死：
+RadioMind **自动检测**环境中的 LLM，大多数用户无需任何配置。
 
-```toml
-[llm]
-default_backend = "openai"
+| 优先级 | 来源 | 你需要做的 |
+|--------|------|-----------|
+| 1 | 宿主框架传入 | `radiomind.connect(llm=your_client)` — 自动识别 OpenAI/Anthropic/callable |
+| 2 | 环境变量 | 已有 `OPENAI_API_KEY` 等 → 自动使用 |
+| 3 | 本地 Ollama | 装了 Ollama 就能用 |
+| 4 | `config.toml` | 高级模型路由 — 大多数用户不需要 |
+| 5 | 无 LLM | `add`/`search`/`digest` 正常工作，`refine` 静默跳过 |
 
-[llm.openai]
-base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-api_key = "your-key"
-model = "qwen-plus"
-
-[llm.models]
-economy = "qwen-turbo"      # 日常炼化
-standard = "qwen-plus"      # 更好质量
-deep = "qwen-max"           # 深度思考
-
-[refinement]
-cost_mode = "economy"
-```
+支持 11 个 API provider 的环境变量自动检测：OpenAI、Anthropic、DashScope(Qwen)、DeepSeek、Groq、Together、Moonshot、智谱、硅基流动、Mistral、Fireworks。
 
 ## Radio 家族
 

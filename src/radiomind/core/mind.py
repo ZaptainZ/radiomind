@@ -77,21 +77,7 @@ class RadioMind:
         self._habits = HabitStore(home / "data" / "hdc", dim=hdc_dim)
         self._habits.open()
 
-        self._llm = LLMRouter(self.config)
-        if self._external_llm is not None:
-            # Explicit LLM passed by user/framework
-            from radiomind.core.llm_auto import auto_detect
-            detected = auto_detect(self._external_llm)
-            if detected:
-                self._llm._backends["external"] = detected
-                self.config.set("llm.default_backend", "external")
-        elif not self._llm.is_available():
-            # No config and no explicit LLM — auto-detect from environment
-            from radiomind.core.llm_auto import auto_detect
-            detected = auto_detect()
-            if detected:
-                self._llm._backends["auto"] = detected
-                self.config.set("llm.default_backend", "auto")
+        self._llm = self._resolve_llm()
 
         self._pyramid = PyramidSearch(self._store)
         self._aggregator = PyramidAggregator(self._store, self._llm)
@@ -275,6 +261,50 @@ class RadioMind:
         return self._llm is not None and self._llm.is_available()
 
     # --- Internal ---
+
+    def _resolve_llm(self) -> LLMRouter:
+        """Resolve LLM backend with priority:
+        1. Explicit llm= passed by host framework
+        2. Environment variables (OPENAI_API_KEY, etc.)
+        3. Local Ollama
+        4. config.toml (if it has LLM config)
+        5. None (pure memory mode — add/search/digest still work)
+        """
+        from radiomind.core.llm_auto import auto_detect
+
+        router = LLMRouter(Config())  # empty config — don't load config.toml backends yet
+
+        # Priority 1: explicit llm from host framework
+        if self._external_llm is not None:
+            detected = auto_detect(self._external_llm)
+            if detected:
+                router._backends["host"] = detected
+                router.config.set("llm.default_backend", "host")
+                return router
+
+        # Priority 2: environment variables
+        from radiomind.core.llm_auto import _from_env
+        env_backend = _from_env()
+        if env_backend:
+            router._backends["env"] = env_backend
+            router.config.set("llm.default_backend", "env")
+            return router
+
+        # Priority 3: local Ollama
+        from radiomind.core.llm_auto import _from_ollama
+        ollama_backend = _from_ollama()
+        if ollama_backend:
+            router._backends["ollama"] = ollama_backend
+            router.config.set("llm.default_backend", "ollama")
+            return router
+
+        # Priority 4: config.toml (advanced users / standalone deployment)
+        config_router = LLMRouter(self.config)
+        if config_router.is_available():
+            return config_router
+
+        # Priority 5: no LLM — pure memory mode
+        return router
 
     def _check_init(self) -> None:
         if not self._initialized:

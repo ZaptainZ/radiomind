@@ -162,27 +162,19 @@ curl localhost:8730/v1/digest
 
 See the full [Integration Guide](docs/integration.md) for code examples in Python, JavaScript, Go, and more.
 
-## Configuration
+## LLM — Zero Config
 
-`~/.radiomind/config.toml` — nothing is hardcoded:
+RadioMind **auto-detects** your LLM. No configuration needed for most users.
 
-```toml
-[llm]
-default_backend = "openai"
+| Priority | Source | You do... |
+|----------|--------|-----------|
+| 1 | Host framework | `radiomind.connect(llm=your_client)` — auto-wraps OpenAI, Anthropic, any callable |
+| 2 | Environment variable | Just have `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` etc. in your env |
+| 3 | Local Ollama | Just have Ollama running on localhost |
+| 4 | `config.toml` | Only for advanced model routing — most users never need this |
+| 5 | No LLM | `add`/`search`/`digest` still work. `refine` is a no-op |
 
-[llm.openai]
-base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-api_key = "your-key"
-model = "qwen-plus"
-
-[llm.models]
-economy = "qwen-turbo"       # daily refinement
-standard = "qwen-plus"       # better quality
-deep = "qwen-max"            # deep thinking
-
-[refinement]
-cost_mode = "economy"
-```
+Supported env vars: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DASHSCOPE_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `MOONSHOT_API_KEY`, `ZHIPUAI_API_KEY`, `SILICONFLOW_API_KEY`, `MISTRAL_API_KEY`, `FIREWORKS_API_KEY`.
 
 ## Radio Family
 

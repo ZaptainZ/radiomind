@@ -79,43 +79,52 @@ with radiomind.connect() as mind:
     results = mind.search("query")
 ```
 
-## Configure LLM (for refinement)
+## LLM — usually you don't need to do anything
 
-### Option A: Inject from your framework (recommended)
+RadioMind **automatically finds** whatever LLM is available. Priority:
 
-If you already have an LLM in your agent framework, just pass it:
+| Priority | Source | Example |
+|----------|--------|---------|
+| 1 | Host framework passes `llm=` | `radiomind.connect(llm=openai_client)` |
+| 2 | Environment variable | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DASHSCOPE_API_KEY`, ... |
+| 3 | Local Ollama | Just have Ollama running |
+| 4 | `~/.radiomind/config.toml` | Advanced override (most users never need this) |
+| 5 | No LLM | Pure memory mode — add/search/digest still work |
+
+### Most common: your framework already has an LLM
 
 ```python
-# Any callable with signature (prompt: str, system: str) → str
-mind = radiomind.connect(llm=lambda p, s: my_llm.generate(p, system_prompt=s))
-mind.refine()  # uses your LLM, no config needed
+# OpenAI client → RadioMind auto-detects it
+mind = radiomind.connect(llm=openai_client)
+
+# Anthropic client → auto-detected
+mind = radiomind.connect(llm=anthropic_client)
+
+# Any callable → just works
+mind = radiomind.connect(llm=lambda p, s: my_llm(p, system=s))
 ```
 
-Works with OpenAI, Anthropic, LangChain, or any custom LLM — just wrap it as a callable.
+### Second most common: you have an API key in your environment
 
-### Option B: RadioMind's own config
+```bash
+export OPENAI_API_KEY=sk-...     # or ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, etc.
+```
 
-Create `~/.radiomind/config.toml`:
+RadioMind finds it automatically. No config file needed.
+
+### Advanced: manual config (rare)
+
+Only if you need specific model routing or cost tiers:
 
 ```toml
+# ~/.radiomind/config.toml
 [llm]
 default_backend = "openai"
 
 [llm.openai]
-base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+base_url = "https://api.your-provider.com/v1"
 api_key = "your-key"
-model = "qwen-plus"
-```
-
-Or use Ollama (local, free):
-
-```toml
-[llm]
-default_backend = "ollama"
-
-[llm.ollama]
-host = "http://localhost:11434"
-model = "qwen3:0.6b"
+model = "your-model"
 ```
 
 ## CLI alternative

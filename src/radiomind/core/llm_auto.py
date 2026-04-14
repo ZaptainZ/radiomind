@@ -1,12 +1,14 @@
 """Auto-detect LLM from environment — zero config for 95% of setups.
 
-Detection order:
-1. Passed object → auto-identify type (OpenAI client, Anthropic client, callable)
-2. Environment variables → OPENAI_API_KEY, ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, etc.
-3. Local Ollama → check localhost:11434
-4. None → pure memory mode (add/search/digest work, refine is no-op)
+Priority (handled by RadioMind._resolve_llm):
+1. Host framework LLM (llm= parameter)    ← highest priority
+2. Environment variables (API keys)        ← user already has these
+3. Local Ollama (localhost:11434)           ← free, just needs to be installed
+4. config.toml (if exists)                 ← advanced users / standalone
+5. No LLM → pure memory mode              ← add/search/digest still work
 
-Users never need to configure LLM manually. RadioMind finds whatever is available.
+Most users never touch config.toml — it's only for advanced overrides.
+RadioMind automatically uses whatever LLM is available in the environment.
 """
 
 from __future__ import annotations
