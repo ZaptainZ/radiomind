@@ -177,24 +177,57 @@ Python 自动检测 daemon，未运行时回退到直连 SQLite。
 复制以下提示词，发给你正在使用的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
 
 ```text
-帮我安装 RadioMind 持久记忆模块：
-1. 运行：pip install radiomind
-2. 验证：python -c "import radiomind; print(radiomind.__version__)"
-3. 如果我用的是 Claude Desktop 或 Cursor，还需运行：claude mcp add radiomind -- radiomind mcp-server
-4. 测试：python -c "import radiomind; m = radiomind.connect(); m.add([{'role':'user','content':'test'}]); print(m.search('test')); m.close()"
+帮我安装 RadioMind 持久记忆模块，根据我的环境选择最佳方式：
+
+方式 A — 如果有 uv：
+  uv pip install radiomind
+
+方式 B — 如果在 virtualenv 或 conda 中：
+  pip install radiomind
+
+方式 C — 如果是系统 Python（pip 报 "externally-managed" 错误）：
+  python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind
+  然后添加到 shell 配置：export PATH="$HOME/.radiomind-env/bin:$PATH"
+
+方式 D — 只用命令行工具：
+  pipx install radiomind
+
+安装后验证：
+  python3 -c "import radiomind; print(radiomind.__version__)"
+
+如果我用的是 Claude Desktop 或 Cursor，还需运行：
+  claude mcp add radiomind -- radiomind mcp-server
 
 RadioMind 自动从环境变量（OPENAI_API_KEY、ANTHROPIC_API_KEY 等）或本地 Ollama 检测 LLM，不需要配置文件。
 ```
 
-### 传统安装
+### 手动安装
+
+选择适合你环境的方式：
 
 ```bash
+# 推荐：uv（快速，自动管理环境）
+uv pip install radiomind
+
+# 标准：在 virtualenv 或 conda 中
 pip install radiomind
 
-# 可选扩展
-pip install 'radiomind[server]'      # REST API
-pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon)
-pip install 'radiomind[embedding]'   # 向量搜索 (ONNX)
+# 系统 Python 被 PEP 668 阻止？创建独立环境：
+python3 -m venv ~/.radiomind-env
+~/.radiomind-env/bin/pip install radiomind
+# 添加到 ~/.zshrc 或 ~/.bashrc：
+#   export PATH="$HOME/.radiomind-env/bin:$PATH"
+
+# 只用命令行工具（自动隔离环境）：
+pipx install radiomind
+```
+
+可选扩展：
+
+```bash
+pip install 'radiomind[server]'      # REST API (FastAPI)
+pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon MLX)
+pip install 'radiomind[embedding]'   # 向量搜索 (ONNX MiniLM)
 ```
 
 ## 使用

@@ -174,27 +174,60 @@ Health data that "running helps sleep" can influence work advice as a principle 
 
 ### Recommended: let your AI agent install it
 
-Copy this prompt to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
+Copy this to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
 
 ```text
-Install RadioMind as my persistent memory module:
-1. Run: pip install radiomind
-2. Verify: python -c "import radiomind; print(radiomind.__version__)"
-3. If I use Claude Desktop or Cursor, also run: claude mcp add radiomind -- radiomind mcp-server
-4. Test: python -c "import radiomind; m = radiomind.connect(); m.add([{'role':'user','content':'test'}]); print(m.search('test')); m.close()"
+Install RadioMind as my persistent memory module. Pick the best method for my environment:
+
+Option A — If uv is available:
+  uv pip install radiomind
+
+Option B — If inside a virtualenv or conda:
+  pip install radiomind
+
+Option C — If bare system Python (pip fails with "externally-managed"):
+  python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind
+  Then add to my shell profile: export PATH="$HOME/.radiomind-env/bin:$PATH"
+
+Option D — For CLI-only use:
+  pipx install radiomind
+
+After install, verify:
+  python3 -c "import radiomind; print(radiomind.__version__)"
+
+If I use Claude Desktop or Cursor, also run:
+  claude mcp add radiomind -- radiomind mcp-server
 
 RadioMind auto-detects LLM from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) or local Ollama. No config file needed.
 ```
 
-### Traditional install
+### Manual install
+
+Pick whichever works in your environment:
 
 ```bash
+# Best: uv (fast, handles environments automatically)
+uv pip install radiomind
+
+# Standard: inside a virtualenv or conda
 pip install radiomind
 
-# Optional extras
-pip install 'radiomind[server]'      # REST API
-pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon)
-pip install 'radiomind[embedding]'   # Vector search (ONNX)
+# System Python blocked by PEP 668? Create a dedicated env:
+python3 -m venv ~/.radiomind-env
+~/.radiomind-env/bin/pip install radiomind
+# Add to ~/.zshrc or ~/.bashrc:
+#   export PATH="$HOME/.radiomind-env/bin:$PATH"
+
+# CLI-only (installs in isolated environment):
+pipx install radiomind
+```
+
+Optional extras:
+
+```bash
+pip install 'radiomind[server]'      # REST API (FastAPI)
+pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon MLX)
+pip install 'radiomind[embedding]'   # Vector search (ONNX MiniLM)
 ```
 
 ## Use
