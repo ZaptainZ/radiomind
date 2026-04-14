@@ -30,6 +30,56 @@ def init() -> None:
     mind.shutdown()
 
 
+@cli.command("setup-cc")
+@click.option("--force", is_flag=True, help="Overwrite existing hooks.")
+@click.option("--remove", is_flag=True, help="Remove RadioMind hooks.")
+def setup_cc(force: bool, remove: bool) -> None:
+    """Setup RadioMind hooks for Claude Code.
+
+    Auto-detects RadioHeader and avoids conflict:
+
+    \b
+    With RadioHeader installed:
+      ✓ Stop hook (auto-ingest every 15 messages)
+      ✓ PreCompact hook (emergency save before compression)
+      ✗ SessionStart — skipped (RadioHeader already injects digest)
+      ✓ MCP server registration
+
+    Without RadioHeader:
+      ✓ Stop hook (auto-ingest)
+      ✓ PreCompact hook (emergency save)
+      ✓ SessionStart hook (inject context digest)
+      ✓ MCP server registration
+    """
+    from radiomind.hooks.setup import setup_claude_code, remove_hooks, detect_radioheader
+
+    if remove:
+        result = remove_hooks()
+        if result["removed"]:
+            click.echo(f"Removed: {', '.join(result['items'])}")
+        else:
+            click.echo(result.get("reason", "Nothing to remove"))
+        return
+
+    result = setup_claude_code(force=force)
+
+    if result["radioheader_detected"]:
+        click.echo("RadioHeader detected — adding only RadioMind-specific hooks")
+    else:
+        click.echo("Standalone mode — adding all hooks")
+
+    click.echo()
+    for h in result["hooks_added"]:
+        click.echo(f"  ✓ {h}")
+    if result["mcp_added"]:
+        click.echo(f"  ✓ MCP server (9 tools)")
+    else:
+        click.echo(f"  · MCP server (already registered)")
+
+    click.echo(f"\nConfig: {result['settings_path']}")
+    click.echo("Restart Claude Code to activate hooks.")
+
+
 @cli.command()
 @click.argument("query")
 @click.option("--domain", "-d", default=None, help="Filter by domain.")
