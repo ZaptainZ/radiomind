@@ -86,56 +86,63 @@ pip install radiomind
 ```
 
 ```python
-from radiomind import RadioMind
-from radiomind.core.types import Message
+import radiomind
 
-mind = RadioMind()
-mind.initialize()
+mind = radiomind.connect()
 
-# 导入对话
-mind.ingest([
-    Message(role="user", content="我叫小明"),
-    Message(role="user", content="我喜欢跑步"),
+# 1. 添加对话 → 自动提取事实、检测领域、构建用户画像
+mind.add([
+    {"role": "user", "content": "我叫小明"},
+    {"role": "user", "content": "我每天早上跑步"},
+    {"role": "user", "content": "我讨厌加班"},
 ])
 
-# 搜索（金字塔：原则→模式→事实）
+# 2. 搜索 → 金字塔检索（原则→模式→事实）+ HDC 习惯匹配
 results = mind.search("运动")
 
-# 三体辩论
-mind.trigger_chat()
+# 3. 摘要 → 压缩的用户上下文，注入 system prompt（~250 tokens）
+print(mind.digest())
+# User: name: 小明
+# Style: 早起跑步, 讨厌加班
+# Memory: 3 entries across health, work
 
-# 做梦
-mind.trigger_dream()
+# 4. 炼化 → 三体辩论 + 做梦修剪（需配置 LLM）
+mind.refine()
 
-# 上下文摘要（注入 system prompt）
-digest = mind.get_context_digest()
-
-mind.shutdown()
+mind.close()
 ```
 
-### CLI 命令
+4 个方法，就是全部。内部的 3D 金字塔、HDC 编码、三体辩论、做梦修剪全自动完成。
+
+需要更多控制？通过 `mind.advanced` 访问[高级 API](docs/api-reference.md)。
+
+## 接入方式
+
+6 种方式接入你的技术栈：
+
+| 方式 | 设置 | 适用场景 |
+|------|------|---------|
+| **Python API** | `radiomind.connect()` | Python Agent、LangChain |
+| **REST API** | `radiomind serve` | 跨语言、远程调用 |
+| **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor |
+| **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |
+| **RadioHeader** | `radiomind migrate-radioheader` | 已有 RadioHeader 用户 |
+| **CLI** | `radiomind search "query"` | Shell 脚本、Cron |
+
+### REST API（跨语言）
 
 ```bash
-radiomind init                     # 初始化
-radiomind ingest chat.jsonl        # 导入对话
-radiomind search "跑步"            # 金字塔搜索
-radiomind chat                     # 三体辩论
-radiomind dream                    # 做梦炼化
-radiomind train --iters 100        # LoRA 微调
-radiomind status                   # 统计
-radiomind community sync           # 同步社区知识
-radiomind mcp-server               # 启动 MCP 服务
+pip install 'radiomind[server]'
+radiomind serve --port 8730          # OpenAPI 文档在 /docs
 ```
 
-### 接入方式
+```bash
+curl -X POST localhost:8730/v1/add -d '{"messages":[{"role":"user","content":"我喜欢跑步"}]}'
+curl -X POST localhost:8730/v1/search -d '{"query":"运动"}'
+curl localhost:8730/v1/digest
+```
 
-| 方式 | 命令 |
-|------|------|
-| Python API | `from radiomind import RadioMind` |
-| CLI | `radiomind search "query"` |
-| MCP Server | `claude mcp add radiomind -- radiomind mcp-server` |
-| Hermes Agent | `hermes config set memory.provider radiomind` |
-| RadioHeader | `radiomind migrate-radioheader` |
+完整接入指南见 [Integration Guide](docs/integration.md)。
 
 ## 配置
 
@@ -147,6 +154,7 @@ default_backend = "openai"
 
 [llm.openai]
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key = "your-key"
 model = "qwen-plus"
 
 [llm.models]

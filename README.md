@@ -99,118 +99,76 @@ Rust daemon (SQLite, FTS5, HDC, knowledge graph, 16 IPC methods)
 
 ## Quick Start
 
-### Install
-
 ```bash
 pip install radiomind
-
-# Optional: LoRA training on Apple Silicon
-pip install 'radiomind[train]'
-
-# Optional: embedding (ONNX MiniLM)
-pip install 'radiomind[embedding]'
 ```
-
-### Python API
 
 ```python
-from radiomind import RadioMind
-from radiomind.core.types import Message
+import radiomind
 
-mind = RadioMind()
-mind.initialize()
+mind = radiomind.connect()
 
-# Ingest conversations
-mind.ingest([
-    Message(role="user", content="我叫小明"),
-    Message(role="user", content="我喜欢每天早上跑步"),
-    Message(role="user", content="我讨厌加班"),
+# 1. Add conversations → auto-extracts facts, detects domains, builds profile
+mind.add([
+    {"role": "user", "content": "My name is Alice"},
+    {"role": "user", "content": "I run every morning"},
+    {"role": "user", "content": "I hate overtime work"},
 ])
 
-# Search (pyramid: principles → patterns → facts)
-results = mind.search("运动")
+# 2. Search → pyramid retrieval (principles → patterns → facts) + HDC habits
+results = mind.search("exercise")
 
-# Query L3 habits (HDC)
-habits = mind.query_habits("health")
+# 3. Digest → compressed user context for system prompt injection (~250 tokens)
+print(mind.digest())
+# User: name: Alice
+# Style: morning runner, dislikes overtime
+# Memory: 3 entries across health, work
 
-# Trigger refinement
-mind.trigger_chat(domain="health")   # three-body debate
-mind.trigger_dream()                  # pruning + wandering
+# 4. Refine → three-body debate + dream pruning (needs LLM configured)
+mind.refine()
 
-# Context digest (for system prompt injection, ~250 tokens)
-digest = mind.get_context_digest()
-
-# User profile (learned from conversations)
-profile = mind.get_user_profile()
-
-# LoRA training (MLX on Apple Silicon)
-mind.train(iters=100)
-
-mind.shutdown()
+mind.close()
 ```
 
-### CLI
+That's the entire API. 4 methods. Everything else happens automatically inside.
+
+Need more control? Access the [advanced API](docs/api-reference.md) via `mind.advanced`.
+
+## Integration
+
+6 ways to connect RadioMind to your stack:
+
+| Method | Setup | Best for |
+|--------|-------|----------|
+| **Python API** | `radiomind.connect()` | Python agents, LangChain |
+| **REST API** | `radiomind serve` | Any language, remote access |
+| **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor |
+| **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |
+| **RadioHeader** | `radiomind migrate-radioheader` | Existing RadioHeader users |
+| **CLI** | `radiomind search "query"` | Shell scripts, cron |
+
+### REST API (cross-language)
 
 ```bash
-radiomind init                          # initialize data directory
-radiomind ingest conversation.jsonl     # ingest conversation history
-radiomind search "跑步"                 # pyramid search
-radiomind chat --domain health          # three-body debate
-radiomind dream                         # pruning + wandering
-radiomind train --iters 100             # LoRA fine-tuning
-radiomind status                        # memory statistics
-radiomind learn "运动改善心血管健康"      # add external knowledge
-
-# Community
-radiomind community sync                # sync from community pool
-radiomind community contribute          # share insights (PII-filtered)
-radiomind community vote entry-id +1    # vote on entries
-
-# RadioHeader bridge
-radiomind migrate-radioheader           # import RadioHeader data
-radiomind rh-search "白屏"              # RadioHeader-compatible search
-radiomind rh-consolidate                # run consolidation
-
-# MCP Server (for Claude Desktop, Cursor, VS Code)
-radiomind mcp-server
+pip install 'radiomind[server]'
+radiomind serve --port 8730          # OpenAPI docs at /docs
 ```
-
-### MCP Server
 
 ```bash
-# Add to Claude Desktop
-claude mcp add radiomind -- radiomind mcp-server
+curl -X POST localhost:8730/v1/add -d '{"messages":[{"role":"user","content":"I like running"}]}'
+curl -X POST localhost:8730/v1/search -d '{"query":"exercise"}'
+curl localhost:8730/v1/digest
 ```
 
-8 tools available: `radiomind_search`, `radiomind_ingest`, `radiomind_learn`, `radiomind_habits`, `radiomind_digest`, `radiomind_status`, `radiomind_chat`, `radiomind_dream`.
-
-### Hermes Agent Integration
-
-RadioMind works as a Hermes Memory Provider:
-
-```bash
-# In Hermes config
-hermes config set memory.provider radiomind
-```
-
-Features: `system_prompt_block`, `prefetch`, `sync_turn` (non-blocking), `on_session_end` (auto-dream), `on_memory_write`.
-
-### Rust Daemon (Optional, for scale)
-
-```bash
-cd rust-core && cargo build --release
-./target/release/radiomind-daemon       # listens on ~/.radiomind/radiomind.sock
-```
-
-The Python layer auto-detects the daemon and routes storage operations through IPC.
+See the full [Integration Guide](docs/integration.md) for code examples in Python, JavaScript, Go, and more.
 
 ## Configuration
 
-All configuration lives in `~/.radiomind/config.toml`. **Nothing is hardcoded** — LLM, models, backends, cost tiers are all configurable.
+`~/.radiomind/config.toml` — nothing is hardcoded:
 
 ```toml
 [llm]
-default_backend = "openai"   # or "ollama"
+default_backend = "openai"
 
 [llm.openai]
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -218,15 +176,12 @@ api_key = "your-key"
 model = "qwen-plus"
 
 [llm.models]
-economy = "qwen-turbo"       # for daily refinement ($0)
-standard = "qwen-plus"       # for better quality
-deep = "qwen-max"            # for deep thinking
+economy = "qwen-turbo"       # daily refinement
+standard = "qwen-plus"       # better quality
+deep = "qwen-max"            # deep thinking
 
 [refinement]
-cost_mode = "economy"        # economy | standard | deep
-
-[hdc]
-dim = 10000                  # hypervector dimension
+cost_mode = "economy"
 ```
 
 ## Radio Family
