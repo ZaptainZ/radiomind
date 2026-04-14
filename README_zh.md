@@ -1,98 +1,39 @@
-# RadioMind — 仿生记忆核心
+# RadioMind
 
-**为 AI Agent 提供"越用越懂你"的深层记忆能力。**
+**一个能从对话中学习的记忆模块——插入任何 AI Agent 即可使用。**
 
-> *不是又一个向量数据库。RadioMind 通过仿生的"聊天"和"做梦"机制，将零散对话炼化为深层习惯记忆，并确保 Agent 真正使用它们。*
+```python
+import radiomind
 
-[English](README.md) · [架构](#架构) · [快速开始](#快速开始) · [接入方式](#接入方式) · [文档](docs/)
+mind = radiomind.connect()
+mind.add([{"role": "user", "content": "我每天跑步，睡眠质量明显提升了"}])
+mind.search("健康习惯")          # 几周后仍能找到
+print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
+```
 
-**文档：** [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
+4 个方法，零配置。你的 Agent 记住一切，且越用越聪明。
+
+[English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
 ---
 
-## 为什么选 RadioMind？
+## 它做什么
 
-2026 年的 AI 记忆框架（Mem0、Zep、mempalace……）全部聚焦在"存"和"检索"上。**没有一个在"思考"自己存了什么。**
+大多数 AI 记忆系统只是存文本、搜文本。RadioMind 更进一步——它**把对话提炼成习惯**：
 
-RadioMind 受神经科学启发——海马体快速编码、新皮层慢速巩固、睡眠中的突触修剪——它不只是记忆，而是将记忆**炼化为习惯**：
+- "我喜欢跑步" + "跑步后睡得好" → **习惯：** *"运动能改善这个用户的睡眠质量"*
+- 这个习惯会**跨领域**影响未来的对话——工作、健康、学习，什么场景都行。
 
-| 能力 | 现有框架 | **RadioMind** |
-|------|---------|---------------|
-| 存储检索 | ✅ | ✅ |
-| 跨领域经验流动 | ❌ | ✅ Shortwave 提纯 |
-| 主动炼化 | ❌ | ✅ 三体辩论 + 做梦修剪 |
-| 强制记忆使用 | ❌ | ✅ 搜→用→追 行为契约 |
-| LoRA 内化 | ❌ | ✅ 习惯→训练数据→MLX→adapter |
-| 宿主 AI 驱动炼化 | ❌ | ✅ 分步式炼化 — 零额外 LLM 费用 |
-| 隐私分级 | ❌ | ✅ 开放/半开/封闭，按领域配置 |
-| 自我意识 | ❌ | ✅ 双侧写（用户+系统自画像） |
-
-## 架构
-
-```
-Meta 元认知 ─── 用户侧写 + 系统自画像（运行时自省，不写死）
-L4 外挂知识 ─── Shortwave 库："让记忆去读书"
-L3 习惯记忆 ─── HDC 超维向量 + LoRA adapter（新皮层）
-     ├─ "聊天"炼化: 三体博弈（守护者/探索者/精简者）
-     └─ "做梦"炼化: SHY 修剪 + DMN 神游
-L2 记忆笔记 ─── 3D 金字塔 (domain × time × level)（海马体）
-L1 记忆草稿 ─── 注意力门控（工作记忆）
-L0 本能 ─────── 基模权重（可更换，不绑定）
-```
-
-### 两种炼化模式
-
-| | 宿主驱动（推荐） | 自驱动 |
+| | 典型记忆系统 (Mem0, Zep 等) | RadioMind |
 |---|---|---|
-| **谁在思考** | 宿主 AI（Claude、GPT 等） | RadioMind 自己的 LLM |
-| **额外费用** | 零 — 用宿主已有的额度 | API 调用费 或 本地 Ollama |
-| **推理质量** | 宿主级别（Claude/GPT） | 经济模型级别 |
-| **适用场景** | Claude Code、Codex、Hermes、MCP | CLI 定时任务、独立部署 |
-| **调用方式** | `radiomind_refine_step`（MCP/CLI） | `mind.refine()` / `radiomind chat` |
+| 存储搜索 | ✅ | ✅ |
+| 从对话提炼习惯 | ❌ | ✅ |
+| 跨领域洞察（健康经验改善工作建议） | ❌ | ✅ |
+| 不花额外 LLM 费用就变聪明 | ❌ | ✅ |
+| 按话题设置隐私 | ❌ | ✅ |
+| 了解自身状态（元认知） | ❌ | ✅ |
 
-**宿主驱动模式**将炼化拆为步骤。RadioMind 出题，宿主 AI 思考：
-
-```
-prepare → RadioMind 返回守护者 prompt → 宿主 AI 推理回答
-guardian → RadioMind 返回探索者 prompt → 宿主 AI 推理回答
-explorer → RadioMind 返回精简者 prompt → 宿主 AI 推理回答
-reducer → RadioMind 返回综合 prompt → 宿主 AI 综合
-synthesize → RadioMind 记录洞察到 L3
-
-RadioMind = 组织者 | 宿主 AI = 思考者
-```
-
-这与 RadioHeader 在 Claude Code 中的工作方式完全一致——Echo、Shortwave 提纯都是由 CC 的 Claude 在对话中完成的。
-
-### 三体辩论
-
-灵感来自三国演义的三方制衡 + 三体问题的复杂涌现（ICLR 2025 DMAD: 91% vs 82%）：
-
-```
-守护者 (魏) ─── 一致性 ───┐
-探索者 (吴) ─── 新颖性 ──┤── 投票 (2:1 通过) ── 候选洞察
-精简者 (蜀) ─── 简洁性 ──┘
-```
-
-### 做梦炼化
-
-对标突触稳态假说 (SHY, Tononi & Cirelli)：
-
-1. **修剪**: 矛盾消解 / 冗余合并 / 未使用记忆衰减归档
-2. **神游**: 随机挑选不相关的记忆，寻找隐藏的跨域关联
-3. **梦境记录**: 修剪直接执行，神游发现标记候选+置信度
-
-### Rust 守护进程
-
-热路径运行在 Rust 守护进程中，支持 10 万+ 条记忆和 7×24 常驻：
-
-```
-Python 逻辑层（LLM 调用、prompt、训练）
-       ↕ Unix socket JSON Lines
-Rust 守护进程（SQLite、FTS5、HDC、知识图谱，16 个 IPC 方法）
-```
-
-## 快速开始
+## 安装使用
 
 ```bash
 pip install radiomind
@@ -101,107 +42,161 @@ pip install radiomind
 ```python
 import radiomind
 
-# 直接连接 — LLM 从环境变量、Ollama 或宿主框架自动检测
 mind = radiomind.connect()
 
-# 或直接传入你框架的 LLM（自动识别 OpenAI、Anthropic、任何 callable）
-# mind = radiomind.connect(llm=openai_client)
-
-# 1. 添加 — 自动提取事实、检测领域、构建用户画像
-mind.add([
-    {"role": "user", "content": "我叫小明"},
-    {"role": "user", "content": "我每天早上跑步"},
-    {"role": "user", "content": "我讨厌加班"},
-])
-
-# 2. 搜索 — 金字塔检索（原则→模式→事实）+ HDC 习惯匹配
-results = mind.search("运动")
-
-# 3. 摘要 — 压缩的用户上下文，注入 system prompt（~250 tokens）
-print(mind.digest())
-
-# 4. 炼化 — 三体辩论 + 做梦修剪（LLM 自动检测）
-mind.refine()
-
-mind.close()
+# 你的 Agent 对话循环中：
+mind.add(messages)                    # 喂入对话
+results = mind.search("query")       # 取回相关记忆
+system_prompt = mind.digest()        # 注入用户上下文（~250 tokens）
+mind.refine()                        # 提炼习惯（自动）
 ```
 
-**4 个方法，零 LLM 配置。** 内部全自动完成。
+这就是全部 API。领域检测、隐私标记、习惯编码、记忆修剪——内部全自动。
 
-需要更多控制？通过 `mind.advanced` 访问[高级 API](docs/api-reference.md)。
+**兼容任何框架：**
 
-## 接入方式
+```python
+# 传入你现有的 LLM 客户端 — RadioMind 自动识别类型
+mind = radiomind.connect(llm=openai_client)
+mind = radiomind.connect(llm=anthropic_client)
+mind = radiomind.connect(llm=lambda prompt, system: my_llm(prompt))
 
-7 种方式接入你的技术栈：
+# 或者环境变量里有 API key — RadioMind 自动找到
+# OPENAI_API_KEY, ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, DEEPSEEK_API_KEY...
+# 支持 11 个 provider，不需要配置文件。
+```
 
-| 方式 | 设置 | 适用场景 |
-|------|------|---------|
-| **Python API** | `radiomind.connect()` 或 `connect(llm=client)` | Python Agent、任何框架 |
-| **分步炼化** | `mind.refine_step("prepare", domain="health")` | CC、Codex、Hermes — 宿主 AI 思考 |
-| **REST API** | `radiomind serve` | 跨语言、远程调用 |
-| **MCP Server** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor、VS Code |
-| **Hermes** | `hermes config set memory.provider radiomind` | Hermes Agent |
-| **RadioHeader** | `radiomind migrate-radioheader` | 已有 RadioHeader 用户 |
-| **CLI** | `radiomind search "query"` | Shell 脚本、Cron |
+## 接入你的技术栈
 
-### 分步炼化（宿主 AI 模式）
+| 方式 | 一行接入 | 适用场景 |
+|------|---------|---------|
+| **Python** | `radiomind.connect()` | 任何 Python Agent |
+| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor、VS Code |
+| **REST** | `radiomind serve --port 8730` | 任何语言、远程调用 |
+| **CLI** | `radiomind search "query"` | 脚本、定时任务、Hook |
 
-在 AI 框架内运行时，宿主 AI 负责思考：
+9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
+
+### 在 AI 助手中运行（Claude Code、Codex、Hermes）
+
+在 AI 助手内部运行时，RadioMind 让**助手自己来思考**——不需要额外的 LLM 调用，不花额外费用：
+
+```
+你的 AI 助手调用: radiomind_refine_step("prepare", domain="health")
+RadioMind 返回:   "这里有 10 条健康记忆。作为守护者，请评估..."
+助手自己推理:     "这些记忆一致显示运动改善睡眠..."
+RadioMind 记录洞察，进入下一步。
+```
+
+助手扮演三个辩论角色（守护者、探索者、精简者），RadioMind 把结果提炼成持久习惯。零额外 API 调用。
+
+---
+
+## 原理（感兴趣可以展开）
+
+<details>
+<summary><b>架构——模拟大脑真实的记忆方式</b></summary>
+
+RadioMind 模拟大脑的互补学习系统：
+
+```
+Meta ─── 用户画像 + 系统自画像
+L4 ───── 外挂知识（"让记忆去读书"）
+L3 ───── 习惯记忆: HDC 超维向量 + LoRA adapter（新皮层）
+           ├─ "聊天"炼化: 三体辩论
+           └─ "做梦"炼化: 修剪 + 自由联想
+L2 ───── 记忆笔记: 3D 金字塔 (domain × time × level)（海马体）
+L1 ───── 注意力门控: 从对话中提取事实（工作记忆）
+L0 ───── 基模权重（可更换，不绑定）
+```
+
+| 大脑 | 功能 | RadioMind |
+|------|------|-----------|
+| 前额叶 | 工作记忆 | L1 注意力门控 |
+| 海马体 | 快速编码 | L2 3D 金字塔 (SQLite FTS5) |
+| 新皮层 | 慢速巩固 | L3 HDC + LoRA |
+| 睡眠 (SHY) | 突触修剪 | "做梦"炼化 |
+| 社会学习 | 讨论+回忆 | "聊天"三体辩论 |
+| 文化记忆 | 书籍、教育 | L4 Shortwave 库 |
+
+</details>
+
+<details>
+<summary><b>三体辩论——为什么是三个角色而不是两个</b></summary>
+
+两方辩论容易吞并或妥协。三方各有利益冲突时才能产生稳健结论（ICLR 2025 DMAD: 91% vs 82%）。
+
+```
+守护者 (魏) — "这和我们已知的一致吗？"
+探索者 (吴) — "这里有什么新东西？"
+精简者 (蜀) — "能不能简化？"
+
+投票: 三方中两方同意 → 候选洞察 → 未来对话中验证
+```
+
+灵感来自三国的三方制衡和三体问题的复杂涌现。
+
+</details>
+
+<details>
+<summary><b>LoRA 训练——不需要检索的记忆</b></summary>
+
+定期把习惯微调进本地小模型（0.5-3B）：
 
 ```bash
-# MCP 工具 — Claude Desktop/Cursor 自动调用
-radiomind_refine_step(step="prepare", domain="health")
-# → 返回守护者 prompt，宿主 AI 推理回答
-
-# CLI — 用于 RadioHeader hooks
-radiomind refine-step prepare --domain health
-radiomind refine-step guardian --response "这些记忆是一致的..."
-radiomind refine-step explorer --response "我发现了新模式..."
-radiomind refine-step reducer --response "可以合并为一条..."
-radiomind refine-step synthesize --response "INSIGHT: ..."
+radiomind train --iters 100    # MacBook 上约 5 分钟，用 Apple MLX
 ```
 
-### REST API（跨语言）
+训练后，模型"直接知道"用户的偏好——就像你知道火是烫的，不需要"检索"。Adapter 只有几 MB，加载不到 1 秒。
+
+</details>
+
+<details>
+<summary><b>Rust 守护进程——10 万+ 条记忆和 7×24 运行</b></summary>
+
+存储热路径运行在 Rust 守护进程中：
+
+```
+Python 逻辑层（LLM 调用、prompt、训练）
+       ↕ Unix socket JSON Lines
+Rust 守护进程（SQLite、FTS5、HDC、知识图谱，16 个 IPC 方法）
+```
 
 ```bash
-pip install 'radiomind[server]'
-radiomind serve --port 8730          # OpenAPI 文档在 /docs
+cd rust-core && cargo build --release
+./target/release/radiomind-daemon
 ```
 
-```bash
-curl -X POST localhost:8730/v1/add -d '{"messages":[{"role":"user","content":"我喜欢跑步"}]}'
-curl -X POST localhost:8730/v1/search -d '{"query":"运动"}'
-curl localhost:8730/v1/digest
-```
+Python 自动检测 daemon 并通过 IPC 路由操作。
 
-完整接入指南见 [Integration Guide](docs/integration.md)。
+</details>
 
-## LLM — 零配置
+<details>
+<summary><b>隐私——有些话题不出圈</b></summary>
 
-RadioMind **自动检测**环境中的 LLM，大多数用户无需任何配置。
+每个领域有独立的隐私级别：
 
-| 优先级 | 来源 | 你需要做的 |
-|--------|------|-----------|
-| 1 | 宿主 AI（分步模式） | 什么都不用做 — 宿主 AI 就是 LLM，零额外费用 |
-| 2 | 框架 LLM 传入 | `radiomind.connect(llm=client)` — 自动识别 OpenAI/Anthropic/callable |
-| 3 | 环境变量 | 已有 `OPENAI_API_KEY` 等 → 自动使用 |
-| 4 | 本地 Ollama | 装了 Ollama 就能用 |
-| 5 | `config.toml` | 高级模型路由 — 大多数用户不需要 |
-| 6 | 无 LLM | `add`/`search`/`digest` 正常工作，`refine` 静默跳过 |
+- **open** — 自由跨域流动（默认）
+- **guarded** — 只有模式/原则跨域，原始事实不出圈（健康、理财自动标记）
+- **sealed** — 完全隔离，绝不跨域
 
-支持 11 个 API provider 的环境变量自动检测：OpenAI、Anthropic、DashScope(Qwen)、DeepSeek、Groq、Together、Moonshot、智谱、硅基流动、Mistral、Fireworks。
+</details>
 
-## Radio 家族
+---
 
-| 项目 | 角色 | 隐喻 |
-|------|------|------|
-| [RadioHeader](https://github.com/ZaptainZ/radioheader) | 规则与跨项目经验 | 头 |
-| **RadioMind** | 仿生记忆核心 | 脑 |
-| RadioHand | 个人 Agent 框架 | 手 |
+## Radio 生态
 
-```
-头定规则 → 脑存记忆 → 手去执行
-```
+| 项目 | 做什么 |
+|------|--------|
+| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | 编程 Agent 的跨项目经验框架 |
+| **RadioMind** | 仿生记忆模块（本仓库） |
+| **RadioHand** | 个人 Agent 框架（规划中） |
+
+RadioMind 是 RadioHeader 和 RadioHand 的默认记忆后端，但可以独立接入任何 Agent。
+
+## 研究基础
+
+基于：互补学习系统 (McClelland 1995)、突触稳态假说 (Tononi & Cirelli 2006)、超维计算 (Kanerva 2009)、多 Agent 辩论 (ICLR 2025 DMAD)、LoRA (Hu 2021)、NeuroDream (2026)、信息素模型 (Grassé 1959)。
 
 ## 许可
 
