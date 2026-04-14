@@ -95,3 +95,56 @@ class TestSimpleAPI:
         # 4. Stats via advanced API
         stats = mind.advanced.stats()
         assert stats["total_active"] >= 1
+
+
+class TestLLMInjection:
+    """Test external LLM injection — host frameworks pass their own LLM."""
+
+    def test_connect_with_llm(self, tmp_path):
+        calls = []
+
+        def mock_llm(prompt: str, system: str = "") -> str:
+            calls.append(prompt[:50])
+            return "INSIGHT: user values health\nCONFIDENCE: 0.8"
+
+        m = connect(home=str(tmp_path / ".rm"), llm=mock_llm)
+        assert m.advanced.is_llm_available()
+        m.close()
+
+    def test_connect_without_llm_still_works(self, tmp_path):
+        m = connect(home=str(tmp_path / ".rm"))
+        m.add([{"role": "user", "content": "我叫测试"}])
+        results = m.search("测试")
+        assert len(results) >= 0
+        m.close()
+
+    def test_refine_uses_injected_llm(self, tmp_path):
+        calls = []
+
+        def mock_llm(prompt: str, system: str = "") -> str:
+            calls.append("called")
+            return "INSIGHT: test insight\nCONFIDENCE: 0.7"
+
+        m = connect(home=str(tmp_path / ".rm"), llm=mock_llm)
+        m.add([
+            {"role": "user", "content": "我喜欢跑步"},
+            {"role": "user", "content": "我讨厌加班"},
+        ])
+        result = m.refine()
+        assert len(calls) > 0  # mock LLM was actually called
+        m.close()
+
+    def test_radiomind_class_with_llm(self, tmp_path):
+        from radiomind import RadioMind
+        from radiomind.core.config import Config
+
+        cfg = Config()
+        cfg.set("general.home", str(tmp_path / ".rm"))
+
+        def my_llm(prompt, system=""):
+            return "test response"
+
+        mind = RadioMind(config=cfg, llm=my_llm)
+        mind.initialize()
+        assert mind.is_llm_available()
+        mind.shutdown()

@@ -138,6 +138,44 @@ class OpenAICompatBackend(LLMBackend):
         return bool(self.base_url and self.api_key)
 
 
+LLMCallable = Any  # Callable[[str, str], str]  (prompt, system) → response text
+
+
+class CallableBackend(LLMBackend):
+    """Wraps an external callable as an LLMBackend.
+
+    Accepts any function with signature: (prompt: str, system: str) → str
+    This lets host frameworks inject their own LLM without RadioMind config.
+
+    Examples:
+        # Simple function
+        def my_llm(prompt, system=""): return openai.chat(...)
+        mind = RadioMind(llm=my_llm)
+
+        # Lambda
+        mind = RadioMind(llm=lambda p, s: client.generate(p, system_prompt=s))
+
+        # LangChain
+        mind = RadioMind(llm=lambda p, s: chain.invoke({"input": p}))
+    """
+
+    def __init__(self, fn: LLMCallable, name: str = "external"):
+        self._fn = fn
+        self._name = name
+
+    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+        t0 = time.time()
+        text = self._fn(prompt, system)
+        return LLMResponse(
+            text=str(text),
+            model=self._name,
+            duration_s=time.time() - t0,
+        )
+
+    def is_available(self) -> bool:
+        return True
+
+
 class LLMRouter:
     """Routes LLM calls based on config. Falls back gracefully."""
 
@@ -162,6 +200,11 @@ class LLMRouter:
                 api_key=openai_cfg["api_key"],
                 default_model=openai_cfg.get("model", "deepseek-chat"),
             )
+
+    def set_external(self, fn: LLMCallable, name: str = "external") -> None:
+        """Inject an external LLM callable as the primary backend."""
+        self._backends["external"] = CallableBackend(fn, name=name)
+        self.config.set("llm.default_backend", "external")
 
     def generate(
         self,

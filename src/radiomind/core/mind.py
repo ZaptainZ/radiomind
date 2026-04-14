@@ -39,8 +39,17 @@ class RadioMind:
         mind.shutdown()
     """
 
-    def __init__(self, config: Config | None = None):
+    def __init__(self, config: Config | None = None, llm: Any = None):
+        """Initialize RadioMind.
+
+        Args:
+            config: Configuration (loads ~/.radiomind/config.toml if None).
+            llm: Optional external LLM callable with signature (prompt: str, system: str) → str.
+                 When provided, RadioMind uses this instead of its own LLM config.
+                 This lets host frameworks pass their existing LLM without extra config.
+        """
         self.config = config or Config.load()
+        self._external_llm = llm
         self._initialized = False
         self._store: MemoryStore | None = None
         self._habits: HabitStore | None = None
@@ -69,6 +78,8 @@ class RadioMind:
         self._habits.open()
 
         self._llm = LLMRouter(self.config)
+        if self._external_llm is not None:
+            self._llm.set_external(self._external_llm)
 
         self._pyramid = PyramidSearch(self._store)
         self._aggregator = PyramidAggregator(self._store, self._llm)

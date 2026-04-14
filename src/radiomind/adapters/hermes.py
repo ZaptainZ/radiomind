@@ -120,7 +120,8 @@ class RadioMindProvider:
         self._hermes_home = Path(hermes_home) if hermes_home else None
 
         cfg = Config.load()
-        self._mind = RadioMind(config=cfg)
+        llm_fn = kwargs.get("llm")
+        self._mind = RadioMind(config=cfg, llm=llm_fn)
         self._mind.initialize()
         self._turn_count = 0
 

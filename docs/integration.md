@@ -9,10 +9,16 @@ For Python agents, frameworks, or scripts.
 ```python
 import radiomind
 
+# Without LLM — pure memory (add/search/digest work, refine is no-op)
 mind = radiomind.connect()
+
+# With your framework's LLM — full features including refinement
+mind = radiomind.connect(llm=lambda p, s: my_llm.generate(p, system_prompt=s))
+
 mind.add(messages)
 results = mind.search("query")
 digest = mind.digest()
+mind.refine()  # uses injected LLM
 mind.close()
 ```
 

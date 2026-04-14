@@ -31,13 +31,27 @@ class SimpleRadioMind:
     Implements radiomind.protocol.MemoryProtocol.
     """
 
-    def __init__(self, home: str | None = None, config_path: str | None = None):
+    def __init__(
+        self,
+        home: str | None = None,
+        config_path: str | None = None,
+        llm=None,
+    ):
+        """Initialize SimpleRadioMind.
+
+        Args:
+            home: Data directory (default: ~/.radiomind).
+            config_path: Path to config.toml.
+            llm: External LLM callable: (prompt: str, system: str) → str.
+                 When provided, RadioMind uses this for refinement instead of
+                 requiring its own LLM config. Pass your framework's LLM here.
+        """
         from pathlib import Path
 
         cfg = Config.load(Path(config_path) if config_path else None)
         if home:
             cfg.set("general.home", home)
-        self._mind = RadioMind(config=cfg)
+        self._mind = RadioMind(config=cfg, llm=llm)
         self._mind.initialize()
 
     def add(
@@ -165,10 +179,25 @@ class SimpleRadioMind:
 def connect(
     home: str | None = None,
     config_path: str | None = None,
+    llm=None,
 ) -> SimpleRadioMind:
     """One-line connection to RadioMind.
 
-    >>> import radiomind
-    >>> mind = radiomind.connect()
+    Args:
+        home: Data directory (default: ~/.radiomind).
+        config_path: Path to config.toml.
+        llm: External LLM callable: (prompt: str, system: str) → str.
+
+    Examples:
+        # No LLM — pure memory (add/search/digest work, refine is no-op)
+        mind = radiomind.connect()
+
+        # With host framework's LLM
+        mind = radiomind.connect(llm=lambda p, s: my_llm.generate(p, system=s))
+
+        # With OpenAI client
+        mind = radiomind.connect(llm=lambda p, s: client.chat.completions.create(
+            model="gpt-4o", messages=[{"role":"system","content":s},{"role":"user","content":p}]
+        ).choices[0].message.content)
     """
-    return SimpleRadioMind(home=home, config_path=config_path)
+    return SimpleRadioMind(home=home, config_path=config_path, llm=llm)

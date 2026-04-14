@@ -81,6 +81,20 @@ with radiomind.connect() as mind:
 
 ## Configure LLM (for refinement)
 
+### Option A: Inject from your framework (recommended)
+
+If you already have an LLM in your agent framework, just pass it:
+
+```python
+# Any callable with signature (prompt: str, system: str) → str
+mind = radiomind.connect(llm=lambda p, s: my_llm.generate(p, system_prompt=s))
+mind.refine()  # uses your LLM, no config needed
+```
+
+Works with OpenAI, Anthropic, LangChain, or any custom LLM — just wrap it as a callable.
+
+### Option B: RadioMind's own config
+
 Create `~/.radiomind/config.toml`:
 
 ```toml
