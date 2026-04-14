@@ -332,11 +332,19 @@ def rh_search(query: str, limit: int) -> None:
 
 
 @cli.command("rh-consolidate")
-def rh_consolidate() -> None:
+@click.option("--dry-run", is_flag=True, help="Preview changes without modifying files.")
+def rh_consolidate(dry_run: bool) -> None:
     """Run RadioHeader-compatible consolidation (dream + digest)."""
     from radiomind.adapters.radioheader import RadioHeaderAdapter
 
     mind = _get_mind()
+
+    if dry_run:
+        s = mind.stats()
+        click.echo(f"[dry-run] Would consolidate {s['total_active']} memories across {s['domain_count']} domains")
+        click.echo(f"[dry-run] Habits: {s['habits']}, LLM: {'available' if mind.is_llm_available() else 'unavailable'}")
+        mind.shutdown()
+        return
 
     if not mind.is_llm_available():
         click.echo("No LLM backend available.")
