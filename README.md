@@ -33,70 +33,6 @@ Most AI memory systems store text and retrieve it. RadioMind goes further — it
 | Privacy controls per topic | ❌ | ✅ |
 | Knows itself (tracks its own state) | ❌ | ✅ |
 
-## Setup
-
-### Recommended: let your AI agent install it
-
-Copy this prompt to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
-
-> Install RadioMind as my persistent memory module. Steps:
-> 1. Run `pip install radiomind`
-> 2. Verify with `python -c "import radiomind; print(radiomind.__version__)"`
-> 3. If I'm using Claude Desktop or Cursor, also run: `claude mcp add radiomind -- radiomind mcp-server`
-> 4. Test: create a simple script that does `mind = radiomind.connect(); mind.add([{"role":"user","content":"test"}]); print(mind.search("test")); mind.close()`
->
-> RadioMind auto-detects LLM from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) or local Ollama. No config file needed.
-
-### Traditional install
-
-```bash
-pip install radiomind
-
-# Optional extras
-pip install 'radiomind[server]'      # REST API
-pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon)
-pip install 'radiomind[embedding]'   # Vector search (ONNX)
-```
-
-## Use
-
-```python
-import radiomind
-
-mind = radiomind.connect()
-
-# Your agent's conversation loop:
-mind.add(messages)                    # feed conversations in
-results = mind.search("query")       # get relevant memories back
-system_prompt = mind.digest()        # inject user context (~250 tokens)
-mind.refine()                        # distill habits (automatic)
-```
-
-That's the entire API. Domain detection, privacy tagging, habit encoding, memory pruning — all automatic.
-
-**Works with any LLM — zero config:**
-
-```python
-# Pass your existing client — RadioMind auto-detects the type
-mind = radiomind.connect(llm=openai_client)
-mind = radiomind.connect(llm=anthropic_client)
-
-# Or just have an API key in your environment — RadioMind finds it
-# Supports: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
-#           Moonshot, Zhipu, SiliconFlow, Mistral, Fireworks, Ollama
-```
-
-## Plug into your stack
-
-| Method | One-line setup | Best for |
-|--------|---------------|----------|
-| **Python** | `radiomind.connect()` | Any Python agent |
-| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor, VS Code |
-| **REST** | `radiomind serve --port 8730` | Any language, remote |
-| **CLI** | `radiomind search "query"` | Scripts, cron, hooks |
-
-9 MCP tools, 6 REST endpoints, 20+ CLI commands. See [Integration Guide](docs/integration.md).
-
 ## What RadioMind adds to AI assistants
 
 When plugged into Claude Code, Codex, Hermes, or any MCP-compatible tool, RadioMind gives the assistant abilities it doesn't have natively:
@@ -156,18 +92,16 @@ Conversation → "I started running, my sleep improved"
 
 **Each layer mirrors a brain structure:**
 
-| Brain | What it does | RadioMind layer |
+| Brain structure | What it does in the brain | RadioMind layer |
 |-------|-------------|-----------------|
-| Prefrontal cortex | Holds current focus, filters noise | L1 — attention gate |
-| Hippocampus | Records events fast, spatial indexing | L2 — 3D pyramid (domain × time × level) |
-| Neocortex | Consolidates slowly into deep knowledge | L3 — habit memory (HDC + LoRA) |
-| Sleep | Prunes weak connections, replays important ones | "Dream" — decay, merge, free-associate |
-| Conversation | Strengthens memories through discussion | "Chat" — three-body debate |
-| Books & culture | Knowledge without direct experience | L4 — Shortwave library |
+| Prefrontal cortex | Holds 5–9 items in focus, decides what's worth encoding, filters out noise from the stream of consciousness | L1 — attention gate: pattern-matches 15+ triggers ("I like...", "remember..."), auto-detects domain, tags privacy |
+| Hippocampus | Records experiences rapidly with spatial/temporal context, acts as a fast index that the neocortex can query | L2 — 3D pyramid: SQLite FTS5 indexed by domain × time × abstraction level, attention-style retrieval (principles → patterns → facts) |
+| Neocortex | Slowly integrates experiences into generalized knowledge through repeated exposure, forms abstractions independent of specific episodes | L3 — habit memory: three-body debate distills patterns into habits, encoded as HDC 10,000-bit hypervectors, periodically baked into LoRA model weights |
+| Sleep (SHY) | Globally downscales synaptic strength, keeping well-used connections and pruning rarely-activated ones, replays important memories | "Dream" refinement: decays memories not accessed in 30+ days, merges redundant entries, free-associates across domains to discover meta-patterns |
+| Social conversation | Strengthens memories through retrieval practice and elaborative discussion, creates new connections through debate | "Chat" refinement: three agents with competing goals (consistency, novelty, parsimony) debate and vote, producing insights no single perspective would find |
+| Books & culture | Acquires knowledge without direct experience through language and shared narratives | L4 — Shortwave library: curated knowledge ingested from articles and community, enters L2 as facts and walks the same consolidation path as personal experience |
 
----
-
-## Deep dive
+### Deep dive
 
 <details>
 <summary><b>Three-body debate — why three roles, not two</b></summary>
@@ -236,6 +170,74 @@ Health data that "running helps sleep" can influence work advice as a principle 
 
 ---
 
+## Setup
+
+### Recommended: let your AI agent install it
+
+Copy this prompt to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
+
+```text
+Install RadioMind as my persistent memory module:
+1. Run: pip install radiomind
+2. Verify: python -c "import radiomind; print(radiomind.__version__)"
+3. If I use Claude Desktop or Cursor, also run: claude mcp add radiomind -- radiomind mcp-server
+4. Test: python -c "import radiomind; m = radiomind.connect(); m.add([{'role':'user','content':'test'}]); print(m.search('test')); m.close()"
+
+RadioMind auto-detects LLM from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) or local Ollama. No config file needed.
+```
+
+### Traditional install
+
+```bash
+pip install radiomind
+
+# Optional extras
+pip install 'radiomind[server]'      # REST API
+pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon)
+pip install 'radiomind[embedding]'   # Vector search (ONNX)
+```
+
+## Use
+
+```python
+import radiomind
+
+mind = radiomind.connect()
+
+# Your agent's conversation loop:
+mind.add(messages)                    # feed conversations in
+results = mind.search("query")       # get relevant memories back
+system_prompt = mind.digest()        # inject user context (~250 tokens)
+mind.refine()                        # distill habits (automatic)
+```
+
+That's the entire API. Domain detection, privacy tagging, habit encoding, memory pruning — all automatic.
+
+**Works with any LLM — zero config:**
+
+```python
+# Pass your existing client — RadioMind auto-detects the type
+mind = radiomind.connect(llm=openai_client)
+mind = radiomind.connect(llm=anthropic_client)
+
+# Or just have an API key in your environment — RadioMind finds it
+# Supports: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
+#           Moonshot, Zhipu, SiliconFlow, Mistral, Fireworks, Ollama
+```
+
+## Plug into your stack
+
+| Method | One-line setup | Best for |
+|--------|---------------|----------|
+| **Python** | `radiomind.connect()` | Any Python agent |
+| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop, Cursor, VS Code |
+| **REST** | `radiomind serve --port 8730` | Any language, remote |
+| **CLI** | `radiomind search "query"` | Scripts, cron, hooks |
+
+9 MCP tools, 6 REST endpoints, 20+ CLI commands. See [Integration Guide](docs/integration.md).
+
+---
+
 ## Research foundations
 
 RadioMind's design draws from established neuroscience and AI research:
@@ -262,8 +264,8 @@ RadioMind is part of a family of tools designed for AI agents that learn and gro
 
 | Project | What it does | Relationship to RadioMind | Status |
 |---------|-------------|---------------------------|--------|
-| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | Cross-project experience framework for coding agents (Claude Code, Codex). Captures debugging experience in one project and applies it in another. | Uses RadioMind as its memory backend. RadioHeader handles the rules and behavior contracts ("search before you code"); RadioMind handles the storage, retrieval, and habit distillation. | Released, 100+ shortwave entries |
-| **RadioMind** | Bionic memory core. Stores, searches, and refines memories into habits. Works as a standalone module or plugs into any agent. | This repo. The "brain" of the ecosystem. | Released |
+| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | Cross-project experience framework for coding agents (Claude Code, Codex). Captures debugging experience in one project and applies it in another. | Uses RadioMind as its memory backend. RadioHeader handles rules and behavior contracts ("search before you code"); RadioMind handles storage, retrieval, and habit distillation. | Released, 100+ shortwave entries |
+| **RadioMind** | Bionic memory core. Stores, searches, and refines memories into habits. Works standalone or plugs into any agent. | This repo. The "brain" of the ecosystem. | Released |
 | **RadioHand** | Personal agent framework. Multi-channel (Telegram, WeChat, Web), task planning, tool orchestration. | Will use RadioMind as its default memory module. RadioHand handles execution ("hands"); RadioMind handles memory ("brain"). | Planned |
 
 ```

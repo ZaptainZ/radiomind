@@ -33,70 +33,6 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 | 按话题设置隐私 | ❌ | ✅ |
 | 了解自身状态（元认知） | ❌ | ✅ |
 
-## 安装
-
-### 推荐：让你的 AI 助手自动安装
-
-复制以下提示词，发给你正在使用的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
-
-> 帮我安装 RadioMind 持久记忆模块：
-> 1. 运行 `pip install radiomind`
-> 2. 验证：`python -c "import radiomind; print(radiomind.__version__)"`
-> 3. 如果我用的是 Claude Desktop 或 Cursor，还需运行：`claude mcp add radiomind -- radiomind mcp-server`
-> 4. 测试：`mind = radiomind.connect(); mind.add([{"role":"user","content":"test"}]); print(mind.search("test")); mind.close()`
->
-> RadioMind 自动从环境变量（OPENAI_API_KEY、ANTHROPIC_API_KEY 等）或本地 Ollama 检测 LLM，不需要配置文件。
-
-### 传统安装
-
-```bash
-pip install radiomind
-
-# 可选扩展
-pip install 'radiomind[server]'      # REST API
-pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon)
-pip install 'radiomind[embedding]'   # 向量搜索 (ONNX)
-```
-
-## 使用
-
-```python
-import radiomind
-
-mind = radiomind.connect()
-
-# 你的 Agent 对话循环中：
-mind.add(messages)                    # 喂入对话
-results = mind.search("query")       # 取回相关记忆
-system_prompt = mind.digest()        # 注入用户上下文（~250 tokens）
-mind.refine()                        # 提炼习惯（自动）
-```
-
-这就是全部 API。领域检测、隐私标记、习惯编码、记忆修剪——内部全自动。
-
-**兼容任何 LLM——零配置：**
-
-```python
-# 传入你现有的客户端 — RadioMind 自动识别类型
-mind = radiomind.connect(llm=openai_client)
-mind = radiomind.connect(llm=anthropic_client)
-
-# 或者环境变量里有 API key — RadioMind 自动找到
-# 支持: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
-#       Moonshot, 智谱, 硅基流动, Mistral, Fireworks, Ollama
-```
-
-## 接入你的技术栈
-
-| 方式 | 一行接入 | 适用场景 |
-|------|---------|---------|
-| **Python** | `radiomind.connect()` | 任何 Python Agent |
-| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor、VS Code |
-| **REST** | `radiomind serve --port 8730` | 任何语言、远程调用 |
-| **CLI** | `radiomind search "query"` | 脚本、定时任务、Hook |
-
-9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
-
 ## RadioMind 给 AI 助手带来了什么
 
 接入 Claude Code、Codex、Hermes 或任何 MCP 工具后，RadioMind 给助手增加了它原本没有的能力：
@@ -110,7 +46,7 @@ mind = radiomind.connect(llm=anthropic_client)
 | **越用越聪明** | 能力始终不变 | 持续积累习惯，深化理解 |
 | **尊重隐私** | 没有敏感度概念 | 健康数据受保护，封闭话题绝不泄露 |
 
-助手负责所有的思考——RadioMind 只负责组织 prompt 和存储结果。**零额外 LLM 费用。**
+助手负责所有的思考——RadioMind 只负责组织和存储。**零额外 LLM 费用。**
 
 ---
 
@@ -156,18 +92,16 @@ Meta 层（始终活跃）:
 
 **每一层对应一个大脑结构：**
 
-| 大脑 | 做什么 | RadioMind |
-|------|--------|-----------|
-| 前额叶 | 保持当前注意力，过滤噪声 | L1 — 注意力门控 |
-| 海马体 | 快速记录事件，空间索引 | L2 — 3D 金字塔 (领域 × 时间 × 层级) |
-| 新皮层 | 慢速巩固为深层知识 | L3 — 习惯记忆 (HDC + LoRA) |
-| 睡眠 | 修剪弱连接，重播重要记忆 | "做梦" — 衰减、合并、自由联想 |
-| 对话交流 | 通过讨论强化记忆 | "聊天" — 三体辩论 |
-| 书籍文化 | 不需亲身经历的知识 | L4 — Shortwave 库 |
+| 大脑结构 | 它在大脑中做什么 | RadioMind |
+|---------|--------------|-----------|
+| 前额叶 | 同时保持 5-9 个焦点，决定什么值得编码，从意识流中过滤噪声 | L1 — 注意力门控：匹配 15+ 种触发模式（"我叫..."、"请记住..."），自动检测领域，标记隐私 |
+| 海马体 | 快速记录经历并附带时空上下文，充当新皮层可查询的快速索引 | L2 — 3D 金字塔：SQLite FTS5，按领域 × 时间 × 抽象层级索引，注意力式检索（原则→模式→事实） |
+| 新皮层 | 通过反复接触，将经历慢慢整合为泛化知识，形成不依赖具体情节的抽象理解 | L3 — 习惯记忆：三体辩论将模式提炼为习惯，编码为 HDC 10,000-bit 超维向量，定期烘焙进 LoRA 模型权重 |
+| 睡眠 (SHY) | 全局缩小突触强度，保留常用连接、修剪很少激活的，重播重要记忆 | "做梦"炼化：衰减 30+ 天未访问的记忆，合并冗余条目，跨领域自由联想发现元模式 |
+| 社会对话 | 通过检索练习和精细化讨论强化记忆，通过辩论创造新连接 | "聊天"炼化：三个目标冲突的 Agent（一致性、新颖性、简洁性）辩论投票，产出单一视角无法发现的洞察 |
+| 书籍与文化 | 不需要亲身经历就能获取知识，通过语言和共享叙事传递 | L4 — Shortwave 库：从文章和社区中采集知识，作为事实进入 L2，走和个人经验相同的巩固路径 |
 
----
-
-## 深入了解
+### 深入了解
 
 <details>
 <summary><b>三体辩论——为什么是三个角色而不是两个</b></summary>
@@ -233,6 +167,74 @@ Python 自动检测 daemon，未运行时回退到直连 SQLite。
 "跑步改善睡眠"可以作为原则（"规律作息提升表现"）影响工作建议，但原始健康事实不会暴露。
 
 </details>
+
+---
+
+## 安装
+
+### 推荐：让你的 AI 助手自动安装
+
+复制以下提示词，发给你正在使用的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
+
+```text
+帮我安装 RadioMind 持久记忆模块：
+1. 运行：pip install radiomind
+2. 验证：python -c "import radiomind; print(radiomind.__version__)"
+3. 如果我用的是 Claude Desktop 或 Cursor，还需运行：claude mcp add radiomind -- radiomind mcp-server
+4. 测试：python -c "import radiomind; m = radiomind.connect(); m.add([{'role':'user','content':'test'}]); print(m.search('test')); m.close()"
+
+RadioMind 自动从环境变量（OPENAI_API_KEY、ANTHROPIC_API_KEY 等）或本地 Ollama 检测 LLM，不需要配置文件。
+```
+
+### 传统安装
+
+```bash
+pip install radiomind
+
+# 可选扩展
+pip install 'radiomind[server]'      # REST API
+pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon)
+pip install 'radiomind[embedding]'   # 向量搜索 (ONNX)
+```
+
+## 使用
+
+```python
+import radiomind
+
+mind = radiomind.connect()
+
+# 你的 Agent 对话循环中：
+mind.add(messages)                    # 喂入对话
+results = mind.search("query")       # 取回相关记忆
+system_prompt = mind.digest()        # 注入用户上下文（~250 tokens）
+mind.refine()                        # 提炼习惯（自动）
+```
+
+这就是全部 API。领域检测、隐私标记、习惯编码、记忆修剪——内部全自动。
+
+**兼容任何 LLM——零配置：**
+
+```python
+# 传入你现有的客户端 — RadioMind 自动识别类型
+mind = radiomind.connect(llm=openai_client)
+mind = radiomind.connect(llm=anthropic_client)
+
+# 或者环境变量里有 API key — RadioMind 自动找到
+# 支持: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
+#       Moonshot, 智谱, 硅基流动, Mistral, Fireworks, Ollama
+```
+
+## 接入你的技术栈
+
+| 方式 | 一行接入 | 适用场景 |
+|------|---------|---------|
+| **Python** | `radiomind.connect()` | 任何 Python Agent |
+| **MCP** | `claude mcp add radiomind -- radiomind mcp-server` | Claude Desktop、Cursor、VS Code |
+| **REST** | `radiomind serve --port 8730` | 任何语言、远程调用 |
+| **CLI** | `radiomind search "query"` | 脚本、定时任务、Hook |
+
+9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
 
 ---
 
