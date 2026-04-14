@@ -33,11 +33,32 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 | 按话题设置隐私 | ❌ | ✅ |
 | 了解自身状态（元认知） | ❌ | ✅ |
 
-## 安装使用
+## 安装
+
+### 推荐：让你的 AI 助手自动安装
+
+复制以下提示词，发给你正在使用的 AI 助手（Claude Code、Cursor、Windsurf、Codex 等）：
+
+> 帮我安装 RadioMind 持久记忆模块：
+> 1. 运行 `pip install radiomind`
+> 2. 验证：`python -c "import radiomind; print(radiomind.__version__)"`
+> 3. 如果我用的是 Claude Desktop 或 Cursor，还需运行：`claude mcp add radiomind -- radiomind mcp-server`
+> 4. 测试：`mind = radiomind.connect(); mind.add([{"role":"user","content":"test"}]); print(mind.search("test")); mind.close()`
+>
+> RadioMind 自动从环境变量（OPENAI_API_KEY、ANTHROPIC_API_KEY 等）或本地 Ollama 检测 LLM，不需要配置文件。
+
+### 传统安装
 
 ```bash
 pip install radiomind
+
+# 可选扩展
+pip install 'radiomind[server]'      # REST API
+pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon)
+pip install 'radiomind[embedding]'   # 向量搜索 (ONNX)
 ```
+
+## 使用
 
 ```python
 import radiomind
@@ -53,17 +74,16 @@ mind.refine()                        # 提炼习惯（自动）
 
 这就是全部 API。领域检测、隐私标记、习惯编码、记忆修剪——内部全自动。
 
-**兼容任何框架：**
+**兼容任何 LLM——零配置：**
 
 ```python
-# 传入你现有的 LLM 客户端 — RadioMind 自动识别类型
+# 传入你现有的客户端 — RadioMind 自动识别类型
 mind = radiomind.connect(llm=openai_client)
 mind = radiomind.connect(llm=anthropic_client)
-mind = radiomind.connect(llm=lambda prompt, system: my_llm(prompt))
 
 # 或者环境变量里有 API key — RadioMind 自动找到
-# OPENAI_API_KEY, ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, DEEPSEEK_API_KEY...
-# 支持 11 个 provider，不需要配置文件。
+# 支持: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
+#       Moonshot, 智谱, 硅基流动, Mistral, Fireworks, Ollama
 ```
 
 ## 接入你的技术栈
@@ -77,49 +97,77 @@ mind = radiomind.connect(llm=lambda prompt, system: my_llm(prompt))
 
 9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
 
-### 在 AI 助手中运行（Claude Code、Codex、Hermes）
+## RadioMind 给 AI 助手带来了什么
 
-在 AI 助手内部运行时，RadioMind 让**助手自己来思考**——不需要额外的 LLM 调用，不花额外费用：
+接入 Claude Code、Codex、Hermes 或任何 MCP 工具后，RadioMind 给助手增加了它原本没有的能力：
 
-```
-你的 AI 助手调用: radiomind_refine_step("prepare", domain="health")
-RadioMind 返回:   "这里有 10 条健康记忆。作为守护者，请评估..."
-助手自己推理:     "这些记忆一致显示运动改善睡眠..."
-RadioMind 记录洞察，进入下一步。
-```
+| 能力 | 没有 RadioMind | 有 RadioMind |
+|------|--------------|-------------|
+| **跨会话记忆** | 每次对话后遗忘 | 记住一切，永不丢失 |
+| **了解用户** | 每次从零开始 | 知道你的名字、偏好、习惯、目标 |
+| **从错误中学习** | 反复犯同样的错 | "上次这种方法失败了，因为..." |
+| **关联不同话题** | 每个话题是孤岛 | "你的失眠可能和上周提到的加班有关" |
+| **越用越聪明** | 能力始终不变 | 持续积累习惯，深化理解 |
+| **尊重隐私** | 没有敏感度概念 | 健康数据受保护，封闭话题绝不泄露 |
 
-助手扮演三个辩论角色（守护者、探索者、精简者），RadioMind 把结果提炼成持久习惯。零额外 API 调用。
+助手负责所有的思考——RadioMind 只负责组织 prompt 和存储结果。**零额外 LLM 费用。**
 
 ---
 
-## 原理（感兴趣可以展开）
+## 记忆是如何工作的
 
-<details>
-<summary><b>架构——模拟大脑真实的记忆方式</b></summary>
-
-RadioMind 模拟大脑的互补学习系统：
+一段对话进入 RadioMind 后，像大脑一样逐层流动：
 
 ```
-Meta ─── 用户画像 + 系统自画像
-L4 ───── 外挂知识（"让记忆去读书"）
-L3 ───── 习惯记忆: HDC 超维向量 + LoRA adapter（新皮层）
-           ├─ "聊天"炼化: 三体辩论
-           └─ "做梦"炼化: 修剪 + 自由联想
-L2 ───── 记忆笔记: 3D 金字塔 (domain × time × level)（海马体）
-L1 ───── 注意力门控: 从对话中提取事实（工作记忆）
-L0 ───── 基模权重（可更换，不绑定）
+对话 → "我开始跑步了，睡眠质量提升了"
+ │
+ ▼
+┌─ L1 注意力门控 ────────────────────────────────┐
+│  提取: 跑步 + 睡眠的事实                        │
+│  检测: 领域 = 健康                              │
+│  标记: 隐私 = guarded（健康数据默认受保护）      │
+└────────────────────────────┬────────────────────┘
+                             ▼
+┌─ L2 记忆笔记（3D 金字塔）──────────────────────┐
+│  存为事实: "跑步改善睡眠"                       │
+│  索引: 领域 × 时间 × 抽象层级                   │
+│  累计 10+ 条事实 → 总结为模式                    │
+│  累计 3+ 条模式 → 提炼为原则                     │
+└────────────────────────────┬────────────────────┘
+                             ▼
+┌─ L3 习惯记忆 ──────────────────────────────────┐
+│  三体辩论:                                      │
+│    守护者: "和已知的一致"                        │
+│    探索者: "新模式: 运动→睡眠"                   │
+│    精简者: "和已有健康习惯合并"                   │
+│  → 编码为 HDC 超维向量 (10,000-bit)             │
+│  → 定期烘焙进 LoRA 权重                         │
+└────────────────────────────┬────────────────────┘
+                             ▼
+┌─ L4 外挂知识 ──────────────────────────────────┐
+│  Shortwave 库: 来自文章、文档、社区的            │
+│  精选知识 —— "让记忆去读书"                     │
+└────────────────────────────────────────────────┘
+
+Meta 层（始终活跃）:
+  用户画像: 是谁、怎么工作、关注什么
+  系统自画像: 用的什么模型、有多少记忆、当前状态
 ```
 
-| 大脑 | 功能 | RadioMind |
-|------|------|-----------|
-| 前额叶 | 工作记忆 | L1 注意力门控 |
-| 海马体 | 快速编码 | L2 3D 金字塔 (SQLite FTS5) |
-| 新皮层 | 慢速巩固 | L3 HDC + LoRA |
-| 睡眠 (SHY) | 突触修剪 | "做梦"炼化 |
-| 社会学习 | 讨论+回忆 | "聊天"三体辩论 |
-| 文化记忆 | 书籍、教育 | L4 Shortwave 库 |
+**每一层对应一个大脑结构：**
 
-</details>
+| 大脑 | 做什么 | RadioMind |
+|------|--------|-----------|
+| 前额叶 | 保持当前注意力，过滤噪声 | L1 — 注意力门控 |
+| 海马体 | 快速记录事件，空间索引 | L2 — 3D 金字塔 (领域 × 时间 × 层级) |
+| 新皮层 | 慢速巩固为深层知识 | L3 — 习惯记忆 (HDC + LoRA) |
+| 睡眠 | 修剪弱连接，重播重要记忆 | "做梦" — 衰减、合并、自由联想 |
+| 对话交流 | 通过讨论强化记忆 | "聊天" — 三体辩论 |
+| 书籍文化 | 不需亲身经历的知识 | L4 — Shortwave 库 |
+
+---
+
+## 深入了解
 
 <details>
 <summary><b>三体辩论——为什么是三个角色而不是两个</b></summary>
@@ -127,14 +175,14 @@ L0 ───── 基模权重（可更换，不绑定）
 两方辩论容易吞并或妥协。三方各有利益冲突时才能产生稳健结论（ICLR 2025 DMAD: 91% vs 82%）。
 
 ```
-守护者 (魏) — "这和我们已知的一致吗？"
-探索者 (吴) — "这里有什么新东西？"
-精简者 (蜀) — "能不能简化？"
+守护者 (魏) — "这和我们已知的一致吗？"    → 奖励一致性
+探索者 (吴) — "这里有什么真正新的东西？"   → 奖励新颖性
+精简者 (蜀) — "能不能简化或合并？"         → 奖励简洁性
 
 投票: 三方中两方同意 → 候选洞察 → 未来对话中验证
 ```
 
-灵感来自三国的三方制衡和三体问题的复杂涌现。
+灵感来自三国：两方容易一方吞并另一方；三方才能长期制衡。
 
 </details>
 
@@ -144,10 +192,12 @@ L0 ───── 基模权重（可更换，不绑定）
 定期把习惯微调进本地小模型（0.5-3B）：
 
 ```bash
-radiomind train --iters 100    # MacBook 上约 5 分钟，用 Apple MLX
+radiomind train --iters 100    # MacBook 上约 5 分钟 (Apple MLX)
 ```
 
 训练后，模型"直接知道"用户的偏好——就像你知道火是烫的，不需要"检索"。Adapter 只有几 MB，加载不到 1 秒。
+
+Mac (MLX)、Linux (QLoRA/CUDA) 都支持，没装则优雅跳过。
 
 </details>
 
@@ -167,12 +217,12 @@ cd rust-core && cargo build --release
 ./target/release/radiomind-daemon
 ```
 
-Python 自动检测 daemon 并通过 IPC 路由操作。
+Python 自动检测 daemon，未运行时回退到直连 SQLite。
 
 </details>
 
 <details>
-<summary><b>隐私——有些话题不出圈</b></summary>
+<summary><b>隐私分级——有些话题不出圈</b></summary>
 
 每个领域有独立的隐私级别：
 
@@ -180,23 +230,46 @@ Python 自动检测 daemon 并通过 IPC 路由操作。
 - **guarded** — 只有模式/原则跨域，原始事实不出圈（健康、理财自动标记）
 - **sealed** — 完全隔离，绝不跨域
 
+"跑步改善睡眠"可以作为原则（"规律作息提升表现"）影响工作建议，但原始健康事实不会暴露。
+
 </details>
+
+---
+
+## 研究基础
+
+RadioMind 的设计源自经过验证的神经科学和 AI 研究：
+
+**互补学习系统** (McClelland, McNaughton & O'Reilly, 1995) — 大脑使用两套系统：海马体负责快速、具体的学习，新皮层负责慢速、泛化的知识。RadioMind 用 L2（快速金字塔存储）和 L3（慢速习惯巩固）来模拟这个过程。
+
+**突触稳态假说** (Tononi & Cirelli, 2006) — 睡眠期间，大脑全局缩小突触连接，保留强连接、修剪弱连接。RadioMind 的"做梦"炼化做同样的事：衰减不用的记忆，合并冗余的，归档过时的。
+
+**超维计算** (Kanerva, 2009) — 大脑的信息表示是极高维且分布式的。HDC 使用 10,000-bit 双极向量，其中绑定=关联、捆绑=叠加。RadioMind 用这种方式编码习惯——一个固定大小的向量存储无限数量的模式。
+
+**多 Agent 辩论** (ICLR 2025, DMAD) — 使用不同基础模型的异构多 Agent 辩论优于单 Agent 和同构团队。RadioMind 的三体辩论应用了这一原理：三个目标冲突的 Agent（一致性、新颖性、简洁性）产出的洞察比任何单一视角都更稳健。
+
+**LoRA** (Hu et al., 2021) — 低秩适应通过添加小型可训练矩阵实现高效模型微调。RadioMind 用它把习惯"烘焙"进模型权重——将依赖检索的知识转化为参数化知识（模型直接知道，不需要查找）。
+
+**NeuroDream** (2026) — 在训练中引入显式的"做梦阶段"——模型断开输入，重播存储的表征——使遗忘减少 38%，零样本迁移提高 17.6%。RadioMind 的做梦炼化遵循相同原理。
+
+**信息素模型** (Grassé, 1959) — 蚂蚁通过留下随时间衰减的信息素轨迹来协调行为，无需直接交流。常走的路径越来越强，废弃的路径自然消退。RadioMind 的社区知识评分使用相同模型：条目因使用而增强，因时间而自然衰减，不需要人工管理。
 
 ---
 
 ## Radio 生态
 
-| 项目 | 做什么 |
-|------|--------|
-| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | 编程 Agent 的跨项目经验框架 |
-| **RadioMind** | 仿生记忆模块（本仓库） |
-| **RadioHand** | 个人 Agent 框架（规划中） |
+RadioMind 是为"AI Agent 持续学习成长"设计的工具家族的一部分：
 
-RadioMind 是 RadioHeader 和 RadioHand 的默认记忆后端，但可以独立接入任何 Agent。
+| 项目 | 做什么 | 和 RadioMind 的关系 | 阶段 |
+|------|--------|-------------------|------|
+| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | 编程 Agent 的跨项目经验框架。在一个项目中调试的经验自动应用到另一个项目。 | 使用 RadioMind 作为记忆后端。RadioHeader 负责规则和行为契约（"写代码前先搜经验"），RadioMind 负责存储、检索和习惯提炼。 | 已发布，100+ 条经验 |
+| **RadioMind** | 仿生记忆核心。存储、搜索、将记忆提炼为习惯。可独立使用或接入任何 Agent。 | 本仓库。整个生态的"大脑"。 | 已发布 |
+| **RadioHand** | 个人 Agent 框架。多通道（Telegram、微信、Web），任务规划，工具调度。 | 将使用 RadioMind 作为默认记忆模块。RadioHand 负责执行（"手"），RadioMind 负责记忆（"脑"）。 | 规划中 |
 
-## 研究基础
-
-基于：互补学习系统 (McClelland 1995)、突触稳态假说 (Tononi & Cirelli 2006)、超维计算 (Kanerva 2009)、多 Agent 辩论 (ICLR 2025 DMAD)、LoRA (Hu 2021)、NeuroDream (2026)、信息素模型 (Grassé 1959)。
+```
+RadioHeader（规则与经验）→ RadioMind（记忆与习惯）→ RadioHand（执行与通道）
+         头                        脑                        手
+```
 
 ## 许可
 

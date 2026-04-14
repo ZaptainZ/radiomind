@@ -33,11 +33,32 @@ Most AI memory systems store text and retrieve it. RadioMind goes further — it
 | Privacy controls per topic | ❌ | ✅ |
 | Knows itself (tracks its own state) | ❌ | ✅ |
 
-## Install & use
+## Setup
+
+### Recommended: let your AI agent install it
+
+Copy this prompt to your AI assistant (Claude Code, Cursor, Windsurf, Codex, etc.):
+
+> Install RadioMind as my persistent memory module. Steps:
+> 1. Run `pip install radiomind`
+> 2. Verify with `python -c "import radiomind; print(radiomind.__version__)"`
+> 3. If I'm using Claude Desktop or Cursor, also run: `claude mcp add radiomind -- radiomind mcp-server`
+> 4. Test: create a simple script that does `mind = radiomind.connect(); mind.add([{"role":"user","content":"test"}]); print(mind.search("test")); mind.close()`
+>
+> RadioMind auto-detects LLM from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) or local Ollama. No config file needed.
+
+### Traditional install
 
 ```bash
 pip install radiomind
+
+# Optional extras
+pip install 'radiomind[server]'      # REST API
+pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon)
+pip install 'radiomind[embedding]'   # Vector search (ONNX)
 ```
+
+## Use
 
 ```python
 import radiomind
@@ -51,19 +72,18 @@ system_prompt = mind.digest()        # inject user context (~250 tokens)
 mind.refine()                        # distill habits (automatic)
 ```
 
-That's the entire API. Everything else — domain detection, privacy tagging, habit encoding, memory pruning — happens inside automatically.
+That's the entire API. Domain detection, privacy tagging, habit encoding, memory pruning — all automatic.
 
-**Works with any framework:**
+**Works with any LLM — zero config:**
 
 ```python
-# Pass your existing LLM client — RadioMind auto-detects the type
+# Pass your existing client — RadioMind auto-detects the type
 mind = radiomind.connect(llm=openai_client)
 mind = radiomind.connect(llm=anthropic_client)
-mind = radiomind.connect(llm=lambda prompt, system: my_llm(prompt))
 
 # Or just have an API key in your environment — RadioMind finds it
-# OPENAI_API_KEY, ANTHROPIC_API_KEY, DASHSCOPE_API_KEY, DEEPSEEK_API_KEY...
-# Supports 11 providers. No config file needed.
+# Supports: OpenAI, Anthropic, DashScope, DeepSeek, Groq, Together,
+#           Moonshot, Zhipu, SiliconFlow, Mistral, Fireworks, Ollama
 ```
 
 ## Plug into your stack
@@ -77,49 +97,77 @@ mind = radiomind.connect(llm=lambda prompt, system: my_llm(prompt))
 
 9 MCP tools, 6 REST endpoints, 20+ CLI commands. See [Integration Guide](docs/integration.md).
 
-### Inside AI assistants (Claude Code, Codex, Hermes)
+## What RadioMind adds to AI assistants
 
-When running inside an AI assistant, RadioMind lets **the assistant itself do the thinking** — no extra LLM calls, no extra cost:
+When plugged into Claude Code, Codex, Hermes, or any MCP-compatible tool, RadioMind gives the assistant abilities it doesn't have natively:
 
-```
-Your AI assistant calls: radiomind_refine_step("prepare", domain="health")
-RadioMind returns:       "Here are 10 health memories. As the Guardian, evaluate..."
-Your assistant reasons:  "These memories consistently show exercise improving sleep..."
-RadioMind records the insight and moves to the next step.
-```
+| Capability | Without RadioMind | With RadioMind |
+|-----------|-------------------|----------------|
+| **Remember across sessions** | Forgets after each conversation | Remembers everything, forever |
+| **Know the user** | Starts fresh every time | Knows name, preferences, habits, goals |
+| **Learn from mistakes** | Repeats the same errors | "Last time this approach failed because..." |
+| **Connect the dots** | Each topic is isolated | "Your sleep issue might relate to the overtime you mentioned last week" |
+| **Get smarter over time** | Same capability, always | Accumulates habits, refines understanding |
+| **Respect privacy** | No concept of sensitivity | Health data stays guarded, sealed topics never leak |
 
-The assistant plays three debate roles (Guardian, Explorer, Reducer), then RadioMind distills the result into a lasting habit. Zero extra API calls.
+The assistant does all the thinking — RadioMind just organizes the prompts and stores the results. **Zero extra LLM cost.**
 
 ---
 
-## How it works (for the curious)
+## How memory works
 
-<details>
-<summary><b>Architecture — inspired by how the brain actually remembers</b></summary>
-
-RadioMind models the brain's complementary learning systems:
+A conversation enters RadioMind and flows through layers, just like the brain:
 
 ```
-Meta ─── User profile + system self-awareness
-L4 ───── External knowledge ("memory reads books")
-L3 ───── Habit memory: HDC vectors + LoRA adapters (neocortex)
-           ├─ "Chat" refinement: three-body debate
-           └─ "Dream" refinement: pruning + free association
-L2 ───── Memory notes: 3D pyramid — domain × time × abstraction (hippocampus)
-L1 ───── Attention gate: extract facts from conversations (working memory)
-L0 ───── Base model weights (swappable, never hardcoded)
+Conversation → "I started running, my sleep improved"
+     │
+     ▼
+ ┌─ L1 Attention Gate ──────────────────────────────┐
+ │  Extracts: fact about running + sleep             │
+ │  Detects: domain = health                         │
+ │  Tags: privacy = guarded (health is sensitive)    │
+ └───────────────────────────────┬───────────────────┘
+                                 ▼
+ ┌─ L2 Memory Notes (3D Pyramid) ───────────────────┐
+ │  Stores as fact: "running improves sleep"         │
+ │  Indexed by: domain × time × abstraction level    │
+ │  After 10+ facts → summarizes into patterns       │
+ │  After 3+ patterns → distills into principles     │
+ └───────────────────────────────┬───────────────────┘
+                                 ▼
+ ┌─ L3 Habit Memory ────────────────────────────────┐
+ │  Three-body debate:                               │
+ │    Guardian: "Consistent with what we know"       │
+ │    Explorer: "New pattern: exercise → sleep"      │
+ │    Reducer:  "Merge with existing health habits"  │
+ │  → Encoded as HDC hypervector (10,000-bit)        │
+ │  → Periodically baked into LoRA weights           │
+ └───────────────────────────────┬───────────────────┘
+                                 ▼
+ ┌─ L4 External Knowledge ──────────────────────────┐
+ │  Shortwave library: curated knowledge from        │
+ │  articles, docs, community — "memory reads books" │
+ └──────────────────────────────────────────────────┘
+
+ Meta layer (always active):
+   User profile: who they are, how they work, what they care about
+   Self profile: what model am I using, how many memories, what's my state
 ```
 
-| Brain | Function | RadioMind |
-|-------|----------|-----------|
-| Prefrontal cortex | Working memory | L1 attention gate |
-| Hippocampus | Fast episodic encoding | L2 3D pyramid (SQLite FTS5) |
-| Neocortex | Slow consolidation | L3 HDC + LoRA |
-| Sleep (SHY) | Synaptic pruning | "Dream" refinement |
-| Social learning | Discussion + recall | "Chat" three-body debate |
-| Cultural memory | Books, education | L4 Shortwave library |
+**Each layer mirrors a brain structure:**
 
-</details>
+| Brain | What it does | RadioMind layer |
+|-------|-------------|-----------------|
+| Prefrontal cortex | Holds current focus, filters noise | L1 — attention gate |
+| Hippocampus | Records events fast, spatial indexing | L2 — 3D pyramid (domain × time × level) |
+| Neocortex | Consolidates slowly into deep knowledge | L3 — habit memory (HDC + LoRA) |
+| Sleep | Prunes weak connections, replays important ones | "Dream" — decay, merge, free-associate |
+| Conversation | Strengthens memories through discussion | "Chat" — three-body debate |
+| Books & culture | Knowledge without direct experience | L4 — Shortwave library |
+
+---
+
+## Deep dive
 
 <details>
 <summary><b>Three-body debate — why three roles, not two</b></summary>
@@ -127,34 +175,36 @@ L0 ───── Base model weights (swappable, never hardcoded)
 Two debaters tend to merge or one dominates. Three debaters with competing interests produce more robust conclusions (ICLR 2025 DMAD: 91% vs 82% accuracy).
 
 ```
-Guardian (魏) — "Does this fit what we already know?"
-Explorer (吴) — "Is there something new here?"
-Reducer  (蜀) — "Can we simplify?"
+Guardian (魏) — "Does this fit what we already know?"   → rewards consistency
+Explorer (吴) — "Is there something genuinely new?"     → rewards novelty
+Reducer  (蜀) — "Can we simplify or merge?"             → rewards parsimony
 
 Vote: 2 out of 3 must agree → candidate insight → verified in future conversations
 ```
 
-Inspired by Three Kingdoms strategy and three-body problem dynamics.
+Inspired by Three Kingdoms strategy: two powers merge or one conquers; three powers create lasting balance through mutual checks.
 
 </details>
 
 <details>
 <summary><b>LoRA training — memories that don't need retrieval</b></summary>
 
-Periodically, RadioMind fine-tunes a small local model (0.5–3B) on your habits:
+Periodically, RadioMind fine-tunes a small local model (0.5–3B) on accumulated habits:
 
 ```bash
-radiomind train --iters 100    # ~5 min on MacBook, uses Apple MLX
+radiomind train --iters 100    # ~5 min on MacBook (Apple MLX)
 ```
 
-After training, the model "just knows" your preferences — like how you know fire is hot without looking it up. The adapter is a few MB and loads in under a second.
+After training, the model "just knows" your preferences — like how you know fire is hot without looking it up. The adapter is a few MB, loads in under a second.
+
+Works on Mac (MLX), Linux (QLoRA/CUDA), or skips gracefully if unavailable.
 
 </details>
 
 <details>
 <summary><b>Rust daemon — for 100K+ memories and 24/7 uptime</b></summary>
 
-Storage hot paths run in a Rust daemon:
+Storage hot paths run in a Rust daemon for production scale:
 
 ```
 Python logic layer (LLM calls, prompts, training)
@@ -167,36 +217,59 @@ cd rust-core && cargo build --release
 ./target/release/radiomind-daemon
 ```
 
-Python auto-detects the daemon and routes operations through IPC.
+Python auto-detects the daemon. Falls back to direct SQLite if not running.
 
 </details>
 
 <details>
-<summary><b>Privacy — some topics stay private</b></summary>
+<summary><b>Privacy levels — some topics stay private</b></summary>
 
 Each domain gets a privacy level:
 
 - **open** — flows freely across domains (default)
-- **guarded** — only patterns/principles cross domain boundaries, not raw facts (auto-applied to health, finance)
-- **sealed** — never leaves its domain
+- **guarded** — only patterns/principles cross boundaries, not raw facts (auto-applied to health, finance)
+- **sealed** — never leaves its domain, ever
+
+Health data that "running helps sleep" can influence work advice as a principle ("regular routines improve performance") without exposing the raw health fact.
 
 </details>
 
 ---
 
-## Part of the Radio ecosystem
+## Research foundations
 
-| Project | What it does |
-|---------|-------------|
-| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | Cross-project experience framework for coding agents |
-| **RadioMind** | Bionic memory module (this repo) |
-| **RadioHand** | Personal agent framework (planned) |
+RadioMind's design draws from established neuroscience and AI research:
 
-RadioMind is the default memory backend for RadioHeader and RadioHand, but works standalone with any agent.
+**Complementary Learning Systems** (McClelland, McNaughton & O'Reilly, 1995) — The brain uses two systems: the hippocampus for fast, specific learning and the neocortex for slow, generalized knowledge. RadioMind mirrors this with L2 (fast pyramid storage) and L3 (slow habit consolidation).
 
-## Research
+**Synaptic Homeostasis Hypothesis** (Tononi & Cirelli, 2006) — During sleep, the brain globally downscales synaptic connections, keeping strong ones and pruning weak ones. RadioMind's "dream" refinement does the same: decay unused memories, merge redundant ones, archive stale ones.
 
-Built on: Complementary Learning Systems (McClelland 1995), Synaptic Homeostasis Hypothesis (Tononi & Cirelli 2006), Hyperdimensional Computing (Kanerva 2009), Multi-Agent Debate (ICLR 2025 DMAD), LoRA (Hu 2021), NeuroDream (2026), Stigmergy (Grassé 1959).
+**Hyperdimensional Computing** (Kanerva, 2009) — The brain's representations are extremely high-dimensional and distributed. HDC uses 10,000-bit bipolar vectors where binding = association, bundling = superposition. RadioMind encodes habits this way — one fixed-size vector stores an unlimited number of patterns.
+
+**Multi-Agent Debate** (ICLR 2025, DMAD) — Heterogeneous multi-agent debate with diverse foundation models outperforms single-agent and homogeneous teams. RadioMind's three-body debate applies this: three agents with competing objectives (consistency, novelty, parsimony) produce more robust insights than any single perspective.
+
+**LoRA** (Hu et al., 2021) — Low-Rank Adaptation enables efficient model fine-tuning by adding small trainable matrices. RadioMind uses this to "bake" habits into model weights — turning retrieval-dependent knowledge into parametric knowledge (the model just knows, without looking up).
+
+**NeuroDream** (2026) — Introducing an explicit "dream phase" into neural training — where the model disconnects from input and replays stored representations — reduces forgetting by 38% and improves zero-shot transfer by 17.6%. RadioMind's dream refinement follows the same principle.
+
+**Stigmergy** (Grassé, 1959) — Ants coordinate without direct communication by leaving pheromone trails that decay over time. Frequently-used trails grow stronger; abandoned trails fade. RadioMind's community knowledge scoring uses the same model: entries gain strength from usage, decay naturally over time, no human curation needed.
+
+---
+
+## Radio ecosystem
+
+RadioMind is part of a family of tools designed for AI agents that learn and grow:
+
+| Project | What it does | Relationship to RadioMind | Status |
+|---------|-------------|---------------------------|--------|
+| **[RadioHeader](https://github.com/ZaptainZ/radioheader)** | Cross-project experience framework for coding agents (Claude Code, Codex). Captures debugging experience in one project and applies it in another. | Uses RadioMind as its memory backend. RadioHeader handles the rules and behavior contracts ("search before you code"); RadioMind handles the storage, retrieval, and habit distillation. | Released, 100+ shortwave entries |
+| **RadioMind** | Bionic memory core. Stores, searches, and refines memories into habits. Works as a standalone module or plugs into any agent. | This repo. The "brain" of the ecosystem. | Released |
+| **RadioHand** | Personal agent framework. Multi-channel (Telegram, WeChat, Web), task planning, tool orchestration. | Will use RadioMind as its default memory module. RadioHand handles execution ("hands"); RadioMind handles memory ("brain"). | Planned |
+
+```
+RadioHeader (rules & experience) → RadioMind (memory & habits) → RadioHand (actions & channels)
+         head                              brain                          hands
+```
 
 ## License
 
