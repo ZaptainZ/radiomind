@@ -30,54 +30,55 @@ def init() -> None:
     mind.shutdown()
 
 
-@cli.command("setup-cc")
-@click.option("--force", is_flag=True, help="Overwrite existing hooks.")
-@click.option("--remove", is_flag=True, help="Remove RadioMind hooks.")
-def setup_cc(force: bool, remove: bool) -> None:
-    """Setup RadioMind hooks for Claude Code.
-
-    Auto-detects RadioHeader and avoids conflict:
+@cli.command()
+@click.option("--platform", "-p", default="", help="Force platform: claude-code, codex, cursor, windsurf")
+@click.option("--force", is_flag=True, help="Overwrite existing config.")
+@click.option("--remove", is_flag=True, help="Remove RadioMind config.")
+def setup(platform: str, force: bool, remove: bool) -> None:
+    """Setup RadioMind for your AI coding agent.
 
     \b
-    With RadioHeader installed:
-      ✓ Stop hook (auto-ingest every 15 messages)
-      ✓ PreCompact hook (emergency save before compression)
-      ✗ SessionStart — skipped (RadioHeader already injects digest)
-      ✓ MCP server registration
+    Auto-detects platform and configures:
+      Claude Code → hooks (Stop, PreCompact, SessionStart) + MCP
+      Codex CLI   → hooks.json + MCP
+      Cursor      → MCP config
+      Windsurf    → MCP config
+      Others      → prints MCP config to add manually
 
-    Without RadioHeader:
-      ✓ Stop hook (auto-ingest)
-      ✓ PreCompact hook (emergency save)
-      ✓ SessionStart hook (inject context digest)
-      ✓ MCP server registration
+    Also detects RadioHeader — if present, skips SessionStart
+    (RadioHeader already injects context digest).
+
+    \b
+    Claude Code users can also install as plugin:
+      claude plugin add radiomind
     """
-    from radiomind.hooks.setup import setup_claude_code, remove_hooks, detect_radioheader
+    from radiomind.hooks.setup import setup as do_setup, remove as do_remove
 
     if remove:
-        result = remove_hooks()
+        result = do_remove(platform=platform)
         if result["removed"]:
-            click.echo(f"Removed: {', '.join(result['items'])}")
+            click.echo(f"Removed: {', '.join(result['removed'])}")
         else:
-            click.echo(result.get("reason", "Nothing to remove"))
+            click.echo("Nothing to remove.")
         return
 
-    result = setup_claude_code(force=force)
+    result = do_setup(platform=platform, force=force)
 
-    if result["radioheader_detected"]:
-        click.echo("RadioHeader detected — adding only RadioMind-specific hooks")
-    else:
-        click.echo("Standalone mode — adding all hooks")
-
+    click.echo(f"Platform: {result['platform']}")
+    if result.get("radioheader_detected"):
+        click.echo("RadioHeader detected — skipping SessionStart")
     click.echo()
-    for h in result["hooks_added"]:
-        click.echo(f"  ✓ {h}")
-    if result["mcp_added"]:
-        click.echo(f"  ✓ MCP server (9 tools)")
-    else:
-        click.echo(f"  · MCP server (already registered)")
 
-    click.echo(f"\nConfig: {result['settings_path']}")
-    click.echo("Restart Claude Code to activate hooks.")
+    for action in result["actions"]:
+        if action.startswith("{"):
+            click.echo(action)
+        else:
+            click.echo(f"  ✓ {action}")
+
+    config_path = result.get("config_path", "")
+    if config_path and not config_path.startswith("("):
+        click.echo(f"\nConfig: {config_path}")
+        click.echo("Restart your agent to activate.")
 
 
 @cli.command()

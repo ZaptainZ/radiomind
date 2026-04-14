@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "radiomind": {
+      "command": "radiomind",
+      "args": ["mcp-server"]
+    }
+  }
+}

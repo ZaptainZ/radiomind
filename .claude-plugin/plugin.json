@@ -1,0 +1,10 @@
+{
+  "name": "radiomind",
+  "version": "0.1.0",
+  "description": "Bionic memory that learns from conversations — your AI gets smarter over time",
+  "author": "Zaptain",
+  "homepage": "https://github.com/ZaptainZ/radiomind",
+  "repository": "https://github.com/ZaptainZ/radiomind",
+  "license": "MIT",
+  "keywords": ["memory", "bionic", "habits", "learning", "HDC"]
+}
