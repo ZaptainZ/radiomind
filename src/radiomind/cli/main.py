@@ -133,6 +133,51 @@ def dream() -> None:
     mind.shutdown()
 
 
+@cli.command("refine-step")
+@click.argument("step", type=click.Choice(
+    ["prepare", "guardian", "explorer", "reducer", "synthesize",
+     "dream_prune", "dream_wander", "dream_apply"],
+))
+@click.option("--domain", "-d", default="", help="Domain to focus on.")
+@click.option("--response", "-r", default="", help="Your response to the previous prompt.")
+def refine_step(step: str, domain: str, response: str) -> None:
+    """Step-by-step refinement — host AI does the thinking.
+
+    Start: radiomind refine-step prepare --domain health
+    Then follow the prompts returned by each step.
+
+    \b
+    Chat debate: prepare → guardian → explorer → reducer → synthesize
+    Dream:       dream_prune → dream_apply
+                 dream_wander → dream_apply
+    """
+    mind = _get_mind()
+    result = mind.refine_step(step, domain=domain, response=response)
+
+    if result.get("prompt"):
+        click.echo("--- Prompt for you ---")
+        click.echo(result["prompt"])
+        click.echo("---")
+
+    click.echo(f"Step: {result['step']} → next: {result.get('next_step', 'done')}")
+    click.echo(result.get("context", ""))
+
+    if result.get("insights"):
+        click.echo(f"Insights: {len(result['insights'])}")
+        for i in result["insights"]:
+            click.echo(f"  - {i['description']} (confidence={i.get('confidence', '?')})")
+
+    if result.get("actions"):
+        click.echo(f"Actions: {len(result['actions'])}")
+        for a in result["actions"]:
+            click.echo(f"  - {a['type']}: {a.get('detail', a.get('description', a.get('id', '')))}")
+
+    if result.get("done"):
+        click.echo("Refinement complete.")
+
+    mind.shutdown()
+
+
 @cli.command()
 def status() -> None:
     """Show memory statistics and profiles."""

@@ -176,6 +176,38 @@ class RadioMind:
         self._meta.refresh_self()
         return result
 
+    # --- Step Refinement (host AI drives the thinking) ---
+
+    def refine_step(self, step: str, domain: str = "", response: str = "") -> dict:
+        """Execute a single refinement step. Host AI provides the reasoning.
+
+        This is the recommended mode when running inside CC/Codex/Hermes —
+        RadioMind organizes, the host AI thinks.
+
+        Steps for chat: prepare → guardian → explorer → reducer → synthesize
+        Steps for dream: dream_prune → dream_apply, dream_wander → dream_apply
+        """
+        self._check_init()
+        if not hasattr(self, "_step_refiner") or self._step_refiner is None:
+            from radiomind.refinement.step import StepRefiner
+            self._step_refiner = StepRefiner(self._store, self._habits)
+
+        result = self._step_refiner.step(step, domain=domain, response=response)
+
+        if result.done:
+            self._meta.refresh_self()
+
+        return {
+            "step": result.step,
+            "done": result.done,
+            "prompt": result.prompt,
+            "context": result.context,
+            "next_step": result.next_step,
+            "insights": result.insights,
+            "actions": result.actions,
+            "session": result.session_data,
+        }
+
     # --- Training (L3 → LoRA) ---
 
     def generate_training_data(self, output_path: str | None = None) -> tuple[int, str]:

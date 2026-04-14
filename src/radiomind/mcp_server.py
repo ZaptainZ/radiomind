@@ -116,6 +116,28 @@ TOOLS = [
             "properties": {},
         },
     },
+    {
+        "name": "radiomind_refine_step",
+        "description": "Step-by-step refinement — YOU (the host AI) do the thinking, RadioMind organizes. "
+                       "Call with step='prepare' to start a debate. RadioMind returns a prompt for you to reason about. "
+                       "Then call again with your response and the next step name. "
+                       "Steps: prepare → guardian → explorer → reducer → synthesize. "
+                       "For dreaming: dream_prune → dream_apply, dream_wander → dream_apply. "
+                       "This mode requires NO external LLM — you ARE the LLM.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "step": {
+                    "type": "string",
+                    "description": "Step name: prepare/guardian/explorer/reducer/synthesize/dream_prune/dream_wander/dream_apply",
+                    "enum": ["prepare", "guardian", "explorer", "reducer", "synthesize", "dream_prune", "dream_wander", "dream_apply"],
+                },
+                "domain": {"type": "string", "description": "Domain to focus on (required for prepare/dream_prune)"},
+                "response": {"type": "string", "description": "Your reasoning response to the previous step's prompt"},
+            },
+            "required": ["step"],
+        },
+    },
 ]
 
 
@@ -216,6 +238,14 @@ class MCPServer:
             text = f"Dream done in {result.duration_s:.1f}s. Merged: {result.merged}, Pruned: {result.pruned}\n"
             for i in result.new_insights:
                 text += f"  Wandering insight: {i.description}\n"
+            return {"content": [{"type": "text", "text": text}]}
+
+        elif tool_name == "radiomind_refine_step":
+            step = args.get("step", "")
+            domain = args.get("domain", "")
+            response = args.get("response", "")
+            result = mind.refine_step(step, domain=domain, response=response)
+            text = json.dumps(result, ensure_ascii=False, indent=2)
             return {"content": [{"type": "text", "text": text}]}
 
         return {"content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}], "isError": True}

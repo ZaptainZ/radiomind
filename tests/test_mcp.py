@@ -35,7 +35,7 @@ class TestMCPProtocol:
             "params": {},
         })
         tools = resp["result"]["tools"]
-        assert len(tools) == 8
+        assert len(tools) == 9
         names = {t["name"] for t in tools}
         assert "radiomind_search" in names
         assert "radiomind_dream" in names
