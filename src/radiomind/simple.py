@@ -112,19 +112,32 @@ class SimpleRadioMind:
     def refine(self, domain: str | None = None) -> RefineResult:
         """Run a refinement cycle (three-body debate + dream pruning).
 
-        >>> result = mind.refine()
-        >>> result.insights
-        3
+        Returns empty result if no LLM backend is available.
         """
-        chat_result = self._mind.trigger_chat(domain=domain)
-        dream_result = self._mind.trigger_dream()
+        if not self._mind._llm or not self._mind._llm.is_available():
+            return RefineResult()
 
-        return RefineResult(
-            insights=len(chat_result.new_insights) + len(dream_result.new_insights),
-            merged=dream_result.merged,
-            pruned=dream_result.pruned,
-            duration_s=chat_result.duration_s + dream_result.duration_s,
-        )
+        insights = 0
+        merged = pruned = 0
+        duration = 0.0
+
+        try:
+            chat_result = self._mind.trigger_chat(domain=domain)
+            insights += len(chat_result.new_insights)
+            duration += chat_result.duration_s
+        except Exception:
+            pass
+
+        try:
+            dream_result = self._mind.trigger_dream()
+            insights += len(dream_result.new_insights)
+            merged = dream_result.merged
+            pruned = dream_result.pruned
+            duration += dream_result.duration_s
+        except Exception:
+            pass
+
+        return RefineResult(insights=insights, merged=merged, pruned=pruned, duration_s=duration)
 
     def close(self) -> None:
         """Shut down RadioMind."""

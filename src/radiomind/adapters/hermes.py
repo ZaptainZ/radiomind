@@ -102,6 +102,7 @@ class RadioMindProvider:
     def __init__(self):
         self._mind: RadioMind | None = None
         self._turn_count = 0
+        self._lock = threading.Lock()
         self._auto_dream = True
         self._hermes_home: Path | None = None
 
@@ -206,14 +207,15 @@ class RadioMindProvider:
             return
 
         def _sync():
-            messages = [
-                Message(role="user", content=user_msg),
-                Message(role="assistant", content=assistant_msg),
-            ]
-            self._mind.ingest(messages)
-            self._turn_count += 1
+            with self._lock:
+                messages = [
+                    Message(role="user", content=user_msg),
+                    Message(role="assistant", content=assistant_msg),
+                ]
+                self._mind.ingest(messages)
+                self._turn_count += 1
 
-            # Trigger chat refinement every 10 turns
+            # Trigger chat refinement every 10 turns (outside lock)
             if self._turn_count % 10 == 0 and self._mind._llm.is_available():
                 try:
                     self._mind.trigger_chat()

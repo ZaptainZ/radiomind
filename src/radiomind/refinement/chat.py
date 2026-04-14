@@ -147,11 +147,14 @@ class ChatRefinement:
             explorer=result.explorer_response,
             reducer=result.reducer_response,
         )
-        resp = self._llm.generate(synth_prompt, system="You extract insights from debates.")
-        result.synthesis = resp.text
-        result.tokens_used = resp.tokens_prompt + resp.tokens_completion
+        try:
+            resp = self._llm.generate(synth_prompt, system="You extract insights from debates.")
+            result.synthesis = resp.text
+            result.tokens_used = resp.tokens_prompt + resp.tokens_completion
+            result.insights = self._parse_insights(resp.text)
+        except Exception as e:
+            result.synthesis = f"[synthesis failed: {e}]"
 
-        result.insights = self._parse_insights(resp.text)
         result.duration_s = time.time() - t0
         return result
 

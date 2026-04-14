@@ -146,7 +146,9 @@ def start_daemon(radiomind_home: Path | None = None) -> subprocess.Popen | None:
     if not binary.exists():
         return None
 
-    env = {"RADIOMIND_HOME": str(home), "PATH": "/usr/bin:/bin"}
+    import os
+    env = os.environ.copy()
+    env["RADIOMIND_HOME"] = str(home)
     proc = subprocess.Popen(
         [str(binary), str(socket_path)],
         env=env,

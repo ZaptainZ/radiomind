@@ -9,7 +9,6 @@ description = "RadioMind storage daemon — bionic memory core in Rust"
 rusqlite = { version = "0.35", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["full"] }
 rand = "0.9"
 log = "0.4"
 env_logger = "0.11"

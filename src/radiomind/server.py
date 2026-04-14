@@ -42,11 +42,15 @@ def create_app(config: Config | None = None) -> Any:
         version="0.1.0",
     )
 
+    cors_origins = cfg.get("server.cors_origins", "http://localhost:*")
+    if cors_origins == "*":
+        import warnings
+        warnings.warn("CORS allow_origins='*' is insecure for non-local deployments")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=[cors_origins] if cors_origins != "*" else ["*"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     # --- Auth ---

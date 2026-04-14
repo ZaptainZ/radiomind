@@ -50,7 +50,7 @@ class EntryScore:
 
     @property
     def decay(self) -> float:
-        return math.exp(-DECAY_LAMBDA * self.age_days / 180 * DECAY_HALF_LIFE)
+        return math.exp(-DECAY_LAMBDA * self.age_days)
 
     @property
     def final_score(self) -> float:

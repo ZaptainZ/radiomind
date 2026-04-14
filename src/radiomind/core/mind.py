@@ -97,14 +97,12 @@ class RadioMind:
         self._initialized = True
 
     def shutdown(self) -> None:
-        if self._meta:
-            self._meta.close()
-        if self._kg:
-            self._kg.close()
-        if self._habits:
-            self._habits.close()
-        if self._store:
-            self._store.close()
+        for component in (self._meta, self._kg, self._habits, self._store):
+            if component is not None:
+                try:
+                    component.close()
+                except Exception:
+                    pass
         self._initialized = False
 
     # --- L1: Ingest ---

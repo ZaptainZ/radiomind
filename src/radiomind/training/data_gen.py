@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from radiomind.community.pool import detect_pii, sanitize_for_sharing
+
 from radiomind.core.types import Habit, MemoryEntry, MemoryLevel
 from radiomind.storage.database import MemoryStore
 from radiomind.storage.hdc import HabitStore
@@ -55,7 +57,8 @@ class TrainingDataGenerator:
 
         # Habit-based Q&A
         if all_habits:
-            habit_descriptions = [h.description for h in all_habits]
+            habit_descriptions = [self._sanitize(h.description) for h in all_habits]
+            habit_descriptions = [h for h in habit_descriptions if h]
             habit_summary = "；".join(habit_descriptions[:10])
             habits_list = "\n".join(f"- {h}" for h in habit_descriptions[:10])
 
@@ -87,13 +90,22 @@ class TrainingDataGenerator:
         # Memory-based Q&A from L2 principles and patterns
         principles = self._store.list_by_level(MemoryLevel.PRINCIPLE, limit=10)
         for p in principles:
+            clean = self._sanitize(p.content)
+            if not clean:
+                continue
             q = f"关于{p.domain}，你观察到什么规律？" if language == "zh" else f"What patterns have you noticed about {p.domain}?"
-            examples.append(self._format_example(system_prompt, q, p.content))
+            examples.append(self._format_example(system_prompt, q, clean))
 
         patterns = self._store.list_by_level(MemoryLevel.PATTERN, limit=20)
         for p in patterns:
+            clean = self._sanitize(p.content)
+            if not clean:
+                continue
             q = f"在{p.domain}方面有什么值得注意的？" if language == "zh" else f"What's noteworthy about {p.domain}?"
-            examples.append(self._format_example(system_prompt, q, p.content))
+            examples.append(self._format_example(system_prompt, q, clean))
+
+        # Filter None entries
+        examples = [e for e in examples if e is not None]
 
         # Write JSONL
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,7 +145,16 @@ class TrainingDataGenerator:
         return f"关于{domain}的信息还在积累中。"
 
     @staticmethod
-    def _format_example(system: str, user: str, assistant: str) -> dict:
+    def _sanitize(text: str) -> str:
+        """Remove PII and project-specific identifiers from training data."""
+        if detect_pii(text):
+            return ""
+        return sanitize_for_sharing(text)
+
+    @staticmethod
+    def _format_example(system: str, user: str, assistant: str) -> dict | None:
+        if not assistant.strip():
+            return None
         return {
             "messages": [
                 {"role": "system", "content": system},

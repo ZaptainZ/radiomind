@@ -216,6 +216,8 @@ class PyramidAggregator:
                 metadata={"source": "aggregation", "fact_count": len(facts)},
             )
             pattern_id = self._store.add(pattern)
+            if pattern_id <= 0:
+                return None
 
             # Link facts to pattern
             for f in facts:
@@ -246,6 +248,8 @@ class PyramidAggregator:
                 metadata={"source": "aggregation", "pattern_count": len(patterns)},
             )
             principle_id = self._store.add(principle)
+            if principle_id <= 0:
+                return None
 
             for p in patterns:
                 if p.id is not None and p.parent_id is None:

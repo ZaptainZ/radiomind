@@ -51,9 +51,12 @@ def bind(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 def bundle(*vecs: np.ndarray) -> np.ndarray:
-    """Bundle: superpose multiple concepts (majority vote)."""
+    """Bundle: superpose multiple concepts (majority vote). Ties break to +1."""
     stacked = np.stack(vecs).astype(np.float32)
-    return np.sign(stacked.sum(axis=0)).astype(np.int8)
+    summed = stacked.sum(axis=0)
+    result = np.sign(summed)
+    result[result == 0] = 1  # break ties to +1, preserving bipolar invariant
+    return result.astype(np.int8)
 
 
 def similarity(a: np.ndarray, b: np.ndarray) -> float:

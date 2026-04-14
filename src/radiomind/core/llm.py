@@ -122,7 +122,10 @@ class OpenAICompatBackend(LLMBackend):
 
         duration = time.time() - t0
         usage = result.get("usage", {})
-        text = result["choices"][0]["message"]["content"]
+        choices = result.get("choices", [])
+        if not choices:
+            raise RuntimeError(f"LLM returned empty choices: {result}")
+        text = choices[0].get("message", {}).get("content", "")
         return LLMResponse(
             text=text,
             model=model,

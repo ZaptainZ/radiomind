@@ -114,15 +114,19 @@ class DreamRefinement:
             domain = domain_info["name"]
             facts = self._store.list_by_domain(domain, level=MemoryLevel.FACT, limit=100)
             for fact in facts:
-                if fact.last_hit_at < cutoff and fact.last_hit_at > 0:
+                should_decay = False
+                if fact.last_hit_at > 0 and fact.last_hit_at < cutoff:
+                    should_decay = True
+                elif fact.hit_count == 0 and fact.created_at < cutoff:
+                    should_decay = True
+
+                if should_decay:
                     self._store.increment_decay(fact.id)
                     fact.decay_count += 1
 
                     if fact.decay_count >= self._decay_threshold:
                         self._store.archive(fact.id)
                         journal.decayed.append(fact.content)
-                elif fact.hit_count == 0 and fact.created_at < cutoff:
-                    self._store.increment_decay(fact.id)
 
     def _prune_redundancy(self, journal: DreamJournal) -> None:
         """Find and merge redundant memories within each domain."""

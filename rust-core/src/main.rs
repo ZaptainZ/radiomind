@@ -1,7 +1,4 @@
 //! RadioMind Daemon — Rust storage core with Unix socket IPC.
-//!
-//! Listens on a Unix socket, handles JSON Lines requests from Python.
-//! Provides: SQLite CRUD, FTS5 search, knowledge graph, HDC operations.
 
 mod hdc;
 mod ipc;
@@ -10,23 +7,14 @@ mod storage;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
-fn default_socket_path() -> PathBuf {
-    let home = std::env::var("RADIOMIND_HOME")
-        .unwrap_or_else(|_| {
-            let h = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-            format!("{h}/.radiomind")
-        });
-    PathBuf::from(home).join("radiomind.sock")
-}
-
-fn default_db_path() -> PathBuf {
-    let home = std::env::var("RADIOMIND_HOME")
-        .unwrap_or_else(|_| {
-            let h = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-            format!("{h}/.radiomind")
-        });
-    PathBuf::from(home).join("data").join("radiomind.db")
+fn get_home() -> String {
+    std::env::var("RADIOMIND_HOME").unwrap_or_else(|_| {
+        let h = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+        format!("{h}/.radiomind")
+    })
 }
 
 fn main() {
@@ -35,9 +23,9 @@ fn main() {
     let socket_path = std::env::args()
         .nth(1)
         .map(PathBuf::from)
-        .unwrap_or_else(default_socket_path);
+        .unwrap_or_else(|| PathBuf::from(get_home()).join("radiomind.sock"));
 
-    let db_path = default_db_path();
+    let db_path = PathBuf::from(get_home()).join("data").join("radiomind.db");
 
     if let Some(parent) = db_path.parent() {
         std::fs::create_dir_all(parent).ok();
@@ -68,12 +56,30 @@ fn main() {
         }
     };
 
+    // Signal handling: clean up socket on SIGTERM/SIGINT
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    let sp = socket_path.clone();
+    ctrlc::set_handler(move || {
+        eprintln!("\nShutting down...");
+        std::fs::remove_file(&sp).ok();
+        r.store(false, Ordering::SeqCst);
+        std::process::exit(0);
+    })
+    .expect("Failed to set signal handler");
+
+    // Non-blocking listener so we can check the running flag
+    listener
+        .set_nonblocking(true)
+        .expect("Failed to set non-blocking");
+
     eprintln!("radiomind-daemon listening on {}", socket_path.display());
     eprintln!("database: {}", db_path.display());
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
+    while running.load(Ordering::SeqCst) {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                stream.set_nonblocking(false).ok();
                 let reader = BufReader::new(&stream);
                 let mut writer = &stream;
 
@@ -99,6 +105,9 @@ fn main() {
                         break;
                     }
                 }
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
             }
             Err(e) => {
                 eprintln!("Connection error: {e}");
