@@ -1,0 +1,82 @@
+{
+  "benchmark": "LoCoMo10 (Snap Research / ACL 2024) — all 10 conversations",
+  "n_conversations": 10,
+  "n_turns_ingested": 5882,
+  "n_queries_evaluated": 1982,
+  "n_queries_skipped_no_evidence": 4,
+  "ingest_time_s": 341.6,
+  "eval_time_s": 137.7,
+  "eval_latency_ms_per_query": 69.48,
+  "embedder_available": true,
+  "overall_r@5": 0.2376,
+  "overall_r@10": 0.2846,
+  "by_category_r@5": {
+    "cat1": {
+      "n": 282,
+      "r@5": 0.1418,
+      "r@10": 0.1809
+    },
+    "cat2": {
+      "n": 321,
+      "r@5": 0.2368,
+      "r@10": 0.3022
+    },
+    "cat3": {
+      "n": 92,
+      "r@5": 0.1304,
+      "r@10": 0.1522
+    },
+    "cat4": {
+      "n": 841,
+      "r@5": 0.2533,
+      "r@10": 0.3008
+    },
+    "cat5": {
+      "n": 446,
+      "r@5": 0.2915,
+      "r@10": 0.3341
+    }
+  },
+  "by_conversation_r@5": {
+    "conv0": {
+      "n": 197,
+      "r@5": 0.1878
+    },
+    "conv1": {
+      "n": 105,
+      "r@5": 0.2
+    },
+    "conv2": {
+      "n": 193,
+      "r@5": 0.2124
+    },
+    "conv3": {
+      "n": 260,
+      "r@5": 0.1346
+    },
+    "conv4": {
+      "n": 242,
+      "r@5": 0.3843
+    },
+    "conv5": {
+      "n": 158,
+      "r@5": 0.2722
+    },
+    "conv6": {
+      "n": 190,
+      "r@5": 0.2684
+    },
+    "conv7": {
+      "n": 239,
+      "r@5": 0.3389
+    },
+    "conv8": {
+      "n": 196,
+      "r@5": 0.2296
+    },
+    "conv9": {
+      "n": 202,
+      "r@5": 0.1188
+    }
+  }
+}

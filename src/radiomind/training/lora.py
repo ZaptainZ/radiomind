@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -335,13 +336,15 @@ def export_to_ollama(
     fused_dir.mkdir(parents=True, exist_ok=True)
 
     # Step 1: fuse adapter into base model
+    # Use sys.executable so we invoke Python from the venv where MLX is
+    # installed, not whatever `python3` happens to resolve to on PATH.
     try:
         cmd = [
-            "python3", "-m", "mlx_lm.fuse",
+            sys.executable, "-m", "mlx_lm.fuse",
             "--model", mlx_base_model,
             "--adapter-path", str(adapter_path),
             "--save-path", str(fused_dir),
-            "--de-quantize",
+            "--dequantize",
         ]
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         if r.returncode != 0:
@@ -352,13 +355,18 @@ def export_to_ollama(
         return False, "mlx_lm.fuse timed out (>10 min). Large base model?"
 
     # Step 2: convert fused HF model → GGUF
+    # NOTE: llama.cpp's convert_hf_to_gguf.py only supports outtype of
+    # f32/f16/bf16/q8_0/tq1_0/tq2_0/auto. For k-quants like q4_K_M the
+    # user must then run llama.cpp's quantize binary — we pick q8_0 as
+    # the best single-step balance of size (~500MB for a 0.5B model)
+    # and quality (~lossless).
     gguf_path = adapter_path.parent / "model.gguf"
     try:
         cmd = [
-            "python3", convert_script,
+            sys.executable, convert_script,
             str(fused_dir),
             "--outfile", str(gguf_path),
-            "--outtype", "q4_K_M",
+            "--outtype", "q8_0",
         ]
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
         if r.returncode != 0:
