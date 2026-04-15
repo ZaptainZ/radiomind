@@ -28,7 +28,8 @@ def test_unique_relation_invalidates(kg):
     current = kg.query_entity("user")
     works = [t for t in current if t.relation == "works_at"]
     assert len(works) == 1
-    assert works[0].object == "CompanyB"
+    # Canonicalization lowercases ASCII entity names
+    assert works[0].object == "companyb"
 
 
 def test_timeline(kg):
@@ -38,8 +39,8 @@ def test_timeline(kg):
 
     timeline = kg.timeline("user")
     assert len(timeline) == 2
-    assert timeline[0].object == "CompanyA"
-    assert timeline[1].object == "CompanyB"
+    assert timeline[0].object == "companya"
+    assert timeline[1].object == "companyb"
     assert timeline[0].valid_until is not None  # invalidated
 
 
@@ -50,7 +51,23 @@ def test_query_at_time(kg):
 
     past = kg.query_entity("user", as_of=1500.0)
     assert len(past) == 1
-    assert past[0].object == "CompanyA"
+    assert past[0].object == "companya"
+
+
+def test_canonicalize_cn_suffixes(kg):
+    kg.add_triple("user", "located_in", "杭州市")
+    kg.add_triple("user", "works_at", "阿里巴巴公司")
+    facts = kg.query_entity("user")
+    objs = {t.object for t in facts}
+    assert "杭州" in objs
+    assert "阿里巴巴" in objs
+
+
+def test_alias_rewrites_graph(kg):
+    kg.add_triple("user", "likes", "apple")
+    kg.add_alias("apple", "苹果公司")  # 苹果公司 → canonical "苹果"
+    facts = kg.query_relation("user", "likes")
+    assert any(t.object == "苹果" for t in facts)
 
 
 def test_non_unique_relation(kg):

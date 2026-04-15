@@ -23,14 +23,33 @@ def store_with_habits(tmp_path):
     habits = HabitStore(tmp_path / "hdc")
     habits.open()
 
-    # Populate with test data
-    store.add(MemoryEntry(content="用户喜欢跑步", domain="health", level=MemoryLevel.FACT))
-    store.add(MemoryEntry(content="用户讨厌加班", domain="work", level=MemoryLevel.FACT))
-    store.add(MemoryEntry(content="运动改善睡眠", domain="health", level=MemoryLevel.PATTERN))
-    store.add(MemoryEntry(content="用户重视自主性", domain="meta", level=MemoryLevel.PRINCIPLE))
+    # v0.2 quality gates demand >= 5 habits and >= 2 domains so the
+    # training-data generator doesn't refuse. Confidence must be >= 0.7
+    # to pass HabitStore.MIN_CONFIDENCE.
+    for dom in ("health", "work", "hobby"):
+        for i in range(3):
+            store.add(MemoryEntry(
+                content=f"{dom} 事实 {i}：我在 {dom} 领域的独特观察 {i}",
+                domain=dom, level=MemoryLevel.FACT,
+            ))
+        store.add(MemoryEntry(
+            content=f"{dom} 模式：倾向高质量、低频次的投入",
+            domain=dom, level=MemoryLevel.PATTERN,
+        ))
+    store.add(MemoryEntry(
+        content="用户重视自主性",
+        domain="meta", level=MemoryLevel.PRINCIPLE,
+    ))
 
-    habits.add_habit("用户重视健康和规律运动", [("user", "health")])
-    habits.add_habit("用户讨厌被时间压力驱动", [("user", "pressure")])
+    for desc in (
+        "用户喜欢每天早上跑步锻炼",
+        "用户不喜欢被时间压力驱动的加班",
+        "用户偏好手冲咖啡并讨厌糖饮",
+        "用户每周三晚上固定做瑜伽",
+        "用户认为 Rust 的所有权模型更优雅",
+        "用户计划十月去京都看红叶",
+    ):
+        habits.add_habit(desc, [("user", desc)], confidence=0.85)
 
     yield store, habits
     habits.close()
@@ -66,7 +85,8 @@ class TestTrainingDataGen:
         gen.generate(output)
 
         content = output.read_text()
-        assert "健康" in content or "运动" in content
+        # Generated content must reference at least one of the seeded habits
+        assert any(kw in content for kw in ("锻炼", "瑜伽", "跑步", "咖啡", "Rust", "京都"))
 
     def test_generate_empty_store(self, tmp_path):
         store = MemoryStore(tmp_path / "empty.db")
@@ -155,6 +175,7 @@ class TestMindTrainIntegration:
 
         result = mind.train()
         assert not result.success
-        assert "No training data" in result.error
+        # Either the data-gen refused (new v0.2 gate) or training said no data
+        assert any(msg in result.error for msg in ("No training data", "Too few training examples", "need >="))
 
         mind.shutdown()

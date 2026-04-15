@@ -35,11 +35,17 @@ class TestMCPProtocol:
             "params": {},
         })
         tools = resp["result"]["tools"]
-        assert len(tools) == 9
+        # Assert on the floor (9 original + P1/P3 additions) rather than exact
+        # count so adding more tools doesn't require editing this test.
+        assert len(tools) >= 9
         names = {t["name"] for t in tools}
-        assert "radiomind_search" in names
-        assert "radiomind_dream" in names
-        assert "radiomind_digest" in names
+        for required in (
+            "radiomind_search", "radiomind_dream", "radiomind_digest",
+            "radiomind_ingest", "radiomind_habits", "radiomind_status",
+            "radiomind_get_memory", "radiomind_list_memories",
+            "radiomind_delete_scope",
+        ):
+            assert required in names, f"missing MCP tool: {required}"
 
     def test_ping(self, server):
         resp = server.handle_request({

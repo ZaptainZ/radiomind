@@ -34,10 +34,19 @@ def test_save_load(tmp_path: Path):
     assert loaded.get("hdc.dim") == 10000
 
 
-def test_home_path():
-    cfg = Config()
+def test_home_path(monkeypatch):
+    # Default (no env override) should point at ~/.radiomind
+    monkeypatch.delenv("RADIOMIND_HOME", raising=False)
+    # Config() doesn't re-read env; test via load() which picks up _default_home
+    cfg = Config.load()
     assert isinstance(cfg.home, Path)
     assert cfg.home.name == ".radiomind"
+
+
+def test_home_path_env_override(monkeypatch, tmp_path):
+    monkeypatch.setenv("RADIOMIND_HOME", str(tmp_path))
+    cfg = Config.load()
+    assert cfg.home == tmp_path
 
 
 def test_db_path():

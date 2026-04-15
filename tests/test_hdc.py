@@ -48,9 +48,9 @@ def test_habit_store_add_and_query(tmp_path):
     store = HabitStore(tmp_path / "hdc")
     store.open()
 
-    store.add_habit("likes apples", [("fruit", "apple")])
-    store.add_habit("likes oranges", [("fruit", "orange")])
-    store.add_habit("reads books", [("hobby", "reading")])
+    store.add_habit("likes apples", [("fruit", "apple")], confidence=0.85)
+    store.add_habit("likes oranges", [("fruit", "orange")], confidence=0.85)
+    store.add_habit("reads books", [("hobby", "reading")], confidence=0.85)
 
     # query with bind pair matches the encoding method
     results = store.query_by_pairs([("fruit", "apple")], top_k=3)
@@ -66,7 +66,7 @@ def test_habit_store_persistence(tmp_path):
 
     store1 = HabitStore(data_dir)
     store1.open()
-    store1.add_habit("test habit", [("a", "b")])
+    store1.add_habit("test habit", [("a", "b")], confidence=0.85)
     store1.close()
 
     store2 = HabitStore(data_dir)
@@ -79,7 +79,7 @@ def test_habit_store_persistence(tmp_path):
 def test_habit_confirm(tmp_path):
     store = HabitStore(tmp_path / "hdc")
     store.open()
-    store.add_habit("candidate", [("x", "y")])
+    store.add_habit("candidate", [("x", "y")], confidence=0.85)
 
     assert store.all_habits()[0].status == MemoryStatus.CANDIDATE
     store.confirm(0)
@@ -92,8 +92,8 @@ def test_habit_confirm(tmp_path):
 def test_habit_remove(tmp_path):
     store = HabitStore(tmp_path / "hdc")
     store.open()
-    store.add_habit("keep", [("a", "b")])
-    store.add_habit("remove", [("c", "d")])
+    store.add_habit("keep", [("a", "b")], confidence=0.85)
+    store.add_habit("remove", [("c", "d")], confidence=0.85)
     assert store.count == 2
 
     store.remove(1)
@@ -106,8 +106,8 @@ def test_habit_remove(tmp_path):
 def test_bundle_all_habits(tmp_path):
     store = HabitStore(tmp_path / "hdc")
     store.open()
-    store.add_habit("h1", [("a", "b")])
-    store.add_habit("h2", [("c", "d")])
+    store.add_habit("h1", [("a", "b")], confidence=0.85)
+    store.add_habit("h2", [("c", "d")], confidence=0.85)
 
     b = store.get_bundle()
     assert b is not None
