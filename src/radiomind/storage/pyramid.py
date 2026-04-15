@@ -29,6 +29,44 @@ Respond with ONLY the principle in one sentence. No explanation."""
 RRF_K = 60  # standard RRF constant (TREC best practice)
 
 
+def _has_cjk(text: str) -> bool:
+    return any("\u4e00" <= ch <= "\u9fff" for ch in text)
+
+
+def _cjk_ngrams(text: str, n: int = 2) -> list[str]:
+    """Extract CJK character n-grams from a query.
+
+    Example: "我叫什么名字" (n=2) → ["我叫", "叫什", "什么", "么名", "名字"]
+    Non-CJK characters are treated as segment boundaries.
+    """
+    segments: list[str] = []
+    buf: list[str] = []
+    for ch in text:
+        if "\u4e00" <= ch <= "\u9fff":
+            buf.append(ch)
+        else:
+            if buf:
+                segments.append("".join(buf))
+                buf = []
+    if buf:
+        segments.append("".join(buf))
+
+    ngrams: list[str] = []
+    seen: set[str] = set()
+    for seg in segments:
+        if len(seg) < n:
+            if seg and seg not in seen:
+                seen.add(seg)
+                ngrams.append(seg)
+            continue
+        for i in range(len(seg) - n + 1):
+            g = seg[i : i + n]
+            if g not in seen:
+                seen.add(g)
+                ngrams.append(g)
+    return ngrams
+
+
 class PyramidSearch:
     """Attention-style hierarchical memory retrieval.
 
@@ -71,9 +109,25 @@ class PyramidSearch:
         if fts_results:
             candidates.append(fts_results)
 
-        # 3. LIKE (only if vector and FTS both empty — true fallback, not parallel)
-        if not candidates:
-            like_results = self._store.search_like(query, limit=max_results)
+        # 3. LIKE — always run for CJK (unicode61 FTS tokenizes CJK by
+        #    punctuation, missing mid-string matches). For ASCII-only
+        #    queries LIKE acts as fallback when FTS+vector are empty.
+        if _has_cjk(query) or not candidates:
+            # Also expand with CJK bigrams if the single LIKE finds nothing
+            like_results = self._store.search_like(query, limit=max_results * 2)
+            if not like_results and _has_cjk(query):
+                for ngram in _cjk_ngrams(query, n=2):
+                    like_results.extend(
+                        self._store.search_like(ngram, limit=max_results)
+                    )
+                # Dedup by id, preserve order
+                seen = set()
+                unique = []
+                for r in like_results:
+                    if r.entry.id not in seen:
+                        seen.add(r.entry.id)
+                        unique.append(r)
+                like_results = unique[: max_results * 2]
             if like_results:
                 candidates.append(like_results)
 
