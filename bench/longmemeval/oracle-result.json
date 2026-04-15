@@ -1,0 +1,45 @@
+{
+  "benchmark": "LongMemEval oracle (Wu et al., 2024)",
+  "dataset": "/tmp/longmemeval-data/oracle.json",
+  "n_questions_total": 500,
+  "n_evaluated": 479,
+  "n_skipped": 21,
+  "top_k": 5,
+  "embedder_available": true,
+  "overall_r@5": 0.6263,
+  "overall_r@10": 0.6639,
+  "elapsed_s": 716.4,
+  "latency_ms_per_q": 1495.7,
+  "by_type": {
+    "knowledge-update": {
+      "n": 72,
+      "r@5": 0.8333,
+      "r@10": 0.8611
+    },
+    "multi-session": {
+      "n": 125,
+      "r@5": 0.544,
+      "r@10": 0.608
+    },
+    "single-session-assistant": {
+      "n": 56,
+      "r@5": 0.875,
+      "r@10": 0.9464
+    },
+    "single-session-preference": {
+      "n": 30,
+      "r@5": 0.4333,
+      "r@10": 0.4333
+    },
+    "single-session-user": {
+      "n": 64,
+      "r@5": 0.625,
+      "r@10": 0.6406
+    },
+    "temporal-reasoning": {
+      "n": 132,
+      "r@5": 0.5303,
+      "r@10": 0.553
+    }
+  }
+}
