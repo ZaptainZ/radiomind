@@ -25,11 +25,47 @@ CREATE TABLE IF NOT EXISTS triples (
     created_at REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS entity_aliases (
+    alias TEXT NOT NULL,
+    canonical TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    PRIMARY KEY (alias)
+);
+
 CREATE INDEX IF NOT EXISTS idx_subject ON triples(subject);
 CREATE INDEX IF NOT EXISTS idx_relation ON triples(relation);
 CREATE INDEX IF NOT EXISTS idx_object ON triples(object);
 CREATE INDEX IF NOT EXISTS idx_valid ON triples(valid_from, valid_until);
+CREATE INDEX IF NOT EXISTS idx_alias_canonical ON entity_aliases(canonical);
 """
+
+
+# Common Chinese location suffixes we strip during canonicalization so that
+# "北京市 / 北京" and "杭州 / 杭州市" collapse to the same entity.
+_CN_LOC_SUFFIXES = ("市", "省", "县", "区", "镇")
+_CN_ORG_SUFFIXES = ("公司", "有限公司", "股份有限公司")
+
+
+def canonicalize(entity: str) -> str:
+    """Normalize an entity string to its canonical form.
+
+    - Strip whitespace and common punctuation
+    - Lowercase ASCII (CJK is case-insensitive inherently)
+    - Strip common Chinese location/org suffixes
+    Does NOT do cross-entity merging (that's in KnowledgeGraph.resolve()).
+    """
+    s = entity.strip().strip("，。,.()[]【】「」\"'『』")
+    if not s:
+        return ""
+    # Lowercase only ASCII letters; leave CJK untouched
+    ascii_lower = "".join(ch.lower() if ch.isascii() else ch for ch in s)
+    s = ascii_lower
+    # Strip common suffixes for locations / orgs
+    for suf in _CN_LOC_SUFFIXES + _CN_ORG_SUFFIXES:
+        if s.endswith(suf) and len(s) > len(suf) + 1:
+            s = s[: -len(suf)]
+            break
+    return s
 
 TRIPLE_EXTRACTION_PATTERNS = [
     (r"我(?:叫|是)\s*(\S+)", "user", "name_is", None),
@@ -87,7 +123,16 @@ class KnowledgeGraph:
         source_id: int | None = None,
         confidence: float = 1.0,
     ) -> int:
-        """Add a triple. Auto-invalidates conflicting triples for unique relations."""
+        """Add a triple. Auto-invalidates conflicting triples for unique relations.
+
+        Subject and object are canonicalized + alias-resolved before insert
+        so that "杭州市" and "杭州" collapse to the same node.
+        """
+        subject = self.resolve(subject)
+        obj = self.resolve(obj)
+        if not subject or not obj:
+            return -1
+
         now = time.time()
         valid_from = valid_from or now
 
@@ -106,8 +151,43 @@ class KnowledgeGraph:
         self.conn.commit()
         return cur.lastrowid
 
+    def resolve(self, entity: str) -> str:
+        """Return the canonical form for an entity, following the alias chain."""
+        c = canonicalize(entity)
+        if not c:
+            return ""
+        row = self.conn.execute(
+            "SELECT canonical FROM entity_aliases WHERE alias = ?", (c,)
+        ).fetchone()
+        return row["canonical"] if row else c
+
+    def add_alias(self, alias: str, canonical: str) -> None:
+        """Register an alias so future triples referencing `alias` map to `canonical`.
+
+        Also rewrites existing triples (subject/object) so the graph is
+        consistent immediately. Idempotent on repeat calls.
+        """
+        alias_c = canonicalize(alias)
+        canonical_c = canonicalize(canonical)
+        if not alias_c or not canonical_c or alias_c == canonical_c:
+            return
+        now = time.time()
+        self.conn.execute(
+            "INSERT OR REPLACE INTO entity_aliases (alias, canonical, created_at) VALUES (?, ?, ?)",
+            (alias_c, canonical_c, now),
+        )
+        # Rewrite existing triples
+        self.conn.execute(
+            "UPDATE triples SET subject = ? WHERE subject = ?", (canonical_c, alias_c)
+        )
+        self.conn.execute(
+            "UPDATE triples SET object = ? WHERE object = ?", (canonical_c, alias_c)
+        )
+        self.conn.commit()
+
     def query_entity(self, entity: str, as_of: float | None = None) -> list[Triple]:
         """Query all facts about an entity, optionally at a point in time."""
+        entity = self.resolve(entity)
         if as_of is not None:
             rows = self.conn.execute(
                 "SELECT * FROM triples WHERE subject = ? AND valid_from <= ? AND (valid_until IS NULL OR valid_until > ?) ORDER BY valid_from DESC",
@@ -122,6 +202,7 @@ class KnowledgeGraph:
 
     def query_relation(self, subject: str, relation: str) -> list[Triple]:
         """Query specific relation for a subject."""
+        subject = self.resolve(subject)
         rows = self.conn.execute(
             "SELECT * FROM triples WHERE subject = ? AND relation = ? AND valid_until IS NULL ORDER BY created_at DESC",
             (subject, relation),
@@ -130,6 +211,7 @@ class KnowledgeGraph:
 
     def timeline(self, entity: str) -> list[Triple]:
         """Get full timeline of an entity (including expired facts)."""
+        entity = self.resolve(entity)
         rows = self.conn.execute(
             "SELECT * FROM triples WHERE subject = ? ORDER BY valid_from ASC",
             (entity,),
