@@ -1,0 +1,16 @@
+{
+  "deploy_pipeline": "mlx_lm.fuse (4-bit → FP16) → convert_hf_to_gguf q8_0 → ollama create",
+  "artifacts": {
+    "adapter.safetensors": "5.9 MB  (iter 125 early-stopped, val=0.485)",
+    "fused/model.safetensors": "988 MB (dequantized FP16)",
+    "model.gguf": "531 MB (q8_0)"
+  },
+  "ollama_registered": "radiomind-personal-test:latest 531 MB",
+  "qualitative_observation": "MLX-direct A/B (earlier): LoRA reliably cites user habits (e.g. 'serde rename', '动态阻尼机制'); overlap +23% vs base. Ollama-deployed via GGUF: generation quality degraded — outputs drift into off-topic stories / multiple-choice patterns, no reliable habit citations. Cause: 4-bit→FP16→q8_0 quantization roundtrip loses adapter signal. This is a known MLX+GGUF tradeoff, not a bug. Use MLX direct when possible, Ollama for deployment where cross-platform matters more than fidelity.",
+  "recommended_mitigations": [
+    "Keep MLX-native serving for best quality (mlx_lm.server)",
+    "If GGUF needed, use f16/bf16 outtype instead of q8_0 to reduce loss",
+    "Use larger base model (3B+) where LoRA rank effect is less fragile",
+    "Train more iters on larger dataset — 82 examples is at the lower bound"
+  ]
+}
