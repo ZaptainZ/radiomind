@@ -1,8 +1,31 @@
 # RadioMind — Project Overview
 
 > **文档性质**: 方向性设计文档，经多轮讨论对齐后的架构方案。
-> **更新日期**: 2026-04-13
-> **版本**: v3 (仿生记忆核心定位)
+> **更新日期**: 2026-04-15（v0.2 修复周期完成）
+> **版本**: v3 设计 / v0.2 实现
+
+## 实现状态速览（v0.2，2026-04-15）
+
+v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态：
+
+| 模块 | 之前 | 现在 |
+|------|------|------|
+| 向量检索 | 写入但从不读 | Vector → FTS → LIKE，RRF 融合，CJK n-gram 兜底 |
+| Habit 验证 | 无门禁，任何 LLM 输出都收 | confidence ≥ 0.7 才入库；3 命中自动晋升；2 拒绝归档；14 天零命中过期 |
+| 多用户 | MemoryEntry 无 user/session | schema v3：user_id/agent_id/session_id 列 + memory_history 审计表 |
+| Memory CRUD | 只有 add/search | get/update/delete/delete_all/history/list 全通，Simple + RadioMind + 6 个 MCP tool |
+| 健康诊断 | 无 | `radiomind doctor` |
+| Setup 安全 | 直接覆盖 | 写 settings.json / hooks.json / mcp.json 前打时间戳备份 |
+| 基准 | 无 | `bench/locomo_lite` 50 问，R@5 0.71（无 embedder），回归门禁 |
+| LoRA 数据 | 教科书过拟合（train=valid） | 80/20 真实拆分，严格去重，≥ 30 样本才训 |
+| LoRA 部署 | 调一条不工作的路径 | `mlx_lm.fuse` → llama.cpp convert_hf_to_gguf → ollama create |
+| LoRA A/B | 无 | `bench/lora_ab/eval.py` 在 LoCoMo-lite 上跑 base vs LoRA |
+| 会话持久化 | refine_step sessions 只在内存 | 每步写 `data/refine_sessions.json`，跨进程恢复 |
+| 迁移框架 | 内联 if 分支 | `storage/migrations.py`，注册装饰器 |
+
+阻塞点全部清零。未做（非阻塞）：prompt 重写 EVIDENCE/FALSIFIER、异构 refinement 模型、KG entity resolution、async/batch API、UX 细节。
+
+执行细节参见 `logs/2026-04-15-p1-execution-cc.md` 和 `logs/2026-04-15-p2-p3-execution-cc.md`。
 
 ---
 
