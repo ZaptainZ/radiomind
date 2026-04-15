@@ -113,12 +113,20 @@ class PyramidSearch:
         score = sum(1 / (k + rank_in_each_list))
     """
 
-    def __init__(self, store: MemoryStore, embedder=None):
+    def __init__(self, store: MemoryStore, embedder=None, reranker=None, query_rewriter=None):
         self._store = store
         self._embedder = embedder  # optional EmbeddingEncoder
+        self._reranker = reranker  # optional CrossEncoderReranker
+        self._query_rewriter = query_rewriter  # optional QueryRewriter
 
     def set_embedder(self, embedder) -> None:
         self._embedder = embedder
+
+    def set_reranker(self, reranker) -> None:
+        self._reranker = reranker
+
+    def set_query_rewriter(self, rewriter) -> None:
+        self._query_rewriter = rewriter
 
     def search(
         self,
@@ -130,18 +138,30 @@ class PyramidSearch:
         """Hybrid retrieval with RRF fusion + privacy/domain filtering."""
         candidates: list[list[SearchResult]] = []
 
-        # 1. Vector search (if embedder available and encodes successfully)
-        if self._embedder is not None and getattr(self._embedder, "is_available", False):
-            q_emb = self._embedder.encode(query)
-            if q_emb:
-                vec_results = self._store.search_vector(q_emb, limit=max_results * 2)
-                if vec_results:
-                    candidates.append(vec_results)
+        # Query rewriting: if a rewriter is configured, generate paraphrased
+        # variants and retrieve for EACH. RRF naturally gives rank-weighted
+        # votes — a doc that shows up high across multiple paraphrasings wins.
+        queries = [query]
+        if self._query_rewriter is not None:
+            try:
+                queries = self._query_rewriter.rewrite(query) or [query]
+            except Exception:
+                queries = [query]
 
-        # 2. FTS5
-        fts_results = self._store.search_fts(query, limit=max_results * 2)
-        if fts_results:
-            candidates.append(fts_results)
+        # 1. Vector search per query variant
+        if self._embedder is not None and getattr(self._embedder, "is_available", False):
+            for q in queries:
+                q_emb = self._embedder.encode(q)
+                if q_emb:
+                    vec_results = self._store.search_vector(q_emb, limit=max_results * 2)
+                    if vec_results:
+                        candidates.append(vec_results)
+
+        # 2. FTS5 per query variant
+        for q in queries:
+            fts_results = self._store.search_fts(q, limit=max_results * 2)
+            if fts_results:
+                candidates.append(fts_results)
 
         # 3. LIKE — always run for CJK (unicode61 FTS tokenizes CJK by
         #    punctuation, missing mid-string matches). For ASCII-only
@@ -187,8 +207,25 @@ class PyramidSearch:
             if dated:
                 candidates.append(dated[: max_results * 2])
 
-        # RRF fusion
-        fused = self._rrf_fuse(candidates, max_results)
+        # RRF fusion. Pull a wider top-N when a reranker is available so
+        # it has enough candidates to actually improve ordering.
+        rrf_limit = max(max_results, 20) if self._reranker is not None else max_results
+        fused = self._rrf_fuse(candidates, rrf_limit)
+
+        # 5. Cross-encoder rerank (optional, high quality path).
+        # Takes RRF's top-20 and re-scores with a pairwise
+        # (query, candidate) cross-encoder. This is where most published
+        # retrieval systems get their last +10-20% R@5.
+        if self._reranker is not None and len(fused) > max_results:
+            try:
+                pairs = [(query, r.entry.content) for r in fused[: rrf_limit]]
+                scores = self._reranker.predict(pairs)
+                for r, s in zip(fused[: rrf_limit], scores):
+                    r.score = float(s)
+                    r.method = "rerank"
+                fused = sorted(fused[: rrf_limit], key=lambda r: r.score, reverse=True)
+            except Exception:
+                pass  # fall through to RRF ordering on any reranker error
 
         # Filter + privacy + record hits
         filtered: list[SearchResult] = []

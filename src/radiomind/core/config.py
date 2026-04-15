@@ -67,6 +67,32 @@ DEFAULT_CONFIG = {
     "hdc": {
         "dim": 10000,
     },
+    "retrieval": {
+        # Cross-encoder reranker: +10-20% R@5, 2.3GB download, ~30ms/query.
+        # Off by default so first-time users don't trigger a huge download.
+        # Enable after verifying `radiomind doctor` shows embedder working.
+        "reranker": {
+            "enabled": False,
+            "model": "BAAI/bge-reranker-v2-m3",
+        },
+        # LLM query rewriter: +5-10% R@5 on hard queries, adds ~300ms LLM
+        # latency per search. Only enable when accuracy > speed.
+        "query_rewriter": {
+            "enabled": False,
+        },
+    },
+    "training": {
+        # Default base model for `radiomind train`. Updated 2026-04-16 from
+        # Qwen2.5-0.5B-4bit to Qwen3-4B-Instruct-2507-4bit: Qwen3 series
+        # dropped in late-2025, 4B hits the price/quality sweet spot for
+        # personal-device LoRA on Apple Silicon.
+        "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+        "lora_rank": 8,
+        "lora_layers": 8,
+        "iterations": 500,
+        "batch_size": 2,
+        "learning_rate": 1e-5,
+    },
     "meta": {
         "digest_token_budget": 250,
     },

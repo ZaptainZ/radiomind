@@ -88,7 +88,43 @@ class RadioMind:
         except Exception:
             self._embedder = None
 
-        self._pyramid = PyramidSearch(self._store, embedder=self._embedder)
+        # Reranker — opt-in via config (off by default: 2.3GB download,
+        # ~30ms/query latency). When present, gives the retrieval pipeline
+        # its last +10-20% R@5 by cross-encoder rescoring of top-20 RRF.
+        self._reranker = None
+        if self.config.get("retrieval.reranker.enabled", False):
+            try:
+                from radiomind.storage.reranker import CrossEncoderReranker
+                model_id = self.config.get("retrieval.reranker.model", "BAAI/bge-reranker-v2-m3")
+                r = CrossEncoderReranker(model_id=model_id, cache_dir=home / "models" / "reranker")
+                if r.load():
+                    self._reranker = r
+            except Exception:
+                self._reranker = None
+
+        # Query rewriter — opt-in; uses LLMRouter to produce 2-3 paraphrases
+        # per search. Trades ~200-500ms latency for recall gains on tough
+        # queries (preference, multi-hop).
+        self._query_rewriter = None
+        if self.config.get("retrieval.query_rewriter.enabled", False):
+            try:
+                from radiomind.storage.query_rewriter import QueryRewriter
+                def _llm_fn(prompt: str) -> str:
+                    resp = self._llm.generate(prompt, system="You rewrite search queries.")
+                    return resp.text
+                self._query_rewriter = QueryRewriter(
+                    llm_fn=_llm_fn,
+                    cache_path=home / "data" / "query_rewrite_cache.json",
+                )
+            except Exception:
+                self._query_rewriter = None
+
+        self._pyramid = PyramidSearch(
+            self._store,
+            embedder=self._embedder,
+            reranker=self._reranker,
+            query_rewriter=self._query_rewriter,
+        )
         self._aggregator = PyramidAggregator(self._store, self._llm)
 
         chat_cfg = self.config.get("refinement.chat", {})
