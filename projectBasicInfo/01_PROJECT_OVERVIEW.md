@@ -23,9 +23,17 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
 | 会话持久化 | refine_step sessions 只在内存 | 每步写 `data/refine_sessions.json`，跨进程恢复 |
 | 迁移框架 | 内联 if 分支 | `storage/migrations.py`，注册装饰器 |
 
-阻塞点全部清零。未做（非阻塞）：prompt 重写 EVIDENCE/FALSIFIER、异构 refinement 模型、KG entity resolution、async/batch API、UX 细节。
+阻塞点全部清零。P3 完善轮又补上：
+- EVIDENCE + FALSIFIER 结构化 refinement prompt（habit 带证据链 + 证伪条件）
+- 异构 refinement 后端（三体博弈可以每个角色用不同 backend + model）
+- 批量 ingest（`ingest_batch` / `add_many`，单事务，实测 11.5× 提速）
+- KG entity resolution（`canonicalize` + `entity_aliases` + `resolve`）
+- 状态/诊断 UX（status 分解 habit 状态 + grounding 比例，doctor 增加 grounding check）
+- `radiomind setup-restore`（一键回滚最近的 setup 备份）
 
-执行细节参见 `logs/2026-04-15-p1-execution-cc.md` 和 `logs/2026-04-15-p2-p3-execution-cc.md`。
+剩下的非阻塞项：full async（aiosqlite + async Ollama）、pytest 套件机器上没装。
+
+执行细节参见 `logs/2026-04-15-p1-execution-cc.md`、`logs/2026-04-15-p2-p3-execution-cc.md` 和 `logs/2026-04-15-p3-polish-cc.md`。
 
 ---
 
