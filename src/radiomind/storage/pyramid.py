@@ -29,6 +29,40 @@ Respond with ONLY the principle in one sentence. No explanation."""
 RRF_K = 60  # standard RRF constant (TREC best practice)
 
 
+# --- Temporal query handling ---
+# Questions asking "when" (including 何时/什么时候/几月/哪天/date patterns)
+# benefit from up-weighting memories that contain explicit dates or times.
+# This is the hook P3 audit flagged: LoCoMo10 cat3 (temporal reasoning)
+# scored 0.000 because vector + FTS + LIKE are all lexical — none of them
+# know that a memory mentioning \"May 7, 2023\" is a better candidate for
+# \"when did X go to Y\" than one that doesn't.
+import re as _re
+
+_TEMPORAL_QUERY_MARKERS = (
+    "when ", "what day", "what date", "what year", "what month",
+    "which day", "which date", "which year", "which month",
+    "how long ago", "how many days", "how many weeks", "how many months",
+    "什么时候", "何时", "哪天", "哪一天", "几月", "几号", "何年何月",
+    "多久以前", "多长时间",
+)
+
+# Matches explicit dates in memory content. Compiled once; cheap to reuse.
+_DATE_PATTERNS = _re.compile(
+    r"\b(?:"
+    r"\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?"                 # 2023-05-07, 2023年5月7日
+    r"|\d{1,2}[-/月]\d{1,2}日?(?:[, ]+\d{4})?"           # 5/7/2023, 5月7日
+    r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2}(?:[,\s]+\d{4})?"
+    r"|\d{1,2}:\d{2}(?:\s*[ap]m)?"                         # 3:45pm
+    r")",
+    _re.IGNORECASE,
+)
+
+
+def _is_temporal_query(q: str) -> bool:
+    ql = q.lower()
+    return any(m in ql for m in _TEMPORAL_QUERY_MARKERS)
+
+
 def _has_cjk(text: str) -> bool:
     return any("\u4e00" <= ch <= "\u9fff" for ch in text)
 
@@ -130,6 +164,28 @@ class PyramidSearch:
                 like_results = unique[: max_results * 2]
             if like_results:
                 candidates.append(like_results)
+
+        # 4. Temporal boost: for "when/什么时候/..." questions, a small set
+        #    of date-bearing memories is a very strong prior. We fuse this
+        #    into RRF rather than replacing lexical results so it helps
+        #    temporal queries without hurting the common case.
+        if _is_temporal_query(query) and candidates:
+            # Pick the top lexical matches that actually mention a date.
+            dated: list[SearchResult] = []
+            seen_ids: set[int] = set()
+            for result_list in candidates:
+                for r in result_list:
+                    if r.entry.id in seen_ids:
+                        continue
+                    if _DATE_PATTERNS.search(r.entry.content):
+                        seen_ids.add(r.entry.id)
+                        dated.append(SearchResult(
+                            entry=r.entry, score=1.0, method="temporal"
+                        ))
+                if len(dated) >= max_results * 2:
+                    break
+            if dated:
+                candidates.append(dated[: max_results * 2])
 
         # RRF fusion
         fused = self._rrf_fuse(candidates, max_results)

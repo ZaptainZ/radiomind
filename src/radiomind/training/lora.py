@@ -141,8 +141,48 @@ def train_lora(
     adapter_dir.mkdir(exist_ok=True)
 
     try:
+        from pathlib import Path as _P
         from types import SimpleNamespace
-        from mlx_lm.lora import CONFIG_DEFAULTS, run as mlx_run
+        # NOTE: we deliberately do NOT call mlx_lm.lora.run() because it
+        # unconditionally overwrites its `training_callback` kwarg with
+        # get_reporting_callbacks() on entry — a foot-gun that silently
+        # discards our BestCheckpointTracker. Instead we reproduce the
+        # three steps run() does (load → lora-layers → train) and pass
+        # our callback directly to train().
+        from mlx_lm.lora import CONFIG_DEFAULTS
+        from mlx_lm.lora import linear_to_lora_layers, load_dataset, print_trainable_parameters, save_config
+        from mlx_lm.tuner.trainer import TrainingArgs, train as mlx_train, CacheDataset
+        from mlx_lm.tuner.callbacks import TrainingCallback
+        from mlx_lm.utils import load as mlx_load
+        import mlx.optimizers as _optim
+        import mlx.core as _mx
+        import numpy as _np
+
+        # Align save cadence with eval cadence so every eval has a matching
+        # checkpoint we can pick as "best". Without this the early-stopping
+        # callback can observe a val-loss minimum it has no snapshot for.
+        eval_every = config.eval_every
+        save_every = eval_every
+
+        class BestCheckpointTracker(TrainingCallback):
+            """Track (iter, val_loss) pairs during training.
+
+            At the end we promote the checkpoint with the lowest val_loss
+            as the final adapter — so we never ship the over-trained tail.
+            """
+            def __init__(self):
+                self.val_history: list[tuple[int, float]] = []
+
+            def on_val_loss_report(self, val_info: dict):
+                # mlx_lm reports iteration 0-indexed (0, eval_every-1, ...)
+                # but the checkpoint files it saves use 1-indexed names
+                # (0000025_adapters.safetensors for the 25th iter). Align
+                # here so best_iter keys directly into a real file.
+                it = int(val_info.get("iteration", 0)) + 1
+                vl = float(val_info.get("val_loss", float("inf")))
+                self.val_history.append((it, vl))
+
+        tracker = BestCheckpointTracker()
 
         run_args = dict(CONFIG_DEFAULTS)
         run_args.update({
@@ -154,22 +194,85 @@ def train_lora(
             "iters": effective_iters,
             "learning_rate": config.learning_rate,
             "adapter_path": str(adapter_dir),
-            "save_every": max(config.eval_every, 50),
+            "save_every": save_every,
             "steps_per_report": 10,
-            "steps_per_eval": config.eval_every,
+            "steps_per_eval": eval_every,
             "max_seq_length": config.max_seq_length,
             "lora_parameters": {
                 "rank": config.lora_rank,
-                "dropout": 0.05,  # small dropout discourages memorization
+                "dropout": 0.05,
                 "scale": 20.0,
             },
         })
+        args_ns = SimpleNamespace(**run_args)
 
         print(
             f"  Training: {effective_iters} iters, model={config.model}, "
-            f"rank={config.lora_rank}, train={line_count}, valid={valid_count}"
+            f"rank={config.lora_rank}, train={line_count}, valid={valid_count}, "
+            f"eval_every={eval_every}"
         )
-        mlx_run(SimpleNamespace(**run_args))
+
+        _np.random.seed(args_ns.seed)
+        _mx.random.seed(args_ns.seed)
+
+        model, tokenizer = mlx_load(args_ns.model, tokenizer_config={"trust_remote_code": True})
+        train_set, valid_set, _test = load_dataset(args_ns, tokenizer)
+
+        model.freeze()
+        linear_to_lora_layers(model, args_ns.num_layers, args_ns.lora_parameters)
+        print_trainable_parameters(model)
+
+        _P(args_ns.adapter_path).mkdir(parents=True, exist_ok=True)
+        save_config(vars(args_ns), _P(args_ns.adapter_path) / "adapter_config.json")
+
+        training_args = TrainingArgs(
+            batch_size=args_ns.batch_size,
+            iters=args_ns.iters,
+            val_batches=args_ns.val_batches,
+            steps_per_report=args_ns.steps_per_report,
+            steps_per_eval=args_ns.steps_per_eval,
+            steps_per_save=args_ns.save_every,
+            adapter_file=_P(args_ns.adapter_path) / "adapters.safetensors",
+            max_seq_length=args_ns.max_seq_length,
+            grad_checkpoint=args_ns.grad_checkpoint,
+            grad_accumulation_steps=args_ns.grad_accumulation_steps,
+        )
+        opt = _optim.Adam(learning_rate=args_ns.learning_rate)
+
+        mlx_train(
+            model=model,
+            args=training_args,
+            optimizer=opt,
+            train_dataset=CacheDataset(train_set),
+            val_dataset=CacheDataset(valid_set),
+            training_callback=tracker,
+        )
+
+        # Early-stopping finalizer: promote the checkpoint with lowest val_loss.
+        # mlx_lm saves per-iter checkpoints named `<iter>_adapters.safetensors`
+        # alongside the final `adapters.safetensors`. We pick the lowest-val
+        # snapshot and copy it over.
+        best_iter = None
+        best_loss = float("inf")
+        if tracker.val_history:
+            best_iter, best_loss = min(tracker.val_history, key=lambda p: p[1])
+            _, final_loss = tracker.val_history[-1]
+
+            # Only promote if the best isn't already the final one AND we
+            # actually saw degradation past it (patience semantics).
+            past_best = [vl for it, vl in tracker.val_history if it > best_iter]
+            degraded = sum(1 for vl in past_best if vl > best_loss + 1e-6)
+
+            if best_iter != tracker.val_history[-1][0] and degraded >= config.early_stop_patience:
+                candidate = adapter_dir / f"{best_iter:07d}_adapters.safetensors"
+                final = adapter_dir / "adapters.safetensors"
+                if candidate.exists():
+                    shutil.copy2(candidate, final)
+                    print(
+                        f"  Early-stop promotion: rolled back to iter {best_iter} "
+                        f"(val={best_loss:.3f}, final val was {final_loss:.3f}, "
+                        f"{degraded} regressions seen past iter {best_iter})"
+                    )
 
         adapter_file = adapter_dir / "adapters.safetensors"
         return TrainResult(
