@@ -87,26 +87,98 @@ class HabitStore:
 
     # --- Core Operations ---
 
-    def add_habit(self, description: str, concepts: list[tuple[str, str]]) -> Habit:
-        """Add a habit from concept pairs.
+    # Quality gates for new habits
+    MIN_CONFIDENCE = 0.7  # below this, habits are not added (noise floor)
+    PROMOTION_HITS = 3    # hit_count threshold to promote candidate → confirmed
+    ARCHIVE_AGE_DAYS = 14  # candidates with 0 hits after N days get archived
 
-        concepts: list of (subject, predicate) pairs, e.g. [("user", "values autonomy")]
+    def add_habit(
+        self,
+        description: str,
+        concepts: list[tuple[str, str]],
+        confidence: float = 0.5,
+    ) -> Habit | None:
+        """Add a habit from concept pairs. Returns None if rejected by quality gate.
+
+        concepts: list of (subject, predicate) pairs
         """
+        # Quality gate: reject low-confidence LLM outputs
+        if confidence < self.MIN_CONFIDENCE:
+            return None
+
+        # Deduplicate: skip if identical description already exists
+        for existing in self._habits:
+            if existing.description == description and existing.status != MemoryStatus.ARCHIVED:
+                return existing
+
         if not concepts:
             hv = self.codebook.get(description)
         else:
             parts = [bind(self.codebook.get(s), self.codebook.get(p)) for s, p in concepts]
             hv = bundle(*parts) if len(parts) > 1 else parts[0]
 
-        habit = Habit(description=description)
+        habit = Habit(description=description, confidence=confidence)
         self._habits.append(habit)
         self._vectors.append(hv)
-        self._bundle = None  # invalidate cache
+        self._bundle = None
         self._save_habits()
         return habit
 
-    def query(self, query_concepts: list[str], top_k: int = 5) -> list[tuple[Habit, float]]:
-        """Query habits by single-concept similarity."""
+    def record_hit(self, index: int) -> None:
+        """Record that a habit was used (hit in search). Triggers auto-promotion."""
+        if not (0 <= index < len(self._habits)):
+            return
+        h = self._habits[index]
+        h.hit_count += 1
+        h.last_used_at = time.time()
+
+        # Auto-promote candidate → confirmed if hit enough times without rejection
+        if (h.status == MemoryStatus.CANDIDATE
+                and h.hit_count >= self.PROMOTION_HITS
+                and h.reject_count == 0):
+            h.status = MemoryStatus.CONFIRMED
+            h.verified_at = time.time()
+
+        self._save_habits()
+
+    def reject_habit(self, index: int, reason: str = "") -> None:
+        """Record negative feedback on a habit (user/host AI says it's wrong)."""
+        if not (0 <= index < len(self._habits)):
+            return
+        h = self._habits[index]
+        h.reject_count += 1
+
+        # Two rejections = archive
+        if h.reject_count >= 2:
+            h.status = MemoryStatus.ARCHIVED
+
+        self._save_habits()
+
+    def prune_stale(self) -> int:
+        """Archive candidate habits with 0 hits older than ARCHIVE_AGE_DAYS. Returns count."""
+        cutoff = time.time() - self.ARCHIVE_AGE_DAYS * 86400
+        archived = 0
+        for h in self._habits:
+            if (h.status == MemoryStatus.CANDIDATE
+                    and h.hit_count == 0
+                    and h.created_at < cutoff):
+                h.status = MemoryStatus.ARCHIVED
+                archived += 1
+        if archived:
+            self._save_habits()
+        return archived
+
+    def query(
+        self,
+        query_concepts: list[str],
+        top_k: int = 5,
+        record_hits: bool = True,
+        min_score: float = 0.1,
+    ) -> list[tuple[Habit, float]]:
+        """Query habits by single-concept similarity.
+
+        Skips archived habits. Records hits on returned habits (drives promotion).
+        """
         if not self._vectors:
             return []
 
@@ -116,9 +188,22 @@ class HabitStore:
             parts = [self.codebook.get(c) for c in query_concepts]
             query_hv = bundle(*parts)
 
-        scores = [(h, similarity(query_hv, v)) for h, v in zip(self._habits, self._vectors)]
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return scores[:top_k]
+        scored = []
+        for i, (h, v) in enumerate(zip(self._habits, self._vectors)):
+            if h.status == MemoryStatus.ARCHIVED:
+                continue
+            s = similarity(query_hv, v)
+            if s >= min_score:
+                scored.append((i, h, s))
+
+        scored.sort(key=lambda x: x[2], reverse=True)
+        top = scored[:top_k]
+
+        if record_hits:
+            for idx, _, _ in top:
+                self.record_hit(idx)
+
+        return [(h, s) for _, h, s in top]
 
     def query_by_pairs(
         self, concept_pairs: list[tuple[str, str]], top_k: int = 5
@@ -173,6 +258,9 @@ class HabitStore:
                 "status": h.status.value,
                 "confidence": h.confidence,
                 "source_ids": h.source_ids,
+                "hit_count": h.hit_count,
+                "last_used_at": h.last_used_at,
+                "reject_count": h.reject_count,
                 "created_at": h.created_at,
                 "verified_at": h.verified_at,
             }
@@ -196,6 +284,9 @@ class HabitStore:
                 status=MemoryStatus(d["status"]),
                 confidence=d["confidence"],
                 source_ids=d.get("source_ids", []),
+                hit_count=d.get("hit_count", 0),
+                last_used_at=d.get("last_used_at", 0.0),
+                reject_count=d.get("reject_count", 0),
                 created_at=d["created_at"],
                 verified_at=d.get("verified_at"),
             )

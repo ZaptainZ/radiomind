@@ -262,11 +262,16 @@ class StepRefiner:
         session = self._sessions.get(sid, {})
         insights = self._parse_insights(response)
 
+        accepted = []
         for insight in insights:
-            self._habits.add_habit(
+            h = self._habits.add_habit(
                 insight["description"],
                 concepts=[(insight["description"].split()[0], insight["description"])],
+                confidence=insight.get("confidence", 0.5),
             )
+            if h is not None:
+                accepted.append(insight)
+        insights = accepted
 
         duration = time.time() - session.get("started_at", time.time())
         del self._sessions[sid]
@@ -359,7 +364,8 @@ class StepRefiner:
             elif line.startswith("INSIGHT:"):
                 desc = line[8:].strip()
                 if desc:
-                    self._habits.add_habit(desc, concepts=[(desc.split()[0], desc)])
+                    # Dream-wandering insights have lower default confidence
+                    self._habits.add_habit(desc, concepts=[(desc.split()[0], desc)], confidence=0.7)
                     actions.append({"type": "insight", "description": desc})
 
         self._sessions.pop(sid, None)

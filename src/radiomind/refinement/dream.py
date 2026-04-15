@@ -87,12 +87,17 @@ class DreamRefinement:
         # Phase 2: Wandering
         self._wander(journal)
 
-        # Write wandering insights to L3
+        # Write wandering insights to L3 (gated by confidence)
+        accepted = []
         for insight in journal.insights:
-            self._habits.add_habit(
+            h = self._habits.add_habit(
                 insight.description,
                 concepts=[(insight.description.split()[0], insight.description)],
+                confidence=insight.confidence,
             )
+            if h is not None:
+                accepted.append(insight)
+        journal.insights = accepted
 
         return RefinementResult(
             new_insights=journal.insights,

@@ -138,6 +138,21 @@ TOOLS = [
             "required": ["step"],
         },
     },
+    {
+        "name": "radiomind_reject_habit",
+        "description": "Mark a habit as incorrect or not applicable to this user. "
+                       "Use this when you (the AI) notice the user's actual behavior contradicts a stored habit, "
+                       "or when the user explicitly says a habit is wrong. "
+                       "Two rejections archive the habit automatically.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "habit_index": {"type": "integer", "description": "Zero-based index of the habit (from radiomind_habits)"},
+                "reason": {"type": "string", "description": "Brief reason for rejection"},
+            },
+            "required": ["habit_index"],
+        },
+    },
 ]
 
 
@@ -239,6 +254,18 @@ class MCPServer:
             for i in result.new_insights:
                 text += f"  Wandering insight: {i.description}\n"
             return {"content": [{"type": "text", "text": text}]}
+
+        elif tool_name == "radiomind_reject_habit":
+            idx = args.get("habit_index")
+            reason = args.get("reason", "")
+            if idx is None:
+                return {"content": [{"type": "text", "text": "habit_index required."}], "isError": True}
+            mind.reject_habit(int(idx), reason=reason)
+            habits = mind._habits.all_habits()
+            if 0 <= int(idx) < len(habits):
+                h = habits[int(idx)]
+                return {"content": [{"type": "text", "text": f"Rejected habit #{idx}: '{h.description}' (reject_count={h.reject_count}, status={h.status.value})"}]}
+            return {"content": [{"type": "text", "text": f"Rejected habit #{idx}."}]}
 
         elif tool_name == "radiomind_refine_step":
             step = args.get("step", "")

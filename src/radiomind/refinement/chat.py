@@ -99,11 +99,16 @@ class ChatRefinement:
             all_insights.extend(round_result.insights)
             total_tokens += round_result.tokens_used
 
+        accepted: list[Habit] = []
         for insight in all_insights:
-            self._habits.add_habit(
+            h = self._habits.add_habit(
                 insight.description,
                 concepts=[(insight.description.split()[0], insight.description)],
+                confidence=insight.confidence,
             )
+            if h is not None:
+                accepted.append(insight)
+        all_insights = accepted
 
         return RefinementResult(
             new_insights=all_insights,

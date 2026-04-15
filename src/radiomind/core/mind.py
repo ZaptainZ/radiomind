@@ -162,6 +162,16 @@ class RadioMind:
         results = self._habits.query([query], top_k=5)
         return [h for h, score in results if score > 0.1]
 
+    def reject_habit(self, index: int, reason: str = "") -> None:
+        """Mark a habit as incorrect. Two rejections auto-archive it."""
+        self._check_init()
+        self._habits.reject_habit(index, reason=reason)
+
+    def prune_stale_habits(self) -> int:
+        """Archive candidate habits with 0 hits older than ARCHIVE_AGE_DAYS."""
+        self._check_init()
+        return self._habits.prune_stale()
+
     # --- Refinement ---
 
     def trigger_chat(self, domain: str | None = None) -> RefinementResult:

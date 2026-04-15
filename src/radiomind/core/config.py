@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,7 +14,15 @@ else:
     import tomli as tomllib
 
 
-DEFAULT_HOME = Path.home() / ".radiomind"
+def _default_home() -> Path:
+    """Resolve RadioMind home. Honors RADIOMIND_HOME env var for sandbox/testing."""
+    env = os.environ.get("RADIOMIND_HOME", "").strip()
+    if env:
+        return Path(env).expanduser()
+    return Path.home() / ".radiomind"
+
+
+DEFAULT_HOME = _default_home()
 
 DEFAULT_CONFIG = {
     "general": {
@@ -65,9 +74,11 @@ class Config:
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:
+        home = _default_home()
         if path is None:
-            path = DEFAULT_HOME / "config.toml"
+            path = home / "config.toml"
         cfg = cls(_path=path)
+        cfg.data["general"]["home"] = str(home)
         if path.exists():
             with open(path, "rb") as f:
                 user = tomllib.load(f)

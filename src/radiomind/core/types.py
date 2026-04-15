@@ -58,6 +58,9 @@ class Habit:
     status: MemoryStatus = MemoryStatus.CANDIDATE
     confidence: float = 0.5
     source_ids: list[int] = field(default_factory=list)
+    hit_count: int = 0
+    last_used_at: float = 0.0
+    reject_count: int = 0
     created_at: float = field(default_factory=time.time)
     verified_at: float | None = None
 
