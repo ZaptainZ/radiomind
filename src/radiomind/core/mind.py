@@ -96,7 +96,10 @@ class RadioMind:
             try:
                 from radiomind.storage.reranker import CrossEncoderReranker
                 model_id = self.config.get("retrieval.reranker.model", "BAAI/bge-reranker-v2-m3")
-                r = CrossEncoderReranker(model_id=model_id, cache_dir=home / "models" / "reranker")
+                # cache_dir=None → use HF default cache (~/.cache/huggingface/hub),
+                # which the user may have populated manually with bge-reranker-v2-m3.
+                # Avoids re-downloading the 2.3GB model per sandbox.
+                r = CrossEncoderReranker(model_id=model_id, cache_dir=None)
                 if r.load():
                     self._reranker = r
             except Exception:
