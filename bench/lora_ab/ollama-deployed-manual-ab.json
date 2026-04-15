@@ -1,0 +1,29 @@
+{
+  "via": "ollama_http",
+  "status": "partial — LoRA model call times out",
+  "successful_queries": 2,
+  "notes": [
+    "Base qwen2.5:0.5b responds in 0.5-0.7s reliably",
+    "radiomind-personal-test (custom Modelfile FROM gguf) times out at 90s+ on every call",
+    "Root cause likely: Ollama cold-start cost for custom Modelfile models, combined with GPU RAM pressure (two 400-500MB models swap constantly)",
+    "Even with --max-time 180, the LoRA model call didn't complete",
+    "ollama ps shows: radiomind-personal-test Stopping... even immediately after use"
+  ],
+  "partial_observations": [
+    {
+      "q": "告诉我一件关于我的事",
+      "base_response": "抱歉，作为一个AI助手，我无法知道您的具体生活状况...",
+      "base_time_s": 0.5,
+      "lora_response": "(timed out)",
+      "lora_time_s": null
+    },
+    {
+      "q": "我有什么明显的偏好",
+      "base_response": "作为一个人工智能模型，我没有个人偏好的能力...",
+      "base_time_s": 0.7,
+      "lora_response": "(timed out — test abandoned)",
+      "lora_time_s": null
+    }
+  ],
+  "conclusion": "Ollama deployment of the fused+GGUF adapter is TECHNICALLY WORKING (ollama create succeeded, one earlier spot-check generated text), but practically unusable for A/B evaluation due to cold-start cost and GPU swap thrashing. For production LoRA deployment: use MLX-native serving (mlx_lm.server) or commit to a dedicated GPU-resident model with adequate RAM."
+}
