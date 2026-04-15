@@ -49,6 +49,27 @@ def test_home_path_env_override(monkeypatch, tmp_path):
     assert cfg.home == tmp_path
 
 
+def test_env_home_beats_config_toml(monkeypatch, tmp_path):
+    """RADIOMIND_HOME env var must override [general] home in config.toml.
+
+    Regression guard: 2026-04-15 audit found that a config.toml with an
+    explicit `[general] home = ...` silently overrode the env var,
+    making the sandbox-isolation escape hatch ineffective for real
+    users who had ever run `radiomind init`. Content was merged from
+    file config AFTER we seeded env-home, so file won.
+    """
+    # Simulate a home with a pre-existing config.toml pointing elsewhere
+    sandbox = tmp_path / "sandbox"
+    sandbox.mkdir()
+    config_path = sandbox / "config.toml"
+    config_path.write_text('[general]\nhome = "/this/should/be/overridden"\n')
+
+    monkeypatch.setenv("RADIOMIND_HOME", str(sandbox))
+    cfg = Config.load()
+    # Env must win — not the '/this/should/be/overridden' from the file
+    assert cfg.home == sandbox, f"env var should override config.toml, got {cfg.home}"
+
+
 def test_db_path():
     cfg = Config()
     assert cfg.db_path.name == "radiomind.db"

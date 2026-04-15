@@ -127,9 +127,22 @@ class ChatRefinement:
             merged=0,
             pruned=0,
             duration_s=time.time() - t0,
-            model_used=self._llm.config.get("llm.ollama.model", "unknown"),
+            model_used=self._resolve_model_used(),
             tokens_used=total_tokens,
         )
+
+    def _resolve_model_used(self) -> str:
+        """Return the actually-used default model regardless of backend.
+
+        Earlier versions hardcoded the ollama key which misreported the
+        model when the user had configured OpenAI-compatible backends
+        (Dashscope/Qwen, DeepSeek, etc.).
+        """
+        backend = self._llm.config.get("llm.default_backend", "")
+        by_backend = self._llm.config.get(f"llm.{backend}.model", "") if backend else ""
+        if by_backend:
+            return by_backend
+        return self._llm.config.get("llm.ollama.model", "unknown")
 
     def _debate_round(self, domain: str) -> DebateRound:
         result = DebateRound(domain=domain)

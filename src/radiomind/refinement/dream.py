@@ -108,7 +108,12 @@ class DreamRefinement:
             merged=len(journal.merged),
             pruned=len(journal.pruned) + len(journal.decayed),
             duration_s=time.time() - t0,
-            model_used=self._llm.config.get("llm.ollama.model", "unknown"),
+            model_used=(
+                self._llm.config.get(
+                    f"llm.{self._llm.config.get('llm.default_backend', 'ollama')}.model",
+                    "",
+                ) or self._llm.config.get("llm.ollama.model", "unknown")
+            ),
             tokens_used=0,
         )
 

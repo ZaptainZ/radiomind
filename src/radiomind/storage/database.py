@@ -48,14 +48,15 @@ CREATE TABLE IF NOT EXISTS memory_history (
     metadata TEXT NOT NULL DEFAULT '{}'
 );
 
+-- NOTE: Only v1-safe indexes go here (they reference columns that have
+-- existed since v1). v2+ indexes live in migrations.py so upgrading an
+-- older database works — creating an index on a column that doesn't
+-- exist yet raises OperationalError. Audit 2026-04-15 caught this
+-- against a real v2 DB.
 CREATE INDEX IF NOT EXISTS idx_3d ON memories(domain, level, timestamp);
 CREATE INDEX IF NOT EXISTS idx_parent ON memories(parent_id);
 CREATE INDEX IF NOT EXISTS idx_status ON memories(status);
 CREATE INDEX IF NOT EXISTS idx_domain_level ON memories(domain, level);
-CREATE INDEX IF NOT EXISTS idx_user ON memories(user_id);
-CREATE INDEX IF NOT EXISTS idx_agent ON memories(agent_id);
-CREATE INDEX IF NOT EXISTS idx_session ON memories(session_id);
-CREATE INDEX IF NOT EXISTS idx_history_mem ON memory_history(memory_id);
 
 CREATE TABLE IF NOT EXISTS domains (
     name TEXT PRIMARY KEY,

@@ -84,11 +84,20 @@ class Config:
         if path is None:
             path = home / "config.toml"
         cfg = cls(_path=path)
-        cfg.data["general"]["home"] = str(home)
         if path.exists():
             with open(path, "rb") as f:
                 user = tomllib.load(f)
             _deep_merge(cfg.data, user)
+        # CRITICAL: env var wins over config.toml. Without this, a
+        # RADIOMIND_HOME=/tmp/sandbox export is silently ignored when the
+        # user's config.toml has [general] home = "~/.radiomind" — which
+        # is the default behavior of `radiomind init`. Audit 2026-04-15
+        # caught this against a real user DB; tests against sandboxes
+        # with no prior config didn't catch it. The env var is the
+        # escape hatch — it must override file config, not vice versa.
+        env_home = os.environ.get("RADIOMIND_HOME", "").strip()
+        if env_home:
+            cfg.data["general"]["home"] = str(Path(env_home).expanduser())
         return cfg
 
     def save(self) -> None:
