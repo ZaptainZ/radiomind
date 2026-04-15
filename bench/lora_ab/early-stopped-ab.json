@@ -1,0 +1,52 @@
+{
+  "adapter": "iter-125 early-stopped (val=0.485)",
+  "n": 8,
+  "base_mean_overlap": 0.3455,
+  "lora_mean_overlap": 0.408,
+  "delta": 0.0625,
+  "wins": 4,
+  "losses": 3,
+  "ties": 1,
+  "per_query": [
+    {
+      "q": "你了解我什么？",
+      "base_score": 0.217,
+      "lora_score": 0.15
+    },
+    {
+      "q": "我在 iOS 开发中的典型模式？",
+      "base_score": 0.241,
+      "lora_score": 0.308
+    },
+    {
+      "q": "我在 Rust 项目中的一个典型偏好？",
+      "base_score": 0.565,
+      "lora_score": 0.2
+    },
+    {
+      "q": "我在网络处理上的偏好？",
+      "base_score": 0.27,
+      "lora_score": 0.759
+    },
+    {
+      "q": "告诉我一件关于我的事",
+      "base_score": 0.304,
+      "lora_score": 0.1
+    },
+    {
+      "q": "我的整体技术倾向是什么？",
+      "base_score": 0.348,
+      "lora_score": 0.517
+    },
+    {
+      "q": "在不确定时我的选择倾向？",
+      "base_score": 0.345,
+      "lora_score": 0.368
+    },
+    {
+      "q": "我怎么处理复杂依赖？",
+      "base_score": 0.474,
+      "lora_score": 0.862
+    }
+  ]
+}
