@@ -302,7 +302,12 @@ class RadioMind:
     # --- Training (L3 → LoRA) ---
 
     def generate_training_data(self, output_path: str | None = None) -> tuple[int, str]:
-        """Generate JSONL training data from habits + memories."""
+        """Generate JSONL training data + valid split from habits + memories.
+
+        Returns (train_count, train_path). On quality-gate refusal returns
+        (0, path_or_empty) and the caller should inspect the reason via
+        generate_training_data_with_report().
+        """
         self._check_init()
         from radiomind.training.data_gen import TrainingDataGenerator
 
@@ -310,6 +315,18 @@ class RadioMind:
         gen = TrainingDataGenerator(self._store, self._habits)
         count = gen.generate(Path(path))
         return count, path
+
+    def generate_training_data_with_report(
+        self, output_path: str | None = None
+    ):
+        """Same as generate_training_data but returns the DataGenReport."""
+        self._check_init()
+        from radiomind.training.data_gen import TrainingDataGenerator
+
+        path = output_path or str(self.config.home / "models" / "train.jsonl")
+        gen = TrainingDataGenerator(self._store, self._habits)
+        report = gen.generate_with_report(Path(path))
+        return report, path
 
     def train(self, **kwargs) -> "TrainResult":
         """Run LoRA fine-tuning on accumulated knowledge."""

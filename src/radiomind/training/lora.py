@@ -38,6 +38,11 @@ class TrainConfig:
     batch_size: int = 4
     learning_rate: float = 1e-5
     output_dir: str = ""
+    # Overfitting guards
+    eval_every: int = 50                # eval valid loss every N iters
+    early_stop_patience: int = 3        # stop after N consecutive eval regressions
+    iters_per_example_cap: int = 10     # if iters > cap * n_examples, clip
+    max_seq_length: int = 512
 
     @classmethod
     def from_config(cls, config: Config) -> TrainConfig:
@@ -85,28 +90,51 @@ def train_lora(
 
     with open(data_path, encoding="utf-8") as f:
         line_count = sum(1 for _ in f)
-    if line_count < 3:
+    if line_count < 30:
         return TrainResult(
             success=False,
-            error=f"Too few training examples ({line_count}). Need at least 3.",
+            error=(
+                f"Too few training examples ({line_count}). Need at least 30 "
+                "for LoRA to not memorize. Run: radiomind train --data-only to "
+                "inspect what was generated; ingest more conversations first."
+            ),
         )
 
     output_dir = Path(config.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Prepare data directory: mlx_lm expects train.jsonl + valid.jsonl
+    # mlx_lm expects {train,valid}.jsonl in the same directory.
+    # We require a real valid split produced by data_gen — sibling valid.jsonl.
     train_dir = output_dir / "data"
     train_dir.mkdir(exist_ok=True)
 
     import shutil
     shutil.copy2(data_path, train_dir / "train.jsonl")
 
-    with open(data_path, encoding="utf-8") as f:
-        lines = f.readlines()
-    valid_count = max(config.batch_size, len(lines) // 5)
-    valid_lines = (lines * ((valid_count // len(lines)) + 1))[:valid_count] if lines else []
-    with open(train_dir / "valid.jsonl", "w", encoding="utf-8") as f:
-        f.writelines(valid_lines)
+    valid_src = data_path.parent / "valid.jsonl"
+    if not valid_src.exists():
+        return TrainResult(
+            success=False,
+            error=(
+                f"Missing validation set at {valid_src}. Regenerate data with "
+                "TrainingDataGenerator.generate() which writes train + valid."
+            ),
+        )
+    shutil.copy2(valid_src, train_dir / "valid.jsonl")
+
+    with open(train_dir / "valid.jsonl", encoding="utf-8") as f:
+        valid_count = sum(1 for _ in f)
+
+    # Overfitting guard: cap iterations relative to dataset size
+    effective_iters = min(
+        config.iterations,
+        config.iters_per_example_cap * line_count,
+    )
+    if effective_iters < config.iterations:
+        print(
+            f"  Note: capping iters at {effective_iters} "
+            f"({config.iters_per_example_cap}×{line_count} examples)"
+        )
 
     adapter_dir = output_dir / "adapters"
     adapter_dir.mkdir(exist_ok=True)
@@ -122,21 +150,24 @@ def train_lora(
             "data": str(train_dir),
             "num_layers": config.lora_layers,
             "batch_size": config.batch_size,
-            "iters": config.iterations,
+            "iters": effective_iters,
             "learning_rate": config.learning_rate,
             "adapter_path": str(adapter_dir),
-            "save_every": config.iterations,
+            "save_every": max(config.eval_every, 50),
             "steps_per_report": 10,
-            "steps_per_eval": config.iterations,
-            "max_seq_length": 512,
+            "steps_per_eval": config.eval_every,
+            "max_seq_length": config.max_seq_length,
             "lora_parameters": {
                 "rank": config.lora_rank,
-                "dropout": 0.0,
+                "dropout": 0.05,  # small dropout discourages memorization
                 "scale": 20.0,
             },
         })
 
-        print(f"  Training: {config.iterations} iters, model={config.model}, rank={config.lora_rank}")
+        print(
+            f"  Training: {effective_iters} iters, model={config.model}, "
+            f"rank={config.lora_rank}, train={line_count}, valid={valid_count}"
+        )
         mlx_run(SimpleNamespace(**run_args))
 
         adapter_file = adapter_dir / "adapters.safetensors"
@@ -144,7 +175,7 @@ def train_lora(
             success=adapter_file.exists(),
             adapter_path=adapter_dir if adapter_file.exists() else None,
             model=config.model,
-            iterations=config.iterations,
+            iterations=effective_iters,
             duration_s=time.time() - t0,
             train_examples=line_count,
         )

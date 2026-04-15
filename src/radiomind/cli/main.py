@@ -422,8 +422,22 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
     mind = _get_mind()
 
     if data_only:
-        count, path = mind.generate_training_data()
-        click.echo(f"Generated {count} training examples → {path}")
+        report, path = mind.generate_training_data_with_report()
+        if report.refused:
+            click.echo(click.style(f"Refused: {report.refused_reason}", fg="yellow"))
+            click.echo(
+                f"  habits_used={report.habits_used}, domains_used={report.domains_used}, "
+                f"dropped_pii={report.dropped_pii}, dropped_dup={report.dropped_dup}, "
+                f"dropped_short={report.dropped_short}"
+            )
+            mind.shutdown()
+            return
+        click.echo(f"Train: {report.train_count}  Valid: {report.valid_count}  → {path}")
+        click.echo(
+            f"  habits_used={report.habits_used}, domains_used={report.domains_used}, "
+            f"dropped_pii={report.dropped_pii}, dropped_dup={report.dropped_dup}, "
+            f"dropped_short={report.dropped_short}"
+        )
         mind.shutdown()
         return
 
@@ -442,13 +456,13 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
         kwargs["iterations"] = iters
 
     click.echo("Generating training data...")
-    count, data_path = mind.generate_training_data()
-    click.echo(f"  {count} examples generated")
-
-    if count < 3:
-        click.echo("Too few examples. Ingest more conversations first.")
+    report, data_path = mind.generate_training_data_with_report()
+    if report.refused:
+        click.echo(click.style(f"Refused: {report.refused_reason}", fg="yellow"))
+        click.echo("Ingest more conversations or run consolidation first.")
         mind.shutdown()
         return
+    click.echo(f"  Train: {report.train_count}  Valid: {report.valid_count}")
 
     click.echo("Starting LoRA fine-tuning (this may take a few minutes)...")
     result = mind.train(**kwargs)
