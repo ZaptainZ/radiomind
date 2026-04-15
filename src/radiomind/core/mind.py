@@ -281,7 +281,8 @@ class RadioMind:
         self._check_init()
         if not hasattr(self, "_step_refiner") or self._step_refiner is None:
             from radiomind.refinement.step import StepRefiner
-            self._step_refiner = StepRefiner(self._store, self._habits)
+            state_path = self.config.home / "data" / "refine_sessions.json"
+            self._step_refiner = StepRefiner(self._store, self._habits, state_path=state_path)
 
         result = self._step_refiner.step(step, domain=domain, response=response)
 

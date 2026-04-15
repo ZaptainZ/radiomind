@@ -105,31 +105,13 @@ class MemoryStore:
 
     def _init_schema(self) -> None:
         self.conn.executescript(SCHEMA_SQL)
+        from radiomind.storage.migrations import apply_migrations
+        apply_migrations(self.conn)
 
         row = self.conn.execute(
             "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"
         ).fetchone()
         current_version = row[0] if row else 0
-
-        if current_version < 2:
-            # Migration: add privacy column if missing
-            cols = [r[1] for r in self.conn.execute("PRAGMA table_info(memories)").fetchall()]
-            if "privacy" not in cols:
-                self.conn.execute("ALTER TABLE memories ADD COLUMN privacy TEXT NOT NULL DEFAULT 'open'")
-
-        if current_version < 3:
-            # Migration: add multi-user columns + updated_at
-            cols = [r[1] for r in self.conn.execute("PRAGMA table_info(memories)").fetchall()]
-            for col, ddl in [
-                ("updated_at", "ALTER TABLE memories ADD COLUMN updated_at REAL NOT NULL DEFAULT 0"),
-                ("user_id", "ALTER TABLE memories ADD COLUMN user_id TEXT NOT NULL DEFAULT ''"),
-                ("agent_id", "ALTER TABLE memories ADD COLUMN agent_id TEXT NOT NULL DEFAULT ''"),
-                ("session_id", "ALTER TABLE memories ADD COLUMN session_id TEXT NOT NULL DEFAULT ''"),
-            ]:
-                if col not in cols:
-                    self.conn.execute(ddl)
-            # Backfill updated_at from created_at for existing rows
-            self.conn.execute("UPDATE memories SET updated_at=created_at WHERE updated_at=0")
 
         if row is None:
             self.conn.execute("INSERT INTO schema_version VALUES (?)", (SCHEMA_VERSION,))

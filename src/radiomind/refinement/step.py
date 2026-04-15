@@ -120,10 +120,46 @@ class StepRefiner:
     Each domain gets its own session. The host AI calls steps sequentially.
     """
 
-    def __init__(self, store: MemoryStore, habits: HabitStore):
+    def __init__(self, store: MemoryStore, habits: HabitStore, state_path=None):
         self._store = store
         self._habits = habits
-        self._sessions: dict[str, dict] = {}
+        self._state_path = state_path  # pathlib.Path | None
+        self._sessions: dict[str, dict] = self._load_sessions()
+
+    def _load_sessions(self) -> dict[str, dict]:
+        if self._state_path is None:
+            return {}
+        try:
+            if self._state_path.exists():
+                return json.loads(self._state_path.read_text())
+        except Exception:
+            return {}
+        return {}
+
+    def _persist(self) -> None:
+        if self._state_path is None:
+            return
+        try:
+            self._state_path.parent.mkdir(parents=True, exist_ok=True)
+            # Strip unpicklable entries (e.g. MemoryEntry instances stored
+            # for dream_prune) before serializing.
+            serializable: dict[str, dict] = {}
+            for sid, session in self._sessions.items():
+                safe = {}
+                for k, v in session.items():
+                    try:
+                        json.dumps(v)
+                        safe[k] = v
+                    except TypeError:
+                        # fall back: list of MemoryEntry → ids only
+                        if isinstance(v, list):
+                            safe[k] = [getattr(x, "id", None) for x in v]
+                serializable[sid] = safe
+            self._state_path.write_text(
+                json.dumps(serializable, ensure_ascii=False, indent=2)
+            )
+        except Exception:
+            pass
 
     def step(self, step_name: str, domain: str = "", response: str = "", session_id: str = "") -> StepResult:
         """Execute a refinement step.
@@ -143,24 +179,27 @@ class StepRefiner:
         else:
             sid = "refine_default"
 
-        if step_name == "prepare":
-            return self._prepare(domain, sid)
-        elif step_name == "guardian":
-            return self._guardian(sid, response)
-        elif step_name == "explorer":
-            return self._explorer(sid, response)
-        elif step_name == "reducer":
-            return self._reducer(sid, response)
-        elif step_name == "synthesize":
-            return self._synthesize(sid, response)
-        elif step_name == "dream_prune":
-            return self._dream_prune(domain, sid)
-        elif step_name == "dream_wander":
-            return self._dream_wander(sid)
-        elif step_name == "dream_apply":
-            return self._dream_apply(sid, response)
-        else:
-            return StepResult(step=step_name, done=True, context=f"Unknown step: {step_name}")
+        try:
+            if step_name == "prepare":
+                return self._prepare(domain, sid)
+            elif step_name == "guardian":
+                return self._guardian(sid, response)
+            elif step_name == "explorer":
+                return self._explorer(sid, response)
+            elif step_name == "reducer":
+                return self._reducer(sid, response)
+            elif step_name == "synthesize":
+                return self._synthesize(sid, response)
+            elif step_name == "dream_prune":
+                return self._dream_prune(domain, sid)
+            elif step_name == "dream_wander":
+                return self._dream_wander(sid)
+            elif step_name == "dream_apply":
+                return self._dream_apply(sid, response)
+            else:
+                return StepResult(step=step_name, done=True, context=f"Unknown step: {step_name}")
+        finally:
+            self._persist()
 
     # --- Chat Refinement Steps ---
 

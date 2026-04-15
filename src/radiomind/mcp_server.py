@@ -153,6 +153,74 @@ TOOLS = [
             "required": ["habit_index"],
         },
     },
+    {
+        "name": "radiomind_get_memory",
+        "description": "Fetch a single memory by its id. Returns content, domain, level, user/session scope, and timestamps.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"memory_id": {"type": "integer"}},
+            "required": ["memory_id"],
+        },
+    },
+    {
+        "name": "radiomind_update_memory",
+        "description": "Update a memory's content and/or metadata. Writes an entry to the history audit trail.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "memory_id": {"type": "integer"},
+                "content": {"type": "string", "description": "New content (optional)"},
+                "metadata": {"type": "object", "description": "Replacement metadata (optional)"},
+            },
+            "required": ["memory_id"],
+        },
+    },
+    {
+        "name": "radiomind_delete_memory",
+        "description": "Delete a single memory by id. The deletion is recorded in memory_history for audit.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"memory_id": {"type": "integer"}},
+            "required": ["memory_id"],
+        },
+    },
+    {
+        "name": "radiomind_list_memories",
+        "description": "List memories filtered by scope (user_id / agent_id / session_id). "
+                       "Returns up to `limit` entries, newest first.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string"},
+                "agent_id": {"type": "string"},
+                "session_id": {"type": "string"},
+                "limit": {"type": "integer", "default": 50},
+            },
+        },
+    },
+    {
+        "name": "radiomind_memory_history",
+        "description": "Get the audit history of a memory (created / updated / deleted events with before/after content).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"memory_id": {"type": "integer"}},
+            "required": ["memory_id"],
+        },
+    },
+    {
+        "name": "radiomind_delete_scope",
+        "description": "Delete ALL memories matching a scope (user_id / agent_id / session_id). "
+                       "Refuses if no scope is provided — use this only when the user explicitly asks "
+                       "to wipe their own data. Returns count deleted.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string"},
+                "agent_id": {"type": "string"},
+                "session_id": {"type": "string"},
+            },
+        },
+    },
 ]
 
 
@@ -266,6 +334,79 @@ class MCPServer:
                 h = habits[int(idx)]
                 return {"content": [{"type": "text", "text": f"Rejected habit #{idx}: '{h.description}' (reject_count={h.reject_count}, status={h.status.value})"}]}
             return {"content": [{"type": "text", "text": f"Rejected habit #{idx}."}]}
+
+        elif tool_name == "radiomind_get_memory":
+            mid = args.get("memory_id")
+            if mid is None:
+                return {"content": [{"type": "text", "text": "memory_id required."}], "isError": True}
+            entry = mind.get_memory(int(mid))
+            if entry is None:
+                return {"content": [{"type": "text", "text": f"Memory {mid} not found."}]}
+            payload = {
+                "id": entry.id,
+                "content": entry.content,
+                "domain": entry.domain,
+                "level": entry.level.name.lower(),
+                "user_id": entry.user_id,
+                "agent_id": entry.agent_id,
+                "session_id": entry.session_id,
+                "created_at": entry.created_at,
+                "updated_at": entry.updated_at,
+                "hit_count": entry.hit_count,
+                "metadata": entry.metadata,
+            }
+            return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False, indent=2)}]}
+
+        elif tool_name == "radiomind_update_memory":
+            mid = args.get("memory_id")
+            if mid is None:
+                return {"content": [{"type": "text", "text": "memory_id required."}], "isError": True}
+            entry = mind.update_memory(
+                int(mid),
+                content=args.get("content"),
+                metadata=args.get("metadata"),
+            )
+            if entry is None:
+                return {"content": [{"type": "text", "text": f"Memory {mid} not found."}]}
+            return {"content": [{"type": "text", "text": f"Updated memory {mid}."}]}
+
+        elif tool_name == "radiomind_delete_memory":
+            mid = args.get("memory_id")
+            if mid is None:
+                return {"content": [{"type": "text", "text": "memory_id required."}], "isError": True}
+            ok = mind.delete_memory(int(mid))
+            msg = f"Deleted memory {mid}." if ok else f"Memory {mid} not found."
+            return {"content": [{"type": "text", "text": msg}]}
+
+        elif tool_name == "radiomind_list_memories":
+            entries = mind.list_memories(
+                user_id=args.get("user_id", ""),
+                agent_id=args.get("agent_id", ""),
+                session_id=args.get("session_id", ""),
+                limit=int(args.get("limit", 50)),
+            )
+            text = "\n".join(
+                f"[{e.id}] ({e.domain}/{e.level.name.lower()}) user={e.user_id or '-'} "
+                f"session={e.session_id or '-'} — {e.content}"
+                for e in entries
+            ) or "No memories match this scope."
+            return {"content": [{"type": "text", "text": text}]}
+
+        elif tool_name == "radiomind_memory_history":
+            mid = args.get("memory_id")
+            if mid is None:
+                return {"content": [{"type": "text", "text": "memory_id required."}], "isError": True}
+            history = mind.memory_history(int(mid))
+            return {"content": [{"type": "text", "text": json.dumps(history, ensure_ascii=False, indent=2)}]}
+
+        elif tool_name == "radiomind_delete_scope":
+            user_id = args.get("user_id", "")
+            agent_id = args.get("agent_id", "")
+            session_id = args.get("session_id", "")
+            if not (user_id or agent_id or session_id):
+                return {"content": [{"type": "text", "text": "Refused: at least one of user_id / agent_id / session_id is required to scope the deletion."}], "isError": True}
+            n = mind.delete_all_memories(user_id=user_id, agent_id=agent_id, session_id=session_id)
+            return {"content": [{"type": "text", "text": f"Deleted {n} memory/memories in scope."}]}
 
         elif tool_name == "radiomind_refine_step":
             step = args.get("step", "")
