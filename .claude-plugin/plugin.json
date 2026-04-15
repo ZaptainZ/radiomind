@@ -1,10 +1,17 @@
 {
   "name": "radiomind",
-  "version": "0.1.0",
-  "description": "Bionic memory that learns from conversations — your AI gets smarter over time",
+  "version": "0.2.0",
+  "description": "Bionic memory that learns from conversations — your AI gets smarter over time (L1 gate → L2 pyramid → L3 HDC habits → L4 external knowledge)",
   "author": "Zaptain",
   "homepage": "https://github.com/ZaptainZ/radiomind",
   "repository": "https://github.com/ZaptainZ/radiomind",
   "license": "MIT",
-  "keywords": ["memory", "bionic", "habits", "learning", "HDC"]
+  "keywords": ["memory", "bionic", "habits", "HDC", "mcp", "rag", "lora"],
+  "mcpServers": {
+    "radiomind": {
+      "command": "radiomind",
+      "args": ["mcp-server"]
+    }
+  },
+  "postInstall": "radiomind setup --platform claude-code"
 }

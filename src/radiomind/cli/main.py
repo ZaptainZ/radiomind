@@ -273,6 +273,116 @@ def refine_step(step: str, domain: str, response: str) -> None:
 
 
 @cli.command()
+def doctor() -> None:
+    """Run a health check on the RadioMind install.
+
+    Checks: home dir, database schema, embedding backend, LLM connectivity,
+    platform hooks, RadioHeader conflicts. Prints PASS/WARN/FAIL per item.
+    """
+    import shutil as _sh
+    from pathlib import Path
+
+    from radiomind.core.config import Config
+
+    checks: list[tuple[str, str, str]] = []  # (level, name, detail)
+
+    def add(level: str, name: str, detail: str = "") -> None:
+        checks.append((level, name, detail))
+
+    cfg = Config.load()
+    home = cfg.home
+
+    if home.exists():
+        add("PASS", "home directory", str(home))
+    else:
+        add("WARN", "home directory", f"{home} will be created on first use")
+
+    db = cfg.db_path
+    if db.exists():
+        try:
+            import sqlite3
+            c = sqlite3.connect(str(db))
+            v = c.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").fetchone()
+            n = c.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
+            c.close()
+            add("PASS", "database", f"schema v{v[0] if v else '?'}, {n} memories")
+        except Exception as e:
+            add("FAIL", "database", f"open failed: {e}")
+    else:
+        add("WARN", "database", "not created yet")
+
+    try:
+        from radiomind.storage.embedding import EmbeddingEncoder
+        enc = EmbeddingEncoder(home / "models" / "embedding")
+        if enc.load():
+            add("PASS", "embedding model", "loaded")
+        else:
+            add("WARN", "embedding model", "not installed — run: pip install radiomind[embedding]")
+    except Exception as e:
+        add("WARN", "embedding model", f"unavailable: {type(e).__name__}")
+
+    try:
+        mind = _get_mind()
+        if mind.is_llm_available():
+            backends = mind._llm.available_backends()
+            add("PASS", "LLM backend", f"{', '.join(backends) or 'default'}")
+        else:
+            add("WARN", "LLM backend", "no LLM — pure-memory mode only")
+        mind.shutdown()
+    except Exception as e:
+        add("FAIL", "LLM check", str(e))
+
+    try:
+        from radiomind.hooks.setup import detect_platform, detect_radioheader
+        plat = detect_platform()
+        rh = detect_radioheader()
+        add("PASS", "platform", plat + (" (RadioHeader detected)" if rh else ""))
+    except Exception as e:
+        add("WARN", "platform detect", str(e))
+
+    claude_settings = Path.home() / ".claude" / "settings.json"
+    if claude_settings.exists():
+        try:
+            import json as _j
+            s = _j.loads(claude_settings.read_text())
+            has_mcp = "radiomind" in s.get("mcpServers", {})
+            has_hook = any(
+                isinstance(h, dict) and "radiomind" in h.get("command", "").lower()
+                for hooks_list in s.get("hooks", {}).values() if isinstance(hooks_list, list)
+                for h in hooks_list
+            )
+            if has_mcp or has_hook:
+                bits = []
+                if has_mcp: bits.append("MCP")
+                if has_hook: bits.append("hooks")
+                add("PASS", "Claude Code integration", " + ".join(bits))
+            else:
+                add("WARN", "Claude Code integration", "not configured — run: radiomind setup")
+        except Exception as e:
+            add("WARN", "Claude Code integration", f"parse error: {e}")
+
+    bin_path = _sh.which("radiomind")
+    add("PASS" if bin_path else "WARN", "radiomind CLI",
+        bin_path or "not on PATH — check your install")
+
+    # Print
+    from click import style
+    colors = {"PASS": "green", "WARN": "yellow", "FAIL": "red"}
+    fail_count = sum(1 for lvl, _, _ in checks if lvl == "FAIL")
+    click.echo(f"RadioMind Doctor (v{__version__})")
+    click.echo(f"Home: {home}")
+    click.echo()
+    for level, name, detail in checks:
+        tag = style(f"[{level}]", fg=colors.get(level, "white"))
+        click.echo(f"  {tag} {name}" + (f" — {detail}" if detail else ""))
+    click.echo()
+    if fail_count:
+        click.echo(style(f"{fail_count} check(s) failed.", fg="red"))
+        raise SystemExit(1)
+    click.echo(style("All critical checks passed.", fg="green"))
+
+
+@cli.command()
 def status() -> None:
     """Show memory statistics and profiles."""
     mind = _get_mind()

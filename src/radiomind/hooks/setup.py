@@ -21,8 +21,19 @@ import json
 import os
 import shutil
 import stat
+import time
 from pathlib import Path
 from typing import Any
+
+
+def _backup_file(path: Path) -> Path | None:
+    """Back up a file before modification. Returns backup path or None if no file."""
+    if not path.exists():
+        return None
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    backup = path.with_suffix(path.suffix + f".radiomind-bak.{ts}")
+    shutil.copy2(path, backup)
+    return backup
 
 
 # --- Platform detection ---
@@ -132,6 +143,9 @@ def _setup_claude_code(result: dict, has_rh: bool, force: bool) -> None:
 
     settings_path = Path.home() / ".claude" / "settings.json"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
+    backup = _backup_file(settings_path)
+    if backup:
+        result["actions"].append(f"Backup: {backup.name}")
     settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
 
     if "hooks" not in settings:
@@ -202,6 +216,9 @@ def _setup_codex(result: dict, has_rh: bool, force: bool) -> None:
 
     # Codex uses .codex/hooks.json
     hooks_path = codex_dir / "hooks.json"
+    backup = _backup_file(hooks_path)
+    if backup:
+        result["actions"].append(f"Backup: {backup.name}")
     existing = json.loads(hooks_path.read_text()) if hooks_path.exists() else {}
 
     # Ensure executable
@@ -259,6 +276,9 @@ def _setup_cursor(result: dict, force: bool) -> None:
     cursor_mcp = Path.home() / ".cursor" / "mcp.json"
     cursor_mcp.parent.mkdir(parents=True, exist_ok=True)
 
+    backup = _backup_file(cursor_mcp)
+    if backup:
+        result["actions"].append(f"Backup: {backup.name}")
     existing = json.loads(cursor_mcp.read_text()) if cursor_mcp.exists() else {}
     if "mcpServers" not in existing:
         existing["mcpServers"] = {}
