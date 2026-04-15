@@ -250,6 +250,50 @@ class MemoryStore:
             for r in rows
         ]
 
+    def search_vector(
+        self, query_embedding: bytes, limit: int = 10, min_score: float = 0.3
+    ) -> list[SearchResult]:
+        """Vector search via cosine similarity over embedding column.
+
+        Uses numpy brute-force. Fine for <100K memories. For larger scale,
+        swap in sqlite-vec ANN (schema-compatible).
+        """
+        if not query_embedding:
+            return []
+        try:
+            import numpy as np
+        except ImportError:
+            return []
+
+        q_vec = np.frombuffer(query_embedding, dtype=np.float32)
+        if q_vec.size == 0:
+            return []
+
+        rows = self.conn.execute(
+            "SELECT * FROM memories WHERE status='active' AND embedding IS NOT NULL"
+        ).fetchall()
+
+        scored: list[tuple[float, SearchResult]] = []
+        for r in rows:
+            emb = r["embedding"]
+            if not emb:
+                continue
+            try:
+                v = np.frombuffer(emb, dtype=np.float32)
+                if v.size != q_vec.size:
+                    continue
+                # embeddings are normalized → dot product = cosine similarity
+                score = float(np.dot(q_vec, v))
+            except Exception:
+                continue
+            if score >= min_score:
+                scored.append((score, SearchResult(
+                    entry=self._row_to_entry(r), score=score, method="vector"
+                )))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [s[1] for s in scored[:limit]]
+
     def search_like(self, query: str, limit: int = 10) -> list[SearchResult]:
         escaped = query.replace("%", "\\%").replace("_", "\\_")
         pattern = f"%{escaped}%"

@@ -94,12 +94,14 @@ class SimpleRadioMind:
 
         memories = []
         for r in results[:limit]:
+            meta = dict(r.entry.metadata) if r.entry.metadata else {}
+            meta["retrieval_method"] = r.method
             memories.append(Memory(
                 content=r.entry.content,
                 domain=r.entry.domain,
                 level=r.entry.level.name.lower(),
                 score=r.score,
-                metadata=r.entry.metadata,
+                metadata=meta,
             ))
 
         for h in habits[:3]:

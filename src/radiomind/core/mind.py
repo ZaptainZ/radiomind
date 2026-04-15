@@ -79,7 +79,16 @@ class RadioMind:
 
         self._llm = self._resolve_llm()
 
-        self._pyramid = PyramidSearch(self._store)
+        # Load embedder FIRST so PyramidSearch can use it
+        try:
+            from radiomind.storage.embedding import EmbeddingEncoder
+            self._embedder = EmbeddingEncoder(home / "models" / "embedding")
+            if not self._embedder.load():
+                self._embedder = None
+        except Exception:
+            self._embedder = None
+
+        self._pyramid = PyramidSearch(self._store, embedder=self._embedder)
         self._aggregator = PyramidAggregator(self._store, self._llm)
 
         chat_cfg = self.config.get("refinement.chat", {})
@@ -93,15 +102,6 @@ class RadioMind:
 
         self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
         self._kg.open()
-
-        # Optional: load embedding encoder (silent fallback)
-        try:
-            from radiomind.storage.embedding import EmbeddingEncoder
-            self._embedder = EmbeddingEncoder(home / "models" / "embedding")
-            if not self._embedder.load():
-                self._embedder = None
-        except Exception:
-            self._embedder = None
 
         self._initialized = True
 

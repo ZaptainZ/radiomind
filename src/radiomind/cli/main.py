@@ -81,6 +81,49 @@ def setup(platform: str, force: bool, remove: bool) -> None:
         click.echo("Restart your agent to activate.")
 
 
+@cli.command("embed-backfill")
+@click.option("--batch-size", default=50, help="Batch size for encoding.")
+def embed_backfill(batch_size: int) -> None:
+    """Backfill embeddings for existing memories without vectors.
+
+    Useful after first-time install or after embedding package was added.
+    Only processes memories where embedding IS NULL.
+    """
+    mind = _get_mind()
+
+    if not mind._embedder:
+        click.echo("Embedding encoder not available.")
+        click.echo("Install: pip install 'radiomind[embedding]'")
+        mind.shutdown()
+        return
+
+    rows = mind._store.conn.execute(
+        "SELECT id, content FROM memories WHERE embedding IS NULL AND status='active'"
+    ).fetchall()
+
+    total = len(rows)
+    if total == 0:
+        click.echo("All memories already have embeddings.")
+        mind.shutdown()
+        return
+
+    click.echo(f"Backfilling embeddings for {total} memories...")
+    done = 0
+    with click.progressbar(rows, label="Encoding") as bar:
+        for row in bar:
+            emb = mind._embedder.encode(row["content"])
+            if emb:
+                mind._store.conn.execute(
+                    "UPDATE memories SET embedding = ? WHERE id = ?",
+                    (emb, row["id"]),
+                )
+                done += 1
+    mind._store.conn.commit()
+
+    click.echo(f"Done: {done}/{total} encoded.")
+    mind.shutdown()
+
+
 @cli.command()
 @click.argument("query")
 @click.option("--domain", "-d", default=None, help="Filter by domain.")

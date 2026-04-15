@@ -26,11 +26,27 @@ Patterns:
 Respond with ONLY the principle in one sentence. No explanation."""
 
 
-class PyramidSearch:
-    """Attention-style hierarchical memory retrieval."""
+RRF_K = 60  # standard RRF constant (TREC best practice)
 
-    def __init__(self, store: MemoryStore):
+
+class PyramidSearch:
+    """Attention-style hierarchical memory retrieval.
+
+    Retrieval strategy (priority order):
+      1. Vector search (semantic, via embedding)
+      2. FTS5 (lexical, BM25-ranked)
+      3. LIKE fallback (substring, low-signal)
+
+    Results fused with Reciprocal Rank Fusion:
+        score = sum(1 / (k + rank_in_each_list))
+    """
+
+    def __init__(self, store: MemoryStore, embedder=None):
         self._store = store
+        self._embedder = embedder  # optional EmbeddingEncoder
+
+    def set_embedder(self, embedder) -> None:
+        self._embedder = embedder
 
     def search(
         self,
@@ -39,36 +55,79 @@ class PyramidSearch:
         max_results: int = 10,
         domain: str | None = None,
     ) -> list[SearchResult]:
-        """Search from top of pyramid down, like attention mechanism.
+        """Hybrid retrieval with RRF fusion + privacy/domain filtering."""
+        candidates: list[list[SearchResult]] = []
 
-        1. Scan principles (L2) — broad strokes
-        2. Expand matching principles to their patterns (L1)
-        3. Expand matching patterns to their facts (L0)
-        """
-        all_results: list[SearchResult] = []
-        seen_ids: set[int] = set()
+        # 1. Vector search (if embedder available and encodes successfully)
+        if self._embedder is not None and getattr(self._embedder, "is_available", False):
+            q_emb = self._embedder.encode(query)
+            if q_emb:
+                vec_results = self._store.search_vector(q_emb, limit=max_results * 2)
+                if vec_results:
+                    candidates.append(vec_results)
 
-        # Try FTS first, fall back to LIKE
+        # 2. FTS5
         fts_results = self._store.search_fts(query, limit=max_results * 2)
-        like_results = self._store.search_like(query, limit=max_results)
+        if fts_results:
+            candidates.append(fts_results)
 
-        # Merge, deduplicate, and apply privacy filtering
-        for r in fts_results + like_results:
-            if r.entry.id not in seen_ids:
-                if domain is None or r.entry.domain == domain:
-                    if self._privacy_allows(r.entry, domain):
-                        seen_ids.add(r.entry.id)
-                        all_results.append(r)
+        # 3. LIKE (only if vector and FTS both empty — true fallback, not parallel)
+        if not candidates:
+            like_results = self._store.search_like(query, limit=max_results)
+            if like_results:
+                candidates.append(like_results)
 
-        # Sort: principles first, then patterns, then facts (pyramid order)
-        all_results.sort(key=lambda r: (-r.entry.level, -r.score))
+        # RRF fusion
+        fused = self._rrf_fuse(candidates, max_results)
 
-        # Record hits
-        for r in all_results[:max_results]:
+        # Filter + privacy + record hits
+        filtered: list[SearchResult] = []
+        for r in fused:
+            if domain is not None and r.entry.domain != domain:
+                continue
+            if not self._privacy_allows(r.entry, domain):
+                continue
+            filtered.append(r)
+
+        filtered.sort(key=lambda r: (-r.entry.level, -r.score))
+
+        for r in filtered[:max_results]:
             if r.entry.id is not None:
                 self._store.record_hit(r.entry.id)
 
-        return all_results[:max_results]
+        return filtered[:max_results]
+
+    @staticmethod
+    def _rrf_fuse(
+        lists: list[list[SearchResult]], limit: int
+    ) -> list[SearchResult]:
+        """Reciprocal Rank Fusion: combine multiple ranked lists."""
+        if not lists:
+            return []
+        if len(lists) == 1:
+            return lists[0][:limit]
+
+        scored: dict[int, tuple[float, SearchResult]] = {}
+        for result_list in lists:
+            for rank, r in enumerate(result_list):
+                if r.entry.id is None:
+                    continue
+                contribution = 1.0 / (RRF_K + rank + 1)
+                if r.entry.id in scored:
+                    prev_score, prev_result = scored[r.entry.id]
+                    prev_result.score = prev_score + contribution
+                    scored[r.entry.id] = (prev_score + contribution, prev_result)
+                else:
+                    # Clone result so we don't mutate input
+                    fused_result = SearchResult(
+                        entry=r.entry,
+                        score=contribution,
+                        method="rrf",
+                    )
+                    scored[r.entry.id] = (contribution, fused_result)
+
+        merged = sorted(scored.values(), key=lambda x: x[0], reverse=True)
+        return [result for _, result in merged[:limit]]
 
     def drill_down(self, entry_id: int) -> list[MemoryEntry]:
         """Expand a higher-level entry to its children (drill down the pyramid)."""
