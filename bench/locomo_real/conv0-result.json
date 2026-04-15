@@ -1,0 +1,31 @@
+{
+  "benchmark": "LoCoMo10 conv[0]",
+  "n_turns_ingested": 419,
+  "n_queries": 197,
+  "embedder_available": true,
+  "metric": "Recall@5 (evidence turn in retrieved top-5)",
+  "overall_r@5": 0.1929,
+  "by_category": {
+    "1": {
+      "n": 32,
+      "r@5": 0.0625
+    },
+    "2": {
+      "n": 37,
+      "r@5": 0.1892
+    },
+    "3": {
+      "n": 11,
+      "r@5": 0.0
+    },
+    "4": {
+      "n": 70,
+      "r@5": 0.2143
+    },
+    "5": {
+      "n": 47,
+      "r@5": 0.2979
+    }
+  },
+  "latency_ms_per_query": 29.16
+}
