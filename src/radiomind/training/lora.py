@@ -9,6 +9,7 @@ MLX is optional: graceful fallback with clear instructions if not installed.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import time
 from dataclasses import dataclass
@@ -191,47 +192,118 @@ def export_to_ollama(
     adapter_path: Path,
     base_model: str = "qwen2.5:0.5b",
     model_name: str = "radiomind-personal",
+    mlx_base_model: str = "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+    llama_cpp_convert: str = "",
 ) -> tuple[bool, str]:
-    """Export LoRA adapter to Ollama as a custom model.
+    """Export a trained LoRA adapter to Ollama.
 
-    Creates an Ollama Modelfile and registers the model.
+    Pipeline:
+        1. Fuse adapter + MLX base → fused/ (safetensors) via `mlx_lm.fuse`
+        2. Convert fused model → GGUF via llama.cpp convert_hf_to_gguf.py
+           (path passed as `llama_cpp_convert` or found via $LLAMA_CPP_CONVERT)
+        3. Write Ollama Modelfile (FROM base + the fused GGUF as the actual
+           model, not as an ADAPTER — Ollama's ADAPTER expects GGUF LoRA
+           which MLX doesn't emit directly)
+        4. `ollama create <model_name>`
+
+    Returns (success, message). On missing tooling returns False with a
+    specific install hint rather than attempting a broken command.
     """
-    # Convert adapter to GGUF if needed
-    gguf_path = adapter_path / "adapter.gguf"
+    import os
+
+    adapter_file = adapter_path / "adapters.safetensors"
+    if not adapter_file.exists():
+        return False, f"Adapter not found at {adapter_file}. Run: radiomind train"
+
+    # Locate llama.cpp convert script
+    convert_script = (
+        llama_cpp_convert
+        or os.environ.get("LLAMA_CPP_CONVERT", "")
+        or _find_llama_cpp_convert()
+    )
+    if not convert_script:
+        return False, (
+            "llama.cpp convert_hf_to_gguf.py not found. Set LLAMA_CPP_CONVERT "
+            "to the script path, or clone https://github.com/ggerganov/llama.cpp "
+            "and point to convert_hf_to_gguf.py."
+        )
+
+    fused_dir = adapter_path.parent / "fused"
+    fused_dir.mkdir(parents=True, exist_ok=True)
+
+    # Step 1: fuse adapter into base model
+    try:
+        cmd = [
+            "python3", "-m", "mlx_lm.fuse",
+            "--model", mlx_base_model,
+            "--adapter-path", str(adapter_path),
+            "--save-path", str(fused_dir),
+            "--de-quantize",
+        ]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if r.returncode != 0:
+            return False, f"mlx_lm.fuse failed: {r.stderr[-300:]}"
+    except FileNotFoundError:
+        return False, "mlx_lm not installed. Run: pip install 'radiomind[train]'"
+    except subprocess.TimeoutExpired:
+        return False, "mlx_lm.fuse timed out (>10 min). Large base model?"
+
+    # Step 2: convert fused HF model → GGUF
+    gguf_path = adapter_path.parent / "model.gguf"
+    try:
+        cmd = [
+            "python3", convert_script,
+            str(fused_dir),
+            "--outfile", str(gguf_path),
+            "--outtype", "q4_K_M",
+        ]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+        if r.returncode != 0:
+            return False, f"llama.cpp convert failed: {r.stderr[-300:]}"
+    except subprocess.TimeoutExpired:
+        return False, "llama.cpp convert timed out (>15 min)."
 
     if not gguf_path.exists():
-        # Try mlx_lm.convert
-        try:
-            cmd = [
-                "python3", "-m", "mlx_lm.convert",
-                "--model", str(adapter_path),
-                "--quantize",
-                "--output", str(gguf_path),
-            ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            if result.returncode != 0:
-                return False, f"GGUF conversion failed: {result.stderr[:200]}"
-        except Exception as e:
-            return False, f"GGUF conversion error: {e}"
+        return False, f"Expected GGUF at {gguf_path} but it wasn't written."
 
-    # Create Ollama Modelfile
-    modelfile_path = adapter_path / "Modelfile"
-    modelfile_content = f"FROM {base_model}\nADAPTER {gguf_path}\n"
-    modelfile_path.write_text(modelfile_content)
+    # Step 3: write Modelfile. Use FROM {gguf_path} — the fused model IS the
+    # new base. Ollama's ADAPTER directive expects GGUF-format LoRA which
+    # MLX doesn't emit, so we bake it in instead.
+    modelfile = adapter_path.parent / "Modelfile"
+    modelfile.write_text(
+        f"FROM {gguf_path}\n"
+        f"PARAMETER temperature 0.7\n"
+        f"SYSTEM You are a personal AI assistant for this user, fine-tuned on their habits.\n"
+    )
 
-    # Register with Ollama
+    # Step 4: register with Ollama
+    if not shutil.which("ollama"):
+        return False, "ollama CLI not on PATH. Install from https://ollama.com"
     try:
-        result = subprocess.run(
-            ["ollama", "create", model_name, "-f", str(modelfile_path)],
-            capture_output=True,
-            text=True,
-            timeout=120,
+        r = subprocess.run(
+            ["ollama", "create", model_name, "-f", str(modelfile)],
+            capture_output=True, text=True, timeout=180,
         )
-        if result.returncode == 0:
-            return True, f"Model '{model_name}' created successfully"
-        else:
-            return False, f"Ollama create failed: {result.stderr[:200]}"
-    except FileNotFoundError:
-        return False, "Ollama not found. Install from https://ollama.com"
+        if r.returncode == 0:
+            return True, (
+                f"Created Ollama model '{model_name}'.\n"
+                f"Next: ollama run {model_name}  (or radiomind A/B: "
+                f"python bench/lora_ab/eval.py --base {base_model} --lora {model_name})"
+            )
+        return False, f"ollama create failed: {r.stderr[-300:]}"
     except Exception as e:
-        return False, f"Ollama error: {e}"
+        return False, f"ollama error: {e}"
+
+
+def _find_llama_cpp_convert() -> str:
+    """Look for llama.cpp's convert_hf_to_gguf.py in common locations."""
+    candidates = [
+        Path.home() / "llama.cpp" / "convert_hf_to_gguf.py",
+        Path.home() / "code" / "llama.cpp" / "convert_hf_to_gguf.py",
+        Path("/usr/local/share/llama.cpp/convert_hf_to_gguf.py"),
+        Path("/opt/homebrew/share/llama.cpp/convert_hf_to_gguf.py"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return str(c)
+    return ""

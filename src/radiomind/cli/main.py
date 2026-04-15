@@ -480,8 +480,14 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
 
 
 @cli.command()
-def deploy() -> None:
-    """Deploy trained LoRA adapter to Ollama."""
+@click.option("--base", default="qwen2.5:0.5b", help="Ollama base model name.")
+@click.option("--name", default="radiomind-personal", help="Name to register under.")
+@click.option("--mlx-base", default="mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+              help="MLX base model (must match the one used for training).")
+@click.option("--llama-cpp-convert", default="",
+              help="Path to llama.cpp convert_hf_to_gguf.py (or set $LLAMA_CPP_CONVERT).")
+def deploy(base: str, name: str, mlx_base: str, llama_cpp_convert: str) -> None:
+    """Fuse + GGUF-convert + register a trained LoRA with Ollama."""
     from radiomind.training.lora import export_to_ollama
     from radiomind.core.config import Config
 
@@ -492,9 +498,17 @@ def deploy() -> None:
         click.echo("No trained adapter found. Run 'radiomind train' first.")
         return
 
-    click.echo("Deploying adapter to Ollama...")
-    success, msg = export_to_ollama(adapter_path)
+    click.echo(f"Fusing adapter + base ({mlx_base}) → GGUF → Ollama ({name})...")
+    success, msg = export_to_ollama(
+        adapter_path,
+        base_model=base,
+        model_name=name,
+        mlx_base_model=mlx_base,
+        llama_cpp_convert=llama_cpp_convert,
+    )
     click.echo(msg)
+    if not success:
+        raise SystemExit(1)
 
 
 @cli.command("learn")
