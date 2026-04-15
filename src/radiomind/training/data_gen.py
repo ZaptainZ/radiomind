@@ -214,6 +214,43 @@ class TrainingDataGenerator:
             )
             raw_examples.append((q, clean, f"pattern:{p.id}"))
 
+        # --- L2 facts (direct — don't wait for refinement to produce habits)
+        # v0.2 limitation: data_gen previously only tapped L3 habits and
+        # L2 patterns/principles. On a real user DB with 745 facts but few
+        # refined habits, that produced only ~80 training examples. Tap the
+        # raw facts too — they're per-domain specific truths about the user.
+        L2_PROMPT_ZH = [
+            "你对我在{domain}方面知道什么？",
+            "关于{domain}，我有什么特点或偏好？",
+            "说一个你记得的我在{domain}领域的事实",
+            "描述我在{domain}上的一个具体观察",
+        ]
+        L2_PROMPT_EN = [
+            "What do you know about me in {domain}?",
+            "In the {domain} area, what are my traits?",
+            "Share a fact about me in {domain}.",
+            "Describe one specific observation of me in {domain}.",
+        ]
+        l2_prompts = L2_PROMPT_ZH if language == "zh" else L2_PROMPT_EN
+
+        # Per-domain sample cap to prevent one noisy domain from dominating
+        MAX_FACTS_PER_DOMAIN = 8
+        fact_count_by_domain: dict[str, int] = {}
+        for dom_info in stats.get("domains", [])[:20]:  # top 20 domains
+            dom = dom_info["name"]
+            if not dom:
+                continue
+            facts = self._store.list_by_domain(dom, level=MemoryLevel.FACT, limit=MAX_FACTS_PER_DOMAIN)
+            for f in facts:
+                clean = self._sanitize(f.content)
+                if not self._ok_answer(clean) or len(clean) > 500:
+                    continue
+                # Use one rotating prompt per fact
+                q_tmpl = l2_prompts[(fact_count_by_domain.get(dom, 0)) % len(l2_prompts)]
+                q = q_tmpl.format(domain=dom)
+                raw_examples.append((q, clean, f"fact:{f.id}"))
+                fact_count_by_domain[dom] = fact_count_by_domain.get(dom, 0) + 1
+
         # --- Dedup + quality gates --------------------------------------
         dropped_pii = 0
         dropped_dup = 0
