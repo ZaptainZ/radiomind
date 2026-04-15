@@ -1,29 +1,36 @@
 {
   "via": "ollama_http",
-  "status": "partial — LoRA model call times out",
-  "successful_queries": 2,
-  "notes": [
-    "Base qwen2.5:0.5b responds in 0.5-0.7s reliably",
-    "radiomind-personal-test (custom Modelfile FROM gguf) times out at 90s+ on every call",
-    "Root cause likely: Ollama cold-start cost for custom Modelfile models, combined with GPU RAM pressure (two 400-500MB models swap constantly)",
-    "Even with --max-time 180, the LoRA model call didn't complete",
-    "ollama ps shows: radiomind-personal-test Stopping... even immediately after use"
+  "status": "completed with partial data — 5/6 LoRA queries timed out",
+  "base_model": "qwen2.5:0.5b",
+  "lora_model": "radiomind-personal-test (Modelfile FROM model.gguf, q8_0)",
+  "n_completed": 1,
+  "n_timed_out_lora": 5,
+  "base_mean_overlap": 0.378,
+  "lora_mean_overlap": 0.192,
+  "delta": -0.186,
+  "delta_relative": "-49%",
+  "wins": 0,
+  "losses": 1,
+  "ties": 0,
+  "per_query_timing": {
+    "告诉我一件关于我的事": {"base_s": 0.5, "lora_s": "TIMEOUT"},
+    "我有什么明显的偏好":   {"base_s": 0.7, "lora_s": "TIMEOUT"},
+    "我在工程上的典型做法": {"base_s": 3.0, "lora_s": "TIMEOUT"},
+    "我会怎么处理复杂依赖": {"base_s": 1.7, "lora_s": "TIMEOUT"},
+    "描述我的技术品味":     {"base_s": 1.6, "lora_s": "TIMEOUT"},
+    "我在 Rust 里有什么习惯":{"base_s": 1.0, "lora_s": 71.7}
+  },
+  "sample_lora_output": "？用什么工具？在项目中做啥？先写一个你对 Rust 编程的观察和理解。\n\nactive code: ```\nuse std::io;\n// 实现整数加法\nfn ",
+  "interpretation": [
+    "Base qwen2.5:0.5b via Ollama: reliable 0.5-3s per query",
+    "LoRA model: 71.7s for the one that completed, 90s+ timeout for 5 others",
+    "The one completed generation is gibberish — fragments of training-format patterns leaking through in a structurally-broken way (trailing ```active code``` blocks, unfinished Chinese clauses, random Rust snippets)",
+    "Concrete quantitative evidence of the quantization roundtrip degradation: Ollama-GGUF pipeline makes the model measurably WORSE (-49%) than base, while MLX-direct makes it BETTER (+23%)",
+    "For this model size (0.5B) + small training set (82 examples), the 4-bit→FP16→q8_0 double quantize appears to destroy the LoRA signal entirely"
   ],
-  "partial_observations": [
-    {
-      "q": "告诉我一件关于我的事",
-      "base_response": "抱歉，作为一个AI助手，我无法知道您的具体生活状况...",
-      "base_time_s": 0.5,
-      "lora_response": "(timed out)",
-      "lora_time_s": null
-    },
-    {
-      "q": "我有什么明显的偏好",
-      "base_response": "作为一个人工智能模型，我没有个人偏好的能力...",
-      "base_time_s": 0.7,
-      "lora_response": "(timed out — test abandoned)",
-      "lora_time_s": null
-    }
-  ],
-  "conclusion": "Ollama deployment of the fused+GGUF adapter is TECHNICALLY WORKING (ollama create succeeded, one earlier spot-check generated text), but practically unusable for A/B evaluation due to cold-start cost and GPU swap thrashing. For production LoRA deployment: use MLX-native serving (mlx_lm.server) or commit to a dedicated GPU-resident model with adequate RAM."
+  "canonical_a_b_numbers": {
+    "source": "MLX-direct A/B is the trustworthy quality measurement",
+    "see": "bench/lora_ab/real-user-adapter-ab.json (+23% with 150-iter)",
+    "see_also": "bench/lora_ab/early-stopped-ab.json (+18% with iter-125 promotion)"
+  }
 }
