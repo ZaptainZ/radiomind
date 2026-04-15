@@ -1,0 +1,62 @@
+name: LoRA smoke (manual)
+
+# Separate workflow — only runs on-demand. MLX needs Apple Silicon; this
+# is a self-hosted trigger or can be run on macOS-latest with mlx[cpu].
+on:
+  workflow_dispatch:
+    inputs:
+      base_model:
+        description: MLX base model
+        default: "mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+      iters:
+        description: Training iterations
+        default: "50"
+
+jobs:
+  lora-smoke:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          pip install -e ".[train,embedding]" || pip install -e .
+          pip install mlx mlx-lm || echo "MLX unavailable on this runner"
+      - name: Seed synthetic training data (sandbox)
+        env:
+          RADIOMIND_HOME: /tmp/rm-lora-ci
+        run: |
+          python - <<'PY'
+          import os
+          from radiomind.core.mind import RadioMind
+          from radiomind.core.types import MemoryEntry, MemoryLevel
+          m = RadioMind(); m.initialize()
+          for dom in ("health", "work", "hobby"):
+              for i in range(4):
+                  m._store.add(MemoryEntry(content=f"{dom} fact {i}: detail {i}", domain=dom, level=MemoryLevel.FACT))
+              m._store.add(MemoryEntry(content=f"{dom} pattern: steady weekly rhythm", domain=dom, level=MemoryLevel.PATTERN))
+          for d in ("user likes morning runs", "user prefers hand-drip coffee", "user dislikes sugary drinks",
+                    "user studies Rust weekly", "user plans Kyoto in October", "user practices yoga Wednesdays"):
+              m._habits.add_habit(d, concepts=[("user", d)], confidence=0.85)
+          m.shutdown()
+          PY
+      - name: Generate training data
+        env:
+          RADIOMIND_HOME: /tmp/rm-lora-ci
+        run: radiomind train --data-only
+      - name: Attempt LoRA fine-tune
+        if: success()
+        continue-on-error: true
+        env:
+          RADIOMIND_HOME: /tmp/rm-lora-ci
+        run: |
+          radiomind train --iters ${{ github.event.inputs.iters }} --model "${{ github.event.inputs.base_model }}" || true
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lora-smoke-${{ github.run_id }}
+          path: /tmp/rm-lora-ci/models/

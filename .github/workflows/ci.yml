@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-timeout
+          pip install -e .
+      - name: Pytest (with sandbox isolation)
+        env:
+          RADIOMIND_HOME: /tmp/rm-ci-home
+        run: pytest tests/ --timeout=60 -v
+
+  bench-locomo:
+    name: LoCoMo-lite retrieval regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Run benchmark
+        env:
+          RADIOMIND_HOME: /tmp/rm-bench-ci
+        run: |
+          python bench/locomo_lite/run.py --save bench/locomo_lite/ci-result.json
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locomo-result-${{ github.run_id }}
+          path: bench/locomo_lite/ci-result.json
+
+  lint:
+    name: Import + syntax sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install -e .
+          # Import every module to catch syntax/import errors
+          python -c "
+          import importlib, pkgutil, radiomind
+          failed = []
+          for m in pkgutil.walk_packages(radiomind.__path__, 'radiomind.'):
+              try:
+                  importlib.import_module(m.name)
+              except Exception as e:
+                  failed.append((m.name, str(e)))
+          if failed:
+              for n, e in failed:
+                  print(f'FAIL {n}: {e}')
+              raise SystemExit(1)
+          print('All modules importable')
+          "
+
+  sandbox-guard:
+    name: Tests never touch ~/.radiomind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          pip install -e .
+          pip install pytest pytest-timeout
+      - name: Fail if tests write to ~/.radiomind
+        env:
+          RADIOMIND_HOME: /tmp/rm-sandbox-guard
+        run: |
+          # Precondition: real home is virgin
+          test ! -e "$HOME/.radiomind" || { echo "unexpected ~/.radiomind present before tests"; exit 1; }
+          pytest tests/ --timeout=60 -q
+          # If tests leaked, ~/.radiomind will exist
+          if [ -e "$HOME/.radiomind" ]; then
+              echo "FAIL: tests wrote to real ~/.radiomind"
+              ls -la "$HOME/.radiomind"
+              exit 1
+          fi
+          echo "PASS: real home untouched"
