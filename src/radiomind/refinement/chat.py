@@ -149,21 +149,26 @@ class ChatRefinement:
         explorer_backend = self._cfg.get("explorer_backend", "") or ""
         reducer_backend = self._cfg.get("reducer_backend", "") or ""
 
-        # Three agents speak — each can use a different model AND backend
-        # so e.g. a cheap local model plays Guardian (cost-sensitive default
-        # stance) while a stronger cloud model plays Explorer.
-        result.guardian_response = self._speak(
-            "Guardian", domain, mem_text, habit_text, GUARDIAN_SYSTEM,
-            guardian_model, guardian_backend,
-        )
-        result.explorer_response = self._speak(
-            "Explorer", domain, mem_text, habit_text, EXPLORER_SYSTEM,
-            explorer_model, explorer_backend,
-        )
-        result.reducer_response = self._speak(
-            "Reducer", domain, mem_text, habit_text, REDUCER_SYSTEM,
-            reducer_model, reducer_backend,
-        )
+        # Three agents speak. The three calls are independent — no shared
+        # state between Guardian / Explorer / Reducer turns — so we fan them
+        # out to a ThreadPoolExecutor. On a sequential backend (one Ollama
+        # server) this is a wash; on heterogeneous backends (Guardian =
+        # local, Explorer = cloud) it's a real 3× latency win.
+        from concurrent.futures import ThreadPoolExecutor
+
+        speakers = [
+            ("Guardian", GUARDIAN_SYSTEM, guardian_model, guardian_backend),
+            ("Explorer", EXPLORER_SYSTEM, explorer_model, explorer_backend),
+            ("Reducer", REDUCER_SYSTEM, reducer_model, reducer_backend),
+        ]
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            futures = [
+                ex.submit(self._speak, role, domain, mem_text, habit_text, sys_prompt, model, backend)
+                for role, sys_prompt, model, backend in speakers
+            ]
+            result.guardian_response = futures[0].result()
+            result.explorer_response = futures[1].result()
+            result.reducer_response = futures[2].result()
 
         # Synthesize
         synth_prompt = SYNTHESIS_PROMPT.format(
