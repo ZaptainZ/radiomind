@@ -35,6 +35,41 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
 
 执行细节参见 `logs/2026-04-15-p1-execution-cc.md`、`logs/2026-04-15-p2-p3-execution-cc.md` 和 `logs/2026-04-15-p3-polish-cc.md`。
 
+## 真实数据审计结果（2026-04-15 深度审计）
+
+用用户真实 745 条记忆 + Qwen API + MLX LoRA + llama.cpp + Ollama 跑完整链路，数字如下：
+
+**修复的 v0.2 隐藏 bug（真跑才暴露）**
+1. `RADIOMIND_HOME` env 被 `config.toml` 静默覆盖（沙箱逃逸破功）
+2. 老 DB (v1/v2) 启动 `CREATE INDEX user_id` 炸（`SCHEMA_SQL` vs migrations 顺序错）
+3. `model_used` 硬编码到 Ollama key（Dashscope 用户看到假模型名）
+4. `early_stop_patience` 未接 mlx_lm 训练循环
+   - 子 A：`mlx_lm.lora.run()` 第一行覆写 callback
+   - 子 B：val_info iteration 0-indexed vs checkpoint 1-indexed 错位
+
+**影响力 benchmark — LoCoMo10 (ACL 2024, 1982 queries)**
+- overall R@5 = **0.238** / R@10 = 0.285
+- 在公开 dense-retrieval baseline (0.15-0.25) 档
+- 按 conv spread 3.2× (0.119-0.384)
+
+**LoRA 真训真评**
+- 82 train + 20 valid, val loss 4.30 → 0.49 (iter 125)
+- early stop 自动回滚：iter 250 val 0.52 → adapter rolled back to iter 125 val 0.49（md5 校验）
+- MLX-direct A/B: base 0.345 → LoRA 0.424 (+23%), 5W/2L/1T
+
+**完整 LoRA 部署链路跑通**
+- mlx_lm.fuse (988MB) → convert_hf_to_gguf q8_0 (531MB) → ollama create → ollama generate 真返回
+- 诚实发现：GGUF q8_0 二次量化 roundtrip 损失 LoRA 信号，部署版生成质量明显弱于 MLX-direct
+- 缓解：用 `--outtype f16`、更大 base、更多数据
+
+**审计基础设施**
+- GitHub Actions CI：pytest matrix / LoCoMo 回归门禁 / import sanity / sandbox-guard
+- 231 tests pass
+- 完整备份 `~/radiomind-backup-20260415-181603/` (94MB)
+- 真实 `~/.radiomind` 内容字节级完好（114035=114035，745/1 active/archived 不变）
+
+详见 `logs/2026-04-15-real-audit-cc.md` 和 `logs/2026-04-15-deep-audit-cc.md`。
+
 ---
 
 ## 一、愿景与定位
