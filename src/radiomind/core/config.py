@@ -44,9 +44,15 @@ DEFAULT_CONFIG = {
     "refinement": {
         "cost_mode": "economy",  # economy | standard | deep
         "chat": {
-            "guardian_model": "",  # empty = use llm.ollama.model
+            # Heterogeneous debate: each role can use a different model AND
+            # backend. Empty = fall back to default_backend's default model.
+            # Typical setup: Guardian = cheap local, Explorer = strong cloud.
+            "guardian_model": "",
             "explorer_model": "",
             "reducer_model": "",
+            "guardian_backend": "",
+            "explorer_backend": "",
+            "reducer_backend": "",
             "trigger_hit_count": 3,
         },
         "dream": {

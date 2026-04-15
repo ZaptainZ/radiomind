@@ -97,10 +97,14 @@ class HabitStore:
         description: str,
         concepts: list[tuple[str, str]],
         confidence: float = 0.5,
+        evidence: str = "",
+        falsifier: str = "",
     ) -> Habit | None:
         """Add a habit from concept pairs. Returns None if rejected by quality gate.
 
         concepts: list of (subject, predicate) pairs
+        evidence / falsifier: populated when the habit comes from three-body
+        debate; used later to re-evaluate the habit against new memories.
         """
         # Quality gate: reject low-confidence LLM outputs
         if confidence < self.MIN_CONFIDENCE:
@@ -109,6 +113,12 @@ class HabitStore:
         # Deduplicate: skip if identical description already exists
         for existing in self._habits:
             if existing.description == description and existing.status != MemoryStatus.ARCHIVED:
+                # Merge: fill evidence/falsifier if previously empty
+                if evidence and not existing.evidence:
+                    existing.evidence = evidence
+                if falsifier and not existing.falsifier:
+                    existing.falsifier = falsifier
+                self._save_habits()
                 return existing
 
         if not concepts:
@@ -117,7 +127,12 @@ class HabitStore:
             parts = [bind(self.codebook.get(s), self.codebook.get(p)) for s, p in concepts]
             hv = bundle(*parts) if len(parts) > 1 else parts[0]
 
-        habit = Habit(description=description, confidence=confidence)
+        habit = Habit(
+            description=description,
+            confidence=confidence,
+            evidence=evidence,
+            falsifier=falsifier,
+        )
         self._habits.append(habit)
         self._vectors.append(hv)
         self._bundle = None
@@ -263,6 +278,8 @@ class HabitStore:
                 "reject_count": h.reject_count,
                 "created_at": h.created_at,
                 "verified_at": h.verified_at,
+                "evidence": h.evidence,
+                "falsifier": h.falsifier,
             }
             data.append(d)
         habits_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
@@ -289,6 +306,8 @@ class HabitStore:
                 reject_count=d.get("reject_count", 0),
                 created_at=d["created_at"],
                 verified_at=d.get("verified_at"),
+                evidence=d.get("evidence", ""),
+                falsifier=d.get("falsifier", ""),
             )
             for d in data
         ]

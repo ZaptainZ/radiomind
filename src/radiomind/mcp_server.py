@@ -288,10 +288,17 @@ class MCPServer:
 
         elif tool_name == "radiomind_habits":
             habits = mind.query_habits(args["query"])
-            text = "\n".join(
-                f"[{h.status.value}] {h.description} (confidence={h.confidence:.1f})"
-                for h in habits
-            )
+            lines = []
+            for h in habits:
+                line = f"[{h.status.value}] {h.description} (confidence={h.confidence:.1f}"
+                line += f", hits={h.hit_count}" if h.hit_count else ""
+                line += ")"
+                if h.evidence:
+                    line += f"\n    evidence: {h.evidence}"
+                if h.falsifier:
+                    line += f"\n    falsifier: {h.falsifier}"
+                lines.append(line)
+            text = "\n".join(lines)
             return {"content": [{"type": "text", "text": text or "No habits found."}]}
 
         elif tool_name == "radiomind_digest":

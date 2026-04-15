@@ -21,19 +21,19 @@ from radiomind.storage.hdc import HabitStore
 
 GUARDIAN_SYSTEM = """You are the Guardian (守护者). Your goal is CONSISTENCY.
 Evaluate whether the new memories align with existing habits and knowledge.
-If they contradict existing habits, flag the contradiction.
-If they reinforce existing habits, recommend strengthening.
-Be concise. Respond in the user's language."""
+Flag contradictions. Reinforce what fits.
+Every claim you make MUST cite evidence from the listed memories.
+Respond in the user's language, concisely."""
 
 EXPLORER_SYSTEM = """You are the Explorer (探索者). Your goal is NOVELTY.
-Look for new patterns, unexpected connections, and fresh insights in the memories.
-Challenge assumptions. Find what's genuinely new and worth remembering.
-Be concise. Respond in the user's language."""
+Find patterns, unexpected connections, fresh insights.
+Every claim you make MUST cite evidence from the listed memories.
+Respond in the user's language, concisely."""
 
 REDUCER_SYSTEM = """You are the Reducer (精简者). Your goal is PARSIMONY.
-Determine if memories can be merged, simplified, or eliminated.
-Advocate for fewer, more precise memories over many redundant ones.
-Be concise. Respond in the user's language."""
+Identify redundancy; argue for merging or removing.
+Every claim you make MUST cite evidence from the listed memories.
+Respond in the user's language, concisely."""
 
 DEBATE_PROMPT = """Here are the user's recent memories in the "{domain}" domain:
 
@@ -42,9 +42,14 @@ DEBATE_PROMPT = """Here are the user's recent memories in the "{domain}" domain:
 Existing habits:
 {habits}
 
-As the {role}, analyze these memories. In 2-3 sentences:
-1. State your position
-2. Propose a specific action (add/merge/strengthen/remove)"""
+As the {role}, analyze these memories using this exact structure:
+
+POSITION: <one-sentence stance>
+EVIDENCE: <reference specific memory lines or habits that support your position>
+ACTION: <add | strengthen | merge | remove — one concrete recommendation>
+FALSIFIER: <what future memory would prove your position wrong>
+
+Keep it tight."""
 
 SYNTHESIS_PROMPT = """Three analysts debated about user memories in the "{domain}" domain.
 
@@ -54,12 +59,17 @@ Explorer (novelty): {explorer}
 
 Reducer (parsimony): {reducer}
 
-Based on this debate, extract 0-2 new insights worth remembering as habits.
-For each insight, output one line in this format:
+Extract 0-2 new insights worth remembering as habits. Each insight MUST have
+grounding in the evidence the debaters cited AND a condition that would
+disprove it (so we can re-evaluate later).
+
+Format EXACTLY:
 INSIGHT: <concise habit description>
 CONFIDENCE: <0.0-1.0>
+EVIDENCE: <which cited memories back this up>
+FALSIFIER: <future observation that would invalidate it>
 
-If no insight is worth adding, output: NONE"""
+If nothing is worth adding, output: NONE"""
 
 
 @dataclass
@@ -105,6 +115,8 @@ class ChatRefinement:
                 insight.description,
                 concepts=[(insight.description.split()[0], insight.description)],
                 confidence=insight.confidence,
+                evidence=insight.evidence,
+                falsifier=insight.falsifier,
             )
             if h is not None:
                 accepted.append(insight)
@@ -133,16 +145,24 @@ class ChatRefinement:
         guardian_model = self._cfg.get("guardian_model", "") or ""
         explorer_model = self._cfg.get("explorer_model", "") or ""
         reducer_model = self._cfg.get("reducer_model", "") or ""
+        guardian_backend = self._cfg.get("guardian_backend", "") or ""
+        explorer_backend = self._cfg.get("explorer_backend", "") or ""
+        reducer_backend = self._cfg.get("reducer_backend", "") or ""
 
-        # Three agents speak
+        # Three agents speak — each can use a different model AND backend
+        # so e.g. a cheap local model plays Guardian (cost-sensitive default
+        # stance) while a stronger cloud model plays Explorer.
         result.guardian_response = self._speak(
-            "Guardian", domain, mem_text, habit_text, GUARDIAN_SYSTEM, guardian_model
+            "Guardian", domain, mem_text, habit_text, GUARDIAN_SYSTEM,
+            guardian_model, guardian_backend,
         )
         result.explorer_response = self._speak(
-            "Explorer", domain, mem_text, habit_text, EXPLORER_SYSTEM, explorer_model
+            "Explorer", domain, mem_text, habit_text, EXPLORER_SYSTEM,
+            explorer_model, explorer_backend,
         )
         result.reducer_response = self._speak(
-            "Reducer", domain, mem_text, habit_text, REDUCER_SYSTEM, reducer_model
+            "Reducer", domain, mem_text, habit_text, REDUCER_SYSTEM,
+            reducer_model, reducer_backend,
         )
 
         # Synthesize
@@ -164,19 +184,20 @@ class ChatRefinement:
         return result
 
     def _speak(
-        self, role: str, domain: str, memories: str, habits: str, system: str, model: str
+        self, role: str, domain: str, memories: str, habits: str,
+        system: str, model: str, backend: str = "",
     ) -> str:
         prompt = DEBATE_PROMPT.format(
             domain=domain, memories=memories, habits=habits, role=role
         )
         try:
-            resp = self._llm.generate(prompt, system=system, model=model)
+            resp = self._llm.generate(prompt, system=system, model=model, backend=backend)
             return resp.text.strip()
         except Exception as e:
             return f"[{role} unavailable: {e}]"
 
     def _parse_insights(self, text: str) -> list[Habit]:
-        if "NONE" in text.upper():
+        if text.strip().upper().startswith("NONE") or "\nNONE" in text.upper():
             return []
 
         insights = []
@@ -187,17 +208,33 @@ class ChatRefinement:
             if line.upper().startswith("INSIGHT:"):
                 desc = line[len("INSIGHT:"):].strip()
                 confidence = 0.5
-                if i + 1 < len(lines) and lines[i + 1].strip().upper().startswith("CONFIDENCE:"):
-                    try:
-                        confidence = float(lines[i + 1].strip().split(":")[-1].strip())
-                    except ValueError:
-                        pass
-                    i += 1
+                evidence = ""
+                falsifier = ""
+                # Look ahead up to 4 lines for attribute fields
+                j = i + 1
+                while j < len(lines) and j <= i + 4:
+                    up = lines[j].strip()
+                    up_upper = up.upper()
+                    if up_upper.startswith("CONFIDENCE:"):
+                        try:
+                            confidence = float(up.split(":", 1)[1].strip())
+                        except ValueError:
+                            pass
+                    elif up_upper.startswith("EVIDENCE:"):
+                        evidence = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("FALSIFIER:"):
+                        falsifier = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("INSIGHT:"):
+                        break
+                    j += 1
+                i = j - 1
                 if desc:
                     insights.append(Habit(
                         description=desc,
                         status=MemoryStatus.CANDIDATE,
                         confidence=min(max(confidence, 0.0), 1.0),
+                        evidence=evidence,
+                        falsifier=falsifier,
                     ))
             i += 1
         return insights

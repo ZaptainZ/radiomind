@@ -174,6 +174,77 @@ class MemoryStore:
         self._ensure_domain(entry.domain)
         return row_id
 
+    def add_many(
+        self, entries: list[MemoryEntry], dedup: bool = True
+    ) -> list[int]:
+        """Bulk insert in a single transaction. Returns list of row ids
+        (or -1 for deduped skips) in the same order as `entries`.
+
+        ~10-20× faster than add() in a loop for large batches because each
+        add() commits individually.
+        """
+        if not entries:
+            return []
+
+        ids: list[int] = []
+        cur = self.conn.cursor()
+        now = time.time()
+        domains_touched: dict[str, int] = {}
+
+        for entry in entries:
+            if dedup and self.exists(entry.content, entry.domain):
+                ids.append(-1)
+                continue
+            cur.execute(
+                """INSERT INTO memories
+                   (content, domain, timestamp, level, parent_id, status, privacy, embedding,
+                    hit_count, last_hit_at, decay_count, created_at, updated_at,
+                    user_id, agent_id, session_id, metadata)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    entry.content, entry.domain, entry.created_at,
+                    int(entry.level), entry.parent_id,
+                    entry.status.value, entry.privacy.value, entry.embedding,
+                    entry.hit_count, entry.last_hit_at, entry.decay_count,
+                    entry.created_at, entry.updated_at or entry.created_at,
+                    entry.user_id, entry.agent_id, entry.session_id,
+                    json.dumps(entry.metadata),
+                ),
+            )
+            row_id = cur.lastrowid
+            cur.execute(
+                "INSERT INTO memories_fts(rowid, content) VALUES (?, ?)",
+                (row_id, entry.content),
+            )
+            cur.execute(
+                """INSERT INTO memory_history (memory_id, event, new_content, changed_at, metadata)
+                   VALUES (?, 'created', ?, ?, ?)""",
+                (row_id, entry.content, entry.created_at, "{}"),
+            )
+            entry.id = row_id
+            ids.append(row_id)
+            if entry.domain:
+                domains_touched[entry.domain] = domains_touched.get(entry.domain, 0) + 1
+
+        # Update domain counters in one go
+        for d, n in domains_touched.items():
+            existing = self.conn.execute(
+                "SELECT name FROM domains WHERE name = ?", (d,)
+            ).fetchone()
+            if existing is None:
+                cur.execute(
+                    "INSERT INTO domains (name, created_at, memory_count) VALUES (?, ?, ?)",
+                    (d, now, n),
+                )
+            else:
+                cur.execute(
+                    "UPDATE domains SET memory_count = memory_count + ? WHERE name = ?",
+                    (n, d),
+                )
+
+        self.conn.commit()
+        return ids
+
     def get(self, memory_id: int) -> MemoryEntry | None:
         row = self.conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
         if row is None:

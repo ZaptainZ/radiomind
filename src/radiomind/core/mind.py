@@ -154,6 +154,34 @@ class RadioMind:
 
         return result.entries
 
+    def ingest_batch(
+        self,
+        message_batches: list[list[Message]],
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+    ) -> list[MemoryEntry]:
+        """Batch-ingest multiple conversations in a single transaction.
+
+        10-20× faster than calling ingest() per batch for bulk imports.
+        Skips per-conversation KG/profile updates to keep it lean — call
+        refresh_self() afterwards if you need profiles recomputed.
+        """
+        self._check_init()
+        all_entries: list[MemoryEntry] = []
+        for msgs in message_batches:
+            result = gate(msgs)
+            for entry in result.entries:
+                entry.user_id = user_id
+                entry.agent_id = agent_id
+                entry.session_id = session_id
+                if self._embedder:
+                    entry.embedding = self._embedder.encode(entry.content)
+                all_entries.append(entry)
+
+        ids = self._store.add_many(all_entries)
+        return [e for e, mid in zip(all_entries, ids) if mid > 0]
+
     # --- L2: Search ---
 
     def search(

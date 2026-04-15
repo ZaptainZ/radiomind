@@ -44,9 +44,11 @@ WANDER_PROMPT = """Here are {n} seemingly unrelated habits/memories from differe
 As a free-thinking mind wandering during sleep, find a hidden connection
 or meta-pattern that links some or all of these items.
 
-If you find a genuine insight, respond:
+If you find a genuine insight, respond EXACTLY:
 INSIGHT: <the meta-pattern in one sentence>
 CONFIDENCE: <0.0-1.0>
+EVIDENCE: <which of the items above support this connection>
+FALSIFIER: <future observation that would disprove the connection>
 
 If nothing connects, respond: NONE"""
 
@@ -94,6 +96,8 @@ class DreamRefinement:
                 insight.description,
                 concepts=[(insight.description.split()[0], insight.description)],
                 confidence=insight.confidence,
+                evidence=insight.evidence,
+                falsifier=insight.falsifier,
             )
             if h is not None:
                 accepted.append(insight)
@@ -217,7 +221,7 @@ class DreamRefinement:
             pass
 
     def _parse_insights(self, text: str) -> list[Habit]:
-        if "NONE" in text.upper():
+        if text.strip().upper().startswith("NONE") or "\nNONE" in text.upper():
             return []
 
         insights = []
@@ -228,17 +232,32 @@ class DreamRefinement:
             if line.upper().startswith("INSIGHT:"):
                 desc = line[len("INSIGHT:"):].strip()
                 confidence = 0.4  # wandering insights start lower
-                if i + 1 < len(lines) and lines[i + 1].strip().upper().startswith("CONFIDENCE:"):
-                    try:
-                        confidence = float(lines[i + 1].strip().split(":")[-1].strip())
-                    except ValueError:
-                        pass
-                    i += 1
+                evidence = ""
+                falsifier = ""
+                j = i + 1
+                while j < len(lines) and j <= i + 4:
+                    up = lines[j].strip()
+                    up_upper = up.upper()
+                    if up_upper.startswith("CONFIDENCE:"):
+                        try:
+                            confidence = float(up.split(":", 1)[1].strip())
+                        except ValueError:
+                            pass
+                    elif up_upper.startswith("EVIDENCE:"):
+                        evidence = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("FALSIFIER:"):
+                        falsifier = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("INSIGHT:"):
+                        break
+                    j += 1
+                i = j - 1
                 if desc:
                     insights.append(Habit(
                         description=desc,
                         status=MemoryStatus.CANDIDATE,
                         confidence=min(max(confidence, 0.0), 1.0),
+                        evidence=evidence,
+                        falsifier=falsifier,
                     ))
             i += 1
         return insights

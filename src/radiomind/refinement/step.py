@@ -71,10 +71,15 @@ Guardian (consistency): {guardian_response}
 Explorer (novelty): {explorer_response}
 Reducer (parsimony): {reducer_response}
 
-Extract 0-2 new insights worth remembering as habits.
-For each insight, output:
+Extract 0-2 new insights worth remembering as habits. Each insight MUST be
+grounded in cited evidence AND carry a falsification condition so we can
+re-evaluate it later.
+
+Format EXACTLY:
 INSIGHT: <concise habit description>
 CONFIDENCE: <0.0-1.0>
+EVIDENCE: <which cited memories back this up>
+FALSIFIER: <future observation that would invalidate it>
 
 If nothing is worth adding, output: NONE"""
 
@@ -307,6 +312,8 @@ class StepRefiner:
                 insight["description"],
                 concepts=[(insight["description"].split()[0], insight["description"])],
                 confidence=insight.get("confidence", 0.5),
+                evidence=insight.get("evidence", ""),
+                falsifier=insight.get("falsifier", ""),
             )
             if h is not None:
                 accepted.append(insight)
@@ -420,7 +427,7 @@ class StepRefiner:
 
     @staticmethod
     def _parse_insights(text: str) -> list[dict]:
-        if "NONE" in text.upper():
+        if text.strip().upper().startswith("NONE") or "\nNONE" in text.upper():
             return []
 
         insights = []
@@ -431,14 +438,32 @@ class StepRefiner:
             if line.upper().startswith("INSIGHT:"):
                 desc = line[len("INSIGHT:"):].strip()
                 confidence = 0.5
-                if i + 1 < len(lines) and lines[i+1].strip().upper().startswith("CONFIDENCE:"):
-                    try:
-                        confidence = float(lines[i+1].strip().split(":")[-1].strip())
-                    except ValueError:
-                        pass
-                    i += 1
+                evidence = ""
+                falsifier = ""
+                j = i + 1
+                while j < len(lines) and j <= i + 4:
+                    up = lines[j].strip()
+                    up_upper = up.upper()
+                    if up_upper.startswith("CONFIDENCE:"):
+                        try:
+                            confidence = float(up.split(":", 1)[1].strip())
+                        except ValueError:
+                            pass
+                    elif up_upper.startswith("EVIDENCE:"):
+                        evidence = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("FALSIFIER:"):
+                        falsifier = up.split(":", 1)[1].strip()
+                    elif up_upper.startswith("INSIGHT:"):
+                        break
+                    j += 1
+                i = j - 1
                 if desc:
-                    insights.append({"description": desc, "confidence": min(max(confidence, 0.0), 1.0)})
+                    insights.append({
+                        "description": desc,
+                        "confidence": min(max(confidence, 0.0), 1.0),
+                        "evidence": evidence,
+                        "falsifier": falsifier,
+                    })
             i += 1
         return insights
 

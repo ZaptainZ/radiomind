@@ -328,6 +328,21 @@ def doctor() -> None:
             add("PASS", "LLM backend", f"{', '.join(backends) or 'default'}")
         else:
             add("WARN", "LLM backend", "no LLM — pure-memory mode only")
+
+        # Habit grounding rate: refinement insights should carry evidence +
+        # falsifier after P3. If many habits lack both, the LLM is skipping
+        # the new structured output.
+        habits = mind._habits.all_habits() if mind._habits else []
+        active = [h for h in habits if h.status.value != "archived"]
+        if active:
+            grounded = sum(1 for h in active if h.evidence and h.falsifier)
+            rate = grounded / len(active)
+            if rate >= 0.6:
+                add("PASS", "habit grounding", f"{grounded}/{len(active)} have evidence+falsifier")
+            elif rate >= 0.3:
+                add("WARN", "habit grounding", f"only {grounded}/{len(active)} carry evidence — run refinement with a stronger LLM")
+            else:
+                add("WARN", "habit grounding", f"{grounded}/{len(active)} grounded — most habits pre-date EVIDENCE/FALSIFIER prompts")
         mind.shutdown()
     except Exception as e:
         add("FAIL", "LLM check", str(e))
@@ -395,7 +410,21 @@ def status() -> None:
     click.echo(f"  Facts:      {s['by_level']['fact']}")
     click.echo(f"  Patterns:   {s['by_level']['pattern']}")
     click.echo(f"  Principles: {s['by_level']['principle']}")
-    click.echo(f"Habits (L3):  {s['habits']}")
+    # Habit breakdown by status + grounding rate
+    all_habits = mind._habits.all_habits() if mind._habits else []
+    by_status = {"candidate": 0, "confirmed": 0, "archived": 0}
+    grounded = 0
+    for h in all_habits:
+        by_status[h.status.value] = by_status.get(h.status.value, 0) + 1
+        if h.evidence and h.falsifier:
+            grounded += 1
+    active_habits = by_status["candidate"] + by_status["confirmed"]
+    ground_pct = f"{grounded}/{active_habits} grounded" if active_habits else "no habits"
+    click.echo(
+        f"Habits (L3):  {s['habits']} total  "
+        f"({by_status['confirmed']} confirmed, {by_status['candidate']} candidate, "
+        f"{by_status['archived']} archived; {ground_pct})"
+    )
     click.echo(f"Domains:      {s['domain_count']}")
     if s.get("domains"):
         for d in s["domains"]:

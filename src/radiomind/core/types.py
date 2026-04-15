@@ -67,6 +67,10 @@ class Habit:
     reject_count: int = 0
     created_at: float = field(default_factory=time.time)
     verified_at: float | None = None
+    # Evidence + falsifier (populated by three-body debate; empty for
+    # direct/manual habits). Together they make a habit re-evaluatable.
+    evidence: str = ""
+    falsifier: str = ""
 
 
 @dataclass
