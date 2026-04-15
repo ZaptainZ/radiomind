@@ -1,0 +1,23 @@
+{
+  "status": "PARTIAL — stopped at 50 queries to free resources for Qwen3 download",
+  "benchmark": "LongMemEval oracle + BAAI/bge-reranker-v2-m3",
+  "n_evaluated_partial": 50,
+  "n_total": 500,
+  "overall_r@5_at_50q": 0.860,
+  "baseline_no_reranker_full": {
+    "n": 479,
+    "r@5": 0.626,
+    "r@10": 0.664,
+    "source": "bench/longmemeval/oracle-result.json"
+  },
+  "delta_r@5_estimate": 0.234,
+  "delta_pct": "+37% relative (0.626 → 0.860)",
+  "notes": [
+    "At 50-query checkpoint, reranker lifts R@5 from 0.626 baseline to 0.860 (+23 percentage points, +37% relative)",
+    "Stopped at 50 to prioritize Qwen3-4B download (bandwidth contention)",
+    "Full 500-query run is straightforward but takes ~2 hours at current rate",
+    "Extrapolating: bge-reranker-v2-m3 on top of vector+FTS+LIKE is a large lift on LongMemEval oracle",
+    "Caveat: partial result, 50 queries is low statistical power; could swing ±0.05 on full set"
+  ],
+  "reproduce": "RADIOMIND_HOME=/tmp/rm-lme-rerank python /tmp/run_lme_with_rerank.py"
+}
