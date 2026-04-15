@@ -58,6 +58,8 @@ class SimpleRadioMind:
         self,
         messages: list[dict[str, str]],
         user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
     ) -> AddResult:
         """Add conversation messages to memory.
 
@@ -74,7 +76,9 @@ class SimpleRadioMind:
             )
             for m in messages
         ]
-        entries = self._mind.ingest(msgs)
+        entries = self._mind.ingest(
+            msgs, user_id=user_id, agent_id=agent_id, session_id=session_id
+        )
         return AddResult(added=len(entries), skipped=len(msgs) - len(entries))
 
     def search(
@@ -82,6 +86,9 @@ class SimpleRadioMind:
         query: str,
         limit: int = 10,
         domain: str | None = None,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
     ) -> list[Memory]:
         """Search memories.
 
@@ -89,7 +96,13 @@ class SimpleRadioMind:
         >>> results[0].content
         'I like running'
         """
-        results = self._mind.search(query, domain=domain)
+        results = self._mind.search(
+            query,
+            domain=domain,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+        )
         habits = self._mind.query_habits(query)
 
         memories = []
@@ -101,19 +114,98 @@ class SimpleRadioMind:
                 domain=r.entry.domain,
                 level=r.entry.level.name.lower(),
                 score=r.score,
+                id=r.entry.id,
+                user_id=r.entry.user_id,
+                agent_id=r.entry.agent_id,
+                session_id=r.entry.session_id,
+                created_at=r.entry.created_at,
+                updated_at=r.entry.updated_at,
                 metadata=meta,
             ))
 
-        for h in habits[:3]:
-            memories.append(Memory(
-                content=h.description,
-                domain="habits",
-                level="habit",
-                score=h.confidence,
-                metadata={"status": h.status.value},
-            ))
+        # Skip habits when filtering by user — habits are global
+        if not (user_id or agent_id or session_id):
+            for h in habits[:3]:
+                memories.append(Memory(
+                    content=h.description,
+                    domain="habits",
+                    level="habit",
+                    score=h.confidence,
+                    metadata={"status": h.status.value},
+                ))
 
         return memories[:limit]
+
+    # --- CRUD ---
+
+    def get(self, memory_id: int) -> Memory | None:
+        entry = self._mind.get_memory(memory_id)
+        if entry is None:
+            return None
+        return Memory(
+            content=entry.content,
+            domain=entry.domain,
+            level=entry.level.name.lower(),
+            id=entry.id,
+            user_id=entry.user_id,
+            agent_id=entry.agent_id,
+            session_id=entry.session_id,
+            created_at=entry.created_at,
+            updated_at=entry.updated_at,
+            metadata=dict(entry.metadata),
+        )
+
+    def update(
+        self,
+        memory_id: int,
+        content: str | None = None,
+        metadata: dict | None = None,
+    ) -> Memory | None:
+        entry = self._mind.update_memory(memory_id, content=content, metadata=metadata)
+        if entry is None:
+            return None
+        return self.get(memory_id)
+
+    def delete(self, memory_id: int) -> bool:
+        return self._mind.delete_memory(memory_id)
+
+    def delete_all(
+        self, user_id: str = "", agent_id: str = "", session_id: str = ""
+    ) -> int:
+        """Delete all memories matching a scope. At least one filter required
+        to prevent accidental wipes."""
+        return self._mind.delete_all_memories(
+            user_id=user_id, agent_id=agent_id, session_id=session_id
+        )
+
+    def history(self, memory_id: int) -> list[dict]:
+        return self._mind.memory_history(memory_id)
+
+    def list(
+        self,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+        limit: int = 100,
+    ) -> list[Memory]:
+        entries = self._mind.list_memories(
+            user_id=user_id, agent_id=agent_id, session_id=session_id, limit=limit
+        )
+        return [
+            Memory(
+                content=e.content,
+                domain=e.domain,
+                level=e.level.name.lower(),
+                id=e.id,
+                user_id=e.user_id,
+                agent_id=e.agent_id,
+                session_id=e.session_id,
+                created_at=e.created_at,
+                updated_at=e.updated_at,
+                metadata=dict(e.metadata),
+            )
+            for e in entries
+        ]
 
     def digest(self, token_budget: int = 250) -> str:
         """Get context digest for system prompt injection.

@@ -49,6 +49,10 @@ class MemoryEntry:
     last_hit_at: float = 0.0
     decay_count: int = 0
     created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+    user_id: str = ""
+    agent_id: str = ""
+    session_id: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

@@ -116,12 +116,21 @@ class RadioMind:
 
     # --- L1: Ingest ---
 
-    def ingest(self, messages: list[Message]) -> list[MemoryEntry]:
+    def ingest(
+        self,
+        messages: list[Message],
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+    ) -> list[MemoryEntry]:
         self._check_init()
         result = gate(messages)
 
         added = []
         for entry in result.entries:
+            entry.user_id = user_id
+            entry.agent_id = agent_id
+            entry.session_id = session_id
             if self._embedder:
                 entry.embedding = self._embedder.encode(entry.content)
             mid = self._store.add(entry)
@@ -147,9 +156,81 @@ class RadioMind:
 
     # --- L2: Search ---
 
-    def search(self, query: str, domain: str | None = None) -> list[SearchResult]:
+    def search(
+        self,
+        query: str,
+        domain: str | None = None,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+    ) -> list[SearchResult]:
         self._check_init()
-        return self._pyramid.search(query, domain=domain)
+        results = self._pyramid.search(query, domain=domain)
+        if user_id or agent_id or session_id:
+            filtered = []
+            for r in results:
+                if user_id and r.entry.user_id != user_id:
+                    continue
+                if agent_id and r.entry.agent_id != agent_id:
+                    continue
+                if session_id and r.entry.session_id != session_id:
+                    continue
+                filtered.append(r)
+            return filtered
+        return results
+
+    # --- CRUD ---
+
+    def get_memory(self, memory_id: int) -> MemoryEntry | None:
+        self._check_init()
+        return self._store.get(memory_id)
+
+    def update_memory(
+        self, memory_id: int, content: str | None = None, metadata: dict | None = None
+    ) -> MemoryEntry | None:
+        self._check_init()
+        entry = self._store.get(memory_id)
+        if entry is None:
+            return None
+        if content is not None:
+            entry.content = content
+            if self._embedder:
+                entry.embedding = self._embedder.encode(content)
+        if metadata is not None:
+            entry.metadata = metadata
+        self._store.update(entry)
+        return entry
+
+    def delete_memory(self, memory_id: int) -> bool:
+        self._check_init()
+        if self._store.get(memory_id) is None:
+            return False
+        self._store.delete(memory_id)
+        return True
+
+    def delete_all_memories(
+        self, user_id: str = "", agent_id: str = "", session_id: str = ""
+    ) -> int:
+        self._check_init()
+        return self._store.delete_all(
+            user_id=user_id, agent_id=agent_id, session_id=session_id
+        )
+
+    def memory_history(self, memory_id: int) -> list[dict]:
+        self._check_init()
+        return self._store.get_history(memory_id)
+
+    def list_memories(
+        self,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+        limit: int = 100,
+    ) -> list[MemoryEntry]:
+        self._check_init()
+        return self._store.list_filtered(
+            user_id=user_id, agent_id=agent_id, session_id=session_id, limit=limit
+        )
 
     def search_pyramid(self, query: str, start_level: int = 2) -> list[SearchResult]:
         self._check_init()

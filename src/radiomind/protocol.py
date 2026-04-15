@@ -26,6 +26,12 @@ class Memory:
     domain: str = ""
     level: str = "fact"  # fact | pattern | principle
     score: float = 0.0
+    id: int | None = None
+    user_id: str = ""
+    agent_id: str = ""
+    session_id: str = ""
+    created_at: float = 0.0
+    updated_at: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

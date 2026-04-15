@@ -10,7 +10,7 @@ from typing import Any
 
 from radiomind.core.types import MemoryEntry, MemoryLevel, MemoryStatus, PrivacyLevel, SearchResult
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -31,6 +31,20 @@ CREATE TABLE IF NOT EXISTS memories (
     last_hit_at REAL NOT NULL DEFAULT 0,
     decay_count INTEGER NOT NULL DEFAULT 0,
     created_at REAL NOT NULL,
+    updated_at REAL NOT NULL DEFAULT 0,
+    user_id TEXT NOT NULL DEFAULT '',
+    agent_id TEXT NOT NULL DEFAULT '',
+    session_id TEXT NOT NULL DEFAULT '',
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS memory_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    memory_id INTEGER NOT NULL,
+    event TEXT NOT NULL,
+    old_content TEXT,
+    new_content TEXT,
+    changed_at REAL NOT NULL,
     metadata TEXT NOT NULL DEFAULT '{}'
 );
 
@@ -38,6 +52,10 @@ CREATE INDEX IF NOT EXISTS idx_3d ON memories(domain, level, timestamp);
 CREATE INDEX IF NOT EXISTS idx_parent ON memories(parent_id);
 CREATE INDEX IF NOT EXISTS idx_status ON memories(status);
 CREATE INDEX IF NOT EXISTS idx_domain_level ON memories(domain, level);
+CREATE INDEX IF NOT EXISTS idx_user ON memories(user_id);
+CREATE INDEX IF NOT EXISTS idx_agent ON memories(agent_id);
+CREATE INDEX IF NOT EXISTS idx_session ON memories(session_id);
+CREATE INDEX IF NOT EXISTS idx_history_mem ON memory_history(memory_id);
 
 CREATE TABLE IF NOT EXISTS domains (
     name TEXT PRIMARY KEY,
@@ -99,6 +117,20 @@ class MemoryStore:
             if "privacy" not in cols:
                 self.conn.execute("ALTER TABLE memories ADD COLUMN privacy TEXT NOT NULL DEFAULT 'open'")
 
+        if current_version < 3:
+            # Migration: add multi-user columns + updated_at
+            cols = [r[1] for r in self.conn.execute("PRAGMA table_info(memories)").fetchall()]
+            for col, ddl in [
+                ("updated_at", "ALTER TABLE memories ADD COLUMN updated_at REAL NOT NULL DEFAULT 0"),
+                ("user_id", "ALTER TABLE memories ADD COLUMN user_id TEXT NOT NULL DEFAULT ''"),
+                ("agent_id", "ALTER TABLE memories ADD COLUMN agent_id TEXT NOT NULL DEFAULT ''"),
+                ("session_id", "ALTER TABLE memories ADD COLUMN session_id TEXT NOT NULL DEFAULT ''"),
+            ]:
+                if col not in cols:
+                    self.conn.execute(ddl)
+            # Backfill updated_at from created_at for existing rows
+            self.conn.execute("UPDATE memories SET updated_at=created_at WHERE updated_at=0")
+
         if row is None:
             self.conn.execute("INSERT INTO schema_version VALUES (?)", (SCHEMA_VERSION,))
         elif current_version < SCHEMA_VERSION:
@@ -121,8 +153,9 @@ class MemoryStore:
         cur = self.conn.execute(
             """INSERT INTO memories
                (content, domain, timestamp, level, parent_id, status, privacy, embedding,
-                hit_count, last_hit_at, decay_count, created_at, metadata)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                hit_count, last_hit_at, decay_count, created_at, updated_at,
+                user_id, agent_id, session_id, metadata)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 entry.content,
                 entry.domain,
@@ -136,6 +169,10 @@ class MemoryStore:
                 entry.last_hit_at,
                 entry.decay_count,
                 entry.created_at,
+                entry.updated_at or entry.created_at,
+                entry.user_id,
+                entry.agent_id,
+                entry.session_id,
                 json.dumps(entry.metadata),
             ),
         )
@@ -143,6 +180,11 @@ class MemoryStore:
         self.conn.execute(
             "INSERT INTO memories_fts(rowid, content) VALUES (?, ?)",
             (row_id, entry.content),
+        )
+        self.conn.execute(
+            """INSERT INTO memory_history (memory_id, event, new_content, changed_at, metadata)
+               VALUES (?, 'created', ?, ?, ?)""",
+            (row_id, entry.content, entry.created_at, json.dumps({})),
         )
         self.conn.commit()
         entry.id = row_id
@@ -159,10 +201,16 @@ class MemoryStore:
     def update(self, entry: MemoryEntry) -> None:
         if entry.id is None:
             raise ValueError("Cannot update entry without id")
+        old = self.conn.execute(
+            "SELECT content FROM memories WHERE id=?", (entry.id,)
+        ).fetchone()
+        old_content = old["content"] if old else None
+        entry.updated_at = time.time()
         self.conn.execute(
             """UPDATE memories SET content=?, domain=?, level=?, parent_id=?,
                status=?, privacy=?, embedding=?, hit_count=?, last_hit_at=?,
-               decay_count=?, metadata=?
+               decay_count=?, updated_at=?, user_id=?, agent_id=?, session_id=?,
+               metadata=?
                WHERE id=?""",
             (
                 entry.content,
@@ -175,6 +223,10 @@ class MemoryStore:
                 entry.hit_count,
                 entry.last_hit_at,
                 entry.decay_count,
+                entry.updated_at,
+                entry.user_id,
+                entry.agent_id,
+                entry.session_id,
                 json.dumps(entry.metadata),
                 entry.id,
             ),
@@ -183,12 +235,98 @@ class MemoryStore:
             "UPDATE memories_fts SET content=? WHERE rowid=?",
             (entry.content, entry.id),
         )
+        if old_content != entry.content:
+            self.conn.execute(
+                """INSERT INTO memory_history
+                   (memory_id, event, old_content, new_content, changed_at, metadata)
+                   VALUES (?, 'updated', ?, ?, ?, ?)""",
+                (entry.id, old_content, entry.content, entry.updated_at, json.dumps({})),
+            )
         self.conn.commit()
 
     def delete(self, memory_id: int) -> None:
+        old = self.conn.execute(
+            "SELECT content FROM memories WHERE id=?", (memory_id,)
+        ).fetchone()
+        old_content = old["content"] if old else None
+        self.conn.execute(
+            """INSERT INTO memory_history
+               (memory_id, event, old_content, changed_at, metadata)
+               VALUES (?, 'deleted', ?, ?, ?)""",
+            (memory_id, old_content, time.time(), json.dumps({})),
+        )
         self.conn.execute("DELETE FROM memories_fts WHERE rowid = ?", (memory_id,))
         self.conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
         self.conn.commit()
+
+    def delete_all(
+        self, user_id: str = "", agent_id: str = "", session_id: str = ""
+    ) -> int:
+        """Delete all memories matching the filter. Returns count deleted."""
+        where = []
+        params: list[Any] = []
+        if user_id:
+            where.append("user_id = ?")
+            params.append(user_id)
+        if agent_id:
+            where.append("agent_id = ?")
+            params.append(agent_id)
+        if session_id:
+            where.append("session_id = ?")
+            params.append(session_id)
+        if not where:
+            return 0  # refuse unscoped wipe
+        clause = " AND ".join(where)
+        rows = self.conn.execute(
+            f"SELECT id FROM memories WHERE {clause}", params
+        ).fetchall()
+        ids = [r["id"] for r in rows]
+        for mid in ids:
+            self.delete(mid)
+        return len(ids)
+
+    def list_filtered(
+        self,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+        limit: int = 100,
+    ) -> list[MemoryEntry]:
+        where = ["status='active'"]
+        params: list[Any] = []
+        if user_id:
+            where.append("user_id = ?")
+            params.append(user_id)
+        if agent_id:
+            where.append("agent_id = ?")
+            params.append(agent_id)
+        if session_id:
+            where.append("session_id = ?")
+            params.append(session_id)
+        clause = " AND ".join(where)
+        params.append(limit)
+        rows = self.conn.execute(
+            f"SELECT * FROM memories WHERE {clause} ORDER BY timestamp DESC LIMIT ?",
+            params,
+        ).fetchall()
+        return [self._row_to_entry(r) for r in rows]
+
+    def get_history(self, memory_id: int) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            """SELECT event, old_content, new_content, changed_at, metadata
+               FROM memory_history WHERE memory_id = ? ORDER BY changed_at ASC""",
+            (memory_id,),
+        ).fetchall()
+        return [
+            {
+                "event": r["event"],
+                "old_content": r["old_content"],
+                "new_content": r["new_content"],
+                "changed_at": r["changed_at"],
+                "metadata": json.loads(r["metadata"]) if r["metadata"] else {},
+            }
+            for r in rows
+        ]
 
     # --- Query ---
 
@@ -392,7 +530,8 @@ class MemoryStore:
 
     @staticmethod
     def _row_to_entry(row: sqlite3.Row) -> MemoryEntry:
-        privacy_val = row["privacy"] if "privacy" in row.keys() else "open"
+        keys = row.keys()
+        privacy_val = row["privacy"] if "privacy" in keys else "open"
         return MemoryEntry(
             id=row["id"],
             content=row["content"],
@@ -406,5 +545,9 @@ class MemoryStore:
             last_hit_at=row["last_hit_at"],
             decay_count=row["decay_count"],
             created_at=row["created_at"],
+            updated_at=row["updated_at"] if "updated_at" in keys else row["created_at"],
+            user_id=row["user_id"] if "user_id" in keys else "",
+            agent_id=row["agent_id"] if "agent_id" in keys else "",
+            session_id=row["session_id"] if "session_id" in keys else "",
             metadata=json.loads(row["metadata"]) if row["metadata"] else {},
         )
