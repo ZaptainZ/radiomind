@@ -81,6 +81,36 @@ def setup(platform: str, force: bool, remove: bool) -> None:
         click.echo("Restart your agent to activate.")
 
 
+@cli.command("setup-restore")
+@click.option("--platform", "-p", default="", help="Force platform (claude-code, codex, cursor).")
+def setup_restore(platform: str) -> None:
+    """Restore the settings file backed up by the most recent `radiomind setup`.
+
+    Looks for `<file>.radiomind-bak.YYYYMMDD-HHMMSS` next to the target
+    file and copies the latest one back. Use this to undo a setup run
+    without re-editing settings.json by hand.
+    """
+    from pathlib import Path as _P
+    from radiomind.hooks.setup import detect_platform, restore_latest_backup
+
+    plat = platform or detect_platform()
+    if plat == "claude-code":
+        target = _P.home() / ".claude" / "settings.json"
+    elif plat == "codex":
+        target = _P.home() / ".codex" / "hooks.json"
+    elif plat == "cursor":
+        target = _P.home() / ".cursor" / "mcp.json"
+    else:
+        click.echo(f"No known settings file for platform: {plat}")
+        raise SystemExit(1)
+
+    restored = restore_latest_backup(target)
+    if restored is None:
+        click.echo(f"No backup found next to {target}.")
+        raise SystemExit(1)
+    click.echo(f"Restored {target} from {restored.name}")
+
+
 @cli.command("embed-backfill")
 @click.option("--batch-size", default=50, help="Batch size for encoding.")
 def embed_backfill(batch_size: int) -> None:

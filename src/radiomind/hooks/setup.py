@@ -36,6 +36,25 @@ def _backup_file(path: Path) -> Path | None:
     return backup
 
 
+def restore_latest_backup(path: Path) -> Path | None:
+    """Restore `path` from its most recent `.radiomind-bak.*` sibling.
+
+    Returns the backup path that was used, or None if nothing to restore.
+    """
+    parent = path.parent
+    stem = path.name + ".radiomind-bak."
+    candidates = sorted(
+        (p for p in parent.iterdir() if p.name.startswith(stem)),
+        key=lambda p: p.name,  # timestamps sort lexically = chronologically
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    latest = candidates[0]
+    shutil.copy2(latest, path)
+    return latest
+
+
 # --- Platform detection ---
 
 def detect_platform() -> str:
