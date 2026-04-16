@@ -39,11 +39,14 @@ from pathlib import Path
 DATASET = Path("/tmp/longmemeval-data/oracle.json")
 
 
-ANSWER_PROMPT = """Here are some facts retrieved from the user's memory:
+ANSWER_PROMPT = """Current date: {now}
+
+Here are some facts retrieved from the user's memory (each tagged with the date of the conversation):
 
 {context}
 
-Based ONLY on the facts above, answer the question below concisely (1-2 sentences):
+Based ONLY on the facts above, answer the question below concisely (1-2 sentences).
+If the question asks WHEN or HOW LONG AGO, pay attention to the dates in parentheses.
 
 Question: {question}
 
@@ -64,6 +67,9 @@ or fabricates information not supported by the gold.
 Respond with exactly one word: CORRECT or INCORRECT"""
 
 
+_BYPASS_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def qwen_call(prompt: str, config_path: Path, model: str = "qwen-max", max_tokens: int = 200) -> str:
     import tomllib
     cfg = tomllib.loads(config_path.read_text())
@@ -78,7 +84,9 @@ def qwen_call(prompt: str, config_path: Path, model: str = "qwen-max", max_token
         }).encode(),
         headers={"Authorization": f"Bearer {oc['api_key']}", "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=60) as r:
+    # Bypass system proxy — macOS picks up Surge/similar automatically,
+    # and we want these specific API calls to go direct.
+    with _BYPASS_PROXY_OPENER.open(req, timeout=60) as r:
         body = json.loads(r.read())
     return body["choices"][0]["message"]["content"].strip()
 
@@ -89,23 +97,22 @@ def run(
     use_reranker: bool,
     answer_model: str = "qwen-turbo",
     judge_model: str = "qwen-max",
+    use_rewriter: bool = False,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
         shutil.rmtree(sandbox / "data")
     sandbox.mkdir(parents=True, exist_ok=True)
 
-    # Write config enabling reranker if requested (LLM still uses real config)
+    # Write config enabling reranker / rewriter as requested
     cfg_src = Path.home() / ".radiomind" / "config.toml"
     cfg_content = cfg_src.read_text() if cfg_src.exists() else ""
     if use_reranker and "[retrieval.reranker]" not in cfg_content:
         cfg_content += '\n[retrieval.reranker]\nenabled = true\n'
     elif not use_reranker:
-        # Strip any reranker enable
         cfg_content = cfg_content.replace("enabled = true", "enabled = false")
-    # But we want to use our user's llm.openai config unchanged
-    (sandbox / "config.toml").write_text(cfg_content)
-    # Override home so data goes to sandbox
+    if use_rewriter and "[retrieval.query_rewriter]" not in cfg_content:
+        cfg_content += '\n[retrieval.query_rewriter]\nenabled = true\n'
     (sandbox / "config.toml").write_text(
         cfg_content.replace(str(Path.home() / ".radiomind"), str(sandbox))
     )
@@ -158,19 +165,26 @@ def run(
         if not question or not q.get("haystack_sessions") or not gold:
             continue
 
-        # Ingest this question's haystack into an isolated domain
+        # Ingest this question's haystack into an isolated domain.
+        # Session dates flow through into metadata so temporal queries
+        # can use them — LongMemEval's "when did X happen" answers live
+        # in the session date, not in the turn content.
         domain = f"lme_{q_idx}"
         for s_idx, session in enumerate(q["haystack_sessions"]):
             sid = q["haystack_session_ids"][s_idx] if s_idx < len(q["haystack_session_ids"]) else f"s{s_idx}"
+            sdate = q["haystack_dates"][s_idx] if s_idx < len(q.get("haystack_dates", [])) else ""
             for t_idx, turn in enumerate(session):
                 txt = turn.get("content", "")
                 if not txt: continue
+                # Prepend date to content so FTS + vector see it for
+                # temporal queries. Keeps metadata for later structured use.
+                dated_content = f"[{turn.get('role','?')}] ({sdate}) {txt}" if sdate else f"[{turn.get('role','?')}] {txt}"
                 entry = MemoryEntry(
-                    content=f"[{turn.get('role','?')}] {txt}",
+                    content=dated_content,
                     domain=domain, level=MemoryLevel.FACT,
-                    metadata={"turn_id": f"{sid}_t{t_idx}"},
+                    metadata={"turn_id": f"{sid}_t{t_idx}", "session_date": sdate},
                 )
-                if mind._embedder: entry.embedding = mind._embedder.encode(txt)
+                if mind._embedder: entry.embedding = mind._embedder.encode(dated_content)
                 mid = mind._store.add(entry, dedup=False)
                 overall["total_ingested_turns"] += 1
                 # Populate KG from user turns — mirrors RadioMind.ingest() path.
@@ -188,7 +202,10 @@ def run(
             answer = "(no retrieval)"
         else:
             context = "\n".join(f"- {r.entry.content}" for r in results[:10])
-            ans_prompt = ANSWER_PROMPT.format(context=context, question=question)
+            q_date = q.get("question_date", "")
+            ans_prompt = ANSWER_PROMPT.format(
+                now=q_date or "unknown", context=context, question=question,
+            )
             try:
                 answer = qwen_call(ans_prompt, config_path, model=answer_model)
             except Exception as e:
@@ -249,6 +266,7 @@ def main() -> int:
     p.add_argument("--n", type=int, default=100, help="Number of questions (0 = all 500)")
     p.add_argument("--sandbox", default="/tmp/rm-e2e-lme")
     p.add_argument("--no-reranker", action="store_true")
+    p.add_argument("--rewriter", action="store_true", help="Enable LLM query rewriter")
     p.add_argument("--out", default="bench/end_to_end/longmemeval-e2e.json")
     p.add_argument("--answer-model", default="qwen-turbo")
     p.add_argument("--judge-model", default="qwen-max")
@@ -258,10 +276,11 @@ def main() -> int:
         print(f"Dataset missing at {DATASET}")
         return 2
 
-    print(f"Running {args.n or 500} questions, reranker={not args.no_reranker}...", flush=True)
+    print(f"Running {args.n or 500} questions, reranker={not args.no_reranker}, rewriter={args.rewriter}, answer={args.answer_model}...", flush=True)
     report = run(
         Path(args.sandbox), args.n,
         use_reranker=not args.no_reranker,
+        use_rewriter=args.rewriter,
         answer_model=args.answer_model,
         judge_model=args.judge_model,
     )
