@@ -1,0 +1,879 @@
+{
+  "benchmark": "LongMemEval oracle — end-to-end (retrieve + generate + judge)",
+  "protocol": "top-5 retrieval → qwen-turbo generates → qwen-max judges CORRECT/INCORRECT",
+  "n_questions": 120,
+  "total_ingested_turns": 2344,
+  "reranker_enabled": true,
+  "answer_model": "qwen-turbo",
+  "judge_model": "qwen-max",
+  "elapsed_s": 1967.5,
+  "overall_accuracy": 0.575,
+  "by_type": {
+    "knowledge-update": {
+      "n": 20,
+      "accuracy": 0.65
+    },
+    "multi-session": {
+      "n": 20,
+      "accuracy": 0.4
+    },
+    "single-session-assistant": {
+      "n": 20,
+      "accuracy": 1.0
+    },
+    "single-session-preference": {
+      "n": 20,
+      "accuracy": 0.4
+    },
+    "single-session-user": {
+      "n": 20,
+      "accuracy": 0.75
+    },
+    "temporal-reasoning": {
+      "n": 20,
+      "accuracy": 0.25
+    }
+  },
+  "per_query": [
+    {
+      "q": "I've been feeling a bit stuck with my paintings lately. Do you have any ideas on how I can find new inspiration?",
+      "gold": "The user would prefer responses that build upon their existing sources of inspiration, such as revisiting Instagram art accounts or exploring new techniques from online tutorials. They might also appreciate suggestions that revisit previous themes they found enjoyable, like painting flowers. The user would not prefer generic or vague suggestions for finding inspiration, and would likely appreciate responses that utilize their recent 30-day painting challenge experience.",
+      "answer": "Try exploring new sources of inspiration, such as nature, different art styles, or even your own past work. Engaging in activities like the 30-day painting challenge or studying flower paintings can a",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What brand are my favorite running shoes?",
+      "gold": "Nike",
+      "answer": "Answer: Your favorite running shoes are Nike.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm planning to visit the Vatican again and I was wondering if you could remind me of the name of that famous deli near the Vatican that serves the best cured meats and cheeses?",
+      "gold": "Roscioli",
+      "answer": "The famous deli near the Vatican that serves the best cured meats and cheeses is Roscioli.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I was going through our previous chat and I wanted to clarify something about the prayer of beginners in Tanqueray's Spiritual Life treatise. Can you remind me which chapter of the second part discusses vocal prayer and meditation?",
+      "gold": "Chapter 4 of Book 1, titled 'Vocal Prayer and Meditation'.",
+      "answer": "Chapter 4 of Book 1 in the second part of Adolphe Tanqueray's *Spiritual Life* treatise discusses vocal prayer and meditation, focusing on their importance for spiritual beginners.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I noticed my bike seems to be performing even better during my Sunday group rides. Could there be a reason for this?",
+      "gold": "Chapter 4 of Book 1, titled 'Vocal Prayer and Meditation'.",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "Answer: You saved $300 on the Jimmy Choo heels, as you bought them for $200 instead of the original $500.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many days did it take for my iPad case to arrive after I bought it?",
+      "gold": "$300",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How often do I attend yoga classes to help with my anxiety?",
+      "gold": "Three times a week.",
+      "answer": "I attend yoga classes three times a week to help with my anxiety.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I'm going back to our previous conversation about the children's book on dinosaurs. Can you remind me what color was the scaly body of the Plesiosaur in the image?",
+      "gold": "The Plesiosaur had a blue scaly body.",
+      "answer": "The scaly body of the Plesiosaur in the image was blue.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many days did I spend on my solo camping trip to Yosemite National Park?",
+      "gold": "2 days. 3 days (including the last day) is also acceptable.",
+      "answer": "The facts provided do not specify how many days you spent on your solo camping trip to Yosemite National Park.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many years will I be when my friend Rachel gets married?",
+      "gold": "2 days. 3 days (including the last day) is also acceptable.",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What did I bake for my niece's birthday party?",
+      "gold": "2 days. 3 days (including the last day) is also acceptable.",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Where did I buy my new tennis racket from?",
+      "gold": "the sports store downtown",
+      "answer": "Answer: You bought your new tennis racket from a sports store downtown.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many dozen eggs do we currently have stocked up in our refrigerator?",
+      "gold": "20",
+      "answer": "We currently have 30 dozen eggs stocked up in our refrigerator.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've got some free time tonight, any documentary recommendations?",
+      "gold": "The user would prefer documentary recommendations that are similar in style and theme to 'Our Planet', 'Free Solo', and 'Tiger King', which they have previously enjoyed. They might not prefer recommendations of documentaries that are vastly different in tone or subject matter from these titles. The preferred response utilizes the user's previously mentioned viewing history to suggest documentaries that cater to their tastes.",
+      "answer": "Answer: You might enjoy \"Chasing Coral\" for its stunning underwater footage and urgent message about the importance of coral reefs.",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What game did I finally beat last weekend?",
+      "gold": "The user would prefer documentary recommendations that are similar in style and theme to 'Our Planet', 'Free Solo', and 'Tiger King', which they have previously enjoyed. They might not prefer recommendations of documentaries that are vastly different in tone or subject matter from these titles. The preferred response utilizes the user's previously mentioned viewing history to suggest documentaries that cater to their tastes.",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much earlier do I wake up on Fridays compared to other weekdays?",
+      "gold": "30 minutes",
+      "answer": "Answer: You wake up 30 minutes earlier on Fridays compared to other weekdays.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many antique items did I inherit or acquire from my family members?",
+      "gold": "5",
+      "answer": "You inherited or acquired two antique items from your family members: an antique tea set from your cousin Rachel and a vintage typewriter that belonged to your dad.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm looking back at our previous conversation about building a cocktail bar. You recommended five bottles to make the widest variety of gin-based cocktails. Can you remind me what the fifth bottle was?",
+      "gold": "Absinthe",
+      "answer": "The fifth bottle recommended for making the widest variety of gin-based cocktails was Absinthe.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What type of camera lens did I purchase most recently?",
+      "gold": "a 70-200mm zoom lens",
+      "answer": "Answer: You recently purchased a 70-200mm zoom lens.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "What kitchen appliance did I buy 10 days ago?",
+      "gold": "a 70-200mm zoom lens",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I’m a bit anxious about getting around Tokyo. Do you have any helpful tips?",
+      "gold": "The user would prefer responses that utilize their existing resources, such as their Suica card and TripIt app, to provide personalized tips for navigating Tokyo's public transportation. They might not prefer general tips or recommendations that do not take into account their prior preparations.",
+      "answer": "Answer: Yes, use the Suica card for convenient and efficient travel on trains and buses, and don't hesitate to ask the hotel concierge or locals for help if you're unsure.",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How old was I when my grandma gave me the silver necklace?",
+      "gold": "18",
+      "answer": "Answer: You were 18 years old when your grandma gave you the silver necklace.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many days ago did I buy a smoker?",
+      "gold": "10 days ago. 11 days (including the last day) is also acceptable.",
+      "answer": "Answer: The provided information does not mention when you bought a smoker.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I'm looking back at our previous chat about the DHL Wellness Retreats campaign. Can you remind me how much was allocated for influencer marketing in the campaign plan?",
+      "gold": "$2,000",
+      "answer": "The campaign plan allocated $2,000 for influencer marketing.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I'm getting excited about my visit to the music store this weekend. Any tips on what to look for in a new guitar?",
+      "gold": "The user would prefer responses that highlight the differences between Fender Stratocaster and Gibson Les Paul electric guitars, such as the feel of the neck, weight, and sound profile. They might not prefer general tips on buying an electric guitar or suggestions that do not take into account their current guitar and desired upgrade.",
+      "answer": "Answer: Look for a guitar that feels comfortable in your hands, offers the tone and playability you prefer, and matches your musical style—try different models and pay attention to how they sound and ",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What is the total cost of the new food bowl, measuring cup, dental chews, and flea and tick collar I got for Max?",
+      "gold": "$50",
+      "answer": "The total cost of the new food bowl, measuring cup, dental chews, and flea and tick collar for Max is $95.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What was the first issue I had with my new car after its first service?",
+      "gold": "GPS system not functioning correctly",
+      "answer": "The first issue you had with your new car after its first service was a problem with the GPS system on March 22, which was resolved by the dealership replacing the entire system.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Can you recommend some interesting cultural events happening around me this weekend?",
+      "gold": "The user would prefer responses that suggest cultural events where they can practice their language skills, particularly Spanish and French. They would also appreciate if the event has a focus on language learning resources. They would not prefer events that do not provide opportunities for language practice or cultural exchange.",
+      "answer": "I cannot provide specific information about cultural events happening around you this weekend, as I don't have access to your location or current event listings. However, you can check online event ca",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I was going through our previous conversation about high-end fashion brands, and I was wondering if you could remind me of the brand that uses wild rubber sourced from the Amazon rainforest?",
+      "gold": "Veja",
+      "answer": "The brand that uses wild rubber sourced from the Amazon rainforest is Veja.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many babies were born to friends and family members in the last few months?",
+      "gold": "5",
+      "answer": "Based on the information provided, there are at least five babies born to friends and family members in the last few months: Charlotte (Mike and Emma's daughter), Max (Rachel's son), Ava and Lily (the",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many months ago did I book the Airbnb in San Francisco?",
+      "gold": "Five months ago",
+      "answer": "Answer: You booked the Airbnb in San Francisco three months in advance.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days passed between the day I attended the gardening workshop and the day I planted the tomato saplings?",
+      "gold": "6 days. 7 days (including the last day) is also acceptable.",
+      "answer": "Answer: The information provided does not mention the date of the gardening workshop or the day the tomato saplings were planted, so it is not possible to determine how many days passed between these ",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which health issue did I deal with first, the persistent cough or the skin tag removal?",
+      "gold": "Persistent cough",
+      "answer": "The skin tag removal occurred first, as it was performed on February 22nd, while the persistent cough led to a visit to Dr. Smith on February 10th.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Who became a parent first, Rachel or Alex?",
+      "gold": "Alex",
+      "answer": "Alex became a parent first, as she adopted a baby girl from China in January, while Rachel was mentioned as being with the twins, implying she is already a parent.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How much did I spend on gifts for my sister?",
+      "gold": "$300",
+      "answer": "Answer: You spent $100 on a gift card for your sister's favorite spa, which she loved.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many magazine subscriptions do I currently have?",
+      "gold": "$300",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many online courses have I completed in total?",
+      "gold": "5",
+      "answer": "You have completed a total of five online courses: three on Coursera and two on edX.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where am I planning to stay for my birthday trip to Hawaii?",
+      "gold": "Oahu",
+      "answer": "You are planning to stay on Oahu for your birthday trip to Hawaii.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Where is the painting 'Ethereal Dreams' by Emma Taylor currently hanging?",
+      "gold": "in my bedroom",
+      "answer": "The painting \"Ethereal Dreams\" by Emma Taylor is currently hanging in the user's bedroom.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Did I finish reading 'The Nightingale' by Kristin Hannah?",
+      "gold": "Yes",
+      "answer": "Yes, you finished reading \"The Nightingale\" by Kristin Hannah.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I wanted to follow up on our previous conversation about mindfulness techniques. You mentioned some great resources for guided imagery exercises, can you remind me of the website that had free exercises like 'The Mountain Meditation' and 'The Body Scan Meditation'?",
+      "gold": "Mindful.org.",
+      "answer": "The website that had free exercises like \"The Mountain Meditation\" and \"The Body Scan Meditation\" is Mindful.org.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many issues of National Geographic have I finished reading?",
+      "gold": "Five",
+      "answer": "Answer: You have finished reading three issues of National Geographic.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How long have I been living in my current apartment in Harajuku?",
+      "gold": "3 months",
+      "answer": "You have been living in your current apartment in Harajuku for 3 months.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "Answer: You have tried three Korean restaurants in your city.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've been feeling like my chocolate chip cookies need something extra. Any advice?",
+      "gold": "The user would prefer responses that build upon their previous experimentation with turbinado sugar, suggesting ingredients or techniques that complement its richer flavor. They might not prefer generic cookie-making advice or suggestions that don't take into account their existing use of turbinado sugar.",
+      "answer": "Try adding turbinado sugar to your chocolate chip cookies for a richer, caramel-like flavor. It pairs well with the sweetness of the chocolate and can add depth to the overall taste.",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I'm planning my trip to Speyer again and I wanted to confirm, what's the phone number of the Speyer tourism board that you provided me earlier?",
+      "gold": "+49 (0) 62 32 / 14 23 - 0",
+      "answer": "The phone number of the Speyer tourism board is +49 (0) 62 32 / 14 23 - 0.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I'm planning my meal prep next week, any suggestions for new recipes?",
+      "gold": "The user would prefer responses that suggest healthy meal prep recipes, especially those that incorporate quinoa and roasted vegetables, and offer variations in protein sources. They might appreciate suggestions that build upon their existing preferences, such as new twists on chicken Caesar salads or turkey and avocado wraps. The user may not prefer responses that suggest unhealthy or high-calorie meal prep options, or those that deviate significantly from their established healthy eating habits.",
+      "answer": "Yes, consider trying lentil or mushroom bolognese as a plant-based protein option, and pair it with quinoa and roasted vegetables. You can also experiment with homemade granola for a healthy snack.",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Can you suggest some accessories that would complement my current photography setup?",
+      "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+      "answer": "Some accessories that would complement your current photography setup include a high-quality camera bag designed for Sony cameras, a compatible flash like the Godox V1 or Sony HVL-F60RM, and a tripod ",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many copies of my favorite artist's debut album were released worldwide?",
+      "gold": "500",
+      "answer": "Answer: 500 copies of your favorite artist's debut album were released worldwide.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm thinking of inviting my colleagues over for a small gathering. Any tips on what to bake?",
+      "gold": "The user would prefer baking suggestions that take into account their previous success with the lemon poppyseed cake, such as variations of that recipe or other desserts that share similar qualities. They might prefer suggestions that balance impressiveness with manageability, considering their previous experience. The user may not prefer overly complex or unfamiliar recipes, or suggestions that do not build upon their existing baking experience.",
+      "answer": "You could bake chewy chocolate chip cookies using a combination of white and brown sugar, room temperature butter, and proper storage techniques to ensure they stay fresh. Alternatively, try a unique ",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many days did I spend in total traveling in Hawaii and in Seattle?",
+      "gold": "The information provided is not enough. You mentioned traveling for 10 days in Hawaii but did not mention abything about the trip to Seattle.",
+      "answer": "Answer: The information provided does not specify the number of days spent in Hawaii or Seattle.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did I get my guitar serviced?",
+      "gold": "The music shop on Main St.",
+      "answer": "You got your guitar serviced at a music shop on Main St, though the specific name of the shop was not provided in the conversation.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I'm planning a trip to Denver soon. Any suggestions on what to do there?",
+      "gold": "The user would prefer responses that take into account their previous experience in Denver, specifically their interest in live music and memorable encounter with Brandon Flowers. They might appreciate suggestions that revisit or build upon this experience, such as revisiting the same bar or exploring similar music venues in the area. The user may not prefer general tourist recommendations or activities unrelated to their interest in live music.",
+      "answer": "Denver offers a vibrant music scene with must-visit venues like Red Rocks Park and Amphitheatre, The Ogden Theatre, and The Bluebird Theater, as well as festivals such as Grandoozy and the Denver Folk",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How much faster did I finish the 5K run compared to my previous year's time?",
+      "gold": "10 minutes",
+      "answer": "Answer: You finished the 5K run 15 minutes faster compared to your previous year's time.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Who did I have a conversation with about destiny?",
+      "gold": "Sarah",
+      "answer": "I had a conversation with Sarah about destiny.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many charity events did I participate in before the 'Run for the Cure' event?",
+      "gold": "4",
+      "answer": "Answer: You participated in at least one charity event before the \"Run for the Cure\" event, which was the \"Dance for a Cause\" event on May 1st.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many hours did I spend watching documentaries on Netflix last month?",
+      "gold": "10",
+      "answer": "Answer: You spent 10 hours watching documentaries on Netflix last month.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Where did I attend for my study abroad program?",
+      "gold": "University of Melbourne in Australia",
+      "answer": "You attended the University of Melbourne for your study abroad program.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many women are on the team led by my former manager Rachel?",
+      "gold": "6",
+      "answer": "Answer: There are 5 women on the team led by your former manager Rachel.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "During your 40-minute commute, you can listen to history podcasts like Hardcore History, Lore, and The Dollop, which are well-suited for the duration of your trip. You can also organize your listening",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What type of rice is my favorite?",
+      "gold": "Japanese short-grain rice",
+      "answer": "Your favorite rice is Japanese short-grain rice.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much weight have I lost since I started going to the gym consistently?",
+      "gold": "10 pounds",
+      "answer": "You have lost 10 pounds since you started going to the gym consistently.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "When did I volunteer at the local animal shelter's fundraising dinner?",
+      "gold": "February 14th",
+      "answer": "Answer: You volunteered at the \"Love is in the Air\" fundraising dinner back in February.",
+      "correct": false,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many movie festivals that I attended?",
+      "gold": "I attended four movie festivals.",
+      "answer": "Answer: You attended AFI Fest and the Portland Film Festival.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm looking back at our previous conversation about the Seco de Cordero recipe from Ancash. You mentioned using a light or medium-bodied beer, but I was wondering if you could remind me what type of beer you specifically recommended?",
+      "gold": "I recommended using a Pilsner or Lager for the recipe.",
+      "answer": "I specifically recommended a pilsner or lager, but also mentioned that a local beer from Ancash could add an authentic touch.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What was the amount I was pre-approved for when I got my mortgage from Wells Fargo?",
+      "gold": "$400,000",
+      "answer": "Answer: You were pre-approved for $350,000 when you got your mortgage from Wells Fargo.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I was going through our previous conversation about The Library of Babel, and I wanted to confirm - what did Borges say about the center and circumference of the Library?",
+      "gold": "According to Borges, 'The Library is a sphere whose exact center is any one of its hexagons and whose circumference is inaccessible.'",
+      "answer": "Borges said, \"The universe (which others call the Library) is composed of an indefinite, perhaps infinite number of hexagonal galleries… Though I am ignorant of the meaning of the phrase, I repeat tha",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many episodes of the Science series have I completed on Crash Course?",
+      "gold": "50",
+      "answer": "Answer: You have completed 50 episodes of the Science series on Crash Course.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+      "gold": "the woman selling jam at the farmer's market",
+      "answer": "You met the tourist from Australia first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I'm planning another trip to New York City and I was wondering if you could remind me of that vegan eatery you recommended last time, the one with multiple locations throughout the city?",
+      "gold": "By Chloe",
+      "answer": "The vegan eatery with multiple locations throughout the city is By Chloe, known for its vegan burgers, salads, pastas, and baked goods.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What is the name of my hamster?",
+      "gold": "You did not mention this information. You mentioned your cat Luna but not your hamster.",
+      "answer": "Answer: There is no mention of a hamster in the provided facts.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm planning my trip to Amsterdam again and I was wondering, what was the name of that hostel near the Red Light District that you recommended last time?",
+      "gold": "International Budget Hostel",
+      "answer": "The name of the hostel near the Red Light District that was recommended is the International Budget Hostel.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I wanted to follow up on our previous conversation about the fusion breakthrough at Lawrence Livermore National Laboratory. Can you remind me who is the President's Chief Advisor for Science and Technology mentioned in the article?",
+      "gold": "Dr. Arati Prabhakar",
+      "answer": "The President's Chief Advisor for Science and Technology mentioned in the article is Dr. Arati Prabhakar.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many different museums or galleries did I visit in the month of February?",
+      "gold": "2",
+      "answer": "Answer: You visited at least one museum, the Natural History Museum, and attended an event at The Art Cube, a contemporary art gallery.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What was my last name before I changed it?",
+      "gold": "Johnson",
+      "answer": "Answer: Your last name before you changed it was Johnson.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much more did I have to pay for the trip after the initial quote?",
+      "gold": "$300",
+      "answer": "The user had to pay $300 more for the trip after the initial quote of $2,500, bringing the total to $2,800.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm planning to visit Bandung again and I was wondering if you could remind me of the name of that restaurant in Cihampelas Walk that serves a great Nasi Goreng?",
+      "gold": "Miss Bee Providore",
+      "answer": "The restaurant in Cihampelas Walk that serves a great Nasi Goreng is Miss Bee Providore.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many engineers do I lead when I just started my new role as Senior Software Engineer? How many engineers do I lead now?",
+      "gold": "When you just started your new role as Senior Software Engineer, you led 4 engineers. Now, you lead 5 engineers",
+      "answer": "When you just started your new role as Senior Software Engineer, you led 4 engineers. Now, you still lead 4 engineers.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many health-related devices do I use in a day?",
+      "gold": "4",
+      "answer": "Answer: The text does not specify the exact number of health-related devices you use in a day.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I was thinking back to our previous conversation about the Radiation Amplified zombie, and I was wondering if you remembered what we finally decided to name it?",
+      "gold": "Fissionator.",
+      "answer": "Answer: We decided to name it the Fissionator, incorporating the theme of radiation and mutation.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "Which event happened first, my cousin's wedding or Michael's engagement party?",
+      "gold": "Michael's engagement party",
+      "answer": "Answer: Michael's engagement party happened first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long have my parents been staying with me in the US?",
+      "gold": "nine months",
+      "answer": "Answer: Your parents have been staying with you in the U.S. for nine months.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Can you suggest some activities that I can do in the evening?",
+      "gold": "The user would prefer suggestions that involve relaxing activities that can be done in the evening, preferably before 9:30 pm. They would not prefer suggestions that involve using their phone or watching TV, as these activities have been affecting their sleep quality.",
+      "answer": "You can try guided meditations using apps like Headspace, Calm, or Insight Timer, or listen to relaxing music and sleep stories from resources like Rainy Mood or Sleep With Me to calm your mind and bo",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I've been having trouble with the battery life on my phone lately. Any tips?",
+      "gold": "The user would prefer responses that build upon their previous mention of purchasing a portable power bank, such as suggestions on how to optimize its use, like ensuring it's fully charged before use. They might also appreciate tips on utilizing battery-saving features on their phone. The user may not prefer responses that suggest alternative solutions or unrelated advice.",
+      "answer": "If you're having trouble with your phone's battery life, consider using a portable power bank like the Anker PowerCore 5000 or Aukey Power Bank 10000mAh for on-the-go charging. These options are compa",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many tanks do I currently have, including the one I set up for my friend's kid?",
+      "gold": "3",
+      "answer": "You currently have three tanks: your 20-gallon community tank, your 5-gallon tank (formerly with Finley the betta), and the 1-gallon tank you set up for your friend's kid.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm trying to decide whether to buy a NAS device now or wait. What do you think?",
+      "gold": "The user would prefer responses that take into account their current home network storage capacity issues and recent reliance on external hard drives, highlighting the potential benefits of a NAS device in addressing these specific needs. They might not prefer responses that ignore their current storage challenges or fail to consider their recent tech upgrades and priorities. Preferred responses would utilize the user's previous mentions of storage capacity issues and tech investments to inform their decision.",
+      "answer": "Answer: If you're experiencing storage limitations and want a more convenient, scalable, and secure solution, now is a good time to invest in a NAS device. It can serve as a central backup location fo",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What percentage of leadership positions do women hold in the my company?",
+      "gold": "20%",
+      "answer": "The provided facts do not specify the exact percentage of leadership positions held by women in your company. However, resources like Catalyst's Pyramid Reports, McKinsey's Women in the Workplace Repo",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did I attend my cousin's wedding?",
+      "gold": "20%",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many days before I bought the iPhone 13 Pro did I attend the Holiday Market?",
+      "gold": "7 days. 8 days (including the last day) is also acceptable.",
+      "answer": "Answer: The information provided does not mention anything about attending the Holiday Market or the number of days before purchasing the iPhone 13 Pro.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What was my previous stance on spirituality?",
+      "gold": "A staunch atheist",
+      "answer": "Answer: My previous stance on spirituality was that of a staunch atheist.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "What book am I currently reading?",
+      "gold": "The Seven Husbands of Evelyn Hugo",
+      "answer": "Answer: You are currently reading \"The Last House Guest\" by Megan Miranda.",
+      "correct": false,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I've been thinking about ways to stay connected with my colleagues. Any suggestions?",
+      "gold": "The user would prefer responses that acknowledge their desire for social interaction and collaboration while working remotely, utilizing their previous experiences with company initiatives and team collaborations. They might prefer suggestions of virtual team-building activities, regular check-ins, or joining interest-based groups within the company. The user may not prefer generic suggestions that do not take into account their specific work situation or previous attempts at staying connected with colleagues.",
+      "answer": "Yes, consider virtual coffee breaks, online team activities, or interest-based groups to stay connected and foster social interactions while working from home.",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Which task did I complete first, fixing the fence or trimming the goats' hooves?",
+      "gold": "Fixing the fence",
+      "answer": "I completed fixing the fence first, as I mentioned fixing the broken fence on the east side three weeks ago, while trimming the goats' hooves was done two weeks ago.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed since I started taking ukulele lessons when I decided to take my acoustic guitar to the guitar tech for servicing?",
+      "gold": "24 days. 25 days (including the last day) is also acceptable.",
+      "answer": "Answer: The text does not provide information about how many days had passed since you started taking ukulele lessons when you decided to take your acoustic guitar to the guitar tech.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I was going through our previous conversation about atmospheric correction methods, and I wanted to confirm - you mentioned that 6S, MAJA, and Sen2Cor are all algorithms for atmospheric correction of remote sensing images. Can you remind me which one is implemented in the SIAC_GEE tool?",
+      "gold": "The 6S algorithm is implemented in the SIAC_GEE tool.",
+      "answer": "The 6S algorithm is implemented in the SIAC_GEE tool.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How much discount will I get on my next purchase at FreshMart?",
+      "gold": "$5",
+      "answer": "You will get a $5 discount on your next purchase at FreshMart for every 500 points you have.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I was thinking of trying a new coffee creamer recipe. Any recommendations?",
+      "gold": "The user would prefer responses that suggest variations on their existing almond milk, vanilla extract, and honey creamer recipe or new ideas that align with their goals of reducing sugar intake and saving money. They might not prefer responses that recommend commercial creamer products or recipes that are high in sugar or expensive.",
+      "answer": "Try using a healthier sweetener like stevia or monk fruit, and consider adding spices like cinnamon or nutmeg for flavor without extra sugar. You could also experiment with cashew or oat milk for a cr",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many trips have I taken my Canon EOS 80D camera on?",
+      "gold": "five",
+      "answer": "Answer: You have taken your Canon EOS 80D camera on five trips.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Where did I complete my Bachelor's degree in Computer Science?",
+      "gold": "University of California, Los Angeles (UCLA)",
+      "answer": "Answer: I completed my Bachelor's degree in Computer Science at UCLA.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I was looking back at our previous chat and I wanted to confirm, how many times did the Chiefs play the Jaguars at Arrowhead Stadium?",
+      "gold": "The Chiefs played the Jaguars 12 times at Arrowhead Stadium.",
+      "answer": "Answer: The Chiefs played the Jaguars 12 times at Arrowhead Stadium.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many skeins of worsted weight yarn did I find in my stash?",
+      "gold": "17",
+      "answer": "Answer: You found 17 skeins of worsted weight yarn in your stash.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How often do I play table tennis with my friends at the local park?",
+      "gold": "The information provided is not enough. You mentioned playing tennis but not table tennis.",
+      "answer": "Answer: You do not play table tennis; you play tennis with your friends at the local park every other week.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I think we discussed work from home jobs for seniors earlier. Can you remind me what was the 7th job in the list you provided?",
+      "gold": "Transcriptionist.",
+      "answer": "The 7th job in the list was transcriptionist.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I remember you told me about the refining processes at CITGO's three refineries earlier. Can you remind me what kind of processes are used at the Lake Charles Refinery?",
+      "gold": "Atmospheric distillation, fluid catalytic cracking (FCC), alkylation, and hydrotreating.",
+      "answer": "The Lake Charles Refinery uses processes such as atmospheric distillation, fluid catalytic cracking (FCC), alkylation, and hydrotreating to refine crude oil into various petroleum products.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many weeks in total do I spent on reading 'The Nightingale' and listening to 'Sapiens: A Brief History of Humankind' and 'The Power'?",
+      "gold": "2 weeks for 'The Nightingale', 4 weeks for 'Sapiens: A Brief History of Humankind', and 2 weeks for 'The Power', so a total of 8 weeks.",
+      "answer": "Answer: The information provided does not specify the number of weeks spent reading 'The Nightingale' or listening to 'Sapiens: A Brief History of Humankind' and 'The Power.'",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long did Alex marinate the BBQ ribs in special sauce?",
+      "gold": "24 hours",
+      "answer": "Answer: Alex marinated the BBQ ribs in a special sauce for 24 hours.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many autographed baseballs have I added to my collection in the first three months of collection?",
+      "gold": "15",
+      "answer": "You have added 15 autographed baseballs to your collection in the first three months.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many weddings have I attended in this year?",
+      "gold": "I attended three weddings. The couples were Rachel and Mike, Emily and Sarah, and Jen and Tom.",
+      "answer": "Answer: You have attended at least three weddings this year.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did Rachel move to after her recent relocation?",
+      "gold": "the suburbs",
+      "answer": "Rachel moved back to the suburbs.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've been thinking about making a cocktail for an upcoming get-together, but I'm not sure which one to choose. Any suggestions?",
+      "gold": "Considering their mixology class background, the user would prefer cocktail suggestions that build upon their existing skills and interests, such as creative variations of classic cocktails or innovative twists on familiar flavors. They might appreciate recommendations that incorporate their experience with refreshing summer drinks like Pimm's Cup. The user would not prefer overly simplistic or basic cocktail recipes, and may not be interested in suggestions that don't take into account their mixology class background.",
+      "answer": "Try the Pimm's Cup with a Twist using Hendrick's gin and Ruby Red Grapefruit simple syrup—it's a refreshing, visually appealing summer drink that's both classic and creative. You can elevate it with g",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I was looking back at our previous conversation about Native American powwows and I was wondering, which traditional game did you say was often performed by skilled dancers at powwows?",
+      "gold": "Hoop Dance",
+      "answer": "The traditional game often performed by skilled dancers at powwows is the Hoop Dance.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "Hoop Dance",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Can you recommend a show or movie for me to watch tonight?",
+      "gold": "The user would prefer recommendations for stand-up comedy specials on Netflix, especially those that are known for their storytelling. They may not prefer recommendations for other genres or platforms.",
+      "answer": "You can watch Hasan Minhaj's *Homecoming King* on Netflix, which is a great example of strong storytelling in stand-up comedy.",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I mentioned visiting a museum two months ago. Did I visit with a friend or not?",
+      "gold": "No, you did not visit with a friend.",
+      "answer": "Yes, you visited with a friend who is a chemistry professor.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What time do I wake up on Tuesdays and Thursdays?",
+      "gold": "6:45 AM",
+      "answer": "Answer: You wake up 15 minutes earlier on Tuesdays and Thursdays, which means you wake up at 6:45 AM on those days.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What is the order of the three trips I took in the past three months, from earliest to latest?",
+      "gold": "I went on a day hike to Muir Woods National Monument with my family, then I went on a road trip with friends to Big Sur and Monterey, and finally I started my solo camping trip to Yosemite National Park.",
+      "answer": "The provided information does not mention any specific trips taken in the past three months, so the order of trips cannot be determined from the given facts.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What gardening-related activity did I do two weeks ago?",
+      "gold": "planting 12 new tomato saplings",
+      "answer": "Answer: Two weeks ago, you were using a gardening app to track the weather and soil moisture levels.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How much RAM did I upgrade my laptop to?",
+      "gold": "16GB",
+      "answer": "Answer: You upgraded your laptop's RAM to 16GB.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Which book did I finish a week ago?",
+      "gold": "'The Nightingale' by Kristin Hannah",
+      "answer": "Answer: The information provided does not mention which book you finished a week ago.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    }
+  ]
+}
