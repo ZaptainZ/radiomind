@@ -108,6 +108,8 @@ class RadioMind:
         # Reranker — opt-in via config (off by default: 2.3GB download,
         # ~30ms/query latency). When present, gives the retrieval pipeline
         # its last +10-20% R@5 by cross-encoder rescoring of top-20 RRF.
+        # Fallback order: local BGE (offline, fast) → DashScope gte-rerank-v2
+        # (API, no torch needed) → none.
         self._reranker = None
         if self.config.get("retrieval.reranker.enabled", False):
             try:
@@ -121,6 +123,18 @@ class RadioMind:
                     self._reranker = r
             except Exception:
                 self._reranker = None
+            if self._reranker is None:
+                try:
+                    oc = self.config.get("llm.openai", {}) or {}
+                    base = (oc.get("base_url") or "").strip()
+                    key = (oc.get("api_key") or "").strip()
+                    if base and key and "dashscope" in base.lower():
+                        from radiomind.storage.reranker_dashscope import DashScopeReranker
+                        rr = DashScopeReranker(api_key=key)
+                        if rr.load():
+                            self._reranker = rr
+                except Exception:
+                    pass
 
         # Query rewriter — opt-in; uses LLMRouter to produce 2-3 paraphrases
         # per search. Trades ~200-500ms latency for recall gains on tough
