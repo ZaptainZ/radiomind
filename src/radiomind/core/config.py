@@ -81,11 +81,11 @@ DEFAULT_CONFIG = {
             "enabled": False,
         },
     },
+    # [training] is experimental — LoRA path is gated behind
+    # RADIOMIND_ENABLE_LORA=1 after April 2026 benchmarks showed
+    # it hurts quality at current data scale on 4B-class bases.
+    # Keeping the config keys in place so re-enabling doesn't break.
     "training": {
-        # Default base model for `radiomind train`. Updated 2026-04-16 from
-        # Qwen2.5-0.5B-4bit to Qwen3-4B-Instruct-2507-4bit: Qwen3 series
-        # dropped in late-2025, 4B hits the price/quality sweet spot for
-        # personal-device LoRA on Apple Silicon.
         "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
         "lora_rank": 8,
         "lora_layers": 8,

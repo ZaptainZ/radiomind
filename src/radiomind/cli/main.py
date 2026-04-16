@@ -472,12 +472,37 @@ def status() -> None:
     mind.shutdown()
 
 
-@cli.command()
+# --- LoRA path: experimental / internal, hidden by default ----------------
+# Our April 2026 evaluation showed that on a 4B base with 283 training
+# samples, LoRA hurts quality (qwen-max judge: -49% coherence vs base).
+# On a 0.5B base it gives a modest +18% overlap gain, but the 4B base
+# alone beats 0.5B+LoRA by a much larger margin. Until we solve
+# (a) >= 1000 sample training, (b) rank/config tuning for bigger bases,
+# and (c) the Qwen-Instruct tool_call template leakage, LoRA stays
+# gated behind RADIOMIND_ENABLE_LORA=1 so regular users don't foot-gun.
+# Details: bench/lora_ab/*.json
+import os as _os
+_LORA_ENABLED = _os.environ.get("RADIOMIND_ENABLE_LORA", "").lower() in ("1", "true", "yes")
+
+
+@cli.command(hidden=not _LORA_ENABLED)
 @click.option("--model", default=None, help="MLX model to fine-tune (e.g. mlx-community/Qwen2.5-0.5B-Instruct-4bit)")
 @click.option("--iters", default=None, type=int, help="Training iterations (default: 500)")
 @click.option("--data-only", is_flag=True, help="Only generate training data, don't train.")
 def train(model: str | None, iters: int | None, data_only: bool) -> None:
-    """Run LoRA fine-tuning on accumulated knowledge (requires MLX)."""
+    """[EXPERIMENTAL] LoRA fine-tuning — set RADIOMIND_ENABLE_LORA=1 to enable.
+
+    \b
+    Status: internal experiment. April 2026 benchmarks showed LoRA at
+    current data scale (283 samples) hurts quality on 4B-class bases.
+    See bench/lora_ab/ for numbers. Prefer `push-habits` + strong host
+    AI (Plan C) for personalization until LoRA pipeline is mature.
+    """
+    if not _LORA_ENABLED:
+        click.echo("LoRA training is gated as experimental.")
+        click.echo("To enable: export RADIOMIND_ENABLE_LORA=1")
+        click.echo("See: bench/lora_ab/llm-judge-qwen3-4b.json for why it's gated.")
+        raise SystemExit(1)
     mind = _get_mind()
 
     if data_only:
@@ -538,7 +563,7 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
     mind.shutdown()
 
 
-@cli.command()
+@cli.command(hidden=not _LORA_ENABLED)
 @click.option("--base", default="qwen2.5:0.5b", help="Ollama base model name.")
 @click.option("--name", default="radiomind-personal", help="Name to register under.")
 @click.option("--mlx-base", default="mlx-community/Qwen2.5-0.5B-Instruct-4bit",
@@ -546,7 +571,16 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
 @click.option("--llama-cpp-convert", default="",
               help="Path to llama.cpp convert_hf_to_gguf.py (or set $LLAMA_CPP_CONVERT).")
 def deploy(base: str, name: str, mlx_base: str, llama_cpp_convert: str) -> None:
-    """Fuse + GGUF-convert + register a trained LoRA with Ollama."""
+    """[EXPERIMENTAL] Fuse + GGUF-convert + register LoRA with Ollama.
+
+    Gated: requires RADIOMIND_ENABLE_LORA=1. Also note: Ollama GGUF deploy
+    measurably degrades LoRA quality (4-bit → FP16 → q8_0 roundtrip).
+    See bench/lora_ab/deploy-roundtrip-finding.json.
+    """
+    if not _LORA_ENABLED:
+        click.echo("LoRA deploy is gated as experimental.")
+        click.echo("To enable: export RADIOMIND_ENABLE_LORA=1")
+        raise SystemExit(1)
     from radiomind.training.lora import export_to_ollama
     from radiomind.core.config import Config
 
