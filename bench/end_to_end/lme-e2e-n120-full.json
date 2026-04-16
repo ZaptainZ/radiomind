@@ -1,0 +1,879 @@
+{
+  "benchmark": "LongMemEval oracle — end-to-end (retrieve + generate + judge)",
+  "protocol": "top-5 retrieval → qwen-turbo generates → qwen-max judges CORRECT/INCORRECT",
+  "n_questions": 120,
+  "total_ingested_turns": 2344,
+  "reranker_enabled": false,
+  "answer_model": "qwen-plus",
+  "judge_model": "qwen-max",
+  "elapsed_s": 10479.1,
+  "overall_accuracy": 0.7583,
+  "by_type": {
+    "knowledge-update": {
+      "n": 20,
+      "accuracy": 0.7
+    },
+    "multi-session": {
+      "n": 20,
+      "accuracy": 0.55
+    },
+    "single-session-assistant": {
+      "n": 20,
+      "accuracy": 0.95
+    },
+    "single-session-preference": {
+      "n": 20,
+      "accuracy": 0.75
+    },
+    "single-session-user": {
+      "n": 20,
+      "accuracy": 1.0
+    },
+    "temporal-reasoning": {
+      "n": 20,
+      "accuracy": 0.6
+    }
+  },
+  "per_query": [
+    {
+      "q": "I've been feeling a bit stuck with my paintings lately. Do you have any ideas on how I can find new inspiration?",
+      "gold": "The user would prefer responses that build upon their existing sources of inspiration, such as revisiting Instagram art accounts or exploring new techniques from online tutorials. They might also appreciate suggestions that revisit previous themes they found enjoyable, like painting flowers. The user would not prefer generic or vague suggestions for finding inspiration, and would likely appreciate responses that utilize their recent 30-day painting challenge experience.",
+      "answer": "Since you’ve been finding inspiration from social media and recently started a 30-day painting challenge (as of May 23), consider revisiting those flower paintings on Instagram for fresh ideas—or exte",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What brand are my favorite running shoes?",
+      "gold": "Nike",
+      "answer": "Your favorite running shoes are Nike.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm planning to visit the Vatican again and I was wondering if you could remind me of the name of that famous deli near the Vatican that serves the best cured meats and cheeses?",
+      "gold": "Roscioli",
+      "answer": "The famous deli near the Vatican that serves the best cured meats, cheeses, and traditional Roman cuisine is **Roscioli**.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I was going through our previous chat and I wanted to clarify something about the prayer of beginners in Tanqueray's Spiritual Life treatise. Can you remind me which chapter of the second part discusses vocal prayer and meditation?",
+      "gold": "Chapter 4 of Book 1, titled 'Vocal Prayer and Meditation'.",
+      "answer": "Chapter 4 of Book 1 of the second part of Tanqueray’s *Spiritual Life* treatise—titled “Vocal Prayer and Meditation”—discusses the prayer of beginners, focusing specifically on vocal prayer (e.g., the",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I noticed my bike seems to be performing even better during my Sunday group rides. Could there be a reason for this?",
+      "gold": "The user would prefer responses that reference specific details from their previous interactions, such as the replacement of the bike's chain and cassette, and the use of a new Garmin bike computer. They might prefer explanations that connect these details to the observed improvement in bike performance. The user may not prefer responses that fail to acknowledge these specific details or provide vague, general explanations for the improvement.",
+      "answer": "Yes — you replaced the old bike’s chain and cassette on February 1st, which directly contributed to an improvement in your bike’s performance. This upgrade likely explains the enhanced feel and effici",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "You saved $300 on the Jimmy Choo heels, as they originally retailed for $500 and you bought them for $200 at the outlet mall.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many days did it take for my iPad case to arrive after I bought it?",
+      "gold": "The information provided is not enough. You did not mention buying an iPad case.",
+      "answer": "The provided facts do not mention an iPad case or its purchase or arrival date, so the delivery time cannot be determined.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How often do I attend yoga classes to help with my anxiety?",
+      "gold": "Three times a week.",
+      "answer": "You attend yoga classes three times a week to help with your anxiety.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I'm going back to our previous conversation about the children's book on dinosaurs. Can you remind me what color was the scaly body of the Plesiosaur in the image?",
+      "gold": "The Plesiosaur had a blue scaly body.",
+      "answer": "The Plesiosaur’s scaly body was blue, as described in the image caption: “The Plesiosaur has a blue scaly body…”",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many days did I spend on my solo camping trip to Yosemite National Park?",
+      "gold": "2 days. 3 days (including the last day) is also acceptable.",
+      "answer": "The facts don’t specify the duration of your solo camping trip to Yosemite — only that you *started* it on 2023/05/15 and *returned from* it on 2023/05/17. So you spent **at least 2 days**, but the ex",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many years will I be when my friend Rachel gets married?",
+      "gold": "33",
+      "answer": "Rachel’s wedding is next year (2023), and you’re currently 32 (as of 2022/09/01). So you will be **33** when she gets married.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What did I bake for my niece's birthday party?",
+      "gold": "a lemon blueberry cake",
+      "answer": "You baked a lemon blueberry cake for your niece's birthday party.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Where did I buy my new tennis racket from?",
+      "gold": "the sports store downtown",
+      "answer": "You bought your new tennis racket from a sports store downtown.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many dozen eggs do we currently have stocked up in our refrigerator?",
+      "gold": "20",
+      "answer": "We currently have 20 dozen eggs stocked up in the refrigerator. (This is stated in the most recent memory from 2023/03/15, and supersedes the earlier mention of 30 dozen from 2023/01/11.)",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've got some free time tonight, any documentary recommendations?",
+      "gold": "The user would prefer documentary recommendations that are similar in style and theme to 'Our Planet', 'Free Solo', and 'Tiger King', which they have previously enjoyed. They might not prefer recommendations of documentaries that are vastly different in tone or subject matter from these titles. The preferred response utilizes the user's previously mentioned viewing history to suggest documentaries that cater to their tastes.",
+      "answer": "You might enjoy *Dynasties* (Netflix) — a character-driven wildlife series following animal families with intimate, Attenborough-narrated storytelling — or *Chasing Coral* (Netflix), a visually stunni",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What game did I finally beat last weekend?",
+      "gold": "Dark Souls 3 DLC",
+      "answer": "You finally beat the last boss in the Dark Souls 3 DLC last weekend.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much earlier do I wake up on Fridays compared to other weekdays?",
+      "gold": "30 minutes",
+      "answer": "You wake up at 6:00 AM on Fridays, but at 6:30 AM on other weekdays (Monday–Thursday), so you wake up **30 minutes earlier** on Fridays.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many antique items did I inherit or acquire from my family members?",
+      "gold": "5",
+      "answer": "You inherited or acquired **four** antique items from family members:  \n- an antique tea set (from cousin Rachel),  \n- a vintage typewriter (from your dad),  \n- a vintage diamond necklace (from your g",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm looking back at our previous conversation about building a cocktail bar. You recommended five bottles to make the widest variety of gin-based cocktails. Can you remind me what the fifth bottle was?",
+      "gold": "Absinthe",
+      "answer": "The fifth bottle recommended for the widest variety of gin-based cocktails was **Absinthe**.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What type of camera lens did I purchase most recently?",
+      "gold": "a 70-200mm zoom lens",
+      "answer": "You most recently purchased a 50mm prime lens, as noted in the conversation dated 2023/03/11.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "What kitchen appliance did I buy 10 days ago?",
+      "gold": "a smoker",
+      "answer": "You bought a smoker 10 days ago (on 2023/03/15, which is 10 days before 2023/03/25).",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I’m a bit anxious about getting around Tokyo. Do you have any helpful tips?",
+      "gold": "The user would prefer responses that utilize their existing resources, such as their Suica card and TripIt app, to provide personalized tips for navigating Tokyo's public transportation. They might not prefer general tips or recommendations that do not take into account their prior preparations.",
+      "answer": "Use your Suica card to tap in/out on trains and buses—it works seamlessly across Tokyo’s transit network, including JR lines, Tokyo Metro, and local buses. Plan routes with Google Maps or a transit ap",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How old was I when my grandma gave me the silver necklace?",
+      "gold": "18",
+      "answer": "You were 18 years old when your grandma gave you the silver necklace—it was a gift for your 18th birthday.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many days ago did I buy a smoker?",
+      "gold": "10 days ago. 11 days (including the last day) is also acceptable.",
+      "answer": "You bought a smoker 10 days ago (on 2023/03/15).",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I'm looking back at our previous chat about the DHL Wellness Retreats campaign. Can you remind me how much was allocated for influencer marketing in the campaign plan?",
+      "gold": "$2,000",
+      "answer": "The influencer marketing budget was allocated at $2,000. This was specified in the campaign plan shared on 2023/05/25 (Thu) 21:15.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I'm getting excited about my visit to the music store this weekend. Any tips on what to look for in a new guitar?",
+      "gold": "The user would prefer responses that highlight the differences between Fender Stratocaster and Gibson Les Paul electric guitars, such as the feel of the neck, weight, and sound profile. They might not prefer general tips on buying an electric guitar or suggestions that do not take into account their current guitar and desired upgrade.",
+      "answer": "Since you’re considering upgrading from a Stratocaster to a Les Paul, try both guitars in person this weekend—focus on how each feels (contoured Strat vs. weightier, set-neck Les Paul), sounds (bright",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What is the total cost of the new food bowl, measuring cup, dental chews, and flea and tick collar I got for Max?",
+      "gold": "$50",
+      "answer": "The new stainless steel food bowl cost $15, the measuring cup $5, the dental chews $10 (per pack, recurring), and the flea and tick collar $20 (one-time). So the total cost of *those specific items* i",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What was the first issue I had with my new car after its first service?",
+      "gold": "GPS system not functioning correctly",
+      "answer": "The first issue you had with your new car after its first service on March 15th was a GPS system malfunction, which occurred on March 22nd — just one week later.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Can you recommend some interesting cultural events happening around me this weekend?",
+      "gold": "The user would prefer responses that suggest cultural events where they can practice their language skills, particularly Spanish and French. They would also appreciate if the event has a focus on language learning resources. They would not prefer events that do not provide opportunities for language practice or cultural exchange.",
+      "answer": "I don’t have access to your location or real-time event listings, so I can’t identify specific cultural events happening near you this weekend (May 26–28, 2023). However, based on our prior conversati",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I was going through our previous conversation about high-end fashion brands, and I was wondering if you could remind me of the brand that uses wild rubber sourced from the Amazon rainforest?",
+      "gold": "Veja",
+      "answer": "The brand that uses wild rubber sourced from the Amazon rainforest is **Veja**, as mentioned in the conversation on 2023/05/23.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many babies were born to friends and family members in the last few months?",
+      "gold": "5",
+      "answer": "Based on the facts provided, **five** babies were born to friends and family members in the last few months: Charlotte (Mike and Emma’s daughter), Jasper (David and his wife’s son), Max (Rachel’s son,",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many months ago did I book the Airbnb in San Francisco?",
+      "gold": "Five months ago",
+      "answer": "You booked the Airbnb in San Francisco three months ago, as stated in the memory: “I stayed in Haight-Ashbury for my best friend's wedding and had to book three months in advance.”",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days passed between the day I attended the gardening workshop and the day I planted the tomato saplings?",
+      "gold": "6 days. 7 days (including the last day) is also acceptable.",
+      "answer": "6 days passed between the gardening workshop on 2023/04/15 and planting the tomato saplings on 2023/04/21.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which health issue did I deal with first, the persistent cough or the skin tag removal?",
+      "gold": "Persistent cough",
+      "answer": "You dealt with the persistent cough first. You visited Dr. Smith about the cough on February 10th, while the skin tag removal occurred on February 22nd.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Who became a parent first, Rachel or Alex?",
+      "gold": "Alex",
+      "answer": "Rachel became a parent first. The twins Jackson and Julia were born before January 2023, since Alex adopted her baby girl from China *in January* (2023/03/17 conversation), and Rachel is already “doin",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How much did I spend on gifts for my sister?",
+      "gold": "$300",
+      "answer": "You spent around $200 on the silver necklace with a small pendant from Tiffany's for your sister.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many magazine subscriptions do I currently have?",
+      "gold": "2",
+      "answer": "You currently have one magazine subscription: The New Yorker, which you subscribed to in early February 2023. You canceled your Forbes subscription in early March 2023, and while you bought a National",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "How many online courses have I completed in total?",
+      "gold": "5",
+      "answer": "You have completed two online courses on edX.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where am I planning to stay for my birthday trip to Hawaii?",
+      "gold": "Oahu",
+      "answer": "You are planning to stay on Oahu for your birthday trip to Hawaii.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Where is the painting 'Ethereal Dreams' by Emma Taylor currently hanging?",
+      "gold": "in my bedroom",
+      "answer": "The painting \"Ethereal Dreams\" by Emma Taylor is currently hanging above the user’s bed in their bedroom, as stated in the October 30 conversation where they said they “recently moved the 'Ethereal Dr",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Did I finish reading 'The Nightingale' by Kristin Hannah?",
+      "gold": "Yes",
+      "answer": "Yes, you finished reading *The Nightingale*—you stated on 2023/03/30 that you “just finished reading” it and discussed its ending and themes in detail.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I wanted to follow up on our previous conversation about mindfulness techniques. You mentioned some great resources for guided imagery exercises, can you remind me of the website that had free exercises like 'The Mountain Meditation' and 'The Body Scan Meditation'?",
+      "gold": "Mindful.org.",
+      "answer": "The website that offers free guided imagery exercises like “The Mountain Meditation” and “The Body Scan Meditation” is **Mindful.org**, as mentioned in our conversation on 2023/05/25.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many issues of National Geographic have I finished reading?",
+      "gold": "Five",
+      "answer": "You have finished reading three issues of National Geographic.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How long have I been living in my current apartment in Harajuku?",
+      "gold": "3 months",
+      "answer": "You’ve been living in your current apartment in Harajuku for 3 months — since approximately mid-July 2023 (as of your 2023/10/15 message stating you’ve lived there for 3 months).",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "You have tried four Korean restaurants in your city.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've been feeling like my chocolate chip cookies need something extra. Any advice?",
+      "gold": "The user would prefer responses that build upon their previous experimentation with turbinado sugar, suggesting ingredients or techniques that complement its richer flavor. They might not prefer generic cookie-making advice or suggestions that don't take into account their existing use of turbinado sugar.",
+      "answer": "Based on your past interest in turbinado sugar’s rich, caramel flavor and complementary pairings, try adding 1–2 tablespoons of turbinado sugar to your chocolate chip cookie dough—its subtle caramel n",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I'm planning my trip to Speyer again and I wanted to confirm, what's the phone number of the Speyer tourism board that you provided me earlier?",
+      "gold": "+49 (0) 62 32 / 14 23 - 0",
+      "answer": "The phone number of the Speyer tourism board is +49 (0) 62 32 / 14 23 - 0.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I'm planning my meal prep next week, any suggestions for new recipes?",
+      "gold": "The user would prefer responses that suggest healthy meal prep recipes, especially those that incorporate quinoa and roasted vegetables, and offer variations in protein sources. They might appreciate suggestions that build upon their existing preferences, such as new twists on chicken Caesar salads or turkey and avocado wraps. The user may not prefer responses that suggest unhealthy or high-calorie meal prep options, or those that deviate significantly from their established healthy eating habits.",
+      "answer": "Try making lentil bolognese (a simple 30–40 minute recipe with lentils, mushrooms, tomatoes, and herbs) to serve over quinoa with roasted vegetables like sweet potato wedges (seasoned with rosemary an",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Can you suggest some accessories that would complement my current photography setup?",
+      "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+      "answer": "Based on your recent discussions, accessories that would complement your Sony A7R IV setup include: a durable, Sony-compatible camera bag (e.g., from Think Tank Photo, Peak Design, or Lowepro); the Go",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many copies of my favorite artist's debut album were released worldwide?",
+      "gold": "500",
+      "answer": "500 copies were released worldwide.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm thinking of inviting my colleagues over for a small gathering. Any tips on what to bake?",
+      "gold": "The user would prefer baking suggestions that take into account their previous success with the lemon poppyseed cake, such as variations of that recipe or other desserts that share similar qualities. They might prefer suggestions that balance impressiveness with manageability, considering their previous experience. The user may not prefer overly complex or unfamiliar recipes, or suggestions that do not build upon their existing baking experience.",
+      "answer": "Based on your past plans, the lemon lavender pound cake or lemon poppyseed cake would be excellent choices—both are crowd-pleasing, festive, and well-suited for gatherings. You’ve already had success ",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many days did I spend in total traveling in Hawaii and in Seattle?",
+      "gold": "The information provided is not enough. You mentioned traveling for 10 days in Hawaii but did not mention abything about the trip to Seattle.",
+      "answer": "You spent 10 days in Hawaii, but no duration for Seattle is mentioned in the facts—so the total cannot be determined from the given information.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did I get my guitar serviced?",
+      "gold": "The music shop on Main St.",
+      "answer": "You got your guitar serviced at the music shop on Main St.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I'm planning a trip to Denver soon. Any suggestions on what to do there?",
+      "gold": "The user would prefer responses that take into account their previous experience in Denver, specifically their interest in live music and memorable encounter with Brandon Flowers. They might appreciate suggestions that revisit or build upon this experience, such as revisiting the same bar or exploring similar music venues in the area. The user may not prefer general tourist recommendations or activities unrelated to their interest in live music.",
+      "answer": "You’ll love Denver’s thriving music scene—don’t miss iconic venues like Red Rocks Amphitheatre, The Ogden Theatre, and The Bluebird Theater, plus festivals like Grandoozy and the Denver Folk Festival.",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How much faster did I finish the 5K run compared to my previous year's time?",
+      "gold": "10 minutes",
+      "answer": "You finished the 5K in 35 minutes this time, compared to 45 minutes last year — that’s **10 minutes faster**.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Who did I have a conversation with about destiny?",
+      "gold": "Sarah",
+      "answer": "You had a conversation about destiny with your friend Sarah.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many charity events did I participate in before the 'Run for the Cure' event?",
+      "gold": "4",
+      "answer": "Based on the provided facts, you participated in at least one charity event before the “Run for the Cure” event: the “Dance for a Cause” event on May 1st, 2023. No other pre–October 15th events are me",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many hours did I spend watching documentaries on Netflix last month?",
+      "gold": "10",
+      "answer": "You spent around 10 hours watching documentaries on Netflix last month.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Where did I attend for my study abroad program?",
+      "gold": "University of Melbourne in Australia",
+      "answer": "You attended the University of Melbourne for your study abroad program.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many women are on the team led by my former manager Rachel?",
+      "gold": "6",
+      "answer": "There are 5 women on Rachel’s team of 10 people.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "You can listen to history podcasts like *Hardcore History*, *Lore*, or *The Dollop* during your 40-minute commute each way—ideally using a curated playlist and alternating between them to keep things ",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What type of rice is my favorite?",
+      "gold": "Japanese short-grain rice",
+      "answer": "Your favorite rice is Japanese short-grain rice.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much weight have I lost since I started going to the gym consistently?",
+      "gold": "10 pounds",
+      "answer": "You have lost 10 pounds since you started going consistently to the gym 3 months ago (as of June 21, 2023).",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "When did I volunteer at the local animal shelter's fundraising dinner?",
+      "gold": "February 14th",
+      "answer": "You volunteered at the \"Love is in the Air\" fundraising dinner on Valentine’s Day (February 14, 2023), as noted in your message from 2023/04/02 (Sun) 00:23.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many movie festivals that I attended?",
+      "gold": "I attended four movie festivals.",
+      "answer": "You attended at least one movie festival: AFI Fest in Los Angeles (mentioned on 2023/05/26 and 2023/05/21). No other festivals are explicitly stated as attended.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm looking back at our previous conversation about the Seco de Cordero recipe from Ancash. You mentioned using a light or medium-bodied beer, but I was wondering if you could remind me what type of beer you specifically recommended?",
+      "gold": "I recommended using a Pilsner or Lager for the recipe.",
+      "answer": "You were specifically recommended a pilsner or lager for the Seco de Cordero recipe — and you confirmed you’d try it with a Pilsner.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What was the amount I was pre-approved for when I got my mortgage from Wells Fargo?",
+      "gold": "$400,000",
+      "answer": "You were pre-approved for $350,000 from Wells Fargo (as stated on 2023/08/11), though you later mentioned a $400,000 pre-approval in a separate conversation on 2023/11/30 — but the original and consis",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I was going through our previous conversation about The Library of Babel, and I wanted to confirm - what did Borges say about the center and circumference of the Library?",
+      "gold": "According to Borges, 'The Library is a sphere whose exact center is any one of its hexagons and whose circumference is inaccessible.'",
+      "answer": "Borges said, “The Library is a sphere whose exact center is any one of its hexagons and whose circumference is inaccessible.” (2023/05/22)",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many episodes of the Science series have I completed on Crash Course?",
+      "gold": "50",
+      "answer": "You have completed 50 episodes of Crash Course’s Science series.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+      "gold": "the woman selling jam at the farmer's market",
+      "answer": "You met the tourist from Australia first — on Thursday (May 25, 2023), as noted in the conversation at 00:22 on May 28. The jam maker was met “two weeks ago on a Saturday morning,” which would be arou",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I'm planning another trip to New York City and I was wondering if you could remind me of that vegan eatery you recommended last time, the one with multiple locations throughout the city?",
+      "gold": "By Chloe",
+      "answer": "The vegan eatery with multiple locations throughout NYC that was recommended is By Chloe. It was mentioned in the conversation on 2023/05/23 (Tue) — 6 days ago.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "What is the name of my hamster?",
+      "gold": "You did not mention this information. You mentioned your cat Luna but not your hamster.",
+      "answer": "You haven’t mentioned having a hamster—only your cat, Luna.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I'm planning my trip to Amsterdam again and I was wondering, what was the name of that hostel near the Red Light District that you recommended last time?",
+      "gold": "International Budget Hostel",
+      "answer": "The hostel near the Red Light District that was recommended on May 20, 2023 is **International Budget Hostel**.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I wanted to follow up on our previous conversation about the fusion breakthrough at Lawrence Livermore National Laboratory. Can you remind me who is the President's Chief Advisor for Science and Technology mentioned in the article?",
+      "gold": "Dr. Arati Prabhakar",
+      "answer": "Dr. Arati Prabhakar is the President's Chief Advisor for Science and Technology, as noted in the [assistant] memory entry from 2023/05/22.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many different museums or galleries did I visit in the month of February?",
+      "gold": "2",
+      "answer": "You visited two: The Art Cube (on 15th February) and the Natural History Museum (on 2nd February).",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "What was my last name before I changed it?",
+      "gold": "Johnson",
+      "answer": "Your last name before the change was Johnson.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How much more did I have to pay for the trip after the initial quote?",
+      "gold": "$300",
+      "answer": "You were initially quoted $2,500 by Sakura Travel Agency (as of 2023/05/20), but later mentioned a price of $2,800 (as of 2023/05/23), meaning you had to pay $300 more than the initial quote.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm planning to visit Bandung again and I was wondering if you could remind me of the name of that restaurant in Cihampelas Walk that serves a great Nasi Goreng?",
+      "gold": "Miss Bee Providore",
+      "answer": "The restaurant in Cihampelas Walk that serves great Nasi Goreng is **Miss Bee Providore** — you mentioned planning to try “Miss Bee's Nasi Goreng” on 2023/05/22.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many engineers do I lead when I just started my new role as Senior Software Engineer? How many engineers do I lead now?",
+      "gold": "When you just started your new role as Senior Software Engineer, you led 4 engineers. Now, you lead 5 engineers",
+      "answer": "When you just started your new role as Senior Software Engineer (as of 2023/05/11), you led **4 engineers**. Now (as of 2023/10/24), you lead **5 engineers**.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many health-related devices do I use in a day?",
+      "gold": "4",
+      "answer": "You use at least two health-related devices daily: your Fitbit Versa 3 (worn non-stop for three weeks, per 2023/05/22) and your Accu-Chek Aviva Nano blood glucose meter (used three times a day, per 20",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I was thinking back to our previous conversation about the Radiation Amplified zombie, and I was wondering if you remembered what we finally decided to name it?",
+      "gold": "Fissionator.",
+      "answer": "We didn’t settle on a final name for the Radiation Amplified zombie — you rejected “Radialisk” (calling it too game-referential) and preferred one-word names, but no agreed-upon name was chosen. The a",
+      "correct": false,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "Which event happened first, my cousin's wedding or Michael's engagement party?",
+      "gold": "Michael's engagement party",
+      "answer": "Michael’s engagement party happened first. It occurred on 2023/05/06, while your cousin’s wedding (where you were a bridesmaid) was on 2023/06/15.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long have my parents been staying with me in the US?",
+      "gold": "nine months",
+      "answer": "Your parents have been staying with you in the US for nine months. This was confirmed in your message from 2023/10/20 (2 days ago).",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Can you suggest some activities that I can do in the evening?",
+      "gold": "The user would prefer suggestions that involve relaxing activities that can be done in the evening, preferably before 9:30 pm. They would not prefer suggestions that involve using their phone or watching TV, as these activities have been affecting their sleep quality.",
+      "answer": "Yes—you can wind down starting at 8:30 pm with relaxation techniques (e.g., reading, meditation, deep breathing), do a 30-minute electronic device detox by 9:15 pm, prepare your sleep environment by 9",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I've been having trouble with the battery life on my phone lately. Any tips?",
+      "gold": "The user would prefer responses that build upon their previous mention of purchasing a portable power bank, such as suggestions on how to optimize its use, like ensuring it's fully charged before use. They might also appreciate tips on utilizing battery-saving features on their phone. The user may not prefer responses that suggest alternative solutions or unrelated advice.",
+      "answer": "The facts provided don’t include any tips specifically about improving phone battery life — they focus only on portable power banks (for external charging) and organizing tech accessories while travel",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many tanks do I currently have, including the one I set up for my friend's kid?",
+      "gold": "3",
+      "answer": "Based on the facts provided, you currently have **three** tanks: your original 5-gallon betta tank (with Finley), your new 20-gallon community tank (Amazonia), and a 1-gallon tank (mentioned in the Ma",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I'm trying to decide whether to buy a NAS device now or wait. What do you think?",
+      "gold": "The user would prefer responses that take into account their current home network storage capacity issues and recent reliance on external hard drives, highlighting the potential benefits of a NAS device in addressing these specific needs. They might not prefer responses that ignore their current storage challenges or fail to consider their recent tech upgrades and priorities. Preferred responses would utilize the user's previous mentions of storage capacity issues and tech investments to inform their decision.",
+      "answer": "Based on the information from May 23, 2023 — just four days ago — you’ve already identified clear needs (central backup, security concerns, beginner-friendliness) and have multiple well-vetted, readil",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "What percentage of leadership positions do women hold in the my company?",
+      "gold": "20%",
+      "answer": "Women hold 20 out of 100 leadership positions in your company, so they hold **20%** of the leadership positions.",
+      "correct": true,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did I attend my cousin's wedding?",
+      "gold": "The Grand Ballroom",
+      "answer": "You attended your cousin's wedding at the Grand Ballroom.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many days before I bought the iPhone 13 Pro did I attend the Holiday Market?",
+      "gold": "7 days. 8 days (including the last day) is also acceptable.",
+      "answer": "You attended the Holiday Market a week before Black Friday, and you bought the iPhone 13 Pro on Black Friday (2023/11/24). Since today is 2023/12/10, and your purchase date was 2023/11/24, the Holiday",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What was my previous stance on spirituality?",
+      "gold": "A staunch atheist",
+      "answer": "Your previous stance on spirituality was that of a staunch atheist.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "What book am I currently reading?",
+      "gold": "The Seven Husbands of Evelyn Hugo",
+      "answer": "You are currently reading *The Seven Husbands of Evelyn Hugo*, as confirmed in your message from 2023/05/25 (Thu) 08:05, where you said, “I'm currently devouring ‘The Seven Husbands of Evelyn Hugo’ an",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I've been thinking about ways to stay connected with my colleagues. Any suggestions?",
+      "gold": "The user would prefer responses that acknowledge their desire for social interaction and collaboration while working remotely, utilizing their previous experiences with company initiatives and team collaborations. They might prefer suggestions of virtual team-building activities, regular check-ins, or joining interest-based groups within the company. The user may not prefer generic suggestions that do not take into account their specific work situation or previous attempts at staying connected with colleagues.",
+      "answer": "Yes! Consider virtual coffee breaks, online team activities (like trivia or escape rooms), collaborative projects, informal social channels (e.g., Slack), recognition celebrations, or interest-based g",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Which task did I complete first, fixing the fence or trimming the goats' hooves?",
+      "gold": "Fixing the fence",
+      "answer": "You trimmed the goats’ hooves two weeks ago (on or around May 8, 2023), and fixed the fence three weeks ago (on or around May 1, 2023), so **fixing the fence** was completed first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed since I started taking ukulele lessons when I decided to take my acoustic guitar to the guitar tech for servicing?",
+      "gold": "24 days. 25 days (including the last day) is also acceptable.",
+      "answer": "You started ukulele lessons on 2023/02/01, and you took your Taylor GS Mini to the guitar tech on 2023/02/25 — so **24 days** had passed.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "I was going through our previous conversation about atmospheric correction methods, and I wanted to confirm - you mentioned that 6S, MAJA, and Sen2Cor are all algorithms for atmospheric correction of remote sensing images. Can you remind me which one is implemented in the SIAC_GEE tool?",
+      "gold": "The 6S algorithm is implemented in the SIAC_GEE tool.",
+      "answer": "The 6S (Second Simulation of a Satellite Signal in the Solar Spectrum) radiative transfer model is implemented in the SIAC_GEE tool.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How much discount will I get on my next purchase at FreshMart?",
+      "gold": "$5",
+      "answer": "You’ll get a $5 discount on your next purchase at FreshMart for every 500 points, as stated in your memory from 2023/05/29.",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "I was thinking of trying a new coffee creamer recipe. Any recommendations?",
+      "gold": "The user would prefer responses that suggest variations on their existing almond milk, vanilla extract, and honey creamer recipe or new ideas that align with their goals of reducing sugar intake and saving money. They might not prefer responses that recommend commercial creamer products or recipes that are high in sugar or expensive.",
+      "answer": "Yes—try making a healthier homemade creamer using unsweetened almond milk, a low-sugar sweetener like stevia or monk fruit, warming spices (e.g., cinnamon or cardamom), and a pinch of high-quality sal",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "How many trips have I taken my Canon EOS 80D camera on?",
+      "gold": "five",
+      "answer": "You have taken your Canon EOS 80D on five trips. (As stated in the 2023/05/30 conversation.)",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "Where did I complete my Bachelor's degree in Computer Science?",
+      "gold": "University of California, Los Angeles (UCLA)",
+      "answer": "You completed your Bachelor's degree in Computer Science at UCLA.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "I was looking back at our previous chat and I wanted to confirm, how many times did the Chiefs play the Jaguars at Arrowhead Stadium?",
+      "gold": "The Chiefs played the Jaguars 12 times at Arrowhead Stadium.",
+      "answer": "The Chiefs played the Jaguars 12 times at Arrowhead Stadium, as confirmed in the conversation on 2023/05/23.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many skeins of worsted weight yarn did I find in my stash?",
+      "gold": "17",
+      "answer": "You found 17 skeins of worsted weight yarn in your stash.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How often do I play table tennis with my friends at the local park?",
+      "gold": "The information provided is not enough. You mentioned playing tennis but not table tennis.",
+      "answer": "You do not play table tennis with your friends at the local park — you play **tennis** there, every other week (as confirmed on 2023/05/25).",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I think we discussed work from home jobs for seniors earlier. Can you remind me what was the 7th job in the list you provided?",
+      "gold": "Transcriptionist.",
+      "answer": "The 7th job in the list you received on 2023/05/27 is **transcriptionist**.",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I remember you told me about the refining processes at CITGO's three refineries earlier. Can you remind me what kind of processes are used at the Lake Charles Refinery?",
+      "gold": "Atmospheric distillation, fluid catalytic cracking (FCC), alkylation, and hydrotreating.",
+      "answer": "The Lake Charles Refinery uses atmospheric distillation, fluid catalytic cracking (FCC), alkylation, and hydrotreating. These processes separate crude oil, convert heavy fractions into lighter product",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "How many weeks in total do I spent on reading 'The Nightingale' and listening to 'Sapiens: A Brief History of Humankind' and 'The Power'?",
+      "gold": "2 weeks for 'The Nightingale', 4 weeks for 'Sapiens: A Brief History of Humankind', and 2 weeks for 'The Power', so a total of 8 weeks.",
+      "answer": "The facts only state when you *started* listening to 'Sapiens' (2022/02/01) and 'The Power' (2022/03/20), and when you *finished* 'The Nightingale' (2022/01/15), but do not specify how long each took ",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long did Alex marinate the BBQ ribs in special sauce?",
+      "gold": "24 hours",
+      "answer": "Alex marinated the BBQ ribs in special sauce for 24 hours.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "How many autographed baseballs have I added to my collection in the first three months of collection?",
+      "gold": "15",
+      "answer": "You added 15 autographed baseballs in the first three months of collecting, as stated on 2023/07/11.",
+      "correct": true,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "How many weddings have I attended in this year?",
+      "gold": "I attended three weddings. The couples were Rachel and Mike, Emily and Sarah, and Jen and Tom.",
+      "answer": "You’ve attended at least three weddings this year: Jen’s (last weekend, i.e., Oct 7–8, 2023), your college roommate’s (recently, described as “just got back from”), and Emily and Sarah’s (also describ",
+      "correct": false,
+      "qtype": "multi-session"
+    },
+    {
+      "q": "Where did Rachel move to after her recent relocation?",
+      "gold": "the suburbs",
+      "answer": "Rachel moved to Chicago.",
+      "correct": false,
+      "qtype": "knowledge-update"
+    },
+    {
+      "q": "I've been thinking about making a cocktail for an upcoming get-together, but I'm not sure which one to choose. Any suggestions?",
+      "gold": "Considering their mixology class background, the user would prefer cocktail suggestions that build upon their existing skills and interests, such as creative variations of classic cocktails or innovative twists on familiar flavors. They might appreciate recommendations that incorporate their experience with refreshing summer drinks like Pimm's Cup. The user would not prefer overly simplistic or basic cocktail recipes, and may not be interested in suggestions that don't take into account their mixology class background.",
+      "answer": "Given your interest in Hendrick’s gin and summer drinks, the **Pimm’s Cup with a Twist** is an excellent choice—especially since you’re excited to use Ruby Red Grapefruit simple syrup and creative gar",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I was looking back at our previous conversation about Native American powwows and I was wondering, which traditional game did you say was often performed by skilled dancers at powwows?",
+      "gold": "Hoop Dance",
+      "answer": "You asked about traditional games performed by skilled dancers at powwows, and I listed **Hoop Dance** as a traditional dance involving intricate movements with multiple hoops, often performed by skil",
+      "correct": true,
+      "qtype": "single-session-assistant"
+    },
+    {
+      "q": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+      "answer": "(no retrieval)",
+      "correct": false,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "Can you recommend a show or movie for me to watch tonight?",
+      "gold": "The user would prefer recommendations for stand-up comedy specials on Netflix, especially those that are known for their storytelling. They may not prefer recommendations for other genres or platforms.",
+      "answer": "Yes—consider watching *Hasan Minhaj: Homecoming King* (2017) on Netflix tonight; it’s a masterclass in storytelling and was recommended just two days ago (2023/05/25) for its strong narrative craft.",
+      "correct": true,
+      "qtype": "single-session-preference"
+    },
+    {
+      "q": "I mentioned visiting a museum two months ago. Did I visit with a friend or not?",
+      "gold": "No, you did not visit with a friend.",
+      "answer": "Yes, you visited the Science Museum two months ago (on 2022/10/22) with a friend who is a chemistry professor.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What time do I wake up on Tuesdays and Thursdays?",
+      "gold": "6:45 AM",
+      "answer": "You wake up at 7:00 AM on Tuesdays and Thursdays — and 15 minutes earlier than your usual 8:30 AM wake-up time, which aligns with that 7:00 AM time.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What is the order of the three trips I took in the past three months, from earliest to latest?",
+      "gold": "I went on a day hike to Muir Woods National Monument with my family, then I went on a road trip with friends to Big Sur and Monterey, and finally I started my solo camping trip to Yosemite National Park.",
+      "answer": "From earliest to latest:  \n1. Muir Woods National Monument day hike (2023/03/10)  \n2. No other completed trips are mentioned — the John Muir Trail section hike and Eastern Sierra trip are both *planne",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What gardening-related activity did I do two weeks ago?",
+      "gold": "planting 12 new tomato saplings",
+      "answer": "Two weeks ago (2023/04/15), you were using a gardening app to track weather and soil moisture levels, and you asked for recommendations for beginner gardening apps, tools, and natural pest control met",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How much RAM did I upgrade my laptop to?",
+      "gold": "16GB",
+      "answer": "You upgraded your laptop’s RAM to 16GB.",
+      "correct": true,
+      "qtype": "single-session-user"
+    },
+    {
+      "q": "Which book did I finish a week ago?",
+      "gold": "'The Nightingale' by Kristin Hannah",
+      "answer": "You finished *The Nightingale* by Kristin Hannah on 2023/01/31, which was exactly one week ago from today (2023/02/07).",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    }
+  ]
+}
