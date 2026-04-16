@@ -193,6 +193,14 @@ def run(
                     for subj, rel, obj in mind._kg.extract_triples_from_text(txt):
                         mind._kg.add_triple(subj, rel, obj, source_id=mid)
 
+        # Normalize gold once so both retrieval-hit and no-retrieval
+        # branches can log it. Earlier runs crashed when retrieval was
+        # empty because gold_str was only defined inside the hit branch.
+        if isinstance(gold, list):
+            gold_str = " | ".join(str(g) for g in gold)
+        else:
+            gold_str = str(gold)
+
         # Retrieve. top-10 gives the LLM enough room when our pipeline
         # expands nuclei with context turns (MemMachine-style). SOTA
         # systems typically feed 10-20 items.
@@ -210,11 +218,6 @@ def run(
                 answer = qwen_call(ans_prompt, config_path, model=answer_model)
             except Exception as e:
                 answer = f"[error: {e}]"
-            # Judge
-            if isinstance(gold, list):
-                gold_str = " | ".join(str(g) for g in gold)
-            else:
-                gold_str = str(gold)
             judge_prompt = JUDGE_PROMPT.format(question=question, gold=gold_str, answer=answer)
             try:
                 verdict = qwen_call(judge_prompt, config_path, model=judge_model, max_tokens=10)
