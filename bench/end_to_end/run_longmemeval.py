@@ -70,10 +70,18 @@ Respond with exactly one word: CORRECT or INCORRECT"""
 _BYPASS_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
-def qwen_call(prompt: str, config_path: Path, model: str = "qwen-max", max_tokens: int = 200) -> str:
+def qwen_call(
+    prompt: str, config_path: Path, model: str = "qwen-max", max_tokens: int = 200,
+    profile: str = "openai",
+) -> str:
+    """Dispatch a chat completion to a named provider profile.
+
+    profile="openai" — the default DashScope-compatible section (qwen models).
+    profile="openai_direct" — api.openai.com for SOTA-comparable evals.
+    """
     import tomllib
     cfg = tomllib.loads(config_path.read_text())
-    oc = cfg["llm"]["openai"]
+    oc = cfg["llm"][profile]
     req = urllib.request.Request(
         f"{oc['base_url'].rstrip('/')}/chat/completions",
         data=json.dumps({
@@ -100,6 +108,8 @@ def run(
     use_rewriter: bool = False,
     use_temporal_math: bool = False,
     use_agentic: bool = False,
+    answer_profile: str = "openai",
+    judge_profile: str = "openai",
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -209,7 +219,7 @@ def run(
         if use_agentic:
             from radiomind.storage.agentic import agentic_search
             def _llm_fn(prompt: str) -> str:
-                return qwen_call(prompt, config_path, model=answer_model, max_tokens=150)
+                return qwen_call(prompt, config_path, model=answer_model, max_tokens=150, profile=answer_profile)
             def _search_fn(query: str, domain: str | None = None, max_results: int = 10):
                 return mind.search(query, domain=domain)
             results = agentic_search(
@@ -239,12 +249,12 @@ def run(
                 now=q_date or "unknown", context=context + temporal_facts, question=question,
             )
             try:
-                answer = qwen_call(ans_prompt, config_path, model=answer_model)
+                answer = qwen_call(ans_prompt, config_path, model=answer_model, profile=answer_profile)
             except Exception as e:
                 answer = f"[error: {e}]"
             judge_prompt = JUDGE_PROMPT.format(question=question, gold=gold_str, answer=answer)
             try:
-                verdict = qwen_call(judge_prompt, config_path, model=judge_model, max_tokens=10)
+                verdict = qwen_call(judge_prompt, config_path, model=judge_model, max_tokens=10, profile=judge_profile)
                 is_correct = verdict.upper().strip().startswith("CORRECT")
             except Exception as e:
                 is_correct = False
@@ -299,6 +309,10 @@ def main() -> int:
     p.add_argument("--out", default="bench/end_to_end/longmemeval-e2e.json")
     p.add_argument("--answer-model", default="qwen-turbo")
     p.add_argument("--judge-model", default="qwen-max")
+    p.add_argument("--answer-profile", default="openai",
+                   help="Which config.toml [llm.*] section to use for answer calls (e.g. openai_direct for GPT-4o)")
+    p.add_argument("--judge-profile", default="openai",
+                   help="Which config.toml [llm.*] section to use for judge calls")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -319,6 +333,8 @@ def main() -> int:
         use_agentic=args.agentic,
         answer_model=args.answer_model,
         judge_model=args.judge_model,
+        answer_profile=args.answer_profile,
+        judge_profile=args.judge_profile,
     )
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
