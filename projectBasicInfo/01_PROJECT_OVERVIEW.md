@@ -72,6 +72,30 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
 
 ---
 
+## 端到端 LongMemEval 基准（2026-04-16）
+
+n=120 stratified，6 类问题 × 20：
+
+| 阶段 | 配置 | Overall |
+|------|------|---------|
+| baseline | qwen-turbo + FTS+vector | 0.517 |
+| +reranker | BAAI/bge-reranker-v2-m3 cross-encoder | 0.558 |
+| +context | nucleus + 邻接 turn（必须 nuclei-first） | 0.575 |
+| +KG | bitemporal triples 桥接进 pyramid | 0.583 |
+| +qwen-plus | 答题模型升级 | **0.617（当前默认推荐）** |
+| +qwen-max+rewriter+dates | 全量 | 0.608（rewriter 轻微伤害 preference 类） |
+
+默认配置：qwen-plus answer + reranker + context + KG + 会话日期注入。
+query_rewriter 默认关闭（`[retrieval.query_rewriter] enabled = false`）。
+与 MemMachine SOTA（0.917 on LoCoMo）尚差 ~30 pt，下一步方向：agentic 多轮检索、embedder 升级。
+
+新模块：`storage/reranker.py`、`storage/query_rewriter.py`、`hooks/habit_pusher.py`。
+LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
+
+详见 `logs/2026-04-16-lme-e2e-optimization-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位

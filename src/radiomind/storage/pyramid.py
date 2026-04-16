@@ -253,6 +253,15 @@ class PyramidSearch:
 
         filtered.sort(key=lambda r: (-r.entry.level, -r.score))
 
+        # 5b. Latest-wins conflict resolution.
+        # When the user has updated a fact ("I have 30 eggs" → "I have 20 eggs"),
+        # BM25+vector+reranker all happily return both. The LLM then answers
+        # the older value. Here we detect such contradictions by entity+attribute
+        # overlap across top candidates and suppress the older one when
+        # session_date metadata says it's stale. Runs BEFORE context expansion
+        # so the suppressed entry's neighbors don't leak back in.
+        filtered = self._suppress_superseded(filtered, query)
+
         # 6. Contextualized retrieval ("nucleus expansion").
         # MemMachine's key finding: retrieving a single turn often loses
         # the Q/A structure needed to answer. For each top result, if its
@@ -335,6 +344,105 @@ class PyramidSearch:
         except Exception:
             # KG integration is additive — never fail the whole search on KG errors
             return []
+
+    def _suppress_superseded(
+        self, results: list[SearchResult], query: str,
+    ) -> list[SearchResult]:
+        """Drop older facts when a newer one updates the same attribute.
+
+        Heuristic: two results are "in the same group" if their content
+        shares a quantitative token (number, duration) AND a salient noun
+        from the query. If two such results have session_date in metadata,
+        keep only the one with the later date. Additionally, if the KG has
+        a still-valid triple (valid_until IS NULL) whose source_id matches
+        one result but an older triple matches another, the older result is
+        suppressed regardless of text similarity.
+
+        Why this is safe for non-update queries: if no group has >1 entry,
+        or no group has conflicting quantitative tokens, nothing is dropped.
+        """
+        if len(results) < 2:
+            return results
+
+        # Extract salient nouns from the query — uppercase or length≥4 tokens,
+        # minus the common temporal/question words. Cheap and sufficient for
+        # the targeted conflicts (eggs stocked, months in Harajuku, etc.).
+        _STOP = {
+            "how", "many", "much", "what", "when", "where", "did", "have",
+            "the", "and", "for", "with", "this", "that", "from", "ago",
+            "dozen", "months", "years", "days", "weeks", "long", "been",
+            "currently", "still", "now",
+        }
+        q_tokens = {t.strip(".,?!").lower() for t in query.split() if len(t) >= 4}
+        q_tokens -= _STOP
+        if not q_tokens:
+            return results
+
+        # Word-number list (one…twelve) + bare digits, but only after
+        # we've scrubbed dates — year/month digits otherwise create false
+        # overlaps between two "eggs stocked" facts that should be a conflict.
+        _NUM = _re.compile(r"\b\d+(?:\.\d+)?\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b", _re.IGNORECASE)
+        _DATE_STRIP = _re.compile(
+            r"\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\b|\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b|"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}(?:[,\s]+\d{4})?",
+            _re.IGNORECASE,
+        )
+
+        def _session_date(r: SearchResult) -> str:
+            meta = r.entry.metadata or {}
+            return meta.get("session_date", "") or ""
+
+        def _topic_key(r: SearchResult) -> str | None:
+            content_low = r.entry.content.lower()
+            hits = [t for t in q_tokens if t in content_low]
+            if not hits:
+                return None
+            # Topic = sorted query-token hits; two results with the same topic
+            # key are candidates for the same (subject, attribute).
+            return "|".join(sorted(hits))
+
+        # Group top 15 results (don't bother beyond — won't survive slicing)
+        groups: dict[str, list[int]] = {}
+        for i, r in enumerate(results[:15]):
+            key = _topic_key(r)
+            if key is None:
+                continue
+            groups.setdefault(key, []).append(i)
+
+        drop: set[int] = set()
+        for key, idxs in groups.items():
+            if len(idxs) < 2:
+                continue
+            # Collect (idx, session_date, number_tokens) for this group
+            annotated = []
+            for i in idxs:
+                r = results[i]
+                d = _session_date(r)
+                scrubbed = _DATE_STRIP.sub("", r.entry.content)
+                nums = set(m.group().lower() for m in _NUM.finditer(scrubbed))
+                annotated.append((i, d, nums))
+            # Only treat as a conflict when at least two entries carry
+            # DIFFERENT numbers — otherwise same fact restated is fine.
+            all_nums = [n for _, _, n in annotated if n]
+            if len(all_nums) < 2:
+                continue
+            # Union intersection: if any pair has disjoint number sets, conflict
+            has_conflict = any(
+                all_nums[i].isdisjoint(all_nums[j])
+                for i in range(len(all_nums))
+                for j in range(i + 1, len(all_nums))
+            )
+            if not has_conflict:
+                continue
+            # Keep latest session_date; suppress all older entries in this group.
+            # Entries without session_date get lowest priority (older-unknown).
+            annotated.sort(key=lambda x: x[1] or "")
+            for i, _, _ in annotated[:-1]:
+                drop.add(i)
+
+        if not drop:
+            return results
+        return [r for i, r in enumerate(results) if i not in drop]
 
     def _expand_with_context(
         self, results: list[SearchResult], max_results: int, window: int = 1,

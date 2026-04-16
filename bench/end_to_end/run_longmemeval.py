@@ -98,6 +98,8 @@ def run(
     answer_model: str = "qwen-turbo",
     judge_model: str = "qwen-max",
     use_rewriter: bool = False,
+    use_temporal_math: bool = False,
+    use_agentic: bool = False,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -204,15 +206,37 @@ def run(
         # Retrieve. top-10 gives the LLM enough room when our pipeline
         # expands nuclei with context turns (MemMachine-style). SOTA
         # systems typically feed 10-20 items.
-        results = mind.search(question, domain=domain)
+        if use_agentic:
+            from radiomind.storage.agentic import agentic_search
+            def _llm_fn(prompt: str) -> str:
+                return qwen_call(prompt, config_path, model=answer_model, max_tokens=150)
+            def _search_fn(query: str, domain: str | None = None, max_results: int = 10):
+                return mind.search(query, domain=domain)
+            results = agentic_search(
+                question, _search_fn, _llm_fn, domain=domain,
+                per_subquery_k=5, final_k=10,
+            )
+        else:
+            results = mind.search(question, domain=domain)
         if not results:
             is_correct = False
             answer = "(no retrieval)"
         else:
             context = "\n".join(f"- {r.entry.content}" for r in results[:10])
             q_date = q.get("question_date", "")
+            # Date-arithmetic pre-compute: for temporal questions, hand the
+            # LLM exact day counts so it doesn't have to compute in head.
+            temporal_facts = ""
+            if use_temporal_math:
+                from radiomind.storage.temporal import is_temporal_question, compute_deltas
+                if is_temporal_question(question):
+                    pairs = [(r.entry.content, (r.entry.metadata or {}).get("session_date", ""))
+                             for r in results[:10]]
+                    deltas = compute_deltas(q_date, pairs, max_facts=6)
+                    if deltas:
+                        temporal_facts = "\n\nPre-computed date deltas (trust these over your own math):\n" + "\n".join(deltas)
             ans_prompt = ANSWER_PROMPT.format(
-                now=q_date or "unknown", context=context, question=question,
+                now=q_date or "unknown", context=context + temporal_facts, question=question,
             )
             try:
                 answer = qwen_call(ans_prompt, config_path, model=answer_model)
@@ -270,6 +294,8 @@ def main() -> int:
     p.add_argument("--sandbox", default="/tmp/rm-e2e-lme")
     p.add_argument("--no-reranker", action="store_true")
     p.add_argument("--rewriter", action="store_true", help="Enable LLM query rewriter")
+    p.add_argument("--temporal-math", action="store_true", help="Pre-compute date deltas for temporal questions")
+    p.add_argument("--agentic", action="store_true", help="LLM decomposes query into sub-queries, union results")
     p.add_argument("--out", default="bench/end_to_end/longmemeval-e2e.json")
     p.add_argument("--answer-model", default="qwen-turbo")
     p.add_argument("--judge-model", default="qwen-max")
@@ -279,11 +305,18 @@ def main() -> int:
         print(f"Dataset missing at {DATASET}")
         return 2
 
-    print(f"Running {args.n or 500} questions, reranker={not args.no_reranker}, rewriter={args.rewriter}, answer={args.answer_model}...", flush=True)
+    print(
+        f"Running {args.n or 500} questions, reranker={not args.no_reranker}, "
+        f"rewriter={args.rewriter}, temporal_math={args.temporal_math}, "
+        f"agentic={args.agentic}, answer={args.answer_model}...",
+        flush=True,
+    )
     report = run(
         Path(args.sandbox), args.n,
         use_reranker=not args.no_reranker,
         use_rewriter=args.rewriter,
+        use_temporal_math=args.temporal_math,
+        use_agentic=args.agentic,
         answer_model=args.answer_model,
         judge_model=args.judge_model,
     )

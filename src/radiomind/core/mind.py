@@ -80,7 +80,11 @@ class RadioMind:
 
         self._llm = self._resolve_llm()
 
-        # Load embedder FIRST so PyramidSearch can use it
+        # Load embedder FIRST so PyramidSearch can use it. Local ONNX MiniLM
+        # is preferred (fast, offline). When it can't load (typically missing
+        # `tokenizers` wheel in constrained sandboxes), fall through to the
+        # DashScope embedding API if credentials are present — better than
+        # FTS-only, same float32-bytes contract.
         try:
             from radiomind.storage.embedding import EmbeddingEncoder
             self._embedder = EmbeddingEncoder(home / "models" / "embedding")
@@ -88,6 +92,18 @@ class RadioMind:
                 self._embedder = None
         except Exception:
             self._embedder = None
+        if self._embedder is None:
+            try:
+                oc = self.config.get("llm.openai", {}) or {}
+                base = (oc.get("base_url") or "").strip()
+                key = (oc.get("api_key") or "").strip()
+                if base and key and "dashscope" in base.lower():
+                    from radiomind.storage.embedding_dashscope import DashScopeEmbedder
+                    ds = DashScopeEmbedder(base, key)
+                    if ds.load():
+                        self._embedder = ds
+            except Exception:
+                pass
 
         # Reranker — opt-in via config (off by default: 2.3GB download,
         # ~30ms/query latency). When present, gives the retrieval pipeline
