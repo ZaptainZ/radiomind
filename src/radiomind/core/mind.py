@@ -14,6 +14,7 @@ from radiomind.core.types import (
     MemoryLevel,
     Message,
     RefinementResult,
+    SearchResponse,
     SearchResult,
     SelfProfile,
     UserProfile,
@@ -136,7 +137,10 @@ class RadioMind:
         dream_cfg = self.config.get("refinement.dream", {})
         self._dream_refine = DreamRefinement(self._store, self._habits, self._llm, config=dream_cfg)
 
-        self._meta = ProfileManager(home / "data" / "meta", self.config, store=self._store)
+        self._meta = ProfileManager(
+            home / "data" / "meta", self.config,
+            store=self._store, habits=self._habits,
+        )
         self._meta.open()
 
         self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
@@ -299,6 +303,29 @@ class RadioMind:
             user_id=user_id, agent_id=agent_id, session_id=session_id, limit=limit
         )
 
+    def search_with_habits(
+        self,
+        query: str,
+        domain: str | None = None,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+    ) -> SearchResponse:
+        """Search + auto-attach top-3 HDC-matched habits (microsecond-fast).
+
+        For MCP / API consumers that want per-query habit context alongside
+        search results. The host AI sees both the retrieved memories AND
+        the relevant user habits in a single response.
+        """
+        results = self.search(
+            query, domain=domain,
+            user_id=user_id, agent_id=agent_id, session_id=session_id,
+        )
+        matched_habits = self._habits.query(
+            [query], top_k=3, record_hits=True, min_score=0.1,
+        )
+        return SearchResponse(results=results, matched_habits=matched_habits)
+
     def search_pyramid(self, query: str, start_level: int = 2) -> list[SearchResult]:
         self._check_init()
         return self._pyramid.search_pyramid(query)
@@ -314,6 +341,22 @@ class RadioMind:
         """Mark a habit as incorrect. Two rejections auto-archive it."""
         self._check_init()
         self._habits.reject_habit(index, reason=reason)
+
+    def push_habits(
+        self,
+        platform: str | None = None,
+        project_dir: str | None = None,
+        dry_run: bool = False,
+    ) -> dict:
+        """Push confirmed habits to host platform's native memory."""
+        self._check_init()
+        from pathlib import Path as _P
+        from radiomind.hooks.habit_pusher import HabitPusher
+        pusher = HabitPusher(
+            platform=platform,
+            project_dir=_P(project_dir) if project_dir else None,
+        )
+        return pusher.push(self._habits.all_habits(), dry_run=dry_run)
 
     def prune_stale_habits(self) -> int:
         """Archive candidate habits with 0 hits older than ARCHIVE_AGE_DAYS."""

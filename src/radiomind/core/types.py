@@ -81,6 +81,13 @@ class SearchResult:
 
 
 @dataclass
+class SearchResponse:
+    """Rich search result including matched habits for per-query injection."""
+    results: list["SearchResult"]
+    matched_habits: list[tuple["Habit", float]] = field(default_factory=list)
+
+
+@dataclass
 class RefinementResult:
     new_insights: list[Habit]
     merged: int

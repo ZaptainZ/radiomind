@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from radiomind.core.config import Config
-from radiomind.core.types import SelfProfile, UserProfile
+from radiomind.core.types import MemoryStatus, SelfProfile, UserProfile
 from radiomind.storage.database import MemoryStore
 
 # Patterns for user profile extraction
@@ -38,10 +38,11 @@ WHAT_PATTERNS = [
 
 
 class ProfileManager:
-    def __init__(self, data_dir: Path, config: Config, store: MemoryStore | None = None):
+    def __init__(self, data_dir: Path, config: Config, store: MemoryStore | None = None, habits=None):
         self._data_dir = data_dir
         self._config = config
         self._store = store
+        self._habits = habits  # optional HabitStore for digest injection
         self._user = UserProfile()
         self._self = SelfProfile()
 
@@ -161,6 +162,26 @@ class ProfileManager:
             parts.append(f"Memory: {total} entries across {', '.join(domains[:5])}")
 
         parts.append(f"Model: {self._self.identity.get('model', '?')}")
+
+        # Confirmed habits first (highest signal), then candidates.
+        # Truncation cuts from the bottom → candidates get trimmed first.
+        if self._habits is not None:
+            all_h = self._habits.all_habits()
+            confirmed = sorted(
+                [h for h in all_h if h.status == MemoryStatus.CONFIRMED],
+                key=lambda h: h.confidence, reverse=True,
+            )
+            candidates = sorted(
+                [h for h in all_h if h.status == MemoryStatus.CANDIDATE],
+                key=lambda h: h.confidence, reverse=True,
+            )
+            habit_lines = []
+            for h in confirmed:
+                habit_lines.append(f"  [confirmed] {h.description}")
+            for h in candidates:
+                habit_lines.append(f"  [candidate] {h.description}")
+            if habit_lines:
+                parts.append("Habits:\n" + "\n".join(habit_lines))
 
         digest = "\n".join(parts)
 

@@ -139,6 +139,20 @@ TOOLS = [
         },
     },
     {
+        "name": "radiomind_push_habits",
+        "description": "Push confirmed habits to host platform's native memory "
+                       "(Claude Code memory files, Codex AGENTS.md, Cursor .cursorrules). "
+                       "Idempotent — safe to call multiple times. Uses markers to track and update individual habits.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "platform": {"type": "string", "description": "Force platform: claude-code, codex, cursor"},
+                "project_dir": {"type": "string", "description": "Project directory (default: cwd)"},
+                "dry_run": {"type": "boolean", "description": "Preview without writing", "default": False},
+            },
+        },
+    },
+    {
         "name": "radiomind_reject_habit",
         "description": "Mark a habit as incorrect or not applicable to this user. "
                        "Use this when you (the AI) notice the user's actual behavior contradicts a stored habit, "
@@ -270,11 +284,19 @@ class MCPServer:
         mind = self._ensure_mind()
 
         if tool_name == "radiomind_search":
-            results = mind.search(args["query"], domain=args.get("domain"))
-            text = "\n".join(
+            resp = mind.search_with_habits(args["query"], domain=args.get("domain"))
+            lines = [
                 f"[{r.entry.level.name}/{r.entry.domain}] {r.entry.content}"
-                for r in results[:10]
-            )
+                for r in resp.results[:10]
+            ]
+            if resp.matched_habits:
+                lines.append("\n--- Matched Habits ---")
+                for h, score in resp.matched_habits:
+                    line = f"[{h.status.value}|c={h.confidence:.1f}|sim={score:.2f}] {h.description}"
+                    if h.evidence:
+                        line += f"\n    evidence: {h.evidence}"
+                    lines.append(line)
+            text = "\n".join(lines)
             return {"content": [{"type": "text", "text": text or "No results found."}]}
 
         elif tool_name == "radiomind_ingest":
@@ -329,6 +351,14 @@ class MCPServer:
             for i in result.new_insights:
                 text += f"  Wandering insight: {i.description}\n"
             return {"content": [{"type": "text", "text": text}]}
+
+        elif tool_name == "radiomind_push_habits":
+            result = mind.push_habits(
+                platform=args.get("platform"),
+                project_dir=args.get("project_dir"),
+                dry_run=args.get("dry_run", False),
+            )
+            return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False, indent=2)}]}
 
         elif tool_name == "radiomind_reject_habit":
             idx = args.get("habit_index")

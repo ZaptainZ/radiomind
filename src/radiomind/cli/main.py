@@ -580,6 +580,33 @@ def learn_text(text: str) -> None:
     mind.shutdown()
 
 
+@cli.command("push-habits")
+@click.option("--platform", "-p", default=None, help="Force: claude-code, codex, cursor")
+@click.option("--project-dir", default=None, help="Project directory (default: cwd)")
+@click.option("--dry-run", is_flag=True, help="Preview without writing")
+def push_habits(platform: str | None, project_dir: str | None, dry_run: bool) -> None:
+    """Push confirmed habits to host platform's native memory.
+
+    \b
+    Writes to:
+      Claude Code → ~/.claude/projects/{project}/memory/radiomind_habits.md
+      Codex       → .codex/AGENTS.md
+      Cursor      → .cursorrules
+
+    Idempotent. Uses markers to track individual habits — updates changed
+    ones, removes archived ones, skips duplicates.
+    """
+    mind = _get_mind()
+    result = mind.push_habits(platform=platform, project_dir=project_dir, dry_run=dry_run)
+    if result.get("error"):
+        click.echo(f"Error: {result['error']}")
+    else:
+        prefix = "[dry-run] " if dry_run else ""
+        click.echo(f"{prefix}Target: {result['path']}")
+        click.echo(f"{prefix}Written: {result['written']}, Updated: {result['updated']}, Removed: {result['removed']}")
+    mind.shutdown()
+
+
 @cli.command("migrate-radioheader")
 @click.option("--path", default=None, help="RadioHeader home (default: ~/.claude/radioheader)")
 def migrate_radioheader(path: str | None) -> None:
