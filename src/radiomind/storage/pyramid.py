@@ -238,11 +238,105 @@ class PyramidSearch:
 
         filtered.sort(key=lambda r: (-r.entry.level, -r.score))
 
+        # 6. Contextualized retrieval ("nucleus expansion").
+        # MemMachine's key finding: retrieving a single turn often loses
+        # the Q/A structure needed to answer. For each top result, if its
+        # metadata carries session/turn info, we look up adjacent turns
+        # in the same session and include them as "context" results with
+        # a reduced score. This is domain-agnostic — only kicks in when
+        # the metadata has session_id + turn_idx.
+        filtered = self._expand_with_context(filtered, max_results)
+
         for r in filtered[:max_results]:
             if r.entry.id is not None:
                 self._store.record_hit(r.entry.id)
 
         return filtered[:max_results]
+
+    def _expand_with_context(
+        self, results: list[SearchResult], max_results: int, window: int = 1,
+    ) -> list[SearchResult]:
+        """For each top-K result with session metadata, pull adjacent turns.
+
+        A turn like "Yes, I did." is worthless alone — the question giving
+        it meaning lives in the previous turn. MemMachine v0.2 attributes
+        ~+5 pt on LongMemEval to this single change.
+
+        CRITICAL: nuclei are ALWAYS returned first (so that callers slicing
+        [:max_results] still get max_results nuclei, not mixed with context).
+        Context turns are appended afterward at indices
+        [max_results, 2 * max_results).
+        """
+        if not results:
+            return results
+
+        seen_ids: set[int] = {r.entry.id for r in results if r.entry.id is not None}
+        nuclei = list(results[:max_results])  # preserved in original order
+        context_adds: list[SearchResult] = []
+        expansion_score_discount = 0.3
+
+        for r in nuclei:
+            meta = r.entry.metadata or {}
+            session_key, turn_idx = self._parse_turn_pos(meta)
+            if session_key is None:
+                continue
+            domain = r.entry.domain
+            neighbors = self._fetch_neighbors(domain, session_key, turn_idx, window)
+            for nb in neighbors:
+                if nb.id is None or nb.id in seen_ids:
+                    continue
+                seen_ids.add(nb.id)
+                context_adds.append(SearchResult(
+                    entry=nb,
+                    score=r.score * (1 - expansion_score_discount),
+                    method="context",
+                ))
+
+        # nuclei first, contexts after — callers slicing [:K] keep K nuclei
+        return nuclei + context_adds
+
+    @staticmethod
+    def _parse_turn_pos(meta: dict) -> tuple[str | None, int | None]:
+        """Extract (session_id, turn_idx) from metadata."""
+        # Explicit keys
+        if "session" in meta and "turn_idx" in meta:
+            return (str(meta["session"]), int(meta["turn_idx"]))
+        # LoCoMo-style "turn_id": "D1:3" means session D1, turn 3
+        tid = meta.get("turn_id", "") or meta.get("evidence_id", "")
+        if tid and ":" in tid:
+            sess, _, turn = tid.partition(":")
+            # strip any trailing suffix like "_t3"
+            if turn.startswith("t") and turn[1:].isdigit():
+                turn = turn[1:]
+            elif "_t" in turn:
+                turn = turn.split("_t")[-1]
+            if turn.isdigit():
+                return (sess, int(turn))
+        # LongMemEval-style "answer_{id}_2_t5"
+        if "_t" in tid:
+            base, _, turn_str = tid.rpartition("_t")
+            if turn_str.isdigit():
+                return (base, int(turn_str))
+        return (None, None)
+
+    def _fetch_neighbors(
+        self, domain: str, session_key: str, turn_idx: int, window: int,
+    ) -> list:
+        """Pull ±window adjacent turns from the same session."""
+        if window <= 0:
+            return []
+        # Scan domain's FACT entries for matching session with nearby turn_idx.
+        # For our benchmark scale this is cheap; for production scale, add a
+        # (domain, session, turn_idx) index if it becomes hot.
+        entries = self._store.list_by_domain(domain, limit=500)
+        neighbors = []
+        target_range = set(range(turn_idx - window, turn_idx + window + 1)) - {turn_idx}
+        for e in entries:
+            sess, tidx = self._parse_turn_pos(e.metadata or {})
+            if sess == session_key and tidx in target_range:
+                neighbors.append(e)
+        neighbors.sort(key=lambda e: self._parse_turn_pos(e.metadata or {})[1] or 0)
+        return neighbors
 
     @staticmethod
     def _rrf_fuse(

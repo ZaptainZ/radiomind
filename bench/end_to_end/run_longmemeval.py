@@ -174,13 +174,15 @@ def run(
                 mind._store.add(entry, dedup=False)
                 overall["total_ingested_turns"] += 1
 
-        # Retrieve
+        # Retrieve. top-10 gives the LLM enough room when our pipeline
+        # expands nuclei with context turns (MemMachine-style). SOTA
+        # systems typically feed 10-20 items.
         results = mind.search(question, domain=domain)
         if not results:
             is_correct = False
             answer = "(no retrieval)"
         else:
-            context = "\n".join(f"- {r.entry.content}" for r in results[:5])
+            context = "\n".join(f"- {r.entry.content}" for r in results[:10])
             ans_prompt = ANSWER_PROMPT.format(context=context, question=question)
             try:
                 answer = qwen_call(ans_prompt, config_path, model=answer_model)
