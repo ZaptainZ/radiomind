@@ -267,9 +267,10 @@ class RadioMind:
         user_id: str = "",
         agent_id: str = "",
         session_id: str = "",
+        max_results: int = 10,
     ) -> list[SearchResult]:
         self._check_init()
-        results = self._pyramid.search(query, domain=domain)
+        results = self._pyramid.search(query, domain=domain, max_results=max_results)
         if user_id or agent_id or session_id:
             filtered = []
             for r in results:
