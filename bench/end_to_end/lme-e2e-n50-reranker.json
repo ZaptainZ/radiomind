@@ -1,0 +1,369 @@
+{
+  "benchmark": "LongMemEval oracle — end-to-end (retrieve + generate + judge)",
+  "protocol": "top-5 retrieval → qwen-turbo generates → qwen-max judges CORRECT/INCORRECT",
+  "n_questions": 50,
+  "total_ingested_turns": 1319,
+  "reranker_enabled": true,
+  "answer_model": "qwen-turbo",
+  "judge_model": "qwen-max",
+  "elapsed_s": 415.9,
+  "overall_accuracy": 0.32,
+  "by_type": {
+    "temporal-reasoning": {
+      "n": 50,
+      "accuracy": 0.32
+    }
+  },
+  "per_query": [
+    {
+      "q": "What was the first issue I had with my new car after its first service?",
+      "gold": "GPS system not functioning correctly",
+      "answer": "The first issue you had with your new car after its first service was a problem with the GPS system on March 22, which required returning to the dealership for a replacement.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event did I attend first, the 'Effective Time Management' workshop or the 'Data Analysis using Python' webinar?",
+      "gold": "'Data Analysis using Python' webinar",
+      "answer": "The event you attended first was the 'Data Analysis using Python' webinar.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which vehicle did I take care of first in February, the bike or the car?",
+      "gold": "bike",
+      "answer": "I took care of the bike first in February.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which device did I got first, the Samsung Galaxy S22 or the Dell XPS 13?",
+      "gold": "Samsung Galaxy S22",
+      "answer": "Answer: You got the Dell XPS 13 first, as you pre-ordered it on January 28th and it arrived on February 25th, while the Samsung Galaxy S22 is mentioned as a new smartphone you recently received.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days before the team meeting I was preparing for did I attend the workshop on 'Effective Communication in the Workplace'?",
+      "gold": "7 days. 8 days (including the last day) is also acceptable.",
+      "answer": "Answer: You attended the workshop on January 10th, but the date of the team meeting is not specified, so the number of days before the meeting cannot be determined.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed between the Sunday mass at St. Mary's Church and the Ash Wednesday service at the cathedral?",
+      "gold": "30 days. 31 days (including the last day) is also acceptable.",
+      "answer": "The information provided does not mention a Sunday mass at St. Mary's Church, so it is not possible to determine the number of days between that event and the Ash Wednesday service at the cathedral.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days did it take for me to find a house I loved after starting to work with Rachel?",
+      "gold": "14 days. 15 days (including the last day) is also acceptable.",
+      "answer": "Answer: The provided information does not mention how many days it took to find a house after starting to work with Rachel.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which seeds were started first, the tomatoes or the marigolds?",
+      "gold": "Tomatoes",
+      "answer": "The marigold seeds were started first, as they arrived on March 3rd and had already germinated.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed between the Hindu festival of Holi and the Sunday mass at St. Mary's Church?",
+      "gold": "21 days. 22 days (including the last day) is also acceptable.",
+      "answer": "Answer: The information provided does not mention the date of the Sunday mass at St. Mary's Church, so it is not possible to determine the number of days between Holi and the mass.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days before the 'Rack Fest' did I participate in the 'Turbocharged Tuesdays' event?",
+      "gold": "4 days.",
+      "answer": "The 'Turbocharged Tuesdays' event took place on June 14th, and 'Rack Fest' was last weekend on June 18th, so you participated in 'Turbocharged Tuesdays' 4 days before 'Rack Fest'.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which pair of shoes did I clean last month?",
+      "gold": "white Adidas sneakers",
+      "answer": "The pair of shoes you cleaned last month were your white Adidas sneakers.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event happened first, the purchase of the coffee maker or the malfunction of the stand mixer?",
+      "gold": "The malfunction of the stand mixer",
+      "answer": "The purchase of the coffee maker happened first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed between the 'Walk for Hunger' event and the 'Coastal Cleanup' event?",
+      "gold": "14 days. 8 days (including the last day) is also acceptable.",
+      "answer": "Answer: The 'Walk for Hunger' event was on February 21st, and the 'Coastal Cleanup' event is mentioned as occurring in September, so more than 200 days had passed.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which item did I purchase first, the dog bed for Max or the training pads for Luna?",
+      "gold": "Training pads for Luna",
+      "answer": "Answer: The training pads for Luna were purchased first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which task did I complete first, fixing the fence or trimming the goats' hooves?",
+      "gold": "Fixing the fence",
+      "answer": "Answer: I completed trimming the goats' hooves first, as I was proud of myself for not making a mess of it two weeks ago, while the broken fence was fixed three weeks ago.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many charity events did I participate in before the 'Run for the Cure' event?",
+      "gold": "4",
+      "answer": "Answer: The information provided does not specify how many charity events you participated in before the \"Run for the Cure\" event.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long have I been working before I started my current job at NovaTech?",
+      "gold": "4 years and 9 months",
+      "answer": "You have been working for 4 years and 3 months at NovaTech, but the question asks how long you've been working before starting your current job. The provided information does not specify any prior wor",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which book did I finish reading first, 'The Hate U Give' or 'The Nightingale'?",
+      "gold": "'The Hate U Give'",
+      "answer": "Answer: You finished reading \"The Hate U Give\" first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which device did I set up first, the smart thermostat or the mesh network system?",
+      "gold": "Smart thermostat",
+      "answer": "You set up the smart thermostat first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many months ago did I book the Airbnb in San Francisco?",
+      "gold": "Five months ago",
+      "answer": "Answer: You booked the Airbnb three months in advance for your previous trip to San Francisco.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long did I take to finish 'The Seven Husbands of Evelyn Hugo' and 'The Nightingale' combined?",
+      "gold": "5.5 weeks",
+      "answer": "You took a total of five and a half weeks to finish \"The Seven Husbands of Evelyn Hugo\" and \"The Nightingale\" combined.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What was the date on which I attended the first BBQ event in June?",
+      "gold": "June 3rd",
+      "answer": "Answer: The date on which you attended the first BBQ event in June was the 3rd.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days before I bought the iPhone 13 Pro did I attend the Holiday Market?",
+      "gold": "7 days. 8 days (including the last day) is also acceptable.",
+      "answer": "Answer: The information provided does not mention anything about attending the Holiday Market or the number of days before purchasing the iPhone 13 Pro.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which show did I start watching first, 'The Crown' or 'Game of Thrones'?",
+      "gold": "'Game of Thrones'",
+      "answer": "Answer: You started watching 'Game of Thrones' first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long had I been a member of 'Book Lovers Unite' when I attended the meetup?",
+      "gold": "Two weeks",
+      "answer": "Answer: You had been a member of \"Book Lovers Unite\" for three weeks when you attended the meetup.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long had I been watching stand-up comedy specials regularly when I attended the open mic night at the local comedy club?",
+      "gold": "2 months",
+      "answer": "You had been watching stand-up comedy specials regularly for about 3 months when you attended the open mic night.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "What time do I wake up on Tuesdays and Thursdays?",
+      "gold": "6:45 AM",
+      "answer": "On Tuesdays and Thursdays, you wake up 15 minutes earlier than your usual 7:00 AM wake-up time.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days had passed since I bought my Adidas running shoes when I realized one of the shoelaces on my old Converse sneakers had broken?",
+      "gold": "14 days. 15 days (including the last day) is also acceptable.",
+      "answer": "The shoelace on your old Converse sneakers broke on January 24th, and you bought your Adidas running shoes on February 1st. Therefore, 8 days had passed.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event happened first, the road trip to the coast or the arrival of the new prime lens?",
+      "gold": "The arrival of the new prime lens",
+      "answer": "The road trip to the coast happened first, as the user mentioned taking the new prime lens on the coastal trip.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which airline did I fly with the most in March and April?",
+      "gold": "United Airlines",
+      "answer": "The user flew with Southwest Airlines in March for a trip to Las Vegas and with United Airlines in March for a business trip to Chicago. Therefore, the answer is: United Airlines.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long had I been bird watching when I attended the bird watching workshop?",
+      "gold": "Two months",
+      "answer": "The provided information does not specify how long you had been bird watching before attending the workshop.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which trip did I take first, the one to Europe with family or the solo trip to Thailand?",
+      "gold": "The solo trip to Thailand",
+      "answer": "You took the trip to Europe with your family first, followed by the solo trip to Thailand.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which device did I set up first, the smart thermostat or the new router?",
+      "gold": "new router",
+      "answer": "I set up the new router first.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which health issue did I deal with first, the persistent cough or the skin tag removal?",
+      "gold": "Persistent cough",
+      "answer": "The skin tag removal occurred first, as it was done on February 22nd, before the persistent cough led to a follow-up visit on March 1st.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How old was I when I moved to the United States?",
+      "gold": "27",
+      "answer": "The information provided does not include details about your age or when you moved to the United States.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long had I been using the new area rug when I rearranged my living room furniture?",
+      "gold": "One week. Answers ranging from 7 days to 10 days are also acceptable.",
+      "answer": "Answer: You had been using the new area rug for three weeks when you rearranged your living room furniture.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many days before my best friend's birthday party did I order her gift?",
+      "gold": "7 days. 8 days (including the last day) is also acceptable.",
+      "answer": "Answer: The information provided does not specify when the gift was ordered, so it is not possible to determine how many days before the birthday party the gift was ordered.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which trip did the narrator take first, the solo trip to Europe or the family road trip across the American Southwest?",
+      "gold": "The family road trip across the American Southwest",
+      "answer": "The narrator did not mention taking a solo trip to Europe; the provided information only refers to a family road trip across the American Southwest.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long did I use my new binoculars before I saw the American goldfinches returning to the area?",
+      "gold": "Two weeks",
+      "answer": "You used your new binoculars for three weeks before noticing the American goldfinches returning to the area.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Who did I meet first, Mark and Sarah or Tom?",
+      "gold": "Tom",
+      "answer": "You met Tom first, as you volunteered at a charity event a few months ago and met him there, while you met Mark and Sarah on a beach trip about a month ago.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many weeks have I been accepted into the exchange program when I started attending the pre-departure orientation sessions?",
+      "gold": "one week",
+      "answer": "You have been accepted into the exchange program for approximately 10 weeks when you started attending the pre-departure orientation sessions.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which group did I join first, 'Page Turners' or 'Marketing Professionals'?",
+      "gold": "Page Turners",
+      "answer": "Answer: You joined 'Marketing Professionals' first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How long had I been taking guitar lessons when I bought the new guitar amp?",
+      "gold": "Four weeks",
+      "answer": "Answer: You had been taking guitar lessons for six weeks when you bought the new guitar amp.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which streaming service did I start using most recently?",
+      "gold": "Disney+",
+      "answer": "The streaming service you started using most recently is Apple TV+.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "How many months before my anniversary did Rachel get engaged?",
+      "gold": "2",
+      "answer": "Rachel got engaged in May, and the anniversary mentioned is in July. Therefore, she got engaged 2 months before the anniversary. \n\nAnswer: Rachel got engaged 2 months before the anniversary.",
+      "correct": true,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event happened first, the narrator losing their phone charger or the narrator receiving their new phone case?",
+      "gold": "Receiving the new phone case",
+      "answer": "The narrator lost their phone charger at the gym about two weeks ago. The narrator is planning to buy a new phone charger, but there is no mention of receiving a new phone case.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+      "gold": "the woman selling jam at the farmer's market",
+      "answer": "You met the tourist from Australia first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event happened first, the meeting with Rachel or the pride parade?",
+      "gold": "The meeting with Rachel",
+      "answer": "The facts provided do not mention a meeting with Rachel, so it is not possible to determine which event happened first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which gift did I buy first, the necklace for my sister or the photo album for my mom?",
+      "gold": "the photo album for my mom",
+      "answer": "The photo album for my mom was mentioned first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    },
+    {
+      "q": "Which event did I participate in first, the volleyball league or the charity 5K run to raise money for a local children's hospital?",
+      "gold": "volleyball league",
+      "answer": "You participated in the charity 5K run first.",
+      "correct": false,
+      "qtype": "temporal-reasoning"
+    }
+  ]
+}
