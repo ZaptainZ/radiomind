@@ -123,11 +123,17 @@ class RadioMind:
             except Exception:
                 self._query_rewriter = None
 
+        # KG must open BEFORE pyramid so pyramid can route temporal/entity
+        # queries through the structured store.
+        self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
+        self._kg.open()
+
         self._pyramid = PyramidSearch(
             self._store,
             embedder=self._embedder,
             reranker=self._reranker,
             query_rewriter=self._query_rewriter,
+            kg=self._kg,
         )
         self._aggregator = PyramidAggregator(self._store, self._llm)
 
@@ -142,9 +148,6 @@ class RadioMind:
             store=self._store, habits=self._habits,
         )
         self._meta.open()
-
-        self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
-        self._kg.open()
 
         self._initialized = True
 

@@ -113,11 +113,12 @@ class PyramidSearch:
         score = sum(1 / (k + rank_in_each_list))
     """
 
-    def __init__(self, store: MemoryStore, embedder=None, reranker=None, query_rewriter=None):
+    def __init__(self, store: MemoryStore, embedder=None, reranker=None, query_rewriter=None, kg=None):
         self._store = store
         self._embedder = embedder  # optional EmbeddingEncoder
         self._reranker = reranker  # optional CrossEncoderReranker
         self._query_rewriter = query_rewriter  # optional QueryRewriter
+        self._kg = kg  # optional KnowledgeGraph — used for temporal/entity queries
 
     def set_embedder(self, embedder) -> None:
         self._embedder = embedder
@@ -127,6 +128,9 @@ class PyramidSearch:
 
     def set_query_rewriter(self, rewriter) -> None:
         self._query_rewriter = rewriter
+
+    def set_kg(self, kg) -> None:
+        self._kg = kg
 
     def search(
         self,
@@ -184,6 +188,17 @@ class PyramidSearch:
                 like_results = unique[: max_results * 2]
             if like_results:
                 candidates.append(like_results)
+
+        # 3b. Knowledge Graph candidates — for temporal/entity queries,
+        #     the KG has structured facts (subject, relation, object, valid_from,
+        #     valid_until). We extract mentioned entities from the query, pull
+        #     relevant triples, then back-resolve them to memory entries via
+        #     source_id. This is the fix for temporal-reasoning (0.15) and a
+        #     lift for multi-session (entity cross-reference).
+        if self._kg is not None:
+            kg_candidates = self._kg_candidates(query, queries, max_results=max_results)
+            if kg_candidates:
+                candidates.append(kg_candidates)
 
         # 4. Temporal boost: for "when/什么时候/..." questions, a small set
         #    of date-bearing memories is a very strong prior. We fuse this
@@ -252,6 +267,74 @@ class PyramidSearch:
                 self._store.record_hit(r.entry.id)
 
         return filtered[:max_results]
+
+    def _kg_candidates(self, query: str, queries: list[str], max_results: int = 10) -> list[SearchResult]:
+        """Pull memories backed by KG triples matching query entities/relations.
+
+        Strategy:
+          1. Extract entity mentions from query using the KG's own triple
+             extraction patterns (they already know 'user', 'likes', etc.)
+          2. For each entity, pull triples (current + as_of if temporal)
+          3. Look up the source_id of each triple → find corresponding
+             memory entry
+          4. Return as SearchResult list
+
+        This is cheap: KG queries are sub-millisecond SQL lookups.
+        """
+        if self._kg is None:
+            return []
+
+        try:
+            # Collect candidate subjects from all query variants
+            subjects: set[str] = set()
+            for q in queries:
+                triples = self._kg.extract_triples_from_text(q)
+                for subj, _, _ in triples:
+                    subjects.add(subj)
+                # Heuristic: if query mentions an entity we know about, include it.
+                # Extract likely proper nouns (capitalized tokens, CJK name patterns)
+                for tok in _re.findall(r"[A-Z][a-zA-Z]+|[\u4e00-\u9fff]{2,4}", q):
+                    resolved = self._kg.resolve(tok) if hasattr(self._kg, "resolve") else tok.lower()
+                    if resolved:
+                        subjects.add(resolved)
+
+            if not subjects:
+                return []
+
+            # For temporal queries, query as_of snapshots (use valid_from time of
+            # any triple as a timestamp signal). For non-temporal, use current.
+            is_temporal = _is_temporal_query(query)
+
+            triple_entries: list[tuple] = []  # (source_id, triple)
+            for subj in list(subjects)[:5]:  # cap entity count
+                if is_temporal:
+                    triples = self._kg.timeline(subj)
+                else:
+                    triples = self._kg.query_entity(subj)
+                for t in triples:
+                    if t.source_id is not None:
+                        triple_entries.append((t.source_id, t))
+
+            if not triple_entries:
+                return []
+
+            # Back-resolve source_id → memory entry
+            results: list[SearchResult] = []
+            seen_ids: set[int] = set()
+            for src_id, triple in triple_entries[: max_results * 2]:
+                if src_id in seen_ids:
+                    continue
+                seen_ids.add(src_id)
+                entry = self._store.get(src_id)
+                if entry is None:
+                    continue
+                # Score by triple confidence
+                results.append(SearchResult(entry=entry, score=float(triple.confidence), method="kg"))
+
+            return results[: max_results * 2]
+        except Exception:
+            # KG integration is additive — never fail the whole search on KG errors
+            return []
 
     def _expand_with_context(
         self, results: list[SearchResult], max_results: int, window: int = 1,

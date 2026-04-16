@@ -171,8 +171,13 @@ def run(
                     metadata={"turn_id": f"{sid}_t{t_idx}"},
                 )
                 if mind._embedder: entry.embedding = mind._embedder.encode(txt)
-                mind._store.add(entry, dedup=False)
+                mid = mind._store.add(entry, dedup=False)
                 overall["total_ingested_turns"] += 1
+                # Populate KG from user turns — mirrors RadioMind.ingest() path.
+                # Gives pyramid search a structured route for entity/temporal queries.
+                if mind._kg is not None and turn.get("role") == "user" and mid > 0:
+                    for subj, rel, obj in mind._kg.extract_triples_from_text(txt):
+                        mind._kg.add_triple(subj, rel, obj, source_id=mid)
 
         # Retrieve. top-10 gives the LLM enough room when our pipeline
         # expands nuclei with context turns (MemMachine-style). SOTA
