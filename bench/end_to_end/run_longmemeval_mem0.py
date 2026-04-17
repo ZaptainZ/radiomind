@@ -66,6 +66,53 @@ def llm_call(
 
 
 _THINK_PATTERN = re.compile(r"<mem_thinking>[\s\S]*?</mem_thinking>", re.IGNORECASE)
+_FINAL_VERDICT_RE = re.compile(
+    r"(?:final\s+verdict|verdict|answer)\s*[:：]\s*[\"'`]?(yes|no)\b",
+    re.IGNORECASE,
+)
+
+
+def _parse_judge_verdict(verdict: str) -> bool:
+    """Parse 'yes' / 'no' from a Mem0 LongMemEval judge response.
+
+    Mem0's judge template asks for step-by-step in <judge_thinking> tags
+    then final verdict "yes"/"no" on a new line after the closing tag.
+    Observed qwen deviations (seen on n=30 run):
+      1. Closes </judge_thinking> with no verdict line after (put verdict
+         inside the thinking block as "Final verdict: yes").
+      2. Forgets the tags entirely and writes "Verdict: yes" inline.
+      3. Correct format (expected).
+
+    We try them in order; first definitive match wins. Conservative default
+    is False so an ambiguous judge doesn't inflate accuracy.
+    """
+    if not verdict:
+        return False
+    low = verdict.lower()
+
+    # 1. Line immediately after </judge_thinking>
+    if "</judge_thinking>" in low:
+        tail = low.split("</judge_thinking>", 1)[1].strip()
+        first_tok = tail.split()[0] if tail.split() else ""
+        if first_tok.startswith("yes"):
+            return True
+        if first_tok.startswith("no"):
+            return False
+
+    # 2. "Final verdict: yes" / "Verdict: yes" / "Answer: yes" anywhere
+    m = _FINAL_VERDICT_RE.search(verdict)
+    if m:
+        return m.group(1).lower() == "yes"
+
+    # 3. Last non-empty line that's a clean "yes"/"no"
+    lines = [ln.strip() for ln in verdict.strip().splitlines() if ln.strip()]
+    for ln in reversed(lines):
+        ll = ln.lower()
+        if ll in ("yes", "no"):
+            return ll == "yes"
+
+    # 4. Conservative default
+    return False
 
 
 def strip_thinking(text: str) -> str:
@@ -257,18 +304,7 @@ def run(
                 judge_prompt, config_path,
                 model=judge_model, max_tokens=1200, profile=judge_profile,
             )
-            # Verdict format: "<judge_thinking>...</judge_thinking>\nyes" (or no)
-            low = verdict.lower()
-            # Prefer: line after </judge_thinking>
-            if "</judge_thinking>" in low:
-                tail = low.split("</judge_thinking>", 1)[1].strip()
-                first_tok = tail.split()[0] if tail.split() else ""
-                is_correct = first_tok.startswith("yes")
-            else:
-                # Fallback: last non-empty line
-                lines = [ln.strip() for ln in verdict.strip().splitlines() if ln.strip()]
-                last = lines[-1].lower() if lines else ""
-                is_correct = last.startswith("yes")
+            is_correct = _parse_judge_verdict(verdict)
         except Exception as e:
             verdict = f"[judge error: {e}]"
 
