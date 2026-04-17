@@ -261,7 +261,20 @@ class PyramidSearch:
                 continue
             filtered.append(r)
 
-        filtered.sort(key=lambda r: (-r.entry.level, -r.score))
+        # Sort by score boosted per-level instead of hard-tiered by level.
+        # Old: (-level, -score) — ANY principle beat ANY fact, so a weakly-
+        #      matched abstract principle displaced a strong fact match. On
+        #      LoCoMo's 700-turn conversations this cost us 20 pt: relevant
+        #      concrete facts got pushed below generic trinity-debate habits.
+        # New: score * (1 + 0.2 * level) — principle gets +40% bonus, pattern
+        #      +20%, fact baseline. A fact scoring 0.9 still beats a
+        #      principle scoring 0.5, which is the right behavior. But when
+        #      a principle scores close to a fact (e.g. the ENTITIES
+        #      enumeration line matching a multi-session query strongly),
+        #      the level bonus tips it higher as it should.
+        filtered.sort(
+            key=lambda r: -(r.score * (1.0 + 0.2 * int(r.entry.level))),
+        )
 
         # 5b. Latest-wins conflict resolution.
         # When the user has updated a fact ("I have 30 eggs" → "I have 20 eggs"),

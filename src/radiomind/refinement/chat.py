@@ -148,11 +148,17 @@ class ChatRefinement:
         result = DebateRound(domain=domain)
         t0 = time.time()
 
-        memories = self._store.list_by_domain(domain, limit=20)
+        # Pull a wider sample (80 vs 20) so long conversations — LoCoMo's
+        # 600-turn chats, LongMemEval's 500-turn haystacks — get a
+        # representative distribution in front of the three agents. The
+        # old limit=20 meant only the first 3% of a long conversation
+        # seeded debate, which produced generic pronouncements that
+        # displaced specific facts at retrieval time.
+        memories = self._store.list_by_domain(domain, limit=80)
         if not memories:
             return result
 
-        mem_text = "\n".join(f"- {m.content}" for m in memories[:15])
+        mem_text = "\n".join(f"- {m.content}" for m in memories[:60])
         habit_text = "\n".join(f"- {h.description}" for h in self._habits.all_habits()) or "(none)"
 
         guardian_model = self._cfg.get("guardian_model", "") or ""
