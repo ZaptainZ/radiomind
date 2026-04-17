@@ -250,14 +250,25 @@ def run(
         is_correct = False
         verdict = ""
         try:
+            # 1200 tokens: Mem0's judge asks for step-by-step in <judge_thinking>
+            # followed by "yes"/"no" on a new line. 300 tokens truncated the
+            # reasoning before the verdict (seen as 0% on n=30 smoke run).
             verdict = llm_call(
                 judge_prompt, config_path,
-                model=judge_model, max_tokens=300, profile=judge_profile,
-                system="You grade answers. Think briefly, then respond with exactly 'yes' or 'no' on the last line.",
+                model=judge_model, max_tokens=1200, profile=judge_profile,
             )
-            # Mem0 judge returns 'yes' / 'no' somewhere in the body
-            last_line = verdict.strip().splitlines()[-1].strip().lower() if verdict.strip() else ""
-            is_correct = last_line.startswith("yes") or "answer: yes" in verdict.lower()[-80:]
+            # Verdict format: "<judge_thinking>...</judge_thinking>\nyes" (or no)
+            low = verdict.lower()
+            # Prefer: line after </judge_thinking>
+            if "</judge_thinking>" in low:
+                tail = low.split("</judge_thinking>", 1)[1].strip()
+                first_tok = tail.split()[0] if tail.split() else ""
+                is_correct = first_tok.startswith("yes")
+            else:
+                # Fallback: last non-empty line
+                lines = [ln.strip() for ln in verdict.strip().splitlines() if ln.strip()]
+                last = lines[-1].lower() if lines else ""
+                is_correct = last.startswith("yes")
         except Exception as e:
             verdict = f"[judge error: {e}]"
 

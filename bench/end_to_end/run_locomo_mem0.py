@@ -295,9 +295,12 @@ def run(
         is_correct = False
         verdict = ""
         try:
+            # LoCoMo judge returns JSON with reasoning + label. 300 tokens was
+            # enough for short reasoning but not for complex cases — bump to 600
+            # to be safe.
             verdict = llm_call(
                 judge_prompt, config_path,
-                model=judge_model, max_tokens=300, profile=judge_profile,
+                model=judge_model, max_tokens=600, profile=judge_profile,
                 system="You are evaluating conversational AI memory recall. Return JSON only with the format requested.",
             )
             # Parse JSON {"reasoning":..., "label":"CORRECT"|"WRONG"}
@@ -306,7 +309,9 @@ def run(
             if m:
                 is_correct = m.group(1).upper() == "CORRECT"
             else:
-                is_correct = "correct" in verdict.lower() and "wrong" not in verdict.lower()[-50:]
+                # Fallback: if no JSON label found, check last meaningful word
+                tail = verdict.lower()[-80:]
+                is_correct = ("correct" in tail) and ("wrong" not in tail)
         except Exception as e:
             verdict = f"[judge error: {e}]"
 
