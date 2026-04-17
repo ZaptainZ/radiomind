@@ -456,6 +456,26 @@ class RadioMind:
             return filtered
         return results
 
+    # --- Meta ---
+
+    def get_meta_calibration(self) -> str:
+        """Meta-layer answer calibration hint.
+
+        Returns a short directive (~300 chars) the caller can append to
+        any answer-generation prompt. Encodes corrections for biases the
+        meta layer has observed (over-abstention, previous/current
+        confusion, etc.) and a thumbnail of the user's confirmed habits.
+
+        Safe to call on an empty memory store — returns generic defaults.
+        """
+        self._check_init()
+        if self._meta is None:
+            return ""
+        try:
+            return self._meta.get_calibration_hint()
+        except Exception:
+            return ""
+
     # --- CRUD ---
 
     def get_memory(self, memory_id: int) -> MemoryEntry | None:

@@ -137,6 +137,50 @@ class ProfileManager:
 
     # --- Context Digest ---
 
+    def get_calibration_hint(self) -> str:
+        """Answer-side self-correction injected into answer prompts.
+
+        The meta layer's role here: observe the system's own habits +
+        identity and emit a short calibration directive that counters
+        the downstream LLM's systematic biases.
+
+        Current directives are static (qwen/gpt models both over-abstain
+        on inferable questions; we ask the model to commit when signals
+        converge). A future version could track per-run abstain rate via
+        self._self.state and dial the directive up/down dynamically.
+
+        Meant to be concatenated onto a Mem0-style answer prompt as a
+        final paragraph — so the base prompt rules still apply, but the
+        meta layer has the last word.
+        """
+        parts = [
+            "CALIBRATION (from the memory system's self-observation):",
+            "- If 3 or more retrieved memories point to the same fact, "
+            "commit to that fact even when no single memory states it verbatim.",
+            "- Prefer specific inferences over abstention when the question "
+            "is answerable from the pattern of evidence, not just a literal match.",
+            "- When a question uses 'previous' / 'former' / 'old', prefer the "
+            "value whose memory date precedes any newer contradicting memory — "
+            "that is the one that was superseded.",
+        ]
+        # If we've accumulated habits, give the answer agent a one-line
+        # summary so it anchors its answer on the user's established patterns.
+        if self._habits is not None:
+            try:
+                confirmed = [
+                    h for h in self._habits.all_habits()
+                    if getattr(h, "status", "") == MemoryStatus.CONFIRMED
+                ]
+                if confirmed:
+                    top = confirmed[:3]
+                    lines = "; ".join(h.description[:60] for h in top)
+                    parts.append(
+                        f"- Known user patterns (lean on these): {lines}"
+                    )
+            except Exception:
+                pass
+        return "\n".join(parts)
+
     def get_digest(self, token_budget: int = 250) -> str:
         """Generate a compressed context digest for system prompt injection."""
         parts = []

@@ -293,6 +293,11 @@ def run(
             question=question, search_results=mem_results,
             reference_date=ref_human,
         )
+        # Meta calibration directive (self-observation → answer bias correction).
+        # Appended after Mem0's verbatim prompt so base rules still apply.
+        calibration = mind.get_meta_calibration()
+        if calibration:
+            ans_prompt = ans_prompt + "\n\n" + calibration
         try:
             # 1500 tokens leaves room for all 7 reasoning steps + final answer.
             # 500 was too tight — saw truncation mid-Step-4 in smoke tests.

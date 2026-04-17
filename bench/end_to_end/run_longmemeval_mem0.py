@@ -297,6 +297,14 @@ def run(
         ans_prompt = get_answer_generation_prompt(
             question=question, search_results=mem_results, question_date=q_date or "",
         )
+        # Append Meta's calibration directive — the memory system's
+        # self-observation layer gets the last word on answer style.
+        # Counters systematic biases (over-abstention on inferable
+        # questions; previous/current confusion) that no base prompt
+        # fully eliminates. Empty string when no meta data available.
+        calibration = mind.get_meta_calibration()
+        if calibration:
+            ans_prompt = ans_prompt + "\n\n" + calibration
         try:
             raw_answer = llm_call(
                 ans_prompt, config_path,
