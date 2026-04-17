@@ -135,6 +135,7 @@ def run(
     answer_model: str, judge_model: str,
     answer_profile: str, judge_profile: str,
     use_reranker: bool, use_temporal_math: bool, use_agentic: bool,
+    use_refinement: bool = True,
     categories: tuple[int, ...] = (1, 2, 3, 4),
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
@@ -216,23 +217,34 @@ def run(
         domain = f"locomo_{conv_idx}"
         if conv_idx not in ingested:
             conv = data[conv_idx]["conversation"]
-            turns = build_turns(conv)
-            for snum, dia_id, sdate, content in turns:
-                entry = MemoryEntry(
-                    content=content, domain=domain, level=MemoryLevel.FACT,
-                    metadata={
+            raw = build_turns(conv)
+            # Route through the full pipeline once per conversation.
+            # Three-body refinement gets to see all 600+ turns at once per
+            # conversation, so the insights it coins ("Caroline regularly
+            # volunteers at the shelter") are grounded in the full chat —
+            # exactly the multi-hop summary the benchmark rewards. Without
+            # this we'd be benchmarking only the flat-retrieval layer.
+            bulk_turns = [
+                {
+                    # build_turns returns "Speaker: text" — convert to a
+                    # neutral role for the pipeline. user/assistant role
+                    # matters only for which side KG triple-extraction runs.
+                    "role": "user",
+                    "content": content,
+                    "metadata": {
                         "turn_id": dia_id or f"s{snum}_t0",
                         "session_date": sdate,
                         "session": snum,
                     },
-                )
-                if mind._embedder:
-                    entry.embedding = mind._embedder.encode(content)
-                mid = mind._store.add(entry, dedup=False)
-                overall["total_ingested_turns"] += 1
-                if mind._kg is not None and mid > 0:
-                    for subj, rel, obj in mind._kg.extract_triples_from_text(content):
-                        mind._kg.add_triple(subj, rel, obj, source_id=mid)
+                }
+                for snum, dia_id, sdate, content in raw
+            ]
+            stats = mind.ingest_turns_raw(
+                bulk_turns, domain=domain,
+                run_aggregation=True,
+                run_refinement=use_refinement,
+            )
+            overall["total_ingested_turns"] += stats["ingested"]
             ingested.add(conv_idx)
 
         category = qa.get("category")
@@ -364,6 +376,8 @@ def main() -> int:
     p.add_argument("--no-reranker", action="store_true")
     p.add_argument("--temporal-math", action="store_true")
     p.add_argument("--agentic", action="store_true")
+    p.add_argument("--no-refinement", action="store_true",
+                   help="Skip three-body chat refinement at ingest (default on — builds L3 principles)")
     p.add_argument("--categories", default="1,2,3,4")
     p.add_argument("--answer-model", default="gpt-4o")
     p.add_argument("--judge-model", default="gpt-4o")
@@ -392,6 +406,7 @@ def main() -> int:
         use_reranker=not args.no_reranker,
         use_temporal_math=args.temporal_math,
         use_agentic=args.agentic,
+        use_refinement=not args.no_refinement,
         categories=cats,
     )
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

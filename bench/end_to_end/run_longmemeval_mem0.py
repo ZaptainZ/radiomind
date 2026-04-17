@@ -147,6 +147,7 @@ def run(
     use_reranker: bool,
     use_temporal_math: bool,
     use_agentic: bool,
+    use_refinement: bool = True,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -221,29 +222,43 @@ def run(
             continue
 
         domain = f"lme_{q_idx}"
+        # Flatten question's haystack into a list of turn dicts for
+        # ingest_turns_raw, which runs the full pipeline: store + KG +
+        # Meta + aggregation + optional three-body refinement. Previous
+        # version bypassed this by calling mind._store.add directly,
+        # which meant patterns/principles/habits never got built — the
+        # benchmark was measuring only L2 raw-turn retrieval.
+        turns: list[dict] = []
         for s_idx, session in enumerate(q["haystack_sessions"]):
-            sid = q["haystack_session_ids"][s_idx] if s_idx < len(q.get("haystack_session_ids", [])) else f"s{s_idx}"
-            sdate = q["haystack_dates"][s_idx] if s_idx < len(q.get("haystack_dates", [])) else ""
+            sid = (q["haystack_session_ids"][s_idx]
+                   if s_idx < len(q.get("haystack_session_ids", []))
+                   else f"s{s_idx}")
+            sdate = (q["haystack_dates"][s_idx]
+                     if s_idx < len(q.get("haystack_dates", []))
+                     else "")
             for t_idx, turn in enumerate(session):
                 txt = turn.get("content", "")
                 if not txt:
                     continue
-                entry = MemoryEntry(
-                    content=f"[{turn.get('role','?')}] {txt}",
-                    domain=domain, level=MemoryLevel.FACT,
-                    metadata={
+                turns.append({
+                    "role": turn.get("role", "?"),
+                    "content": f"[{turn.get('role','?')}] {txt}",
+                    "metadata": {
                         "turn_id": f"{sid}_t{t_idx}",
                         "session_date": sdate,
                         "role": turn.get("role", "?"),
                     },
-                )
-                if mind._embedder:
-                    entry.embedding = mind._embedder.encode(entry.content)
-                mid = mind._store.add(entry, dedup=False)
-                overall["total_ingested_turns"] += 1
-                if mind._kg is not None and turn.get("role") == "user" and mid > 0:
-                    for subj, rel, obj in mind._kg.extract_triples_from_text(txt):
-                        mind._kg.add_triple(subj, rel, obj, source_id=mid)
+                })
+        stats = mind.ingest_turns_raw(
+            turns, domain=domain,
+            run_aggregation=True,
+            # Three-body debate fires once per question's domain. Each
+            # adds ~1 LLM round-trip total (all 3 speakers run in parallel
+            # inside chat.refine). Worth it: upgrades raw facts into
+            # PRINCIPLE-level summaries that pyramid.search surfaces first.
+            run_refinement=use_refinement,
+        )
+        overall["total_ingested_turns"] += stats["ingested"]
 
         if isinstance(gold, list):
             gold_str = " | ".join(str(g) for g in gold)
@@ -361,6 +376,8 @@ def main() -> int:
                    help="Our date-arithmetic module (off by default — Mem0 doesn't use it)")
     p.add_argument("--agentic", action="store_true",
                    help="Our agentic decomposition (off by default — Mem0 doesn't use it)")
+    p.add_argument("--no-refinement", action="store_true",
+                   help="Skip three-body chat refinement at ingest (default on — builds L3 principles)")
     p.add_argument("--answer-model", default="gpt-4o")
     p.add_argument("--judge-model", default="gpt-4o")
     p.add_argument("--answer-profile", default="openai_direct")
@@ -388,6 +405,7 @@ def main() -> int:
         use_reranker=not args.no_reranker,
         use_temporal_math=args.temporal_math,
         use_agentic=args.agentic,
+        use_refinement=not args.no_refinement,
     )
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

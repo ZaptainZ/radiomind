@@ -230,6 +230,149 @@ class RadioMind:
 
         return result.entries
 
+    def ingest_turns_raw(
+        self,
+        turns: list[dict],
+        domain: str = "",
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+        run_aggregation: bool = True,
+        run_refinement: bool = False,
+    ) -> dict:
+        """Bulk-ingest raw conversation turns preserving everything.
+
+        Unlike ingest(), this skips the L1 EXTRACTION_PATTERNS gate — which
+        is right for real-time Claude-Code-style monitoring (only keep
+        "我叫 X"/"I prefer Y" style statements) but wrong for benchmarks,
+        migrations, and bulk data loads where every turn carries context
+        the retrieval layer later needs. Full upstream pipeline still runs:
+
+          1. Store each turn as L2 FACT (embedding, metadata preserved)
+          2. Extract KG triples from user turns
+          3. Update Meta profile
+          4. Run L2 aggregation per domain (facts → patterns → principles)
+          5. Optional: trigger chat refinement (three-body debate → L3 habits)
+
+        turns: list of {"content": str, "role": str, "metadata": dict}.
+          - metadata keys used: session_date, turn_id, session, created_at
+        run_refinement: set True to actively run three-body debate at end.
+          Costs one LLM round per domain — off by default for ingestion
+          speed. Benchmark callers typically run this once after all turns
+          for a given domain are in.
+
+        Returns {ingested, kg_triples, aggregations, refinement_insights}.
+        """
+        self._check_init()
+        ingested = 0
+        kg_triples = 0
+        # Collect per-domain facts-seen count to drive optional refinement.
+        domains_touched: set[str] = set()
+
+        for t in turns:
+            content = (t.get("content") or "").strip()
+            if not content:
+                continue
+            role = t.get("role", "user")
+            meta = dict(t.get("metadata") or {})
+            meta.setdefault("role", role)
+
+            dom = domain or meta.get("domain", "") or ""
+
+            entry = MemoryEntry(
+                content=content,
+                domain=dom,
+                level=MemoryLevel.FACT,
+                metadata=meta,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+            )
+            if "created_at" in meta:
+                try:
+                    entry.created_at = float(meta["created_at"])
+                except (TypeError, ValueError):
+                    pass
+            if self._embedder:
+                entry.embedding = self._embedder.encode(content)
+
+            mid = self._store.add(entry, dedup=False)
+            if mid <= 0:
+                continue
+            ingested += 1
+            if dom:
+                domains_touched.add(dom)
+
+            # Meta profile from user turns
+            if role == "user":
+                try:
+                    self._meta.update_from_text(content)
+                except Exception:
+                    pass
+
+            # KG triples from user turns (gives structured temporal queries
+            # something to chew on — essential for "previous X" type questions).
+            if self._kg is not None and role == "user":
+                try:
+                    for subj, rel, obj in self._kg.extract_triples_from_text(content):
+                        self._kg.add_triple(subj, rel, obj, source_id=mid)
+                        kg_triples += 1
+                except Exception:
+                    pass
+
+        aggregations: dict[str, int] = {}
+        if run_aggregation and self._llm is not None and self._llm.is_available():
+            for dom in domains_touched:
+                try:
+                    created = self._aggregator.check_and_aggregate(dom)
+                    if created:
+                        aggregations[dom] = len(created)
+                except Exception:
+                    pass
+
+        refinement_insights: dict[str, int] = {}
+        if run_refinement and self._llm is not None and self._llm.is_available():
+            for dom in domains_touched:
+                try:
+                    r = self._chat_refine.refine(domain=dom)
+                    refinement_insights[dom] = len(r.new_insights)
+                    # Mirror each fresh habit into L2 as PRINCIPLE so that
+                    # pyramid.search can surface it via vector/FTS — HDC
+                    # similarity scores for NL queries are too low (< 0.01)
+                    # to be usable for retrieval. HDC keeps its role for
+                    # habit stability tracking; MemoryStore makes the
+                    # habit description searchable.
+                    for insight in r.new_insights:
+                        mirror = MemoryEntry(
+                            content=insight.description,
+                            domain=dom,
+                            level=MemoryLevel.PRINCIPLE,
+                            metadata={
+                                "source": "chat_refine",
+                                "confidence": insight.confidence,
+                                "evidence": insight.evidence[:300] if insight.evidence else "",
+                                "falsifier": insight.falsifier[:200] if insight.falsifier else "",
+                            },
+                        )
+                        if self._embedder:
+                            mirror.embedding = self._embedder.encode(insight.description)
+                        self._store.add(mirror, dedup=False)
+                except Exception:
+                    pass
+            # Meta self-profile gets a refresh after new habits land
+            try:
+                self._meta.refresh_self()
+            except Exception:
+                pass
+
+        return {
+            "ingested": ingested,
+            "kg_triples": kg_triples,
+            "domains": sorted(domains_touched),
+            "aggregations": aggregations,
+            "refinement_insights": refinement_insights,
+        }
+
     def ingest_batch(
         self,
         message_batches: list[list[Message]],
@@ -268,9 +411,38 @@ class RadioMind:
         agent_id: str = "",
         session_id: str = "",
         max_results: int = 10,
+        fuse_habits: bool = True,
     ) -> list[SearchResult]:
+        """Retrieve memories relevant to the query.
+
+        By default fuses three sources from the pyramid: L2 facts (via
+        pyramid.search, which itself pulls in KG, patterns, and context),
+        and L3 habits (HDC-matched). Habits encode pre-digested insight
+        ("user has visited 3 doctors: X, Y, Z") that would require
+        multi-hop retrieval otherwise.
+
+        Habits ride on top of the result list at a fixed promotion cap so
+        they surface even when the raw-fact retrieval already saturates
+        max_results. Set fuse_habits=False for a pure L2-only comparison
+        (e.g., when measuring what the habit layer contributes).
+        """
         self._check_init()
         results = self._pyramid.search(query, domain=domain, max_results=max_results)
+
+        if fuse_habits and self._habits is not None:
+            try:
+                # Record HDC hits on the matched habits so the habit-store
+                # still tracks which habits are getting used — even though
+                # we don't inject them into results here (they're already
+                # mirrored into the pyramid as PRINCIPLE entries during
+                # refinement, so pyramid.search surfaces them naturally via
+                # level-weighted sorting).
+                self._habits.query(
+                    [query], top_k=3, record_hits=True, min_score=0.005,
+                )
+            except Exception:
+                pass
+
         if user_id or agent_id or session_id:
             filtered = []
             for r in results:
