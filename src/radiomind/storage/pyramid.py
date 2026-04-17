@@ -261,19 +261,20 @@ class PyramidSearch:
                 continue
             filtered.append(r)
 
-        # Sort by score boosted per-level instead of hard-tiered by level.
-        # Old: (-level, -score) — ANY principle beat ANY fact, so a weakly-
-        #      matched abstract principle displaced a strong fact match. On
-        #      LoCoMo's 700-turn conversations this cost us 20 pt: relevant
-        #      concrete facts got pushed below generic trinity-debate habits.
-        # New: score * (1 + 0.2 * level) — principle gets +40% bonus, pattern
-        #      +20%, fact baseline. A fact scoring 0.9 still beats a
-        #      principle scoring 0.5, which is the right behavior. But when
-        #      a principle scores close to a fact (e.g. the ENTITIES
-        #      enumeration line matching a multi-session query strongly),
-        #      the level bonus tips it higher as it should.
+        # Sort by score boosted per-level. Evolution:
+        # v1: (-level, -score) — ANY principle beat ANY fact. Dropped 20 pt
+        #     on LoCoMo single-hop (abstract principles displaced specific
+        #     facts). Wrong for narrow-fact queries.
+        # v2: score * (1 + 0.2 * level) — principle +40%, pattern +20%.
+        #     Too aggressive: single-hop still lost 25 pt because mid-score
+        #     principles (0.45 × 1.4 = 0.63) beat high-score facts (0.55).
+        # v3: score * (1 + 0.1 * level) — principle +20%, pattern +10%.
+        #     Only tips the scale when principle/pattern scores are WITHIN
+        #     ~10% of a competing fact. Preserves exact-match fact retrieval
+        #     while still letting aggregation summaries win their rightful
+        #     slots on multi-session queries.
         filtered.sort(
-            key=lambda r: -(r.score * (1.0 + 0.2 * int(r.entry.level))),
+            key=lambda r: -(r.score * (1.0 + 0.1 * int(r.entry.level))),
         )
 
         # 5b. Latest-wins conflict resolution.
