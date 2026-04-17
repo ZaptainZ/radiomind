@@ -11,14 +11,24 @@ from radiomind.core.types import MemoryEntry, MemoryLevel, PrivacyLevel, SearchR
 from radiomind.storage.database import MemoryStore
 
 AGGREGATE_THRESHOLD = 10  # facts needed before triggering pattern extraction
-AGGREGATE_PROMPT = """You are a memory analyst. Given these facts about a user in the "{domain}" domain, identify one concise pattern or habit.
+AGGREGATE_PROMPT = """You are a memory analyst building retrieval-friendly summaries of a user's memories.
+Given the facts below from the "{domain}" domain, produce TWO tight summaries:
+
+1. ENTITIES: enumerate distinct people, places, items, doctors, purchases, events
+   the user mentioned. List them as: "NAME/LABEL (count), NAME/LABEL (count), ..."
+   Include the count when the same entity appears multiple times. Do NOT paraphrase
+   descriptively — retrievers need the literal names so exact keyword matches work.
+
+2. PATTERN: one sentence naming a recurring habit or trend that the facts jointly
+   demonstrate (e.g. "exercises 3× a week", "tends to replace appliances over repair").
 
 Facts:
 {facts}
 
-Respond with ONLY the pattern in one sentence. No explanation."""
+Output EXACTLY two lines, prefixed with "ENTITIES:" and "PATTERN:" — nothing else."""
 
-PRINCIPLE_PROMPT = """You are a memory analyst. Given these patterns about a user, extract one high-level principle.
+PRINCIPLE_PROMPT = """You are a memory analyst distilling a one-sentence principle the user lives by,
+based on the patterns below. The principle should be concrete and actionable, not philosophical.
 
 Patterns:
 {patterns}
@@ -661,9 +671,17 @@ class PyramidSearch:
 class PyramidAggregator:
     """Aggregates facts → patterns → principles (bottom-up pyramid building)."""
 
-    def __init__(self, store: MemoryStore, llm: LLMRouter):
+    def __init__(self, store: MemoryStore, llm: LLMRouter, embedder=None):
         self._store = store
         self._llm = llm
+        # Optional embedder; when present, aggregated patterns/principles
+        # get vector embeddings too. Without this, aggregated patterns are
+        # only FTS-searchable — which handles keyword queries but misses
+        # semantic paraphrases ("physician" matching "doctor").
+        self._embedder = embedder
+
+    def set_embedder(self, embedder) -> None:
+        self._embedder = embedder
 
     def check_and_aggregate(self, domain: str) -> list[MemoryEntry]:
         """Check if a domain has enough facts to aggregate into patterns."""
@@ -674,7 +692,11 @@ class PyramidAggregator:
 
         # Aggregate facts → pattern when threshold reached
         if fact_count >= AGGREGATE_THRESHOLD and fact_count > pattern_count * AGGREGATE_THRESHOLD:
-            facts = self._store.list_by_domain(domain, level=MemoryLevel.FACT, limit=20)
+            # Pull more facts (80 vs 20) so entity enumeration covers the
+            # real distribution — LongMemEval haystacks hold 400-600 turns
+            # and the multi-session questions ask about things spread
+            # across the full range ("how many X have I done").
+            facts = self._store.list_by_domain(domain, level=MemoryLevel.FACT, limit=80)
             pattern = self._aggregate_to_pattern(domain, facts)
             if pattern:
                 created.append(pattern)
@@ -706,6 +728,11 @@ class PyramidAggregator:
                 level=MemoryLevel.PATTERN,
                 metadata={"source": "aggregation", "fact_count": len(facts)},
             )
+            if self._embedder is not None:
+                try:
+                    pattern.embedding = self._embedder.encode(pattern_text)
+                except Exception:
+                    pass
             pattern_id = self._store.add(pattern)
             if pattern_id <= 0:
                 return None
@@ -738,6 +765,11 @@ class PyramidAggregator:
                 level=MemoryLevel.PRINCIPLE,
                 metadata={"source": "aggregation", "pattern_count": len(patterns)},
             )
+            if self._embedder is not None:
+                try:
+                    principle.embedding = self._embedder.encode(principle_text)
+                except Exception:
+                    pass
             principle_id = self._store.add(principle)
             if principle_id <= 0:
                 return None

@@ -165,7 +165,7 @@ class RadioMind:
             query_rewriter=self._query_rewriter,
             kg=self._kg,
         )
-        self._aggregator = PyramidAggregator(self._store, self._llm)
+        self._aggregator = PyramidAggregator(self._store, self._llm, embedder=self._embedder)
 
         chat_cfg = self.config.get("refinement.chat", {})
         self._chat_refine = ChatRefinement(self._store, self._habits, self._llm, config=chat_cfg)
