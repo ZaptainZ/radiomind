@@ -293,10 +293,35 @@ def run(
                 "created_at": sdate,
             })
 
+        # Attention-driven atomic decomposition: if this is an aggregation
+        # query ("how many", "list all", "across sessions"), run a query-
+        # time LLM extract over retrieved turns to get an enumerated view
+        # alongside the narrative. This closes most of the multi-session
+        # gap vs Mem0's ingest-time atomic-fact store, WITHOUT rewriting
+        # our stored turns.
+        atomic_section = ""
+        try:
+            atoms = mind.decompose_for_query(
+                query=question, retrieved=results[:30], domain=domain,
+                promote=True,
+            )
+            if atoms:
+                lines = ["\n\nATOMIC FACTS (extracted for this question):"]
+                for a in atoms[:15]:
+                    count_tag = f" [×{a.count}]" if a.count > 1 else ""
+                    verified = " ✓KG" if a.kg_verified else ""
+                    lines.append(f"- {a.fact}{count_tag}{verified} "
+                                 f"(conf {a.confidence:.2f}, from {','.join(a.evidence[:3])})")
+                atomic_section = "\n".join(lines)
+        except Exception:
+            pass
+
         q_date = q.get("question_date", "")
         ans_prompt = get_answer_generation_prompt(
             question=question, search_results=mem_results, question_date=q_date or "",
         )
+        if atomic_section:
+            ans_prompt = ans_prompt + atomic_section
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable

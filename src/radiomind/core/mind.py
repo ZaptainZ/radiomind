@@ -167,6 +167,18 @@ class RadioMind:
         )
         self._aggregator = PyramidAggregator(self._store, self._llm, embedder=self._embedder)
 
+        # Query-time atomic decomposer. Fires on aggregation-type queries
+        # (detected by core.attention) to turn retrieved narrative turns
+        # into a transient factoid view without rewriting the stored turns.
+        # Candidates with hit_count >= 2 get promoted to L2 PATTERN.
+        try:
+            from radiomind.refinement.decompose import QueryDecomposer
+            self._query_decomposer = QueryDecomposer(
+                self._store, self._llm, kg=self._kg, embedder=self._embedder,
+            )
+        except Exception:
+            self._query_decomposer = None
+
         chat_cfg = self.config.get("refinement.chat", {})
         self._chat_refine = ChatRefinement(self._store, self._habits, self._llm, config=chat_cfg)
 
@@ -455,6 +467,46 @@ class RadioMind:
                 filtered.append(r)
             return filtered
         return results
+
+    # --- Attention-driven query decomposition ---
+
+    def decompose_for_query(
+        self,
+        query: str,
+        retrieved: list[SearchResult],
+        domain: str,
+        promote: bool = True,
+    ) -> list:
+        """Return atomic facts for an aggregation-style query.
+
+        Only fires when attention classifier flags the query as aggregation
+        (counting, listing, cross-session enumeration). Silently returns
+        [] for other query types — caller can skip the decomposed block.
+
+        When `promote=True` (default), atoms meeting the promotion criteria
+        (confidence >=0.7, hit_count >=2, not redundant with existing L2
+        PATTERN) are persisted as PATTERN entries, joining the pyramid.
+        This is how "attention-driven retrieval" doubles as "attention-
+        driven consolidation": facts that repeatedly answer queries earn
+        their way into the persistent layer.
+        """
+        self._check_init()
+        if self._query_decomposer is None or not self._query_decomposer.is_available():
+            return []
+        from radiomind.core.attention import is_aggregation, extract_focus_entity
+        if not is_aggregation(query):
+            return []
+
+        focus = extract_focus_entity(query)
+        atoms = self._query_decomposer.decompose(
+            question=query, retrieved=retrieved, domain=domain, focus=focus,
+        )
+        if promote and atoms:
+            try:
+                self._query_decomposer.promote_if_valuable(atoms, domain=domain)
+            except Exception:
+                pass
+        return atoms
 
     # --- Meta ---
 
