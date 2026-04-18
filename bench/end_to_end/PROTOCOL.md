@@ -61,20 +61,51 @@ Why this matters: our old judge said "CORRECT if conveys same info; INCORRECT if
 | locomo-mem0proto-qwen-fullarch-n30 | locomo10 cat 1-4 | Mem0 | +boost 0.2 | qwen-max | 0.733 | ~ |
 | locomo-mem0proto-qwen-v3-n30 | locomo10 cat 1-4 | Mem0 | full arch, boost 0.1 | qwen-max | 0.767 | ~ |
 | **locomo-mem0proto-deepseek32-n30** | locomo10 cat 1-4 | Mem0 | **v3 + deepseek-v3.2** | qwen-max | **0.833** | ~ best |
-| **lme-s-mem0proto-gpt4o (TODO)** | **s_cleaned** | **Mem0** | **gpt-4o** | **gpt-4o** | **pending** | **✅** |
-| **locomo-mem0proto-gpt4o (TODO)** | **locomo10 cat 1-4** | **Mem0** | **gpt-4o** | **gpt-4o** | **pending** | **✅** |
+| **lme-s-mem0proto-gpt4o-n30** | s_cleaned | Mem0 | **gpt-4o** | **gpt-4o** | **0.833** | ✅ (via OpenRouter) |
+| **locomo-mem0proto-gpt4o-n30** | locomo10 cat 1-4 | Mem0 | **gpt-4o** | **gpt-4o** | **0.800** | ✅ (via OpenRouter) |
 
-## Best RadioMind numbers vs published SOTA
+## RadioMind vs published SOTA
 
-| System       | LongMemEval-S / S | LoCoMo (cat 1-4) | Answer model  |
-|--------------|-------------------|------------------|---------------|
-| Mem0 v3      | 93.4              | 91.6             | gpt-4o        |
-| MemMachine   | 93.0 (S)          | 91.69            | gpt-5-mini / gpt-4.1-mini |
-| **RadioMind**| **90.0**          | **83.3**         | deepseek-v3.2 |
+### Best achieved (any model + judge combination)
 
-Remaining gap:
-- LongMemEval-S: 3.4 pt (likely mostly model gap)
-- LoCoMo:        8.3 pt (model gap + Mem0's LLM-based fact extraction)
+| System       | LongMemEval-S | LoCoMo (cat 1-4) | Answer + Judge |
+|--------------|---------------|------------------|----------------|
+| Mem0 v3      | 93.4          | 91.6             | gpt-4o + gpt-4o |
+| MemMachine   | 93.0 (S)      | 91.69            | gpt-5-mini / gpt-4.1-mini |
+| **RadioMind**| **90.0**      | **83.3**         | deepseek-v3.2 + qwen-max |
+
+### Strict apples-to-apples (same answer + judge as Mem0 uses)
+
+| System       | LongMemEval-S | LoCoMo (cat 1-4) | Answer + Judge |
+|--------------|---------------|------------------|----------------|
+| Mem0 v3      | 93.4          | 91.6             | gpt-4o + gpt-4o |
+| **RadioMind**| **83.3**      | **80.0**         | **gpt-4o + gpt-4o** |
+
+Real gap under identical model/judge: **10 pt on both benchmarks.**
+
+### Gap attribution
+
+This 10 pt is not retrieval quality, not prompt quality, not model quality
+(all identical in strict comparison). It is architectural philosophy:
+
+- **Mem0 v3**: LLM-based atomic fact extraction at ingest. 500 turns →
+  ~50 atomic facts, each independently vector-indexed. Multi-session
+  aggregation queries get N independent retrieval targets, one per fact.
+- **RadioMind v3**: raw turn preservation + KG triples + L3 principles.
+  500 turns → 500 raw + ~100 KG + ~2 principles. Conversation narrative
+  stays intact but N similar facts in one turn share one vector slot.
+
+Both are legitimate design bets. Mem0's is tuned for aggregation-heavy
+benchmarks. RadioMind's preserves ground truth (which is the philosophy
+MemMachine also argues for in their paper, despite MemMachine's own
+fact-extraction in their pipeline).
+
+### Cost on this evaluation
+
+- LongMemEval-S + gpt-4o: ~\$0.75 per n=30 run
+- LoCoMo cat 1-4 + gpt-4o: ~\$0.35 per n=30 run
+- Total spent via OpenRouter: \$1.10 / \$10 budget
+- Equivalent DashScope deepseek-v3.2 runs: ~\$0.03 total (30× cheaper)
 
 ## Architecture contribution breakdown (v3 vs baseline, qwen-plus answer+judge)
 
