@@ -290,8 +290,9 @@ def run(
             })
 
         # Attention-driven atomic decomposition (aggregation queries only).
-        # Same logic as LongMemEval-S harness: narrative stays in store,
-        # atomic factoid view is generated on-demand for the answer prompt.
+        # Same logic as LongMemEval-S harness. DRAFT framing + placed
+        # before memories so raw turns remain the model's last-seen
+        # (most-salient) context.
         atomic_section = ""
         try:
             atoms = mind.decompose_for_query(
@@ -299,13 +300,13 @@ def run(
                 promote=True,
             )
             if atoms:
-                lines = ["\n\nATOMIC FACTS (extracted for this question):"]
+                lines = ["DRAFT ATOMIC VIEW (extracted heuristically — VERIFY against the memories below; enumerate additional entries if any memory mentions one not listed here):"]
                 for a in atoms[:15]:
                     count_tag = f" [×{a.count}]" if a.count > 1 else ""
                     verified = " ✓KG" if a.kg_verified else ""
                     lines.append(f"- {a.fact}{count_tag}{verified} "
                                  f"(conf {a.confidence:.2f}, from {','.join(a.evidence[:3])})")
-                atomic_section = "\n".join(lines)
+                atomic_section = "\n".join(lines) + "\n\n"
         except Exception:
             pass
 
@@ -314,7 +315,7 @@ def run(
             reference_date=ref_human,
         )
         if atomic_section:
-            ans_prompt = ans_prompt + atomic_section
+            ans_prompt = atomic_section + ans_prompt
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()

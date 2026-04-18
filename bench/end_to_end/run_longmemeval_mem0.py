@@ -306,13 +306,20 @@ def run(
                 promote=True,
             )
             if atoms:
-                lines = ["\n\nATOMIC FACTS (extracted for this question):"]
+                # Label explicitly as DRAFT, not authoritative. When v4's
+                # earlier run made this an authoritative-looking summary
+                # at the tail, deepseek answered from it alone — if the
+                # draft was incomplete (decomposer missed 2 of 3 doctors)
+                # the model reported the draft's count, not the ground
+                # truth in the raw turns. Two fixes: (a) DRAFT framing,
+                # (b) put this block BEFORE memories so raw turns are last.
+                lines = ["DRAFT ATOMIC VIEW (extracted heuristically — VERIFY against the memories below; enumerate additional entries if any memory mentions one not listed here):"]
                 for a in atoms[:15]:
                     count_tag = f" [×{a.count}]" if a.count > 1 else ""
                     verified = " ✓KG" if a.kg_verified else ""
                     lines.append(f"- {a.fact}{count_tag}{verified} "
                                  f"(conf {a.confidence:.2f}, from {','.join(a.evidence[:3])})")
-                atomic_section = "\n".join(lines)
+                atomic_section = "\n".join(lines) + "\n\n"
         except Exception:
             pass
 
@@ -321,7 +328,10 @@ def run(
             question=question, search_results=mem_results, question_date=q_date or "",
         )
         if atomic_section:
-            ans_prompt = ans_prompt + atomic_section
+            # Insert BEFORE the memory block so retrieved turns remain the
+            # last and most salient context the model sees — atomic facts
+            # only serve as a draft starting point.
+            ans_prompt = atomic_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable
