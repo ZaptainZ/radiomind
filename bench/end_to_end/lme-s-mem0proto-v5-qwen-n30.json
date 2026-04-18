@@ -1,0 +1,283 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 30,
+  "total_ingested_turns": 14806,
+  "reranker_enabled": true,
+  "temporal_math": false,
+  "agentic": false,
+  "answer_model": "qwen-plus",
+  "judge_model": "qwen-max",
+  "answer_profile": "openai",
+  "judge_profile": "openai",
+  "elapsed_s": 1389.5,
+  "overall_accuracy": 0.7,
+  "by_type": {
+    "knowledge-update": {
+      "n": 5,
+      "accuracy": 0.6
+    },
+    "multi-session": {
+      "n": 5,
+      "accuracy": 0.8
+    },
+    "single-session-assistant": {
+      "n": 5,
+      "accuracy": 0.8
+    },
+    "single-session-preference": {
+      "n": 5,
+      "accuracy": 0.4
+    },
+    "single-session-user": {
+      "n": 5,
+      "accuracy": 1.0
+    },
+    "temporal-reasoning": {
+      "n": 5,
+      "accuracy": 0.6
+    }
+  },
+  "per_query": [
+    {
+      "q": "How many different doctors did I visit?",
+      "gold": "I visited three different doctors: a primary care physician, an ENT specialist, and a dermatologist.",
+      "answer": "<mem_thinking>\nI need to count how many *different doctors* the user visited, based on memories.\n\nLet’s list all doctor mentions with context and date:\n\n- 2023/05/20: “[user] … follow-up with Dr. Lee for the biopsy on that suspicious mole on my back.” → Dr. Lee (dermatologist, biopsy follow-up)\n\n- 2023/05/22: “[user] I'll schedule a follow-up appointment with Dr. Patel to discuss how my UTI and an",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "details that would make it incorrect.\n\nBased on the above analysis, the model response is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "he potential benefits of attending the reunion, it does not meet the criteria for a correct answer.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "How many kitchen items did I replace or fix?",
+      "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shelves.",
+      "answer": "2",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "er provided is entirely different from the correct one. Therefore, the model response is incorrect.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "How many weeks have I been taking sculpting classes when I invested in my own set of sculpting tools?",
+      "gold": "3",
+      "answer": "4",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "response provides a different number and does not match the core number, the response is incorrect.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "What was the the life event of one of my relatives that I participated in a week ago?",
+      "gold": "my cousin's wedding",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": " a specific event. Therefore, the model response does not match the correct answer.\n\nFinal Verdict: no\n</judge_thinking>"
+    },
+    {
+      "q": "I've got some free time tonight, any documentary recommendations?",
+      "gold": "The user would prefer documentary recommendations that are similar in style and theme to 'Our Planet', 'Free Solo', and 'Tiger King', which they have previously enjoyed. They might not prefer recommendations of documentaries that are vastly different in tone or subject matter from these titles. The preferred response utilizes the user's previously mentioned viewing history to suggest documentaries that cater to their tastes.",
+      "answer": "Try “Dynasties” or “Chasing Coral” — both on Netflix, and perfect follow-ups to “Our Planet” and “Tiger King”.",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "ted documentaries are in line with the user's preferences based on their previous viewing history.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+      "gold": "the woman selling jam at the farmer's market",
+      "answer": "The woman selling jam at the farmer's market.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "elling jam at the farmer's market was met first. There is no contradiction or unaddressed concept.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I was going through our previous conversation about the impact of the political climate in Catalonia on its literature and music. Can you remind me of the example you gave of a Spanish-Catalan singer-songwriter who supports unity between Catalonia and Spain?",
+      "gold": "Manolo García",
+      "answer": "Manolo García.",
+      "correct": false,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[judge error: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1081)>]"
+    },
+    {
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": " response indicates that there is not enough information, this is considered a correct abstention.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What should I serve for dinner this weekend with my homegrown ingredients?",
+      "gold": "The user would prefer dinner suggestions that incorporate their homegrown cherry tomatoes and herbs like basil and mint, highlighting recipes that showcase their garden produce. They might not prefer suggestions that do not utilize these specific ingredients or do not emphasize the use of homegrown elements.",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "del response simply abstains from answering, which is not in line with the correct answer's intent.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "How often do I see Dr. Johnson?",
+      "gold": "The information provided is not enough. You mentioned seeing Dr. Smith but not Dr. Johnson.",
+      "answer": "The information provided is not enough",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "ponse captures the core concept of the correct answer and conveys the same meaning, it is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What is the total cost of my recently purchased headphones and the iPad?",
+      "gold": "The information provided is not enough. You mentioned purchasing a headphone, but you did not mention the iPad.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "e the total cost, even though it does not specify the reason (lack of information about the iPad).\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What was the date on which I attended the first BBQ event in June?",
+      "gold": "June 3rd",
+      "answer": "2023/06/03",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": " equivalent to \"June 3rd\" and addresses the same core concept. Therefore, the response is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I'm looking back at our previous conversation where you created two sad songs for me. Can you remind me what was the chord progression for the chorus in the second song?",
+      "gold": "C D E F G A B A G F E D C",
+      "answer": "C D E F G A B A G F E D C",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "onse directly and accurately addresses the correct answer without any omissions or contradictions.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "How many days passed between the day I started watering my herb garden and the day I harvested my first batch of fresh herbs?",
+      "gold": "24 days. 25 days (including the last day) is also acceptable.",
+      "answer": "24",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "c answer.\n\nThe model response \"24\" matches the correct answer \"24 days.\" Therefore, it is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "How old was I when my grandma gave me the silver necklace?",
+      "gold": "18",
+      "answer": "18",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ponse correctly and precisely answers the question with the exact age given in the correct answer.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What book am I currently reading?",
+      "gold": "The Seven Husbands of Evelyn Hugo",
+      "answer": "The Seven Husbands of Evelyn Hugo",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ect answer exactly and there are no additional details or contradictions, the response is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "How much time do I dedicate to practicing violin every day?",
+      "gold": "You did not mention this information. You mentioned practing guitar everyday, but not violin.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ditional detail about guitar practice. This detail is not required for the response to be correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "How many copies of my favorite artist's debut album were released worldwide?",
+      "gold": "500",
+      "answer": "500",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "nswer. There are no additional details or contradictions, and the core concept is fully addressed.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I'm looking back at our previous conversation about the Seco de Cordero recipe from Ancash. You mentioned using a light or medium-bodied beer, but I was wondering if you could remind me what type of beer you specifically recommended?",
+      "gold": "I recommended using a Pilsner or Lager for the recipe.",
+      "answer": "Pilsner.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": " correct as it captures the most specific part (Pilsner) of the correct answer (Pilsner or Lager).\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I've been struggling with my slow cooker recipes. Any advice on getting better results?",
+      "gold": "The user would prefer responses that provide tips and advice specifically tailored to their slow cooker experiences, utilizing their recent success with beef stew and interest in making yogurt in the slow cooker. They might not prefer general slow cooker recipes or advice unrelated to their specific experiences and interests.",
+      "answer": "Use a thermometer to hit exact temperatures — it’s the most common cause of inconsistent results.",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "ic experiences and interests. Therefore, it does not fully meet the criteria of the correct answer.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "What was my previous personal best time for the charity 5K run?",
+      "gold": "27 minutes and 45 seconds",
+      "answer": "<mem_thinking>\nI need to find the user's previous personal best time for the charity 5K run — i.e., the time they had *before* the most recent one they just beat.\n\nFrom the memories:\n\n- On 2023/07/30, the user says:  \n  > \"I just got back from a charity 5K run last weekend and was happy to beat my personal best time - shaved off about a minute and a half from my previous record!\"\n\n  So:  \n  - Most",
+      "correct": false,
+      "qtype": "knowledge-update",
+      "verdict_tail": "ious personal best time being 27 minutes and 45 seconds is not addressed correctly.\n\nFinal Verdict: no\n</judge_thinking>"
+    },
+    {
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": " even though it does not mention the role discrepancy. This is still a valid and correct response.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I'm looking back at our previous chess game and I was wondering, what was the move you made after 27. Kg2 Bd5+?",
+      "gold": "28. Kg3",
+      "answer": "28. Kg3",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "el response matches the correct answer exactly, both in meaning and in the specific move provided.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "I was looking back at our previous conversation about Native American powwows and I was wondering, which traditional game did you say was often performed by skilled dancers at powwows?",
+      "gold": "Hoop Dance",
+      "answer": "Hoop Dance.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "laim as the correct answer, using the exact term \"Hoop Dance.\" Therefore, the response is correct.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "My kitchen's becoming a bit of a mess again. Any tips for keeping it clean?",
+      "gold": "The user would prefer responses that acknowledge and build upon their existing efforts to organize their kitchen, such as utilizing their new utensil holder to keep countertops clutter-free. They would also appreciate tips that address their concern for maintaining their granite surface, particularly around the sink area. Preferred responses would provide practical and actionable steps to maintain cleanliness, leveraging the user's current tools and setup. They might not prefer generic or vague suggestions that do not take into account their specific kitchen setup or concerns.",
+      "answer": "Keep your kitchen clean with these targeted habits:  \n- Clean the garbage disposal weekly with baking soda + vinegar or ice + rock salt.  \n- Wipe granite counters with stone soap or mineral oil—never harsh chemicals—and always use cutting boards.  \n- Organize utensils by category in your new holder, assign each group a labeled spot, and purge duplicates.  \n- After cooking, rinse pasta with cold wa",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "older).\n- The additional tips provided are relevant and do not contradict the user's preferences.\n\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "How long have I been living in my current apartment in Shinjuku?",
+      "gold": "The information provided is not enough. You mentioned living in Harajuku but not Shinjuku.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "s not enough information to answer the question, it matches the core intent of the correct answer.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What time do I usually go to the gym?",
+      "gold": "6:00 pm",
+      "answer": "7:00 pm",
+      "correct": false,
+      "qtype": "knowledge-update",
+      "verdict_tail": "ides a different and non-equivalent time, it does not address the same claim as the correct answer.\n</judge_thinking>\nno"
+    },
+    {
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "$0.75",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ses the core claim with the exact amount, and there are no contradictions or unaddressed concepts.\n</judge_thinking>\nyes"
+    },
+    {
+      "q": "What was my last name before I changed it?",
+      "gold": "Johnson",
+      "answer": "Johnson",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "y identifies the last name before it was changed as \"Johnson.\" Therefore, the response is correct.\n</judge_thinking>\nyes"
+    }
+  ]
+}

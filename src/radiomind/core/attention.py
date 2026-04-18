@@ -61,6 +61,21 @@ LOOKUP_MARKERS = (
 )
 
 
+# "how many" phrases that are about TIME/DURATION, not enumeration.
+# Guard against decompose misfiring on temporal questions — those need
+# date arithmetic, not atomic-fact enumeration.
+_TEMPORAL_HOW_MANY = re.compile(
+    r"how (?:many|much|long)\s+"
+    r"(?:days?|weeks?|months?|years?|hours?|minutes?|seconds?|nights?|times?)"
+    r"(?:\s+ago)?",
+    re.IGNORECASE,
+)
+# "how long" is almost always duration, not aggregation
+_HOW_LONG = re.compile(r"\bhow long\b", re.IGNORECASE)
+# "how often" is frequency — it IS aggregation (count per time window)
+_HOW_OFTEN = re.compile(r"\bhow often\b|\bhow frequently\b", re.IGNORECASE)
+
+
 def classify(query: str) -> list[str]:
     """Return applicable attention types for this query.
 
@@ -70,11 +85,26 @@ def classify(query: str) -> list[str]:
     override that.
 
     Always returns at least one tag ('lookup' as default).
+
+    Aggregation ≠ any "how many" question. "How many days ago" is
+    temporal, "how long have I" is duration — neither benefits from
+    atomic-entity enumeration. We filter those out explicitly so
+    downstream decomposer doesn't pollute the answer prompt for them.
     """
     ql = query.lower()
     tags: list[str] = []
-    if any(m in ql for m in AGGREGATION_MARKERS):
-        tags.append("aggregation")
+
+    # Aggregation only if it's genuinely about enumerating entities,
+    # not about computing time/duration. "how often" stays aggregation
+    # (counting instances). Temporal-how-many and how-long excluded.
+    has_agg_marker = any(m in ql for m in AGGREGATION_MARKERS)
+    if has_agg_marker:
+        is_temporal_how_many = bool(_TEMPORAL_HOW_MANY.search(ql))
+        is_how_long = bool(_HOW_LONG.search(ql))
+        is_how_often = bool(_HOW_OFTEN.search(ql))
+        if is_how_often or (not is_temporal_how_many and not is_how_long):
+            tags.append("aggregation")
+
     if any(m in ql for m in DISAMBIGUATION_MARKERS):
         tags.append("disambiguation")
     if any(m in ql for m in NARRATIVE_MARKERS):
