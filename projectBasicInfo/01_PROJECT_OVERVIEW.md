@@ -139,6 +139,38 @@ LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
 
 ---
 
+## 第四律 Attention（2026-04-18 part 2）
+
+前三条设计律：**分层**（L1-L2-L3 金字塔）、**炼化**（三体/做梦/聚合）、**Meta**（双侧写 + 自校准）。对标 Mem0 benchmark 到 10 pt 差距的分析推演出**第四律**：
+
+> **架构的每一层、每一次操作，都应该显式回答"此刻注意力焦点是什么"。每层都有自己的 attention signature，不能只靠下一层兜底。**
+
+### 已有各层的 attention 角色（既有，现正式命名）
+
+| 位置 | attention 职责 |
+|---|---|
+| L1 gate | 输入侧：这轮对话值得记吗 |
+| Pyramid score-blend | 检索侧：这条和 query 多相关 |
+| 三体 Guardian/Explorer/Reducer | 多视角：同一批证据三种注意力切片 |
+| Meta calibration | 元注意力：观察自身注意力偏差 |
+| Dream wander | 空闲：无明确查询的自由漂移 |
+| **(新) Query-time decomposition** | **查询侧：根据本次 query 焦点重构记忆视图** |
+
+### 查询时原子分解的机制
+1. **attention 分类器**（`core/attention.py`）：每条 query 打标签（aggregation / disambiguation / narrative / comparison / lookup）
+2. **查询时 decomposer**（`refinement/decompose.py`）：aggregation 类查询触发单次 LLM 抽取，把 top-k 原 turn 解成带 count + evidence + confidence 的原子事实
+3. **价值驱动晋升**：高置信 × 多 query 命中 × 非冗余 → atom 晋升为 L2 PATTERN 常驻记忆
+
+**核心区别于 Mem0**：Mem0 ingest 时就原子化（破坏叙事）；我们查询时原子化（保留叙事 + 按需计算）。
+
+### 新公共 API
+- `RadioMind.decompose_for_query(query, retrieved, domain, promote)` — 公共入口
+- `core.attention.classify(query)` / `is_aggregation(query)` / `extract_focus_entity(query)`
+
+详见 `logs/2026-04-18-attention-4th-law-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
