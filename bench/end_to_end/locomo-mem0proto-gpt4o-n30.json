@@ -1,0 +1,305 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 30,
+  "total_ingested_turns": 5882,
+  "reranker_enabled": true,
+  "temporal_math": false,
+  "agentic": false,
+  "answer_model": "openai/gpt-4o",
+  "judge_model": "openai/gpt-4o",
+  "answer_profile": "openrouter",
+  "judge_profile": "openrouter",
+  "elapsed_s": 848.1,
+  "overall_accuracy": 0.8,
+  "by_type": {
+    "multi-hop": {
+      "n": 8,
+      "accuracy": 0.875
+    },
+    "open-domain": {
+      "n": 7,
+      "accuracy": 0.7143
+    },
+    "single-hop": {
+      "n": 8,
+      "accuracy": 0.75
+    },
+    "temporal": {
+      "n": 7,
+      "accuracy": 0.8571
+    }
+  },
+  "per_query": [
+    {
+      "q": "What kind of healthy food suggestions has Evan given to Sam?",
+      "gold": "flavored seltzer water, dark chocolate with high cocoa content, air-popped popcorn and fruit, veggies, healthy sandwich snacks, energy balls, grilled chicken salad with avocado",
+      "answer": "## Step 1: SCAN ALL MEMORIES\nI will scan all memories to identify those that contain information relevant to the question about healthy food suggestions Evan has given to Sam.\n\n1. Evan frequently discusses health, diet, and low-impact exercises while sharing images of nature, meals, and personal experiences.\n2. Evan suggests flavored seltzer with air-popped popcorn or fruit as healthy snacks.\n3. Evan mentions cutting down on sugary snacks and eating more veggies and fruit.\n4. Evan shares an image of a salad with chicken, avocado, tomatoes, corn, and cheese.\n5. Evan talks about limiting himself to just two ginger snaps a day.\n6. Evan shares an image of ginger snaps and mentions they are energizing and a healthy way to satisfy a sweet tooth.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Evan, who is the correct person/entity for the question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Evan has suggested flavored seltzer with air-popped popcorn or fruit as healthy snacks.\n- He has recommended cutting down on sugary snacks and eating more veggies and fruit.\n- Evan shared a salad recipe with chicken, avocado, tomatoes, corn, and cheese.\n- He mentioned limiting himself to two ginger snaps a day as a way to manage his diet.\n- Evan described ginger snaps as energizing and a healthy way to satisfy a sweet tooth.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific details include the flavored seltzer with air-popped popcorn or fruit, the salad recipe, and the ginger snaps as a controlled snack. These are high specificity suggestions.\n\n## Step 5: TEMPORAL GROUNDING\nAll events occurred in 2023, and the suggestions are consistent throughout the year.\n\n## Step 6: INCLUSION CHECK\nAll relevant suggestions have been included, and there are no duplicates.\n\n## Step 7: COMMIT AND ANSWER\nEvan has given several healthy food suggestions to Sam, including flavored seltzer with air-popped popcorn or fruit, cutting down on sugary snacks and eating more veggies and fruit, a ",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "ing\": \"The generated answer includes flavored seltzer, air-popped popcorn, fruit, veggies, and a grilled chicken salad with avocado, which are all part of the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When did John plan his next meeting with his siblings?",
+      "gold": "In September, 2022",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- (Sunday, August 21, 2022) John mentions organizing a gaming night with his siblings next month.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about John planning a meeting with his siblings, which is relevant to the question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The memory from August 21, 2022, is the only one that mentions John planning a meeting with his siblings. It specifies that the meeting is a gaming night planned for the next month.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory from August 21, 2022, provides a specific detail about the planned meeting, which is a gaming night with his siblings next month.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation took place on August 21, 2022, and John mentioned planning the gaming night for the next month, which would be September 2022.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories mentioning a planned meeting with his siblings, so the information from August 21, 2022, is complete and should be included.\n\n## Step 7: COMMIT AND ANSWER\n- The planned meeting with his siblings is a gaming night scheduled for September 2022.\n\nANSWER: John planned his next meeting with his siblings for September 2022.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies the meeting as planned for September 2022, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "How old is Max?",
+      "gold": "8 years old",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory 1: Deborah mentions that Max is already old and is 8 years old.\n- Memory 2: Deborah states that Max is her mother's cat, which she took when her mother passed away.\n\n## Step 2: ENTITY VERIFICATION\n- Both relevant memories are about Max, the cat owned by Deborah.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Combine the information from Memory 1 and Memory 2: Max is 8 years old and was originally Deborah's mother's cat.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is that Max is 8 years old, as stated directly by Deborah.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation took place on August 26, 2023, and Deborah mentioned Max's age as 8 years old at that time.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories that contradict or add to the information about Max's age.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the available evidence, Max is 8 years old.\n\nANSWER: Max is 8 years old.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly states that Max is 8 years old, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 8
+    },
+    {
+      "q": "What fields would Caroline be likely to pursue in her educaton?",
+      "gold": "Psychology, counseling certification",
+      "answer": "## Step 1: SCAN ALL MEMORIES\nThe relevant memories regarding Caroline's educational pursuits are:\n\n1. (Monday, May 08, 2023) Caroline mentions she is keen on counseling or working in mental health.\n2. (Tuesday, June 27, 2023) Caroline reiterates her interest in counseling and mental health as a career.\n3. (Wednesday, July 12, 2023) Caroline discusses looking into counseling and mental health career options.\n4. (Wednesday, July 12, 2023) Caroline mentions her interest in counseling and mental health jobs.\n5. (Monday, August 28, 2023) Caroline talks about volunteering at an LGBTQ+ youth center, which aligns with her interest in mental health and counseling.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Caroline and her interests in pursuing education and career options.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\nCaroline consistently expresses interest in counseling and mental health across multiple conversations. She also mentions volunteering at an LGBTQ+ youth center, which aligns with her interest in supporting others through counseling and mental health services.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific detail available is Caroline's repeated mention of her interest in counseling and mental health.\n\n## Step 5: TEMPORAL GROUNDING\nAll relevant memories are from 2023, and there are no contradictions or changes in her stated interests over time.\n\n## Step 6: INCLUSION CHECK\nAll relevant memories have been included, and there are no duplicates or contradictions.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Caroline is likely to pursue fields related to counseling and mental health in her education.",
+      "correct": true,
+      "category": "open-domain",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes 'counseling,' which is part of the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "What role does nature and the outdoors play in Evan and Sam's mental well-being?",
+      "gold": "Nature and outdoor activities seem to be significant stress relievers and sources of joy for both Evan and Sam. These activities likely contribute positively to their mental well-being.",
+      "answer": "## Step 1: SCAN ALL MEMORIES\nRelevant memories about nature and the outdoors in relation to Evan and Sam's mental well-being include:\n\n1. Evan uses images of nature and personal experiences to reinforce discussions about health and low-impact exercises.\n2. Evan frequently overlaps conversations about health, diet, and low-impact exercises with nature and personal experiences.\n3. Evan and Sam discuss hiking and the positive memories associated with it.\n4. Evan describes a retreat surrounded by mountains and forests as peaceful.\n5. Evan shares experiences of kayaking and watching sunsets, emphasizing the peace and calmness of being out on the water.\n6. Evan and Sam discuss the calming and rejuvenating effects of nature.\n7. Evan shares images and experiences related to nature, such as sunsets and vibrant flowers, as moments that bring joy and peace.\n8. Sam mentions hiking as a way to center oneself and connect with nature.\n9. Evan and Sam both express the importance of spending time in nature for relaxation and mental clarity.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Evan and Sam, confirming their shared experiences and discussions about nature and the outdoors.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Evan uses nature imagery to discuss health and exercises, indicating a thematic connection between nature and well-being.\n- Both Evan and Sam have positive associations with hiking and outdoor activities, which they find calming and rejuvenating.\n- Evan describes specific experiences like kayaking and watching sunsets as peaceful and mentally refreshing.\n- Sam expresses a desire to spend more time in nature for relaxation and mental clarity.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific details include Evan's experiences with kayaking and sunsets, and Sam's positive memories of hiking. Both find nature calming and rejuvenating.\n\n## Step 5: TEMPORAL GROUNDING\nThese conversations took place around May 18, 2023, with events occurring in 2022-2",
+      "correct": true,
+      "category": "open-domain",
+      "verdict_tail": " the core idea that nature and outdoor activities are significant stress relievers and sources of joy for Evan and Sam, contributing positively to their mental well-being.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When did Gina get her tattoo?",
+      "gold": "A few years ago",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from Wednesday, February 08, 2023: Gina mentions she got the tattoo a few years ago, and it stands for freedom and dancing without worrying about what people think.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about Gina, who is the correct person in question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Gina got her tattoo a few years ago, which means it was not a recent event relative to the conversations taking place around January 20, 2023.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory provides a specific detail about when Gina got her tattoo, stating it was a few years ago.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversations are around January 20, 2023. \"A few years ago\" would place the event likely before 2021.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories mentioning the tattoo, so no additional information is available to include.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Gina got her tattoo a few years ago, before 2021.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly states that Gina got her tattoo a few years ago, which matches the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "Where has Maria made friends?",
+      "gold": "homeless shelter, gym, church",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Maria mentions making friends with a fellow volunteer on January 9, 2023.\n- Maria joined a nearby church on May 6, 2023, to feel closer to a community.\n- Maria had a picnic with friends from church on July 17, 2023.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Maria, confirming her experiences in making friends.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Maria made friends through volunteering, as indicated by her conversation on January 9, 2023.\n- Maria joined a church and had a picnic with friends from church, indicating she made friends there as well.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific details are that Maria made friends through volunteering and at church.\n\n## Step 5: TEMPORAL GROUNDING\nThe events occurred in 2023, with volunteering mentioned in January and church activities in May and July.\n\n## Step 6: INCLUSION CHECK\nBoth volunteering and church are included as places where Maria made friends.\n\n## Step 7: COMMIT AND ANSWER\nMaria has made friends through volunteering and at church.\n\nANSWER: Maria has made friends through volunteering and at church.",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes 'church' from the gold answer, which is sufficient for partial credit.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When is Evan planning a big family reunion?",
+      "gold": "Summer 2024",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from Saturday, December 09, 2023: Evan mentions planning a big family reunion next summer.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about Evan, who is the correct person in question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- There is only one memory mentioning the family reunion, which is planned for next summer.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory from December 09, 2023, provides a specific detail about the timing of the family reunion.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation took place on December 09, 2023, and the reunion is planned for the summer of 2024.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories mentioning the family reunion, so no additional items to include.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Evan is planning a big family reunion next summer, in 2024.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies the timing of Evan's family reunion as summer 2024, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When did James start taking cooking classes?",
+      "gold": "September 2, 2022",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from Sunday, September 04, 2022: James mentions signing up for a cooking class two days ago.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about James, who is the correct person in question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- James signed up for a cooking class two days before September 4, 2022.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is that James signed up for cooking classes on September 2, 2022.\n\n## Step 5: TEMPORAL GROUNDING\n- The date of September 2, 2022, is explicitly stated in the memory text.\n\n## Step 6: INCLUSION CHECK\n- No other memories contradict or provide additional information about the start date of James's cooking classes.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: James started taking cooking classes on September 2, 2022.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies the start date of James's cooking classes as September 2, 2022, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "Where are John and his teammates planning to explore on a team trip?",
+      "gold": "a new city",
+      "answer": "To determine where John and his teammates are planning to explore on a team trip, let's follow the reasoning steps:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory from Thursday, September 21, 2023**: John mentions planning a team trip next month to explore a new city and have some fun. He also asks Tim for suggestions on the destination.\n- **Memory from Thursday, September 21, 2023**: Tim suggests Edinburgh, Scotland for a magical vibe, mentioning its history, architecture, and connection to Harry Potter.\n\n## Step 2: ENTITY VERIFICATION\n- The relevant memories are about John and his teammates planning a trip, and Tim providing a suggestion. Both are involved in the conversation about the trip destination.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- John is planning a team trip to explore a new city.\n- Tim suggests Edinburgh, Scotland, highlighting its magical vibe and historical significance.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is Tim's suggestion of Edinburgh, Scotland, which John was considering for the team trip.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation about the team trip planning took place on September 21, 2023, with the trip planned for the following month.\n\n## Step 6: INCLUSION CHECK\n- No other destinations are mentioned in the memories, and Edinburgh is the only suggestion provided.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the available evidence, the team is considering Edinburgh, Scotland for their trip.\n\nANSWER: John and his teammates are planning to explore Edinburgh, Scotland on their team trip.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes the correct item 'a new city' by specifying Edinburgh, Scotland, which is a new city for exploration.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 161
+    },
+    {
+      "q": "What challenge is Andrew facing in their search for a pet?",
+      "gold": "Finding a pet-friendly spot in the city",
+      "answer": "To determine the challenge Andrew is facing in their search for a pet, let's follow the reasoning steps:\n\n## Step 1: SCAN ALL MEMORIES\nSeveral memories mention Andrew's challenges in finding a pet-friendly place to live:\n\n1. On May 6, 2023, Andrew mentions looking for a place near a park or woods to stay close to nature and give the dog a large open space to run around.\n2. On June 2, 2023, Andrew expresses difficulty finding a pet-friendly spot in the city.\n3. On September 6, 2023, Andrew mentions still working on finding a dog-friendly place to live.\n4. On October 19, 2023, Andrew talks about adopting another pup from a shelter, indicating he has found a pet but still faces challenges with the living situation.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Andrew and his search for a pet-friendly living situation.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\nAndrew is consistently facing the challenge of finding a pet-friendly place to live in the city. This challenge is mentioned multiple times across different dates, indicating it is an ongoing issue.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific detail is that Andrew is having difficulty finding a pet-friendly place to live in the city, which is a recurring theme in the memories.\n\n## Step 5: TEMPORAL GROUNDING\nThe challenge of finding a pet-friendly place is mentioned from May 6, 2023, through September 6, 2023, and is still relevant as of October 19, 2023.\n\n## Step 6: INCLUSION CHECK\nThe challenge of finding a pet-friendly place is consistently mentioned, and no other challenges are indicated in the memories.\n\n## Step 7: COMMIT AND ANSWER\nAndrew's challenge in their search for a pet is finding a pet-friendly place to live in the city.\n\nANSWER: Andrew is facing the challenge of finding a pet-friendly place to live in the city.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies Andrew's challenge as finding a pet-friendly place to live in the city, which matches the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "What did Maria plan to do later on the evening of 7 July, 2023?",
+      "gold": "have dinner with friends from the gym",
+      "answer": "## Step 1: SCAN ALL MEMORIES\nI will scan all the memories to find any relevant information about Maria's plans for the evening of July 7, 2023.\n\n## Step 2: ENTITY VERIFICATION\nI will ensure that the memories I find are specifically about Maria and her plans.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\nI will combine facts from multiple memories about Maria's plans on July 7, 2023.\n\n## Step 4: SELECT THE BEST ANSWER\nI will choose the most specific detail available about Maria's plans.\n\n## Step 5: TEMPORAL GROUNDING\nI will ensure the answer is grounded in the correct time frame, specifically around July 7, 2023.\n\n## Step 6: INCLUSION CHECK\nI will include all relevant items found during the reasoning process.\n\n## Step 7: COMMIT AND ANSWER\nI will provide a direct and specific answer based on the available evidence.\n\n---\n\nUpon reviewing the memories, the relevant memory is:\n\n(Friday, July 07, 2023) Maria: Hey John, I'm down to join the meeting and contribute to making our community better. Let's do this!\n\nMaria planned to join a meeting to contribute to making the community better on the evening of July 7, 2023.\n\nANSWER: Maria planned to join a meeting to contribute to making the community better on the evening of July 7, 2023.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention having dinner with friends from the gym, which is the key item in the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "In what ways is Caroline participating in the LGBTQ community?",
+      "gold": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n\n1. Caroline attended a LGBTQ support group and found it powerful and inspiring.\n2. Caroline is keen on counseling or working in mental health to support those with similar issues.\n3. Caroline chose an adoption agency that helps LGBTQ+ folks with adoption.\n4. Caroline talked about her transgender journey at a school event, encouraging students to get involved in the LGBTQ community.\n5. Caroline attended an LGBTQ+ counseling workshop.\n6. Caroline went to an LGBTQ+ pride parade and felt a sense of belonging.\n7. Caroline is planning to attend a transgender conference.\n8. Caroline joined a mentorship program for LGBTQ youth.\n9. Caroline is organizing an LGBTQ art show featuring her paintings.\n10. Caroline joined a new LGBTQ activist group called 'Connected LGBTQ Activists'.\n11. Caroline volunteered at an LGBTQ+ youth center.\n12. Caroline attended a transgender poetry reading event.\n13. Caroline passed adoption agency interviews, moving towards her goal of having a family.\n\n## Step 2: ENTITY VERIFICATION\n\nAll relevant memories are about Caroline and her participation in the LGBTQ community.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n\n- Caroline participates in LGBTQ support groups and finds them inspiring.\n- She is interested in counseling and mental health work to support the LGBTQ community.\n- She chose an adoption agency that supports LGBTQ+ adoption.\n- She actively shares her transgender journey to inspire others and encourage involvement in the LGBTQ community.\n- She attends LGBTQ+ events like pride parades and conferences.\n- She mentors LGBTQ youth and organizes art shows to promote LGBTQ visibility.\n- She is part of an LGBTQ activist group and volunteers at a youth center.\n- She attends events like transgender poetry readings to support and celebrate LGBTQ identities.\n\n## Step 4: SELECT THE BEST ANSWER\n\nCaroline's participation in the LGBTQ community is extensive and multifaceted, involving support groups, counseling, adoption advocacy, p",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "he generated answer includes joining an activist group, going to pride parades, participating in an art show, and mentoring program, which are all part of the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "Is the friend who wrote Deborah the motivational quote no longer alive?",
+      "gold": "likely yes",
+      "answer": "To determine if the friend who wrote Deborah the motivational quote is no longer alive, let's follow the reasoning steps:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory (Wednesday, August 30, 2023):** Deborah mentions a quote written to her by a friend who will \"never be able to support me\" and expresses missing him.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about Deborah and her friend, confirming the context is correct for the question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The memory explicitly states that the friend who wrote the quote will never be able to support Deborah again, implying the friend is no longer alive.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory provides a specific detail that the friend is no longer able to support Deborah, which is a strong indication of the friend's passing.\n\n## Step 5: TEMPORAL GROUNDING\n- The memory is dated August 30, 2023, which is consistent with the timeline of events.\n\n## Step 6: INCLUSION CHECK\n- No other memories contradict this information, and it is the only memory directly addressing the status of the friend who wrote the quote.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the memory, it is clear that the friend who wrote Deborah the motivational quote is no longer alive.\n\nANSWER: Yes, the friend who wrote Deborah the motivational quote is no longer alive.",
+      "correct": true,
+      "category": "open-domain",
+      "verdict_tail": "concludes that the friend is no longer alive based on the memory that the friend will 'never be able to support' Deborah, which aligns with the gold answer's 'likely yes'.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "Would Melanie be more interested in going to a national park or a theme park?",
+      "gold": "National park",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Melanie mentions enjoying hiking in the mountains and exploring forests with her family (Saturday, July 15, 2023).\n- Melanie describes a family camping trip as the highlight of their summer, where they roast marshmallows and tell stories around the campfire (Thursday, July 20, 2023).\n- Melanie expresses the peacefulness and refreshment of waking up to the sound of birds and the smell of fresh air during camping trips (Friday, October 20, 2023).\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Melanie and her experiences with nature and camping.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Melanie enjoys hiking and exploring nature with her family, indicating a preference for natural settings.\n- She finds camping trips to be a highlight of her summer, suggesting a strong interest in outdoor activities.\n- The peacefulness and refreshment she describes from camping trips further emphasize her appreciation for nature.\n\n## Step 4: SELECT THE BEST ANSWER\nThe memories consistently show Melanie's interest in nature and outdoor activities, specifically hiking and camping. There is no mention of theme parks or similar attractions.\n\n## Step 5: TEMPORAL GROUNDING\nAll memories are from 2023, and there is no indication of a change in preference over time.\n\n## Step 6: INCLUSION CHECK\nAll relevant memories have been included, and they consistently point to Melanie's interest in nature and camping.\n\n## Step 7: COMMIT AND ANSWER\nBased on the evidence from the memories, Melanie would be more interested in going to a national park than a theme park.\n\nANSWER: Melanie would be more interested in going to a national park.",
+      "correct": true,
+      "category": "open-domain",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies Melanie's interest in nature and outdoor activities, aligning with the preference for a national park.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 132
+    },
+    {
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from Thursday, April 21, 2022: Nate mentions a series he loves, which includes adventures, magic, and great characters. He describes it as a must-read.\n- Memory from Thursday, April 21, 2022: Nate shares an image of the \"Lord of the Rings\" trilogy DVD boxset, indicating it is one of his favorites due to the world-building, battles, and storytelling.\n- Memory from Monday, August 22, 2022: Nate shares an image of \"A Court of Thorns and Roses\" book series by Sarah J. Maas, suggesting it as a good series to read.\n\n## Step 2: ENTITY VERIFICATION\n- All relevant memories are about Nate and his preferences.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Nate's favorite book series is described as having adventures, magic, and great characters. This aligns with the \"Lord of the Rings\" trilogy, which he explicitly mentions as one of his favorites due to its world-building, battles, and storytelling.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is Nate's mention of the \"Lord of the Rings\" trilogy, which he describes with high specificity regarding its content and his enjoyment of it.\n\n## Step 5: TEMPORAL GROUNDING\n- The relevant memories are from April 21, 2022, and August 22, 2022. The \"Lord of the Rings\" mention is the earliest and most specific reference to a favorite series.\n\n## Step 6: INCLUSION CHECK\n- No other book series is mentioned with the same level of detail and preference as the \"Lord of the Rings\" trilogy.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Nate's favorite book series is about adventures, magic, and great characters, specifically the \"Lord of the Rings\" trilogy.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key concept of Nate's favorite book series according to the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "What could John do after his basketball career?",
+      "gold": "become a basketball coach since he likes giving back and leadership",
+      "answer": "## Step 1: SCAN ALL MEMORIES\nThe relevant memories regarding what John could do after his basketball career include:\n\n- (Thursday, September 21, 2023) John mentions wanting to use his platform to make a positive difference and inspire others, possibly starting a foundation and doing charity work.\n- (Tuesday, December 26, 2023) John talks about working on supporting youth sports and fighting for fair chances in sports for underserved communities, collaborating with organizations to create more opportunities for young athletes.\n- (Sunday, January 07, 2024) John held a benefit basketball game, which was a success and raised money for charity.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about John, confirming that the information pertains to him.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\nJohn has expressed interest in using his platform for charity work and making a positive impact. He has already been involved in organizing events like benefit basketball games and supporting youth sports, indicating a strong inclination towards community service and charity work.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific details available are John's plans to start a foundation, do charity work, and support youth sports. These activities are directly related to his interests and actions mentioned in the memories.\n\n## Step 5: TEMPORAL GROUNDING\nThe memories span from September 2023 to January 2024, showing a consistent interest in charity work and community service over several months.\n\n## Step 6: INCLUSION CHECK\nAll relevant items have been included, and there are no duplicates or missed items.\n\n## Step 7: COMMIT AND ANSWER\nJohn could focus on charity work and community service after his basketball career, potentially starting a foundation and supporting youth sports, as he has expressed interest in making a positive impact and has already been involved in related activities.\n\nANSWER: John could focus on charity work and community service, potentially starting a f",
+      "correct": true,
+      "category": "open-domain",
+      "verdict_tail": "``json\n{\n  \"reasoning\": \"The generated answer includes John's interest in supporting youth sports, which aligns with the gold answer's focus on leadership and giving back.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 191
+    },
+    {
+      "q": "What has Andrew done with his dogs?",
+      "gold": "Taking walks and hiking",
+      "answer": "To determine what Andrew has done with his dogs, I will follow the reasoning steps outlined.\n\n## Step 1: SCAN ALL MEMORIES\nI will identify memories that mention activities Andrew has done with his dogs.\n\n1. Andrew expresses excitement about going on a trip with his dog and mentions looking for a place near a park or woods for his dog to run around (May 6, 2023).\n2. Andrew mentions taking Toby, his German Shepherd, on a small hike at a local trail (August 4, 2023).\n3. Andrew shares a photo of a hike with his dog, indicating he has gone hiking with his dog (October 28, 2023).\n4. Andrew plans to take both of his dogs, Toby and Buddy, to hiking trails (October 19, 2023).\n5. Andrew mentions adopting another dog named Scout and creating a safe and fun space for him (November 22, 2023).\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about Andrew and his dogs, specifically Toby, Buddy, and Scout.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Andrew has taken Toby on a hike at a local trail.\n- He plans to take both Toby and Buddy on hiking trails.\n- He has adopted another dog, Scout, and is creating a safe space for him.\n- Andrew has expressed a desire to go on trips and find places for his dogs to run around.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific details about what Andrew has done with his dogs include taking Toby on a hike and planning to take both Toby and Buddy on hiking trails. He has also adopted Scout and is integrating him into his home.\n\n## Step 5: TEMPORAL GROUNDING\nThese activities and plans are grounded in the timeline from May to November 2023.\n\n## Step 6: INCLUSION CHECK\nI have included all relevant activities mentioned in the memories.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Andrew has taken his dog Toby on a hike at a local trail, plans to take both Toby and Buddy on hiking trails, and has adopted another dog named Scout, creating a safe and fun space for him.",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes hiking, which is part of the gold answer's list of activities Andrew has done with his dogs.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When did the Deboran and Jolene agree to go surfing?",
+      "gold": "in October 2023",
+      "answer": "To determine when Deborah and Jolene agreed to go surfing, let's follow the steps outlined:\n\n## Step 1: SCAN ALL MEMORIES\n- **March 22, 2023**: Jolene expresses interest in learning to surf and mentions gathering information and watching videos about it.\n- **July 9, 2023**: Deborah mentions taking her pets for a run in the park, but no mention of surfing.\n- **September 15, 2023**: Deborah shares that a particular beach is special to her because it's where she got married and discovered her love for surfing.\n- **September 17, 2023**: Jolene asks Deborah if she has ever tried surfing, and Deborah confirms with a photo of a surfer riding a wave. Jolene also mentions trying a scuba diving lesson recently.\n\n## Step 2: ENTITY VERIFICATION\n- All relevant memories involve Jolene and Deborah discussing surfing or related activities.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Jolene expressed interest in surfing on March 22, 2023.\n- Deborah has a personal connection to surfing, as mentioned on September 15, 2023.\n- On September 17, 2023, Jolene and Deborah discuss surfing, with Deborah confirming her experience.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail about both discussing surfing is on September 17, 2023, when Jolene asks Deborah about her surfing experience, and Deborah confirms it.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation about surfing between Jolene and Deborah took place on September 17, 2023.\n\n## Step 6: INCLUSION CHECK\n- No other memories specifically mention an agreement to go surfing together.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the available memories, there is no explicit agreement between Deborah and Jolene to go surfing together. However, they discussed surfing on September 17, 2023, which is the closest interaction related to surfing.\n\nANSWER: There is no explicit agreement between Deborah and Jolene to go surfing together, but they discussed surfing on September 17, 2023.",
+      "correct": false,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention October 2023, which is the correct time when Deborah and Jolene agreed to go surfing.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 122
+    },
+    {
+      "q": "What did Mel and her kids paint in their latest project in July 2023?",
+      "gold": "a sunset with a palm tree",
+      "answer": "To determine what Mel and her kids painted in their latest project in July 2023, follow these steps:\n\n## Step 1: SCAN ALL MEMORIES\n- On Saturday, July 15, 2023, Melanie mentioned that they love painting together, especially nature-inspired ones, and shared their latest work from the previous weekend, which was a painting of vibrant flowers and a sunset sky.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about Melanie and her kids, which matches the question asking about Mel and her kids.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The memory from July 15, 2023, specifically mentions that Melanie and her kids painted a nature-inspired piece featuring vibrant flowers and a sunset sky.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory provides a specific description of the painting, which is a nature-inspired piece with vibrant flowers and a sunset sky.\n\n## Step 5: TEMPORAL GROUNDING\n- The painting project took place in July 2023, as confirmed by the memory dated July 15, 2023.\n\n## Step 6: INCLUSION CHECK\n- No other memories contradict or add to this specific painting project, so it should be included as the answer.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the memory, the latest painting project by Mel and her kids in July 2023 was a nature-inspired piece featuring vibrant flowers and a sunset sky.\n\nANSWER: Mel and her kids painted a nature-inspired piece featuring vibrant flowers and a sunset sky in their latest project in July 2023.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "\n{\n  \"reasoning\": \"The generated answer includes 'a sunset sky,' which partially matches the gold answer's 'a sunset with a palm tree,' fulfilling the partial credit rule.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 162
+    },
+    {
+      "q": "What might John's financial status be?",
+      "gold": "Middle-class or wealthy",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- John mentioned being passionate about improving education and infrastructure in the community (December 17, 2022).\n- John has been involved in community activities, such as organizing events and toy drives (January 1, 2023).\n- John was promoted to assistant manager at work, which he described as a reward for his hard work and overcoming challenges (June 16, 2023).\n- John lost his job at a mechanical engineering company due to the company tanking (August 5, 2023).\n- John expressed feelings of not making much of an impact and questioning his decisions and goals (August 11, 2023).\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about John, confirming they pertain to his financial status and related experiences.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- John was promoted to assistant manager, indicating a positive financial status at that time (June 16, 2023).\n- However, he later lost his job at the mechanical engineering company, which likely negatively impacted his financial status (August 5, 2023).\n- John's involvement in community activities and his expression of self-doubt suggest he is actively seeking purpose and stability.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific details are John's promotion to assistant manager and subsequent job loss.\n- The job loss is the most recent event affecting his financial status.\n\n## Step 5: TEMPORAL GROUNDING\n- The promotion occurred on June 16, 2023, and the job loss on August 5, 2023.\n- The job loss is the most recent event, indicating a potential negative impact on his financial status.\n\n## Step 6: INCLUSION CHECK\n- Include both the promotion and job loss as they provide a complete picture of John's financial situation.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: John's financial status might be unstable. He was promoted to assistant manager in June 2023, indicating a positive financial situation at that time. However, he lost his job at the mechanical engineering company in August ",
+      "correct": false,
+      "category": "open-domain",
+      "verdict_tail": "er does not include any reference to John being middle-class or wealthy, focusing instead on his job promotion and subsequent job loss, which does not match the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 149
+    },
+    {
+      "q": "When did Melanie go to the museum?",
+      "gold": "5 July 2023",
+      "answer": "To determine when Melanie went to the museum, follow these steps:\n\n## Step 1: SCAN ALL MEMORIES\nIdentify memories mentioning Melanie's visit to the museum.\n\n- (Thursday, July 06, 2023) Melanie: That's awesome, Caroline! Congrats on following your dreams. Yesterday I took the kids to the museum - it was so cool spending time with them and seeing their eyes light up! [Sharing image — query: kids laughing dinosaur exhibit museum. The image shows: a photography of two children playing in a water play area]\n\n## Step 2: ENTITY VERIFICATION\nConfirm the memory is about Melanie. The memory clearly states that Melanie took the kids to the museum.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\nThere is only one memory mentioning Melanie's visit to the museum, so no need to combine multiple memories.\n\n## Step 4: SELECT THE BEST ANSWER\nThe memory provides a specific date for the museum visit: \"Yesterday,\" relative to the conversation date of Thursday, July 06, 2023.\n\n## Step 5: TEMPORAL GROUNDING\nCalculate the exact date of the museum visit. Since the conversation took place on Thursday, July 06, 2023, \"yesterday\" refers to Wednesday, July 05, 2023.\n\n## Step 6: INCLUSION CHECK\nNo additional relevant memories were found, so no items are excluded.\n\n## Step 7: COMMIT AND ANSWER\nProvide the specific date of Melanie's museum visit.\n\nANSWER: Melanie went to the museum on Wednesday, July 05, 2023.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "asoning\": \"The generated answer correctly identifies the date of Melanie's museum visit as July 05, 2023, which is within 14 days of the gold answer date of July 05, 2023.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When was Jon in Rome?",
+      "gold": "June 2023",
+      "answer": "To determine when Jon was in Rome, let's follow the steps outlined:\n\n## Step 1: SCAN ALL MEMORIES\n- Memory from Monday, June 19, 2023: Jon mentions taking a short trip to Rome last week to clear his mind.\n\n## Step 2: ENTITY VERIFICATION\n- The memory is about Jon, who is the correct person in question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The memory from June 19, 2023, indicates Jon was in Rome the previous week.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory from June 19, 2023, is specific and directly answers the question about Jon's trip to Rome.\n\n## Step 5: TEMPORAL GROUNDING\n- Since Jon mentioned being in Rome last week from June 19, 2023, this places his trip to Rome around the week of June 12-18, 2023.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories indicating a different time Jon was in Rome, so this is the only instance.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the memory, Jon was in Rome during the week of June 12-18, 2023.\n\nANSWER: Jon was in Rome during the week of June 12-18, 2023.",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer places Jon in Rome during June 2023, which matches the gold answer's timeframe.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 125
+    },
+    {
+      "q": "What has John been teaching his siblings?",
+      "gold": "coding",
+      "answer": "To determine what John has been teaching his siblings, let's follow the reasoning steps:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory on August 26, 2022**: John mentions helping his younger siblings with programming since they joined a programming course.\n- **Memory on September 01, 2022**: John states that he has been teaching his siblings coding, and they are already creating their own programs.\n- **Memory on September 01, 2022**: John mentions that his siblings are starting small by making basic games and stories.\n\n## Step 2: ENTITY VERIFICATION\nAll relevant memories are about John and his siblings, confirming that the information pertains to the correct individuals.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- John has been teaching his siblings programming and coding.\n- His siblings are creating their own programs, starting with basic games and stories.\n\n## Step 4: SELECT THE BEST ANSWER\nThe most specific detail is that John is teaching his siblings programming and coding, focusing on creating basic games and stories.\n\n## Step 5: TEMPORAL GROUNDING\nThe relevant memories are from August and September 2022, which are consistent with the timeframe of the conversations.\n\n## Step 6: INCLUSION CHECK\nAll relevant details have been included, and there are no duplicates or contradictions.\n\n## Step 7: COMMIT AND ANSWER\nJohn has been teaching his siblings programming and coding, specifically helping them create basic games and stories.\n\nANSWER: John has been teaching his siblings programming and coding, focusing on creating basic games and stories.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes 'coding', which matches the gold answer, and provides additional context about programming and creating games.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 175
+    },
+    {
+      "q": "How many charity tournaments has John organized till date?",
+      "gold": "two",
+      "answer": "To determine how many charity tournaments John has organized, let's follow the steps outlined:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory from Sunday, May 08, 2022**: John organized a tournament for CS:GO to raise money for a dog shelter.\n- **Memory from Monday, October 31, 2022**: John organized a gaming tournament with his buddies, playing Fortnite, Overwatch, and Apex Legends, to raise money for a children's hospital.\n\n## Step 2: ENTITY VERIFICATION\nBoth memories are about John organizing charity tournaments.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- John organized a CS:GO tournament for a dog shelter.\n- John organized a gaming tournament for a children's hospital, including games like Fortnite, Overwatch, and Apex Legends.\n\n## Step 4: SELECT THE BEST ANSWER\nBoth instances are specific and directly answer the question about charity tournaments organized by John.\n\n## Step 5: TEMPORAL GROUNDING\n- The first tournament was organized before May 8, 2022.\n- The second tournament was organized before October 31, 2022.\n\n## Step 6: INCLUSION CHECK\nBoth tournaments are distinct events and should be included in the count.\n\n## Step 7: COMMIT AND ANSWER\nJohn has organized two charity tournaments to date.\n\nANSWER: 2",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies two charity tournaments organized by John, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 142
+    },
+    {
+      "q": "Where did Deborah meet her new neighbor Anna?",
+      "gold": "yoga in the park",
+      "answer": "**Step 1: SCAN ALL MEMORIES**\n\n- Memory from February 1, 2023: Deborah mentions meeting her new neighbor Anna at yoga in the park.\n\n**Step 2: ENTITY VERIFICATION**\n\n- The memory is about Deborah meeting her new neighbor Anna, which is the correct entity for the question.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**\n\n- There is only one memory that mentions where Deborah met her new neighbor Anna, which is at yoga in the park.\n\n**Step 4: SELECT THE BEST ANSWER**\n\n- The memory from February 1, 2023, provides a specific detail about where Deborah met Anna, which is at yoga in the park. This is a high specificity detail.\n\n**Step 5: TEMPORAL GROUNDING**\n\n- The memory is dated February 1, 2023, which is consistent with the timeframe of the conversations.\n\n**Step 6: INCLUSION CHECK**\n\n- There are no other memories that contradict or add to the information about where Deborah met Anna.\n\n**Step 7: COMMIT AND ANSWER**\n\nANSWER: Deborah met her new neighbor Anna at yoga in the park.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies that Deborah met her new neighbor Anna at yoga in the park, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "Which outdoor gear company likely signed up John for an endorsement deal?",
+      "gold": "Under Armour",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from Tuesday, December 19, 2023: John mentions getting an amazing deal with a renowned outdoor gear company and describes a photoshoot in a forest with epic shots.\n\n## Step 2: ENTITY VERIFICATION\n- The memory from December 19, 2023, is about John, who is the correct person in question.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- John signed an endorsement deal with a renowned outdoor gear company and participated in a photoshoot in a forest setting.\n\n## Step 4: SELECT THE BEST ANSWER\n- The memory from December 19, 2023, provides specific information about John's endorsement deal with an outdoor gear company.\n\n## Step 5: TEMPORAL GROUNDING\n- The endorsement deal with the outdoor gear company was mentioned on December 19, 2023, which is the most recent and relevant date for this event.\n\n## Step 6: INCLUSION CHECK\n- There are no other memories mentioning a different outdoor gear company endorsement for John, so this is the only relevant instance.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: John likely signed up with a renowned outdoor gear company for an endorsement deal, as mentioned on December 19, 2023.",
+      "correct": false,
+      "category": "open-domain",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention Under Armour, which is the correct company, and provides no correct items from the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 73
+    },
+    {
+      "q": "Which of their family member do Calvin and Dave have nostalgic memories about?",
+      "gold": "Dad",
+      "answer": "## Step 1: SCAN ALL MEMORIES\n- Memory from August 3, 2023: Dave recalls fond memories of working on cars with his dad as a kid, specifically mentioning a summer spent restoring an old car together.\n- Memory from September 22, 2023: Calvin mentions a nostalgic memory of a road trip with his dad, where they had fun singing along to a song by Tupac and Dr. Dre called \"California Love.\"\n\n## Step 2: ENTITY VERIFICATION\n- Both memories are about Calvin and Dave's nostalgic memories involving their fathers.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- Calvin has nostalgic memories of a road trip with his dad, associated with the song \"California Love.\"\n- Dave has nostalgic memories of working on cars with his dad, particularly restoring an old car one summer.\n\n## Step 4: SELECT THE BEST ANSWER\n- Both Calvin and Dave have nostalgic memories involving their fathers. Calvin's memory is tied to a specific song and a road trip, while Dave's memory is tied to working on cars.\n\n## Step 5: TEMPORAL GROUNDING\n- The memories are from 2023, and the events they recall likely happened in their childhoods, which would be before 2023.\n\n## Step 6: INCLUSION CHECK\n- Both memories are distinct and relevant to the question, so both should be included in the answer.\n\n## Step 7: COMMIT AND ANSWER\nANSWER: Calvin and Dave have nostalgic memories about their fathers. Calvin remembers a road trip with his dad, singing along to \"California Love,\" while Dave recalls working on cars with his dad, particularly restoring an old car one summer.",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies that both Calvin and Dave have nostalgic memories about their fathers, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "q": "When did Melanie go on a hike after the roadtrip?",
+      "gold": "19 October 2023",
+      "answer": "To determine when Melanie went on a hike after the road trip, let's follow the steps:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory on Friday, October 20, 2023**: Melanie mentions a road trip that started badly due to a car accident involving her son. She also talks about bonding over stories, campfires, and nature, which suggests a camping or hiking activity.\n- **Memory on Friday, October 20, 2023**: Caroline comments on the peacefulness of waking up to nature, indicating that Melanie and her family spent time in nature, likely involving hiking.\n- **Memory on Friday, October 20, 2023**: Melanie shares an image query about family hiking in the mountains, which suggests that hiking was part of their activities after the road trip.\n\n## Step 2: ENTITY VERIFICATION\n- All relevant memories involve Melanie and her family, confirming that the hiking activity is attributed to them.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The road trip and subsequent nature activities, including hiking, are mentioned in the same context on October 20, 2023. This suggests that the hiking took place shortly after the road trip.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is that the hiking occurred after the road trip, which was discussed on October 20, 2023.\n\n## Step 5: TEMPORAL GROUNDING\n- The road trip and hiking are mentioned together on October 20, 2023, indicating that the hiking took place around this date.\n\n## Step 6: INCLUSION CHECK\n- No additional hiking instances are mentioned in the memories, confirming that this is the relevant event.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the evidence, Melanie went on a hike after the road trip on or around October 20, 2023.\n\nANSWER: Melanie went on a hike after the road trip on or around October 20, 2023.",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer provides a date within 14 days of the gold answer, which is acceptable according to the date tolerance rule.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 156
+    },
+    {
+      "q": "When did Nate get Tilly for Joanna?",
+      "gold": "25 May, 2022",
+      "answer": "To determine when Nate got Tilly for Joanna, let's follow the reasoning steps:\n\n## Step 1: SCAN ALL MEMORIES\n- **Memory on Friday, October 21, 2022**: Joanna mentions Tilly helps her stay focused and brings her joy. This indicates Tilly was already with Joanna by this date.\n- **Memory on Friday, October 21, 2022**: Nate asks Joanna what made her name Tilly, suggesting Tilly is a recent addition to Joanna's life.\n\n## Step 2: ENTITY VERIFICATION\n- Both memories are about Joanna and Nate, confirming the context is correct.\n\n## Step 3: COMBINE AND CROSS-REFERENCE\n- The mention of Tilly on October 21, 2022, and Nate's inquiry about the name suggests Tilly was given to Joanna shortly before this date.\n\n## Step 4: SELECT THE BEST ANSWER\n- The most specific detail available is that Tilly was mentioned on October 21, 2022, and Nate's question implies it was a recent event.\n\n## Step 5: TEMPORAL GROUNDING\n- The conversation about Tilly took place on October 21, 2022, indicating Tilly was given to Joanna shortly before this date.\n\n## Step 6: INCLUSION CHECK\n- No other memories mention Tilly, so there are no additional details to include.\n\n## Step 7: COMMIT AND ANSWER\n- Based on the evidence, Nate got Tilly for Joanna shortly before October 21, 2022.\n\nANSWER: Nate got Tilly for Joanna shortly before October 21, 2022.",
+      "correct": false,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not include the correct date of May 25, 2022, and suggests a different timeframe, indicating a different understanding.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    }
+  ]
+}
