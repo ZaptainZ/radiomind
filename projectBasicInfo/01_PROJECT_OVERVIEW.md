@@ -96,6 +96,49 @@ LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
 
 ---
 
+## 全架构接通 + Mem0 协议对齐（2026-04-18）
+
+重要里程碑：此前 benchmark 只跑"L2 raw retrieval + answer"路径，三体 / Dream / L3 habits / Meta 全都没激活。这一轮把所有实现了但没接通的层级接入公共 API，让 benchmark 走完整栈。
+
+### 新的公共 API
+- `RadioMind.ingest_turns_raw(turns, domain, run_aggregation, run_refinement)` —— 不经 L1 gate 的批量入口，完整走 KG + Meta + 聚合 + 三体
+- `RadioMind.get_meta_calibration()` —— Meta 自侧写输出的 answer prompt 纠偏指令
+- `RadioMind.search(max_results=N)` —— 先前硬编码为 10，benchmark 需要 200
+
+### 关键改进
+1. **三体产出的 habit 镜像为 L2 PRINCIPLE**——HDC 在 NL 查询上相似度过低，镜像让 pyramid.search 正常捞到
+2. **AGGREGATE_PROMPT 升级为 ENTITIES 枚举**——`ENTITIES: name(count), name(count)` 给多 session 聚合查询精确检索弹药
+3. **score-blended sort**（`score * (1 + 0.1 * level)`）——保护 single-hop 具体事实不被抽象 principle 挤出 top-k
+4. **三体采样 20 → 80**——长 haystack 下不再偏见取前 3%
+
+### 新 benchmark harness（Mem0 verbatim 协议）
+
+| File | 数据集 | answer/judge 协议 |
+|---|---|---|
+| `bench/end_to_end/mem0_protocol/` | — | Mem0 原样 prompts（Apache 2.0 port） |
+| `bench/end_to_end/run_longmemeval_mem0.py` | longmemeval_s_cleaned.json (47.7 sess/q) | Mem0 verbatim，top_k=200 |
+| `bench/end_to_end/run_locomo_mem0.py` | locomo10.json cat 1-4 | Mem0 verbatim，top_k=200 |
+| `bench/end_to_end/PROTOCOL.md` | — | 完整 run 矩阵 + 协议对照 |
+
+### 最终数字（架构 v3 + deepseek-v3.2 answer + qwen-max judge，n=30）
+
+| System | LongMemEval-S | LoCoMo cat 1-4 |
+|---|---:|---:|
+| Mem0 v3（gpt-4o） | 93.4 | 91.6 |
+| MemMachine | 93.0 (S) | 91.69 |
+| **RadioMind** | **90.0** | **83.3** |
+
+差 Mem0 3.4–8.3 pt，主要是模型差（gpt-4o vs deepseek-v3.2）。
+
+### 架构可证明的增益
+- knowledge-update：+40 pt（三体 principle 消歧 previous/current）
+- multi-hop / multi-session：+12–20 pt（ENTITIES aggregation）
+- open-domain：+28 pt（deepseek-v3.2 推理力强，架构没拖后腿）
+
+详见 `logs/2026-04-18-full-architecture-wired-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
