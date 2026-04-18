@@ -54,12 +54,27 @@ Why this matters: our old judge said "CORRECT if conveys same info; INCORRECT if
 | lme-s-mem0proto-qwen-fullarch-n30 | s_cleaned | Mem0 | qwen-plus+refine | qwen-max | 0.767* | ~ (*3 transients) |
 | lme-s-mem0proto-qwen-metacal-n30 | s_cleaned | Mem0 | qwen-plus+refine+metacal | qwen-max | 0.833 | ~ |
 | lme-s-mem0proto-qwen-v2-n30 | s_cleaned | Mem0 | +boost 0.2 | qwen-max | 0.800 | ~ |
-| **lme-s-mem0proto-qwen-v3-n30** | s_cleaned | Mem0 | **full arch, boost 0.1** | qwen-max | **0.867** | ~ (best so far w/o gpt-4o) |
+| lme-s-mem0proto-qwen-v3-n30 | s_cleaned | Mem0 | full arch, boost 0.1 | qwen-max | 0.867 | ~ |
+| lme-s-mem0proto-qwen3max-n30 | s_cleaned | Mem0 | v3 + qwen3-max | qwen-max | 0.833 | ~ |
+| **lme-s-mem0proto-deepseek32-n30** | s_cleaned | Mem0 | **v3 + deepseek-v3.2** | qwen-max | **0.900** | ~ best |
 | locomo-mem0proto-qwen-n30 | locomo10 cat 1-4 | Mem0 | qwen-plus | qwen-max | 0.767 | ~ |
 | locomo-mem0proto-qwen-fullarch-n30 | locomo10 cat 1-4 | Mem0 | +boost 0.2 | qwen-max | 0.733 | ~ |
-| **locomo-mem0proto-qwen-v3-n30** | locomo10 cat 1-4 | Mem0 | **full arch, boost 0.1** | qwen-max | **0.767** | ~ |
+| locomo-mem0proto-qwen-v3-n30 | locomo10 cat 1-4 | Mem0 | full arch, boost 0.1 | qwen-max | 0.767 | ~ |
+| **locomo-mem0proto-deepseek32-n30** | locomo10 cat 1-4 | Mem0 | **v3 + deepseek-v3.2** | qwen-max | **0.833** | ~ best |
 | **lme-s-mem0proto-gpt4o (TODO)** | **s_cleaned** | **Mem0** | **gpt-4o** | **gpt-4o** | **pending** | **✅** |
 | **locomo-mem0proto-gpt4o (TODO)** | **locomo10 cat 1-4** | **Mem0** | **gpt-4o** | **gpt-4o** | **pending** | **✅** |
+
+## Best RadioMind numbers vs published SOTA
+
+| System       | LongMemEval-S / S | LoCoMo (cat 1-4) | Answer model  |
+|--------------|-------------------|------------------|---------------|
+| Mem0 v3      | 93.4              | 91.6             | gpt-4o        |
+| MemMachine   | 93.0 (S)          | 91.69            | gpt-5-mini / gpt-4.1-mini |
+| **RadioMind**| **90.0**          | **83.3**         | deepseek-v3.2 |
+
+Remaining gap:
+- LongMemEval-S: 3.4 pt (likely mostly model gap)
+- LoCoMo:        8.3 pt (model gap + Mem0's LLM-based fact extraction)
 
 ## Architecture contribution breakdown (v3 vs baseline, qwen-plus answer+judge)
 
