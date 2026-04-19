@@ -124,7 +124,12 @@ class OpenAICompatBackend(LLMBackend):
                 "Authorization": f"Bearer {self.api_key}",
             },
         )
-        with _NO_PROXY_OPENER.open(req, timeout=120) as resp:
+        # Per-call timeout capped at 45s. Prior 120s timeout meant a single
+        # stuck DashScope call could block the whole benchmark pipeline for
+        # minutes at a time; 45s is well above p99 call latency (<3s) yet
+        # short enough to recover from a stale SSL handshake without wasting
+        # a full ingest cycle.
+        with _NO_PROXY_OPENER.open(req, timeout=45) as resp:
             result = json.loads(resp.read())
 
         duration = time.time() - t0
