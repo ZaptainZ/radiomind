@@ -11,6 +11,13 @@ from typing import Any
 
 from radiomind.core.config import Config
 
+# Bypass system proxy (macOS scutil-level / Surge / Clash).
+# Default urllib auto-picks system proxy config, which blocks the whole
+# RadioMind pipeline when the user's proxy client is misbehaving or down
+# (indefinite SSL handshake hang to localhost:6152). Every LLM + API
+# call should go direct unless the user explicitly sets HTTPS_PROXY.
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 
 @dataclass
 class LLMResponse:
@@ -67,7 +74,7 @@ class OllamaBackend(LLMBackend):
             data=data,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with _NO_PROXY_OPENER.open(req, timeout=120) as resp:
             result = json.loads(resp.read())
 
         duration = time.time() - t0
@@ -82,7 +89,7 @@ class OllamaBackend(LLMBackend):
     def is_available(self) -> bool:
         try:
             req = urllib.request.Request(f"{self.host}/api/tags")
-            with urllib.request.urlopen(req, timeout=5):
+            with _NO_PROXY_OPENER.open(req, timeout=5):
                 return True
         except Exception:
             return False
@@ -117,7 +124,7 @@ class OpenAICompatBackend(LLMBackend):
                 "Authorization": f"Bearer {self.api_key}",
             },
         )
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with _NO_PROXY_OPENER.open(req, timeout=120) as resp:
             result = json.loads(resp.read())
 
         duration = time.time() - t0
