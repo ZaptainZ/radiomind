@@ -499,6 +499,7 @@ class RadioMind:
         session_id: str = "",
         max_results: int = 10,
         fuse_habits: bool = True,
+        attention_tags: list[str] | None = None,
     ) -> list[SearchResult]:
         """Retrieve memories relevant to the query.
 
@@ -514,7 +515,18 @@ class RadioMind:
         (e.g., when measuring what the habit layer contributes).
         """
         self._check_init()
-        results = self._pyramid.search(query, domain=domain, max_results=max_results)
+        # Auto-classify the query's attention signature when caller hasn't
+        # pre-tagged. Drives layer routing inside pyramid.search.
+        if attention_tags is None:
+            try:
+                from radiomind.core.attention import classify
+                attention_tags = classify(query)
+            except Exception:
+                attention_tags = None
+        results = self._pyramid.search(
+            query, domain=domain, max_results=max_results,
+            attention_tags=attention_tags,
+        )
 
         if fuse_habits and self._habits is not None:
             try:

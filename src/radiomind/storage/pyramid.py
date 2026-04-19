@@ -148,8 +148,21 @@ class PyramidSearch:
         start_level: int = 2,
         max_results: int = 10,
         domain: str | None = None,
+        attention_tags: list[str] | None = None,
     ) -> list[SearchResult]:
-        """Hybrid retrieval with RRF fusion + privacy/domain filtering."""
+        """Hybrid retrieval with RRF fusion + privacy/domain filtering.
+
+        attention_tags (from core.attention.classify()) drives per-level
+        boost — different query types want different memory layers:
+          - aggregation    → L2 patterns (ENTITIES summaries) first
+          - open-domain    → L3 principles / habits first (inference)
+          - narrative      → raw L2 facts (PRESERVE storytelling)
+          - temporal       → dated facts + KG bitemporal
+          - disambiguation → KG latest-wins + narrative
+          - lookup (default) → balanced, slight level boost
+        When attention_tags is None, falls back to the legacy uniform
+        0.1-per-level boost.
+        """
         candidates: list[list[SearchResult]] = []
 
         # Query rewriting: if a rewriter is configured, generate paraphrased
@@ -261,20 +274,13 @@ class PyramidSearch:
                 continue
             filtered.append(r)
 
-        # Sort by score boosted per-level. Evolution:
-        # v1: (-level, -score) — ANY principle beat ANY fact. Dropped 20 pt
-        #     on LoCoMo single-hop (abstract principles displaced specific
-        #     facts). Wrong for narrow-fact queries.
-        # v2: score * (1 + 0.2 * level) — principle +40%, pattern +20%.
-        #     Too aggressive: single-hop still lost 25 pt because mid-score
-        #     principles (0.45 × 1.4 = 0.63) beat high-score facts (0.55).
-        # v3: score * (1 + 0.1 * level) — principle +20%, pattern +10%.
-        #     Only tips the scale when principle/pattern scores are WITHIN
-        #     ~10% of a competing fact. Preserves exact-match fact retrieval
-        #     while still letting aggregation summaries win their rightful
-        #     slots on multi-session queries.
+        # Attention-aware level weighting: query type drives which memory
+        # layer takes priority. See `_level_weight_for` for the table.
+        # When no attention_tags provided, keep the legacy uniform
+        # 0.1-per-level boost. Level ints: FACT=0, PATTERN=1, PRINCIPLE=2.
+        lw = self._level_weights(attention_tags or [])
         filtered.sort(
-            key=lambda r: -(r.score * (1.0 + 0.1 * int(r.entry.level))),
+            key=lambda r: -(r.score * lw[min(int(r.entry.level), 2)]),
         )
 
         # 5b. Latest-wins conflict resolution.
@@ -368,6 +374,67 @@ class PyramidSearch:
         except Exception:
             # KG integration is additive — never fail the whole search on KG errors
             return []
+
+    @staticmethod
+    def _level_weights(attention_tags: list[str]) -> tuple[float, float, float]:
+        """Return per-level multipliers (FACT, PATTERN, PRINCIPLE).
+
+        Query-type → which memory layer takes priority. Each tag contributes
+        adjustments; multiple tags multiply. This is the "downward" half of
+        attention-driven retrieval: based on what the query is asking for,
+        which layer of the pyramid should contribute most?
+
+        Defaults (no tags → "lookup"): slight +10% per level, our v3 baseline.
+
+        aggregation: L2 patterns win — they carry ENTITIES + counts from
+            the aggregator. Boost PATTERN; facts stay at 1.0 so they're
+            still candidates.
+        open-domain: L3 principles + habits carry the distilled inference;
+            boost PRINCIPLE strongly. Single facts rarely answer "what
+            might X's financial status be" alone.
+        narrative: keep raw turns; SUPPRESS PRINCIPLE since abstract
+            summaries dilute story-thread context.
+        temporal: tags dated-bearing facts via our temporal extractor,
+            so no level tweak here — temporal_math module handles it.
+        disambiguation: KG-first via pyramid._kg_candidates + slight
+            boost to patterns (state-type relations in PATTERN entries).
+        comparison: aggregation-like — boost patterns for side-by-side.
+        """
+        # Base (no tags = lookup default)
+        fact_w = 1.00
+        pattern_w = 1.10
+        principle_w = 1.20
+        if not attention_tags:
+            return (fact_w, pattern_w, principle_w)
+
+        # Stack tag effects multiplicatively (they're meant to compose).
+        # Caps applied at the end to avoid runaway boost when a query is
+        # labelled with 3+ tags.
+        for tag in attention_tags:
+            if tag == "aggregation":
+                pattern_w *= 1.35   # ENTITIES line is king here
+                principle_w *= 1.10
+            elif tag == "open-domain":
+                principle_w *= 1.50  # inference needs distilled habits
+                pattern_w *= 1.20
+            elif tag == "narrative":
+                principle_w *= 0.70  # abstract summaries hurt story threading
+                pattern_w *= 0.85
+            elif tag == "temporal":
+                # handled by temporal_math; neutral weights
+                pass
+            elif tag == "disambiguation":
+                pattern_w *= 1.20   # state relations live in PATTERN
+            elif tag == "comparison":
+                pattern_w *= 1.25
+                principle_w *= 1.10
+
+        # Cap: no tag combo should push a weak principle above a strong fact
+        # by more than ~80%. Keeps the v3 regression lesson honored.
+        fact_w = max(0.5, min(fact_w, 2.0))
+        pattern_w = max(0.5, min(pattern_w, 2.0))
+        principle_w = max(0.5, min(principle_w, 2.5))
+        return (fact_w, pattern_w, principle_w)
 
     def _suppress_superseded(
         self, results: list[SearchResult], query: str,
