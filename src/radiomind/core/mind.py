@@ -301,6 +301,9 @@ class RadioMind:
         kg_triples = 0
         # Collect per-domain facts-seen count to drive optional refinement.
         domains_touched: set[str] = set()
+        # Collected user turns for batch KG extraction at end of loop.
+        # Shape: [(memory_id, content), ...]
+        user_turns_for_kg: list[tuple[int, str]] = []
 
         for t in turns:
             content = (t.get("content") or "").strip()
@@ -343,29 +346,47 @@ class RadioMind:
                 except Exception:
                     pass
 
-            # KG triples from user turns. Prefer LLM-based extractor — the
-            # regex fallback is Chinese-biased and catches near-zero triples
-            # on English content. LLM pathway runs per user turn (~100-200
-            # output tokens, cheap) and feeds bitemporal KG, entity linking,
-            # and contradiction detection downstream.
+            # Stash user turn text for batch KG extraction at end of loop.
+            # Doing LLM-based triple extraction per-turn (~250 calls per
+            # benchmark question) is too slow and wastes LLM overhead;
+            # batch at domain level runs 1 call covering all user turns.
             if self._kg is not None and role == "user":
-                triples: list[tuple[str, str, str]] = []
-                if self._llm is not None and self._llm.is_available():
+                user_turns_for_kg.append((mid, content))
+
+        # Batch KG extraction: one LLM call covering multiple user turns,
+        # chunked to keep prompts manageable. Falls back to regex-per-turn
+        # if the LLM is unavailable or batch fails.
+        if user_turns_for_kg and self._kg is not None:
+            triples_by_mid: dict[int, list[tuple[str, str, str]]] = {}
+            if self._llm is not None and self._llm.is_available():
+                BATCH = 50  # turns per LLM call — ~50 × 400 chars = 20K tokens input
+                for start in range(0, len(user_turns_for_kg), BATCH):
+                    chunk = user_turns_for_kg[start : start + BATCH]
                     try:
-                        triples = self._kg.extract_triples_llm(content, self._llm)
+                        extracted = self._kg.extract_triples_batch_llm(chunk, self._llm)
+                        for mid, trips in extracted.items():
+                            triples_by_mid.setdefault(mid, []).extend(trips)
                     except Exception:
-                        triples = []
-                if not triples:
-                    try:
-                        triples = self._kg.extract_triples_from_text(content)
-                    except Exception:
-                        triples = []
+                        pass
+            # Any turn the batch skipped (or all turns if LLM unavailable):
+            # regex fallback catches the Chinese subset at least.
+            for mid, text in user_turns_for_kg:
+                if mid in triples_by_mid and triples_by_mid[mid]:
+                    continue
                 try:
-                    for subj, rel, obj in triples:
-                        self._kg.add_triple(subj, rel, obj, source_id=mid)
-                        kg_triples += 1
+                    fb = self._kg.extract_triples_from_text(text)
+                    if fb:
+                        triples_by_mid[mid] = fb
                 except Exception:
                     pass
+            # Persist
+            for mid, trips in triples_by_mid.items():
+                for s, r, o in trips:
+                    try:
+                        self._kg.add_triple(s, r, o, source_id=mid)
+                        kg_triples += 1
+                    except Exception:
+                        pass
 
         aggregations: dict[str, int] = {}
         if run_aggregation and self._llm is not None and self._llm.is_available():

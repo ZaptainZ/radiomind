@@ -144,8 +144,26 @@ class KnowledgeGraph:
         now = time.time()
         valid_from = valid_from or now
 
-        # For unique relations (name_is, works_at, located_in), invalidate old ones
-        if relation in ("name_is", "works_at", "located_in", "currently_doing"):
+        # State relations (UPDATE semantics) — new fact supersedes old.
+        # Event relations (visited, bought, attended, etc.) are additive.
+        #
+        # Heuristic: state verbs describe "current reality" (latest wins);
+        # event verbs describe "something that happened at a point in time"
+        # (all history matters). Action verbs never invalidate each other.
+        #
+        # Benchmark motivation: knowledge-update questions like "How many
+        # dozen eggs do we CURRENTLY have?" require this distinction —
+        # if user said 30 in turn 1 and 20 in turn 7, retrieving both is
+        # noise; only 20 is the current state.
+        _STATE_RELATIONS = {
+            "name_is", "works_at", "located_in", "lives_in", "currently_doing",
+            "current_weight", "current_height", "current_role", "current_age",
+            "personal_best", "best_time", "record", "rank",
+            "has_count_of", "currently_has", "owns", "pet_name",
+            "favorite", "favourite", "preferred",
+            "current_status", "marital_status",
+        }
+        if relation in _STATE_RELATIONS:
             self.conn.execute(
                 "UPDATE triples SET valid_until = ? WHERE subject = ? AND relation = ? AND valid_until IS NULL",
                 (now, subject, relation),
@@ -257,6 +275,114 @@ class KnowledgeGraph:
                 if obj and len(obj) > 0:
                     extracted.append((subject, relation, obj))
         return extracted
+
+    def extract_triples_batch_llm(
+        self,
+        turns: list[tuple[int, str]],
+        llm,
+        max_triples_per_turn: int = 5,
+    ) -> dict[int, list[tuple[str, str, str]]]:
+        """Batch LLM-based triple extractor — use for bulk ingest.
+
+        turns: list of (turn_id, text) pairs. All user turns from one
+        conversation/domain; LLM sees the whole chunk and outputs a map
+        keyed by turn_id → triples. One LLM call for the batch vs one
+        per turn (~250× fewer calls per benchmark question).
+
+        Returns: {turn_id: [(subject, relation, object), ...]}
+        Missing turn_id = no triples extracted for that turn.
+        """
+        if not turns or llm is None:
+            return {}
+        try:
+            is_avail = getattr(llm, "is_available", None)
+            if is_avail is None or not llm.is_available():
+                return {}
+        except Exception:
+            return {}
+
+        # Format the batch — turn ids as indices for LLM to reference.
+        # Truncate per-turn text to avoid blowing the context window; KG-
+        # worthy facts are usually in the first ~200 chars of a turn.
+        lines = []
+        for idx, (tid, text) in enumerate(turns):
+            snippet = (text or "").strip().replace("\n", " ")[:400]
+            lines.append(f"[{idx}] {snippet}")
+        batch_text = "\n".join(lines)
+
+        prompt = f"""Extract knowledge triples from each user turn below.
+
+Turns (one per line, prefixed by [index]):
+
+{batch_text}
+
+Output format: strict JSON array, each entry is
+{{"i": <index>, "s": "subject", "r": "relation", "o": "object"}}
+
+Rules:
+- "user" is the speaker in all turns; use "user" as subject when the
+  fact is about them ("I visited Dr. Smith" → s="user").
+- Relations: short snake_case tokens. Distinguish STATE from EVENT:
+  * State (updatable — should overwrite previous value): lives_in,
+    works_at, name_is, current_role, current_weight, personal_best,
+    has_count_of, currently_has, favorite, marital_status, pet_name
+  * Event (additive history): visited, bought, cancelled, attended,
+    completed, read, met, took_medication, had_procedure, saw_doctor
+  Pick STATE for "what's my X right now" facts; EVENT for "at some
+  time user did X" facts. This distinction drives retrieval correctness
+  for knowledge-update questions.
+- Use literal entity names from the text.
+- Skip uncertainty-qualified statements ("I might X", "if I Y") unless
+  the same turn later confirms.
+- At most {max_triples_per_turn} triples per turn.
+- If a turn has no extractable facts, simply omit it from the output.
+- Output JSON array only, no markdown, no prose."""
+
+        try:
+            resp = llm.generate(
+                prompt,
+                system="You extract knowledge triples from conversation turns. Output strict JSON only.",
+            )
+            raw = (resp.text or "").strip()
+        except Exception:
+            return {}
+
+        if raw.startswith("```"):
+            raw = _re_strip_fence(raw)
+
+        import json
+        try:
+            start = raw.find("[")
+            end = raw.rfind("]")
+            if start < 0 or end <= start:
+                return {}
+            arr = json.loads(raw[start : end + 1])
+            if not isinstance(arr, list):
+                return {}
+        except Exception:
+            return {}
+
+        out: dict[int, list[tuple[str, str, str]]] = {}
+        idx_to_tid = {i: turns[i][0] for i in range(len(turns))}
+        for item in arr:
+            if not isinstance(item, dict):
+                continue
+            try:
+                i = int(item.get("i", -1))
+            except (ValueError, TypeError):
+                continue
+            tid = idx_to_tid.get(i)
+            if tid is None:
+                continue
+            s = str(item.get("s", "")).strip()
+            r = str(item.get("r", "")).strip()
+            o = str(item.get("o", "")).strip()
+            if not s or not r or not o:
+                continue
+            if o.lower() in ("something", "thing", "anything", "null", "none"):
+                continue
+            out.setdefault(tid, []).append((s, r, o))
+        return out
 
     def extract_triples_llm(
         self,
