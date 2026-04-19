@@ -54,11 +54,22 @@ _CN_LOC_SUFFIXES = ("市", "省", "县", "区", "镇")
 _CN_ORG_SUFFIXES = ("公司", "有限公司", "股份有限公司")
 
 
+# English titles stripped to collapse "Dr. Smith" / "Dr Smith" / "Smith" / "doctor smith".
+# Without this, LLM-extracted entities fragment across turns and aliases.
+_EN_TITLE_PREFIXES = (
+    "dr.", "dr ", "doctor ", "mr.", "mr ", "mister ",
+    "mrs.", "mrs ", "ms.", "ms ", "miss ",
+    "prof.", "prof ", "professor ",
+    "sir ", "madam ", "madame ",
+)
+
+
 def canonicalize(entity: str) -> str:
     """Normalize an entity string to its canonical form.
 
     - Strip whitespace and common punctuation
     - Lowercase ASCII (CJK is case-insensitive inherently)
+    - Strip common English titles (Dr./Mr./Prof./...) so "Dr. Smith" → "smith"
     - Strip common Chinese location/org suffixes
     Does NOT do cross-entity merging (that's in KnowledgeGraph.resolve()).
     """
@@ -68,6 +79,11 @@ def canonicalize(entity: str) -> str:
     # Lowercase only ASCII letters; leave CJK untouched
     ascii_lower = "".join(ch.lower() if ch.isascii() else ch for ch in s)
     s = ascii_lower
+    # Strip English title prefixes (ordered so "doctor" matches before "dr")
+    for prefix in _EN_TITLE_PREFIXES:
+        if s.startswith(prefix):
+            s = s[len(prefix):].strip()
+            break
     # Strip common suffixes for locations / orgs
     for suf in _CN_LOC_SUFFIXES + _CN_ORG_SUFFIXES:
         if s.endswith(suf) and len(s) > len(suf) + 1:
