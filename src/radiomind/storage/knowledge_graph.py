@@ -326,7 +326,7 @@ class KnowledgeGraph:
             lines.append(f"[{idx}] {snippet}")
         batch_text = "\n".join(lines)
 
-        prompt = f"""Extract knowledge triples from each user turn below.
+        prompt = f"""Extract knowledge triples from each conversation turn below.
 
 Turns (one per line, prefixed by [index]):
 
@@ -336,8 +336,17 @@ Output format: strict JSON array, each entry is
 {{"i": <index>, "s": "subject", "r": "relation", "o": "object"}}
 
 Rules:
-- "user" is the speaker in all turns; use "user" as subject when the
-  fact is about them ("I visited Dr. Smith" → s="user").
+- Subject attribution (critical — the most common mistake is defaulting
+  everything to "user"):
+  * If the turn starts with "SPEAKER_NAME: " (e.g. "Deborah: I went to..."),
+    use SPEAKER_NAME (canonicalized, lowercase) as subject for facts
+    about that speaker.
+  * If the turn has no speaker prefix, or the speaker is unnamed, use
+    "user" for facts about the speaker themselves.
+  * If the fact is about a third party mentioned in the turn (e.g. "my
+    sister Emma got married" → subject is "emma"), use that name.
+  * Never attribute Deborah's statement to Jolene or vice versa — in
+    multi-party dialogue, the speaker prefix is ground truth.
 - Relations: short snake_case tokens. Distinguish STATE from EVENT:
   * State (updatable — should overwrite previous value): lives_in,
     works_at, name_is, current_role, current_weight, personal_best,
