@@ -117,11 +117,34 @@ def _from_env() -> LLMBackend | None:
 
 
 def _from_ollama() -> LLMBackend | None:
-    """Check if local Ollama is running."""
+    """Prefer local Ollama when available AND has at least one model installed.
+
+    Pre-2026-04-19 this returned a backend as long as the Ollama server
+    responded on /api/tags. But that endpoint answers 200 even when the
+    user installed Ollama and never pulled a model — resulting in every
+    subsequent generate() call erroring with 404. That silently routed
+    RadioMind past its config.toml OpenAI backend and broke three-body,
+    KG extraction, and aggregation. Now we also check the model list.
+    """
+    import json
+    import urllib.request
+
     backend = OllamaBackend()
-    if backend.is_available():
-        return backend
-    return None
+    if not backend.is_available():
+        return None
+
+    # Additional model-present check
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        req = urllib.request.Request(f"{backend.host}/api/tags")
+        with opener.open(req, timeout=3) as r:
+            data = json.loads(r.read())
+        models = data.get("models", [])
+        if not models:
+            return None
+    except Exception:
+        return None
+    return backend
 
 
 # --- Client type detection ---

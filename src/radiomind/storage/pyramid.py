@@ -27,6 +27,53 @@ Facts:
 
 Output EXACTLY two lines, prefixed with "ENTITIES:" and "PATTERN:" — nothing else."""
 
+# Three-body aggregation prompts (Guardian / Explorer / Reducer).
+# Replace the single-shot aggregation when the LLM backend supports it —
+# produces richer, typed patterns that retrieval can route into via
+# attention tags. Each agent runs in parallel, so total latency = 1 call.
+_AGGREGATE_GUARDIAN = """You are the Guardian. From the facts below, list only what the evidence EXPLICITLY supports — concrete entities, events, counts. Nothing inferred.
+
+Facts from "{domain}":
+{facts}
+
+Output JSON only:
+{{"entities": [{{"name": "Dr. Smith", "count": 3, "kind": "doctor"}}, ...], "events": [{{"what": "charity run", "count": 2, "dates": ["2023-03", "2023-09"]}}, ...]}}
+
+Include up to 15 entities and 10 events. Skip anything that requires interpretation."""
+
+_AGGREGATE_EXPLORER = """You are the Explorer. From the facts below, find IMPLIED patterns that cross multiple facts — lifestyle signals, unstated preferences, inferred states.
+
+Facts from "{domain}":
+{facts}
+
+Output JSON only:
+{{"implicit_patterns": [
+  {{"claim": "user has stable employment", "evidence_count": 4, "confidence": 0.8}},
+  {{"claim": "user prefers outdoor activities over indoor", "evidence_count": 3, "confidence": 0.7}}
+], "lifestyle_signals": [{{"signal": "regular specialist appointments", "count": 5}}]}}
+
+Include up to 5 implicit patterns + up to 5 lifestyle signals. Each claim MUST specify how many facts back it."""
+
+_AGGREGATE_REDUCER = """You are the Reducer. Given the Guardian's explicit entities/events AND the Explorer's implicit patterns, distill into 1-3 high-value pattern entries that retrieval can serve directly.
+
+Guardian output:
+{guardian}
+
+Explorer output:
+{explorer}
+
+Output JSON only:
+{{"patterns": [
+  {{"text": "User has visited 3 different doctors: Dr. Smith (primary), Dr. Lee (dermatologist), Dr. Chen (ENT)", "kind": "enumeration", "confidence": 0.95}},
+  {{"text": "User demonstrates financial stability (stable job + owns home + regular vacations)", "kind": "inferred_state", "confidence": 0.8}},
+  {{"text": "User completed 2 charity tournaments", "kind": "count", "confidence": 0.9}}
+]}}
+
+Rules:
+- Each pattern must be RETRIEVABLE: includes literal entity names / numbers / specific claims
+- "kind" is one of: enumeration, count, inferred_state, preference, temporal_summary
+- At most 3 patterns — pick the highest-value ones. Drop trivial / redundant."""
+
 PRINCIPLE_PROMPT = """You are a memory analyst distilling a one-sentence principle the user lives by,
 based on the patterns below. The principle should be concrete and actionable, not philosophical.
 
@@ -794,6 +841,131 @@ class PyramidAggregator:
         return created
 
     def _aggregate_to_pattern(self, domain: str, facts: list[MemoryEntry]) -> MemoryEntry | None:
+        """Produce PATTERN entries via three-body debate (G/E/R).
+
+        Upward precision + attention focus — each agent has a specific
+        lens on the facts. Parallel fan-out; 3 LLM calls in wall time of 1.
+
+        Replaces the single-shot AGGREGATE_PROMPT (still kept as fallback
+        when three-body fails). Produces 1-3 pattern entries in one pass
+        (enumeration / count / inferred_state / preference / temporal
+        summary) — each retrievable via attention-tagged search.
+        """
+        if not facts:
+            return None
+
+        patterns = self._three_body_aggregate(domain, facts)
+        if not patterns:
+            # Fallback to legacy single-shot when debate fails
+            return self._legacy_aggregate_to_pattern(domain, facts)
+
+        # Store all patterns; return the highest-confidence one to match
+        # the old API signature (caller treats return value as a sentinel).
+        created: list[MemoryEntry] = []
+        for p in patterns:
+            text = p.get("text", "").strip()
+            if not text:
+                continue
+            kind = p.get("kind", "")
+            conf = float(p.get("confidence", 0.7))
+            entry = MemoryEntry(
+                content=text,
+                domain=domain,
+                level=MemoryLevel.PATTERN,
+                metadata={
+                    "source": "aggregation_trinity",
+                    "fact_count": len(facts),
+                    "kind": kind,
+                    "confidence": conf,
+                },
+            )
+            if self._embedder is not None:
+                try:
+                    entry.embedding = self._embedder.encode(text)
+                except Exception:
+                    pass
+            pid = self._store.add(entry)
+            if pid <= 0:
+                continue
+            # Link facts to the FIRST pattern (primary summary). Subsequent
+            # patterns are complementary views without parent linkage.
+            if not created:
+                for f in facts:
+                    if f.id is not None and f.parent_id is None:
+                        f.parent_id = pid
+                        self._store.update(f)
+            created.append(entry)
+
+        return created[0] if created else None
+
+    def _three_body_aggregate(
+        self, domain: str, facts: list[MemoryEntry]
+    ) -> list[dict]:
+        """Run Guardian + Explorer + Reducer in parallel, return pattern dicts.
+
+        Returns [] on any error — caller falls through to legacy path.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+        import json as _json
+
+        facts_text = "\n".join(f"- {f.content}" for f in facts)
+
+        def _call(prompt: str, role: str) -> str:
+            try:
+                resp = self._llm.generate(
+                    prompt,
+                    system=f"You are the {role}. Output strict JSON only.",
+                )
+                return resp.text or ""
+            except Exception:
+                return ""
+
+        def _parse_json(raw: str) -> dict | None:
+            if not raw:
+                return None
+            text = raw.strip()
+            if text.startswith("```"):
+                text = _re.sub(r"^```(?:json|JSON)?\s*\n?", "", text)
+                text = _re.sub(r"\n?```\s*$", "", text).strip()
+            start = text.find("{")
+            end = text.rfind("}")
+            if start < 0 or end <= start:
+                return None
+            try:
+                return _json.loads(text[start : end + 1])
+            except Exception:
+                return None
+
+        guardian_prompt = _AGGREGATE_GUARDIAN.format(domain=domain, facts=facts_text)
+        explorer_prompt = _AGGREGATE_EXPLORER.format(domain=domain, facts=facts_text)
+
+        # Stage 1: Guardian + Explorer in parallel
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            g_fut = ex.submit(_call, guardian_prompt, "Guardian")
+            e_fut = ex.submit(_call, explorer_prompt, "Explorer")
+            guardian_raw = g_fut.result()
+            explorer_raw = e_fut.result()
+
+        guardian = _parse_json(guardian_raw) or {}
+        explorer = _parse_json(explorer_raw) or {}
+
+        if not guardian and not explorer:
+            return []
+
+        # Stage 2: Reducer consumes G+E and distills 1-3 patterns
+        reducer_prompt = _AGGREGATE_REDUCER.format(
+            guardian=_json.dumps(guardian, ensure_ascii=False)[:2000],
+            explorer=_json.dumps(explorer, ensure_ascii=False)[:2000],
+        )
+        reducer_raw = _call(reducer_prompt, "Reducer")
+        reducer = _parse_json(reducer_raw) or {}
+        patterns = reducer.get("patterns", [])
+        if not isinstance(patterns, list):
+            return []
+        return [p for p in patterns if isinstance(p, dict) and p.get("text")]
+
+    def _legacy_aggregate_to_pattern(self, domain: str, facts: list[MemoryEntry]) -> MemoryEntry | None:
+        """Single-shot aggregation — fallback when three-body fails."""
         facts_text = "\n".join(f"- {f.content}" for f in facts)
         prompt = AGGREGATE_PROMPT.format(domain=domain, facts=facts_text)
 
@@ -807,7 +979,7 @@ class PyramidAggregator:
                 content=pattern_text,
                 domain=domain,
                 level=MemoryLevel.PATTERN,
-                metadata={"source": "aggregation", "fact_count": len(facts)},
+                metadata={"source": "aggregation_legacy", "fact_count": len(facts)},
             )
             if self._embedder is not None:
                 try:
