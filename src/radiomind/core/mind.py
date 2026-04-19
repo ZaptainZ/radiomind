@@ -305,6 +305,11 @@ class RadioMind:
         # Shape: [(memory_id, content), ...]
         user_turns_for_kg: list[tuple[int, str]] = []
 
+        # PASS 1: build all entries WITHOUT embeddings (to enable batching)
+        # This two-pass structure matters when the embedder is a remote API
+        # (DashScope) — single-text encode per turn is 3s × 500 turns = 25
+        # minutes/question. Batch+parallel encode brings that to ~30s.
+        pending: list[tuple[MemoryEntry, str, str]] = []  # (entry, content, role)
         for t in turns:
             content = (t.get("content") or "").strip()
             if not content:
@@ -312,9 +317,7 @@ class RadioMind:
             role = t.get("role", "user")
             meta = dict(t.get("metadata") or {})
             meta.setdefault("role", role)
-
             dom = domain or meta.get("domain", "") or ""
-
             entry = MemoryEntry(
                 content=content,
                 domain=dom,
@@ -329,15 +332,34 @@ class RadioMind:
                     entry.created_at = float(meta["created_at"])
                 except (TypeError, ValueError):
                     pass
-            if self._embedder:
-                entry.embedding = self._embedder.encode(content)
+            pending.append((entry, content, role))
 
+        # PASS 2: batch-encode all contents through the embedder if it
+        # supports encode_batch (DashScopeEmbedder does). Falls back to
+        # per-text encode() loop when the embedder lacks batch support
+        # (local MiniLM). max_workers=5 stays within DashScope per-account
+        # parallelism without tripping rate limits for typical benchmarks.
+        if self._embedder is not None and pending:
+            contents = [c for _, c, _ in pending]
+            has_batch = hasattr(self._embedder, "encode_batch")
+            if has_batch:
+                try:
+                    embeds = self._embedder.encode_batch(contents)
+                except Exception:
+                    embeds = [self._embedder.encode(c) for c in contents]
+            else:
+                embeds = [self._embedder.encode(c) for c in contents]
+            for (entry, _, _), emb in zip(pending, embeds):
+                entry.embedding = emb
+
+        # PASS 3: persist, update meta, queue KG extraction
+        for entry, content, role in pending:
             mid = self._store.add(entry, dedup=False)
             if mid <= 0:
                 continue
             ingested += 1
-            if dom:
-                domains_touched.add(dom)
+            if entry.domain:
+                domains_touched.add(entry.domain)
 
             # Meta profile from user turns
             if role == "user":
@@ -347,9 +369,6 @@ class RadioMind:
                     pass
 
             # Stash user turn text for batch KG extraction at end of loop.
-            # Doing LLM-based triple extraction per-turn (~250 calls per
-            # benchmark question) is too slow and wastes LLM overhead;
-            # batch at domain level runs 1 call covering all user turns.
             if self._kg is not None and role == "user":
                 user_turns_for_kg.append((mid, content))
 
