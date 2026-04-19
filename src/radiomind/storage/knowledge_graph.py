@@ -6,11 +6,19 @@ Supports timeline queries: "what was user doing in March 2026?"
 
 from __future__ import annotations
 
+import re as _re
 import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+
+def _re_strip_fence(text: str) -> str:
+    """Drop markdown ```json fences LLMs tend to wrap around JSON output."""
+    text = _re.sub(r"^```(?:json|JSON)?\s*\n?", "", text.strip())
+    text = _re.sub(r"\n?```\s*$", "", text)
+    return text.strip()
 
 KG_SCHEMA = """
 CREATE TABLE IF NOT EXISTS triples (
@@ -230,7 +238,16 @@ class KnowledgeGraph:
         return self.conn.execute("SELECT COUNT(*) FROM triples WHERE valid_until IS NULL").fetchone()[0]
 
     def extract_triples_from_text(self, text: str) -> list[tuple[str, str, str]]:
-        """Extract triples from text using pattern matching."""
+        """Regex fallback: only catches a narrow set of Chinese patterns.
+
+        Kept for the "no LLM available" degradation path only. For any
+        English content this returns very few triples (essentially zero
+        on typical benchmark conversations). Callers should prefer
+        `extract_triples_llm(text, llm)` when an LLM is wired in —
+        the LLM version handles both English and Chinese, catches
+        action verbs (visited / bought / cancelled / moved), and links
+        entity references that regex can't.
+        """
         import re
         extracted = []
         for pattern, subject, relation, _ in TRIPLE_EXTRACTION_PATTERNS:
@@ -240,6 +257,100 @@ class KnowledgeGraph:
                 if obj and len(obj) > 0:
                     extracted.append((subject, relation, obj))
         return extracted
+
+    def extract_triples_llm(
+        self,
+        text: str,
+        llm,
+        speaker: str = "user",
+        max_triples: int = 10,
+    ) -> list[tuple[str, str, str]]:
+        """LLM-based triple extractor — default path when an LLM is available.
+
+        English-primary prompt that handles both English and Chinese input.
+        Returns (subject, relation, object) triples. Designed to be called
+        from `RadioMind.ingest_turns_raw` for every user turn; low-latency
+        (~100-200 tokens output), runs in parallel to the turn storage.
+
+        speaker: typically "user" — used as the default subject when the
+                 extracted fact is about the speaker themselves (e.g.
+                 "I visited Dr. Smith" → subject = "user").
+
+        Returns empty list on any error — caller falls back to the regex
+        path or just proceeds without KG enrichment for this turn.
+        """
+        if not text or llm is None:
+            return []
+        try:
+            is_avail = getattr(llm, "is_available", None)
+            if is_avail is None or not llm.is_available():
+                return []
+        except Exception:
+            return []
+
+        prompt = f"""Extract knowledge triples from the following text.
+
+Text (from speaker "{speaker}"): {text}
+
+Output format: strict JSON array of triples, each as
+{{"s": "subject", "r": "relation", "o": "object"}}
+
+Rules:
+- Use "user" as subject when the text is about the speaker themselves
+  (e.g. "I visited X" → s="user").
+- Relations should be short, normalized, snake_case verbs: "visited",
+  "bought", "cancelled", "planned_to", "likes", "works_at", "lives_in",
+  "owns", "saw_doctor", "had_procedure", "took_medication", etc.
+- Use literal entity names from the text (keep "Dr. Smith", not "my doctor").
+- Include temporal markers when the text specifies them (e.g. object
+  "Dr. Smith on 2023-05-10" rather than just "Dr. Smith") only when
+  date is explicit in the sentence.
+- Skip triples where object would be empty, placeholder, or generic
+  ("something", "thing"). Skip uncertainty-qualified statements
+  ("I might X" → do not extract unless it's a completed action).
+- Extract at most {max_triples} triples per call.
+- If no extractable facts, return []."""
+
+        try:
+            resp = llm.generate(
+                prompt,
+                system="You extract knowledge triples. Output strict JSON array only, no markdown, no prose.",
+            )
+            raw = (resp.text or "").strip()
+        except Exception:
+            return []
+
+        # Strip markdown fencing if present
+        if raw.startswith("```"):
+            raw = _re_strip_fence(raw)
+
+        import json
+        try:
+            # Find the first JSON array in the response
+            start = raw.find("[")
+            end = raw.rfind("]")
+            if start < 0 or end <= start:
+                return []
+            arr = json.loads(raw[start : end + 1])
+            if not isinstance(arr, list):
+                return []
+        except Exception:
+            return []
+
+        out: list[tuple[str, str, str]] = []
+        for item in arr[:max_triples]:
+            if not isinstance(item, dict):
+                continue
+            s = str(item.get("s", "")).strip()
+            r = str(item.get("r", "")).strip()
+            o = str(item.get("o", "")).strip()
+            if not s or not r or not o:
+                continue
+            # Reject placeholder objects
+            if o.lower() in ("something", "thing", "anything", "null", "none"):
+                continue
+            out.append((s, r, o))
+        return out
 
     @staticmethod
     def _row_to_triple(row: sqlite3.Row) -> Triple:

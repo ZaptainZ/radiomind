@@ -322,11 +322,25 @@ class RadioMind:
                 except Exception:
                     pass
 
-            # KG triples from user turns (gives structured temporal queries
-            # something to chew on — essential for "previous X" type questions).
+            # KG triples from user turns. Prefer LLM-based extractor — the
+            # regex fallback is Chinese-biased and catches near-zero triples
+            # on English content. LLM pathway runs per user turn (~100-200
+            # output tokens, cheap) and feeds bitemporal KG, entity linking,
+            # and contradiction detection downstream.
             if self._kg is not None and role == "user":
+                triples: list[tuple[str, str, str]] = []
+                if self._llm is not None and self._llm.is_available():
+                    try:
+                        triples = self._kg.extract_triples_llm(content, self._llm)
+                    except Exception:
+                        triples = []
+                if not triples:
+                    try:
+                        triples = self._kg.extract_triples_from_text(content)
+                    except Exception:
+                        triples = []
                 try:
-                    for subj, rel, obj in self._kg.extract_triples_from_text(content):
+                    for subj, rel, obj in triples:
                         self._kg.add_triple(subj, rel, obj, source_id=mid)
                         kg_triples += 1
                 except Exception:
