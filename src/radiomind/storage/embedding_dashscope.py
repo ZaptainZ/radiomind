@@ -18,8 +18,8 @@ import urllib.request
 from pathlib import Path
 
 
-DEFAULT_MODEL = "text-embedding-v3"
-DEFAULT_DIM = 1024
+DEFAULT_MODEL = "text-embedding-v4"
+DEFAULT_DIM = 2048  # v4 supports 512/768/1024/2048 — pick 2048 for max semantic capacity
 
 _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -46,9 +46,14 @@ class DashScopeEmbedder:
         if not self._available or not text:
             return None
         try:
+            payload: dict = {"model": self._model, "input": text[:2048]}
+            # Pass dimensions only when the model supports it (v4 and newer).
+            # v1-v3 reject the field. Cheap way to tell: model name has "v4".
+            if "v4" in self._model.lower():
+                payload["dimensions"] = self._dim
             req = urllib.request.Request(
                 f"{self._base_url}/embeddings",
-                data=json.dumps({"model": self._model, "input": text[:2048]}).encode(),
+                data=json.dumps(payload).encode(),
                 headers={
                     "Authorization": f"Bearer {self._api_key}",
                     "Content-Type": "application/json",

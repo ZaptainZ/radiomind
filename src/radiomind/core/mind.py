@@ -80,19 +80,24 @@ class RadioMind:
 
         self._llm = self._resolve_llm()
 
-        # Load embedder FIRST so PyramidSearch can use it. Local ONNX MiniLM
-        # is preferred (fast, offline). When it can't load (typically missing
-        # `tokenizers` wheel in constrained sandboxes), fall through to the
-        # DashScope embedding API if credentials are present — better than
-        # FTS-only, same float32-bytes contract.
-        try:
-            from radiomind.storage.embedding import EmbeddingEncoder
-            self._embedder = EmbeddingEncoder(home / "models" / "embedding")
-            if not self._embedder.load():
-                self._embedder = None
-        except Exception:
-            self._embedder = None
-        if self._embedder is None:
+        # Load embedder FIRST so PyramidSearch can use it.
+        #
+        # Precedence (2026-04-19, updated per host-LLM-assumed policy):
+        #   1. DashScope text-embedding-v4 @ 2048-dim if credentials present
+        #      — cloud embedder with 2× the semantic capacity of local MiniLM
+        #   2. Local ONNX MiniLM 384-dim fallback for offline / privacy-max
+        #   3. None → FTS-only degradation
+        #
+        # Earlier version preferred local for "privacy". That design bet was
+        # abandoned (see memory/project_host_llm_assumed.md): users already
+        # rely on host LLM for chat, so paying for a 2048-dim embedder is
+        # fully consistent with the privacy model (data stays local, only
+        # embed() output comes back). config.retrieval.embedder.prefer_local
+        # can force the old ordering for users who genuinely need offline.
+        self._embedder = None
+        prefer_local = bool(self.config.get("retrieval.embedder.prefer_local", False))
+
+        def _try_dashscope() -> object | None:
             try:
                 oc = self.config.get("llm.openai", {}) or {}
                 base = (oc.get("base_url") or "").strip()
@@ -101,9 +106,25 @@ class RadioMind:
                     from radiomind.storage.embedding_dashscope import DashScopeEmbedder
                     ds = DashScopeEmbedder(base, key)
                     if ds.load():
-                        self._embedder = ds
+                        return ds
             except Exception:
                 pass
+            return None
+
+        def _try_local() -> object | None:
+            try:
+                from radiomind.storage.embedding import EmbeddingEncoder
+                e = EmbeddingEncoder(home / "models" / "embedding")
+                if e.load():
+                    return e
+            except Exception:
+                pass
+            return None
+
+        if prefer_local:
+            self._embedder = _try_local() or _try_dashscope()
+        else:
+            self._embedder = _try_dashscope() or _try_local()
 
         # Reranker — opt-in via config (off by default: 2.3GB download,
         # ~30ms/query latency). When present, gives the retrieval pipeline
