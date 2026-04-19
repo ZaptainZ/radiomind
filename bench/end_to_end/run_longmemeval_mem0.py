@@ -148,6 +148,7 @@ def run(
     use_temporal_math: bool,
     use_agentic: bool,
     use_refinement: bool = True,
+    checkpoint_path: Path | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -214,12 +215,64 @@ def run(
     per_query_log: list[dict] = []
     t_start = time.time()
 
+    # Checkpoint: one JSON line per completed question.
+    # Critical for n=500 gpt-4o runs (8+ hours) where network flakiness
+    # can kill the whole pipeline mid-way — on resume we skip already-
+    # completed question_ids so only the unfinished tail re-runs.
+    done_qids: set[str] = set()
+    if checkpoint_path is not None and checkpoint_path.exists():
+        try:
+            with checkpoint_path.open() as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                    except Exception:
+                        continue
+                    qid = rec.get("question_id")
+                    if qid:
+                        done_qids.add(qid)
+                    per_query_log.append(rec)
+                    if rec.get("correct"):
+                        overall["correct"] += 1
+                    overall["n"] += 1
+                    qtype = rec.get("qtype", "?")
+                    per_type.setdefault(qtype, {"n": 0, "correct": 0})
+                    per_type[qtype]["n"] += 1
+                    per_type[qtype]["correct"] += int(bool(rec.get("correct")))
+            if done_qids:
+                print(f"  resume: loaded {len(done_qids)} completed questions from checkpoint", flush=True)
+        except Exception as e:
+            print(f"  checkpoint load warn: {e}", flush=True)
+
+    def _question_id(q: dict, idx: int) -> str:
+        qid = q.get("question_id") or q.get("id")
+        if qid:
+            return str(qid)
+        import hashlib
+        return "auto_" + hashlib.md5(q.get("question", "").encode()).hexdigest()[:10]
+
+    def _append_checkpoint(rec: dict) -> None:
+        if checkpoint_path is None:
+            return
+        try:
+            checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+            with checkpoint_path.open("a") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     for q_idx, q in enumerate(data):
         qtype = q.get("question_type", "?")
         question = q.get("question", "")
         gold = q.get("answer", "")
         if not question or not q.get("haystack_sessions"):
             continue
+        qid = _question_id(q, q_idx)
+        if qid in done_qids:
+            continue  # already done in prior run; skipped
 
         domain = f"lme_{q_idx}"
         # Flatten question's haystack into a list of turn dicts for
@@ -389,10 +442,13 @@ def run(
         per_type[qtype]["n"] += 1
         per_type[qtype]["correct"] += int(is_correct)
 
-        per_query_log.append({
+        record = {
+            "question_id": qid,
             "q": question, "gold": gold_str, "answer": answer[:400],
             "correct": is_correct, "qtype": qtype, "verdict_tail": verdict[-120:],
-        })
+        }
+        per_query_log.append(record)
+        _append_checkpoint(record)
 
         if (q_idx + 1) % 10 == 0:
             acc = overall["correct"] / overall["n"]
@@ -443,6 +499,8 @@ def main() -> int:
     p.add_argument("--answer-profile", default="openai_direct")
     p.add_argument("--judge-profile", default="openai_direct")
     p.add_argument("--out", default="bench/end_to_end/lme-s-mem0proto.json")
+    p.add_argument("--checkpoint", default="",
+                   help="Path to .jsonl checkpoint. Per-question results appended as they complete; on rerun with the same path, already-completed question_ids are skipped. Defaults to <out>.checkpoint.jsonl.")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -458,6 +516,7 @@ def main() -> int:
         flush=True,
     )
 
+    cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
@@ -466,6 +525,7 @@ def main() -> int:
         use_temporal_math=args.temporal_math,
         use_agentic=args.agentic,
         use_refinement=not args.no_refinement,
+        checkpoint_path=cp_path,
     )
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

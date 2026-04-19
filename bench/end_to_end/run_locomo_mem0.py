@@ -137,6 +137,7 @@ def run(
     use_reranker: bool, use_temporal_math: bool, use_agentic: bool,
     use_refinement: bool = True,
     categories: tuple[int, ...] = (1, 2, 3, 4),
+    checkpoint_path: Path | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -213,7 +214,56 @@ def run(
     t_start = time.time()
     config_path = cfg_src
 
+    # Checkpoint load (resume support)
+    done_qids: set[str] = set()
+    if checkpoint_path is not None and checkpoint_path.exists():
+        try:
+            with checkpoint_path.open() as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                    except Exception:
+                        continue
+                    qid = rec.get("question_id")
+                    if qid:
+                        done_qids.add(qid)
+                    per_query_log.append(rec)
+                    if rec.get("correct"):
+                        overall["correct"] += 1
+                    overall["n"] += 1
+                    cat_name = rec.get("category", "?")
+                    per_type.setdefault(cat_name, {"n": 0, "correct": 0})
+                    per_type[cat_name]["n"] += 1
+                    per_type[cat_name]["correct"] += int(bool(rec.get("correct")))
+            if done_qids:
+                print(f"  resume: {len(done_qids)} completed from checkpoint", flush=True)
+        except Exception as e:
+            print(f"  checkpoint load warn: {e}", flush=True)
+
+    def _qid(conv_idx: int, qa: dict, fallback_idx: int) -> str:
+        # LoCoMo QA has no stable id — use (conv_idx, question text hash)
+        import hashlib
+        q = qa.get("question", "")
+        h = hashlib.md5(q.encode()).hexdigest()[:10]
+        return f"c{conv_idx}_{h}"
+
+    def _append_checkpoint(rec: dict) -> None:
+        if checkpoint_path is None:
+            return
+        try:
+            checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+            with checkpoint_path.open("a") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     for q_idx, (conv_idx, qa) in enumerate(flat):
+        qid = _qid(conv_idx, qa, q_idx)
+        if qid in done_qids:
+            continue
         domain = f"locomo_{conv_idx}"
         if conv_idx not in ingested:
             conv = data[conv_idx]["conversation"]
@@ -377,12 +427,15 @@ def run(
         per_type[cat_name]["n"] += 1
         per_type[cat_name]["correct"] += int(is_correct)
 
-        per_query_log.append({
+        record = {
+            "question_id": qid,
             "q": question, "gold": processed_answer, "answer": answer[:2000],
             "correct": is_correct, "category": cat_name,
             "verdict_tail": verdict[-200:],
             "n_retrieved": len(results),
-        })
+        }
+        per_query_log.append(record)
+        _append_checkpoint(record)
 
         if (q_idx + 1) % 10 == 0:
             acc = overall["correct"] / overall["n"]
@@ -427,6 +480,8 @@ def main() -> int:
     p.add_argument("--answer-profile", default="openai_direct")
     p.add_argument("--judge-profile", default="openai_direct")
     p.add_argument("--out", default="bench/end_to_end/locomo-mem0proto.json")
+    p.add_argument("--checkpoint", default="",
+                   help="Checkpoint .jsonl path. Appends per-question results; resume via same path. Default <out>.checkpoint.jsonl")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -442,6 +497,7 @@ def main() -> int:
         f"agentic={args.agentic}",
         flush=True,
     )
+    cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
@@ -451,6 +507,7 @@ def main() -> int:
         use_agentic=args.agentic,
         use_refinement=not args.no_refinement,
         categories=cats,
+        checkpoint_path=cp_path,
     )
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(report, ensure_ascii=False, indent=2))
