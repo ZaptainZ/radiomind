@@ -349,6 +349,23 @@ def run(
         except Exception as e:
             answer = f"[answer error: {e}]"
 
+        # Trinity salvage: if the answer model abstained ("not enough
+        # information"), fire a three-body debate over retrieved memories
+        # to recover a best-guess. Only activates when looks_abstained().
+        try:
+            from radiomind.refinement.salvage import AbstentionSalvager, looks_abstained
+            if looks_abstained(answer):
+                def _sv_llm(prompt: str, sys_prompt: str) -> str:
+                    return llm_call(prompt, config_path,
+                                     model=answer_model, max_tokens=400,
+                                     profile=answer_profile)
+                sv = AbstentionSalvager(_sv_llm)
+                salvage = sv.salvage(question, answer, results[:40])
+                if salvage and salvage.committed:
+                    answer = salvage.answer
+        except Exception:
+            pass
+
         judge_prompt = JUDGE_PROMPT.format(
             question=question, answer=gold_str, response=answer,
         )

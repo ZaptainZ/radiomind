@@ -323,13 +323,28 @@ def run(
             ans_prompt = ans_prompt + "\n\n" + calibration
         try:
             # 1500 tokens leaves room for all 7 reasoning steps + final answer.
-            # 500 was too tight — saw truncation mid-Step-4 in smoke tests.
             answer = llm_call(
                 ans_prompt, config_path,
                 model=answer_model, max_tokens=1500, profile=answer_profile,
             )
         except Exception as e:
             answer = f"[answer error: {e}]"
+
+        # Trinity salvage (query-time safety net): if answer model abstained,
+        # run three-body over retrieved memories to recover a committed guess.
+        try:
+            from radiomind.refinement.salvage import AbstentionSalvager, looks_abstained
+            if looks_abstained(answer):
+                def _sv_llm(prompt: str, sys_prompt: str) -> str:
+                    return llm_call(prompt, config_path,
+                                     model=answer_model, max_tokens=400,
+                                     profile=answer_profile)
+                sv = AbstentionSalvager(_sv_llm)
+                salvage = sv.salvage(question, answer, results[:40])
+                if salvage and salvage.committed:
+                    answer = salvage.answer
+        except Exception:
+            pass
 
         judge_prompt = get_judge_prompt(category, question, processed_answer, answer)
         is_correct = False
