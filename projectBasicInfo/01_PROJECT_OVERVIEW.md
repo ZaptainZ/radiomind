@@ -155,21 +155,27 @@ LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
 |---|---|
 | L1 gate | 输入侧：这轮对话值得记吗 |
 | Pyramid score-blend | 检索侧：这条和 query 多相关 |
-| 三体 Guardian/Explorer/Reducer | 多视角：同一批证据三种注意力切片 |
+| **三体博弈（primitive）** | 多视角：三方对立立场在该领域内自适应 |
 | Meta calibration | 元注意力：观察自身注意力偏差 |
 | Dream wander | 空闲：无明确查询的自由漂移 |
-| **(新) Query-time decomposition** | **查询侧：根据本次 query 焦点重构记忆视图** |
+| Query-time analyze | 查询侧：输出 AttentionSignature 给下游路由 |
 
 ### 查询时原子分解的机制
-1. **attention 分类器**（`core/attention.py`）：每条 query 打标签（aggregation / disambiguation / narrative / comparison / lookup）
-2. **查询时 decomposer**（`refinement/decompose.py`）：aggregation 类查询触发单次 LLM 抽取，把 top-k 原 turn 解成带 count + evidence + confidence 的原子事实
-3. **价值驱动晋升**：高置信 × 多 query 命中 × 非冗余 → atom 晋升为 L2 PATTERN 常驻记忆
+1. **attention signature**（`core/attention.py`）：`analyze(query) → {focus, wants, aux_flags}`；`wants` ∈ {count, date, detail, inference, lookup}
+2. **trinity primitive**（`refinement/trinity.py`）：`debate(task, evidence, llm)`——三方对立立场由 LLM 根据 task 张力自选（计数任务可能是"保守/包容/合并"，时间任务是"锚点派/链路派/窗口派"），不写死角色名
+3. **查询时路径**：
+   - `count` → `get_numeric_cardinal()` 读 ingest 时累计的 cardinal_cache
+   - `date` / `inference` / `detail` → `answer_hint()` 调 trinity 产出严格答案前缀
+4. **价值驱动晋升**：高置信 × 多 query 命中 × 非冗余 → atom 晋升为 L2 PATTERN 常驻记忆
 
 **核心区别于 Mem0**：Mem0 ingest 时就原子化（破坏叙事）；我们查询时原子化（保留叙事 + 按需计算）。
 
-### 新公共 API
-- `RadioMind.decompose_for_query(query, retrieved, domain, promote)` — 公共入口
-- `core.attention.classify(query)` / `is_aggregation(query)` / `extract_focus_entity(query)`
+### 公共 API
+- `RadioMind.get_numeric_cardinal(query, domain, user_id)` — 读累计 cardinal 缓存
+- `RadioMind.answer_hint(query, retrieved_memories, reference_date)` — attention-routed trinity 前缀
+- `RadioMind.decompose_for_query(query, retrieved, domain, promote)` — 原子分解
+- `core.attention.analyze(query) → AttentionSignature`
+- `refinement.trinity.debate(task, evidence, llm, extra_schema)` — 通用三方博弈原语
 
 详见 `logs/2026-04-18-attention-4th-law-cc.md`。
 
