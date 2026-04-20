@@ -446,9 +446,16 @@ class NumericAggregator:
         from radiomind.refinement.trinity import debate
         result = debate(
             task=(
-                f"Decide which of the extracted {entry.entity_class} events "
-                f"do NOT actually match the class and must be revoked. "
-                f"Class rubric: {class_def}"
+                f"Decide which extracted {entry.entity_class} events match "
+                f"the class rubric and which to revoke.\n"
+                f"Class rubric: {class_def}\n"
+                f"KEEP an event when the evidence clearly shows the user "
+                f"performing the class action (e.g. for charity_donations, "
+                f"the evidence names a charity/fundraiser/nonprofit or cause).\n"
+                f"REVOKE only when the evidence's target is explicitly NOT "
+                f"what the class describes (e.g. a gift to a cousin, a "
+                f"personal purchase, a rent payment — when classified as "
+                f"charity_donations)."
             ),
             evidence=evidence_block,
             llm=self._llm,
@@ -494,11 +501,17 @@ class NumericAggregator:
         from radiomind.refinement.trinity import debate
         result = debate(
             task=(
-                f"From this list of candidate members for class "
-                f"{entry.entity_class!r}, produce a strictly filtered + "
-                f"deduplicated final list. Merge aliases (keep the most "
-                f"specific name). Drop items that don't belong to the class. "
-                f"DO NOT invent members that aren't in the input."
+                f"From this candidate member list for class "
+                f"{entry.entity_class!r}, produce a deduplicated final list.\n"
+                f"MERGE aliases aggressively — entries that refer to the "
+                f"same physical entity collapse into one. Keep the most "
+                f"specific name:\n"
+                f"  'guitar' + 'Fender Stratocaster electric guitar' → "
+                f"'Fender Stratocaster electric guitar'\n"
+                f"  'piano' + 'Korg B1' + 'Korg B1 piano' → 'Korg B1 piano'\n"
+                f"  'drum set' + 'Pearl Export drum set' → 'Pearl Export drum set'\n"
+                f"DROP members that don't belong to the class.\n"
+                f"DO NOT invent members not in the input."
             ),
             evidence="\n".join(f"- {m}" for m in entry.members),
             llm=self._llm,

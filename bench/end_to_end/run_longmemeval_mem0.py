@@ -428,12 +428,17 @@ def run(
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
         # DRAFT framing so the model still verifies against raw turns.
+        # Skip when cardinal view already supplied a count/total — no
+        # point paying a second LLM call and mixing two DRAFT blocks.
         atomic_section = ""
         try:
-            atoms = mind.decompose_for_query(
-                query=question, retrieved=results[:30], domain=domain,
-                promote=True,
-            )
+            if cardinal_section:
+                atoms = []
+            else:
+                atoms = mind.decompose_for_query(
+                    query=question, retrieved=results[:30], domain=domain,
+                    promote=True,
+                )
             if atoms:
                 # Label explicitly as DRAFT, not authoritative. When v4's
                 # earlier run made this an authoritative-looking summary

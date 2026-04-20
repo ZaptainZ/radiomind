@@ -414,13 +414,16 @@ def run(
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
         # before memories so raw turns remain the model's last-seen
-        # (most-salient) context.
+        # (most-salient) context. Skip when cardinal view already fired.
         atomic_section = ""
         try:
-            atoms = mind.decompose_for_query(
-                query=question, retrieved=results[:30], domain=domain,
-                promote=True,
-            )
+            if cardinal_section:
+                atoms = []
+            else:
+                atoms = mind.decompose_for_query(
+                    query=question, retrieved=results[:30], domain=domain,
+                    promote=True,
+                )
             if atoms:
                 lines = ["DRAFT ATOMIC VIEW (extracted heuristically — VERIFY against the memories below; enumerate additional entries if any memory mentions one not listed here):"]
                 for a in atoms[:15]:
