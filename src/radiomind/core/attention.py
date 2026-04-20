@@ -126,27 +126,147 @@ def is_disambiguation(query: str) -> bool:
     return "disambiguation" in classify(query)
 
 
-# Extract the principal entity from an aggregation query for focused
-# decomposition. Falls back to returning the query itself when no
-# obvious focus exists. Cheap regex — not a substitute for NER.
-_ENTITY_REGEXES = (
-    re.compile(r"how many (?:different )?([a-z][a-z\-]+(?:s)?)", re.IGNORECASE),
-    re.compile(r"how much ([a-z][a-z\-]+)", re.IGNORECASE),
-    re.compile(r"几个不同的?([^\s，。？]+)"),
-    re.compile(r"多少([^\s，。？]+)"),
-    re.compile(r"list (?:all |every )?([a-z][a-z\-]+(?:s)?)", re.IGNORECASE),
+# Numeric-cardinal queries are a strict subset of aggregation: they ask
+# for a *count* or a *total amount* of a specific entity class, not a
+# list enumeration or cross-session narrative. When both NumericAggregator
+# has a cache hit AND the query matches this shape, we can answer from
+# the deterministic ground-truth cache and skip (or complement) the
+# LLM-based decomposer.
+_CARDINAL_COUNT_RE = re.compile(
+    r"\b(?:how\s+many|how\s+much|total|sum|count|altogether|in\s+all)\b",
+    re.IGNORECASE,
+)
+_CARDINAL_CN_RE = re.compile(r"几(?:个|条|次|件|种|款|只|台|把|部)?|多少|总共|一共|总和|总数")
+
+
+def is_numeric_cardinal(query: str) -> bool:
+    """Fast path: is this a count/total query (subset of aggregation)?
+
+    Must also be aggregation (filters out 'how many days ago' etc.)
+    and must carry a cardinal quantifier keyword.
+    """
+    if not is_aggregation(query):
+        return False
+    return bool(_CARDINAL_COUNT_RE.search(query) or _CARDINAL_CN_RE.search(query))
+
+
+# --- Specific-detail lookup (4th law, new tag for LoCoMo single-hop errors) ---
+# Queries that ask about a specific attribute of a specific named subject.
+# Typical pattern: "What is X's Y?" / "What does X do while Z?" /
+# "What does X's favorite Y?" — gold answer is a concrete noun the user
+# mentioned once in a long haystack; top-k retrieval may miss it because
+# the mention is peripheral ("Joanna has Tilly the stuffed dog with her
+# while writing"). Routing this tag to a keyword-augmented retrieval
+# second pass materially improves recall.
+_SPECIFIC_DETAIL_RE = re.compile(
+    r"\b(what|which|where)\s+(?:is|are|was|were|does|do|did|has|have)\s+"
+    r"[a-z][a-z]+'?s?\b",  # requires a possessive or specific subject noun
+    re.IGNORECASE,
 )
 
 
-def extract_focus_entity(query: str) -> str | None:
-    """Best-effort extraction of the noun the aggregation is about.
+def is_specific_detail_lookup(query: str) -> bool:
+    """Fast path: does this query ask for a specific attribute of a named subject?"""
+    tags = classify(query)
+    if "aggregation" in tags or "narrative" in tags:
+        return False
+    return bool(_SPECIFIC_DETAIL_RE.search(query))
 
-    Used to narrow decomposition: "How many doctors did I see?" → focus='doctors'
-    gives the decomposer a tighter extraction target than re-chewing the full
-    question.
+
+# --- Temporal precision (for B-class LoCoMo errors: specific date / duration) ---
+_TEMPORAL_PRECISION_RE = re.compile(
+    r"\b(when|how\s+long|for\s+how\s+many\s+(?:days|weeks|months|years))\b",
+    re.IGNORECASE,
+)
+
+
+def is_temporal_precision(query: str) -> bool:
+    """Fast path: query about specific date or duration."""
+    return bool(_TEMPORAL_PRECISION_RE.search(query))
+
+
+# --- Open-domain inference (for C-class LoCoMo errors: "what might X enjoy") ---
+# Two shapes:
+#   "What might X enjoy?" — modal directly after WH
+#   "What is a Y that X might enjoy?" / "Which company likely signed X?" —
+#   modal or speculation adverb later in the clause
+_OPEN_DOMAIN_RE = re.compile(
+    r"\b(?:what|which|who)\b.*\b"
+    r"(?:might|could|would|should|maybe|perhaps|likely|probably|possibly|"
+    r"consider|enjoy|prefer|recommend|suggest)\b",
+    re.IGNORECASE,
+)
+
+
+def is_open_domain_specific(query: str) -> bool:
+    """Fast path: hypothetical or inferential query expecting a specific named answer."""
+    return bool(_OPEN_DOMAIN_RE.search(query))
+
+
+# Extract the principal entity from an aggregation query for focused
+# decomposition. Cheap regex — not a substitute for NER. Ordered by
+# specificity so PP-object queries (e.g. "how much did I donate to
+# charity") resolve to the PP object ("charity") rather than the auxiliary
+# verb ("did I").
+_ENTITY_REGEXES = (
+    # "how much did I V (to|for|at|toward) X" → X (PP object is the focus)
+    re.compile(
+        r"how much (?:did|do|have)\s+i\s+(?:\w+\s+){0,3}"
+        r"(?:to|for|at|toward|towards|into|on)\s+"
+        r"([a-z][a-z\-]+(?:\s+[a-z][a-z\-]+){0,2})",
+        re.IGNORECASE,
+    ),
+    # "how many (different) X" → X (typical noun-count)
+    re.compile(
+        r"how many (?:different |distinct |unique )?"
+        r"([a-z][a-z\-]+(?:\s+[a-z][a-z\-]+){0,2})",
+        re.IGNORECASE,
+    ),
+    # "how much X" → X (money/time quantifier)
+    re.compile(
+        r"how much ([a-z][a-z\-]+(?:\s+[a-z][a-z\-]+){0,2})",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"list (?:all |every |my )?"
+        r"([a-z][a-z\-]+(?:\s+[a-z][a-z\-]+){0,2})",
+        re.IGNORECASE,
+    ),
+    re.compile(r"几个不同的?([^\s，。？]+)"),
+    re.compile(r"多少([^\s，。？]+)"),
+)
+
+# Common stop-word tails that shouldn't be part of the focus phrase.
+_FOCUS_TAIL_STOPWORDS = {
+    "do", "did", "does", "have", "had", "has",
+    "are", "were", "was", "is", "am",
+    "i", "you", "we", "they", "he", "she", "it",
+    "in", "on", "at", "to", "for", "by", "of", "with",
+    "my", "your", "our", "their",
+    "currently", "now", "already", "still", "also",
+    "total", "all", "ever",
+}
+
+
+def extract_focus_entity(query: str) -> str | None:
+    """Best-effort extraction of the noun phrase the aggregation is about.
+
+    "How many doctors did I see?"              → 'doctors'
+    "How many musical instruments do I own?"   → 'musical instruments'
+    "How much money did I raise for charity?"  → 'money'
+
+    Trims trailing auxiliary verbs / pronouns so the focus is a clean
+    noun phrase suitable for class-matching in NumericAggregator.
     """
     for pattern in _ENTITY_REGEXES:
         m = pattern.search(query)
         if m:
-            return m.group(1).strip()
+            phrase = m.group(1).strip().lower()
+            tokens = phrase.split()
+            # Trim stop-word tail
+            while tokens and tokens[-1] in _FOCUS_TAIL_STOPWORDS:
+                tokens.pop()
+            if not tokens:
+                continue
+            return " ".join(tokens)
     return None

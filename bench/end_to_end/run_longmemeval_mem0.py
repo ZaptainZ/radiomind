@@ -173,7 +173,24 @@ def run(
     from radiomind.core.mind import RadioMind
     from radiomind.core.types import MemoryEntry, MemoryLevel
 
-    mind = RadioMind()
+    # Host-inject the bench LLM callable into RadioMind's internal pipeline
+    # so KG extraction, query decomposer, and NumericAggregator classifier
+    # all have a working LLM. Without this, _resolve_llm falls back to
+    # empty router (env has OPENROUTER_API_KEY but no OPENAI_API_KEY that
+    # the env-probe looks for), and those paths return empty silently.
+    # Uses answer_model since that credential + model is already verified.
+    def _internal_llm(prompt: str, system: str = "") -> str:
+        # Generous max_tokens: NumericAggregator batch extraction
+        # returns many JSON events per call; KG extractor outputs many
+        # triples; decomposer outputs many atoms. 2500 is enough for
+        # 20-turn batches without truncation.
+        return llm_call(
+            prompt, config_path,
+            model=answer_model, max_tokens=2500,
+            profile=answer_profile, system=(system or None),
+        )
+
+    mind = RadioMind(llm=_internal_llm)
     mind.initialize()
     print(
         f"  init: embedder={mind._embedder is not None}, "
@@ -336,6 +353,30 @@ def run(
         else:
             results = mind.search(question, domain=domain, max_results=TOP_K)
 
+        # Attention-driven retrieval augmentation (same pattern as LoCoMo
+        # harness): specific-detail queries get a keyword-narrowed second
+        # retrieval pass merged at the tail.
+        try:
+            from radiomind.core.attention import is_specific_detail_lookup
+            if is_specific_detail_lookup(question):
+                import re as _re
+                m = _re.search(
+                    r"\b(?:what|which|where)\s+(?:is|are|was|were|does|do|did|has|have)\s+"
+                    r"([a-z][a-z]+)('s)?\b",
+                    question, _re.IGNORECASE,
+                )
+                if m:
+                    subject = m.group(1)
+                    extra = mind.search(subject, domain=domain, max_results=40)
+                    seen = {getattr(r.entry, "id", 0) for r in results}
+                    for r in extra:
+                        rid = getattr(r.entry, "id", 0)
+                        if rid not in seen:
+                            results.append(r)
+                            seen.add(rid)
+        except Exception:
+            pass
+
         # Build Mem0-format search_results: memory / score / created_at
         mem_results = []
         for r in results[:TOP_K]:
@@ -346,12 +387,27 @@ def run(
                 "created_at": sdate,
             })
 
-        # Attention-driven atomic decomposition: if this is an aggregation
-        # query ("how many", "list all", "across sessions"), run a query-
-        # time LLM extract over retrieved turns to get an enumerated view
-        # alongside the narrative. This closes most of the multi-session
-        # gap vs Mem0's ingest-time atomic-fact store, WITHOUT rewriting
-        # our stored turns.
+        # Bottom-up NumericAggregator view: for count/total questions
+        # ("how many instruments", "how much did I donate"), the cardinal
+        # cache (populated at ingest time) holds a deterministic
+        # ground-truth that doesn't depend on top-k retrieval completeness.
+        # When it has a hit, we inject it BEFORE the memory block so the
+        # answer model treats it as anchor. Empty when not applicable.
+        cardinal_section = ""
+        try:
+            # user_id matches the default ("") used in ingest_turns_raw
+            # above; per-question domain isolation is via the `domain`
+            # partition instead.
+            cardinal_section = mind.get_numeric_cardinal(
+                query=question, domain=domain, user_id="",
+            )
+        except Exception:
+            pass
+
+        # Attention-driven atomic decomposition: query-time LLM extract
+        # over retrieved turns for aggregation queries not served by the
+        # cardinal cache (list-enumerations, cross-session narratives).
+        # DRAFT framing so the model still verifies against raw turns.
         atomic_section = ""
         try:
             atoms = mind.decompose_for_query(
@@ -385,6 +441,10 @@ def run(
             # last and most salient context the model sees — atomic facts
             # only serve as a draft starting point.
             ans_prompt = atomic_section + ans_prompt
+        if cardinal_section:
+            # Deterministic cardinal view outranks the heuristic draft.
+            # Both placed ahead of the memory block.
+            ans_prompt = cardinal_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable

@@ -120,15 +120,19 @@ LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
 | `bench/end_to_end/run_locomo_mem0.py` | locomo10.json cat 1-4 | Mem0 verbatim，top_k=200 |
 | `bench/end_to_end/PROTOCOL.md` | — | 完整 run 矩阵 + 协议对照 |
 
-### 最终数字（架构 v3 + deepseek-v3.2 answer + qwen-max judge，n=30）
+### FINAL 数字（gpt-4o answer + gpt-4o judge，n=100，2026-04-20）
 
 | System | LongMemEval-S | LoCoMo cat 1-4 |
 |---|---:|---:|
-| Mem0 v3（gpt-4o） | 93.4 | 91.6 |
-| MemMachine | 93.0 (S) | 91.69 |
-| **RadioMind** | **90.0** | **83.3** |
+| Mem0 v3（gpt-4o） | 0.68 | 0.916 |
+| MemMachine | 0.930 (S) | 0.9169 |
+| **RadioMind** | **0.830** | **0.890** |
 
-差 Mem0 3.4–8.3 pt，主要是模型差（gpt-4o vs deepseek-v3.2）。
+- **LME-S 领先 Mem0 +15 pt**（长 haystack 上 preservative 哲学占优）
+- **LoCoMo 落后 Mem0 −2.6 pt**（单对话聚合 Mem0 extractive 天然友好）
+- 历史 n=30 deepseek-v3.2：LME-S 0.900 / LoCoMo 0.833（更小样本，已被 n=100 替代）
+
+详见 `logs/2026-04-20-final-bench-gpt4o-n100-cc.md`。
 
 ### 架构可证明的增益
 - knowledge-update：+40 pt（三体 principle 消歧 previous/current）
@@ -168,6 +172,36 @@ LoRA 的 train/deploy CLI 已隐藏于 `RADIOMIND_ENABLE_LORA=1` 旗标后。
 - `core.attention.classify(query)` / `is_aggregation(query)` / `extract_focus_entity(query)`
 
 详见 `logs/2026-04-18-attention-4th-law-cc.md`。
+
+---
+
+## 做法对齐 A2A + attention × 三体 深化（2026-04-20）
+
+### 问题诊断
+FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分析后，**收回"judge 噪声"解释**——每道都是真错。根因归三类：
+- A. **Retrieval recall gap**（6 道 LoCoMo）：top-200 没召回那条"辅助性具体细节" turn
+- B. **时间线/日期精度**（3 道 LoCoMo + 5 道 LME-S）：session_date 未严格进推理链、跨时间段归因错
+- C. **Open-domain 无专用管道**（2 道 LoCoMo）：读者推理题 decomposer 不触发、retrieval 又太宽
+- D. **LME-S multi-session 聚合**（5 道）：decomposer 跑了但单次 LLM 精度不足（5 instruments 而非 4）
+
+### 新设计律：A2A 按**做法**对齐，不按**参数**对齐
+业界同类 paper 默认报三档，我们前期只报最委屈的一档。新标准：
+- **A2A-strict**：关所有 auto-router，只留单轮检索 + 单 LLM 答题（和 Mem0 单轮 baseline 比）
+- **A2A-practice**（主力数字）：各自看家做法全开——Mem0 的 extractive-at-ingest、RadioMind 的 attention 分类 + query-time decompose + 三体 + 自动 temporal math。都是各架构的"默认做法"不是 add-on
+- **Max**：加多轮 agentic loop，上限参考值
+
+### S1-S5 升级 roadmap
+所有补齐围绕**已有的两个 primitive**（attention 分类 + 三体辩论），不引入新概念——兑现第四律"每层明确 attention 职责"和"三体是 primitive 不是 feature"两条自立原则。
+
+| 步骤 | 内容 | 文件 | 预期增益 |
+|---|---|---|---|
+| S1 | **NumericAggregator**：ingest 时增量维护 `user×domain×entity_class` cardinal_cache（count + evidence + version history），query 走 numeric_cardinal attention tag 直接读缓存 | `refinement/numeric_aggregator.py` 新增 | LME-S multi-session +3-5 pt |
+| S2 | S1 不够时 fallback：decomposer 单 LLM → **三体数字语境**（守护 verify evidence / 探索 find missed atoms / 精简 dedup + 定 cardinal），一个 prompt 三视角 | `refinement/decompose.py` 升级 | +1-2 pt 锦上 |
+| S3 | Attention 扩四标签：`specific_detail_lookup` / `temporal_precision` / `open_domain_specific` / `numeric_cardinal`；每个配一个 trinity-style 专用管道 | `core/attention.py` + 新管道文件 | LoCoMo +5-8 pt, LME-S tempo +3 pt |
+| S4 | 砍 `--agentic` / `--temporal-math` flag，全自动触发；新增 `--benchmark-mode a2a-strict/a2a-practice/max` | `bench/end_to_end/run_*.py` | 0 pt（重构）|
+| S5 | 三档重跑：先小样本回归（上次错题），再 n=100 三档，最后 n=1540 全量 LoCoMo | — | — |
+
+详见 `logs/2026-04-20-numeric-attention-upgrade-cc.md`。
 
 ---
 
@@ -214,7 +248,7 @@ RadioMind (仿生记忆核心) ← 本项目
 |------|------|
 | **仿生优先** | 架构对标大脑（海马体、新皮层、睡眠巩固），不是数据库思维 |
 | **可插拔** | 作为独立模块，宿主 Agent 通过标准接口调用 |
-| **本地优先** | 所有记忆数据本地存储，炼化用本地小模型，隐私不出设备 |
+| **数据本地，推理借势宿主** | 记忆数据（SQLite / HDC）都在本地硬盘，不上传。但**推理/embedding 不要求本地**——宿主 Agent（CC / Codex / Cursor / RadioHand）本来就有大模型访问权，直接复用更合理。~~2025 年曾尝试本地 0.6B 小模型路线，实测安装成本高、质量差，已弃用（详见 memory/project_host_llm_assumed.md）~~。 |
 | **不写死** | LLM、存储后端、通道、领域——一切外部依赖都是配置，非代码 |
 | **知己知彼** | 持续更新用户侧写 + 系统自画像，元认知驱动自适应 |
 

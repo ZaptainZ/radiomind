@@ -22,6 +22,7 @@ from radiomind.core.types import (
 from radiomind.meta.profiles import ProfileManager
 from radiomind.refinement.chat import ChatRefinement
 from radiomind.refinement.dream import DreamRefinement
+from radiomind.refinement.numeric_aggregator import NumericAggregator
 from radiomind.storage.database import MemoryStore
 from radiomind.storage.hdc import HabitStore
 from radiomind.storage.knowledge_graph import KnowledgeGraph
@@ -61,6 +62,7 @@ class RadioMind:
         self._dream_refine: DreamRefinement | None = None
         self._meta: ProfileManager | None = None
         self._kg: KnowledgeGraph | None = None
+        self._numeric_agg: NumericAggregator | None = None
         self._embedder = None
 
     def initialize(self, config_overrides: dict[str, Any] | None = None) -> None:
@@ -179,6 +181,14 @@ class RadioMind:
         self._kg = KnowledgeGraph(self.config.db_path.parent / "knowledge.db")
         self._kg.open()
 
+        # NumericAggregator shares knowledge.db: structured-extract products
+        # of ingest live together. Opens late enough to see the final
+        # self._llm (set above), for query-time classification.
+        self._numeric_agg = NumericAggregator(
+            self.config.db_path.parent / "knowledge.db", llm=self._llm,
+        )
+        self._numeric_agg.open()
+
         self._pyramid = PyramidSearch(
             self._store,
             embedder=self._embedder,
@@ -215,7 +225,7 @@ class RadioMind:
         self._initialized = True
 
     def shutdown(self) -> None:
-        for component in (self._meta, self._kg, self._habits, self._store):
+        for component in (self._meta, self._numeric_agg, self._kg, self._habits, self._store):
             if component is not None:
                 try:
                     component.close()
@@ -407,6 +417,36 @@ class RadioMind:
                     except Exception:
                         pass
 
+        # Numeric cardinal aggregation: scan user turns for ownership /
+        # acquisition / disposal / amount events and update the
+        # per-(user,domain,class) cardinal cache. This gives aggregation
+        # queries ("how many X", "how much total") a deterministic
+        # ground-truth instead of LLM re-derivation from retrieval.
+        cardinal_updates: dict[str, int] = {}
+        if self._numeric_agg is not None and self._numeric_agg.is_available():
+            # Reconstruct (mid, content, role, meta) tuples from the
+            # pass 2/3 data. We kept pending; persist gave us mid for each.
+            # Re-persist gave mid via add(); rebuild from pending's order by
+            # re-querying the store would be expensive — instead we pass the
+            # already-persisted user_turns_for_kg list (same mids, same text)
+            # plus recover metadata from original `turns` by turn_id.
+            try:
+                meta_by_mid = {}
+                for (entry, content, role), t in zip(pending, turns):
+                    meta_by_mid[content] = dict(t.get("metadata") or {})
+                turn_tuples = []
+                for mid, content in user_turns_for_kg:
+                    meta = meta_by_mid.get(content, {})
+                    turn_tuples.append((mid, content, "user", meta))
+                for dom in domains_touched or [""]:
+                    touched = self._numeric_agg.process_turns(
+                        turn_tuples, user_id=user_id, domain=dom,
+                    )
+                    if touched:
+                        cardinal_updates[dom] = len(touched)
+            except Exception:
+                pass
+
         aggregations: dict[str, int] = {}
         if run_aggregation and self._llm is not None and self._llm.is_available():
             for dom in domains_touched:
@@ -457,6 +497,7 @@ class RadioMind:
             "kg_triples": kg_triples,
             "domains": sorted(domains_touched),
             "aggregations": aggregations,
+            "cardinal_updates": cardinal_updates,
             "refinement_insights": refinement_insights,
         }
 
@@ -594,6 +635,74 @@ class RadioMind:
             except Exception:
                 pass
         return atoms
+
+    # --- Numeric cardinal (bottom-up counts) ---
+
+    def get_numeric_cardinal(
+        self,
+        query: str,
+        domain: str = "",
+        user_id: str = "",
+    ) -> str:
+        """Return a formatted cardinal-view string for numeric queries.
+
+        Produces an answer-prompt block like:
+
+            DETERMINISTIC CARDINAL VIEW (from ingest-time aggregation):
+            - musical_instruments: count=4 (members: Yamaha FG800, Fender Strat, ...)
+              evidence: s2_t1,s4_t3,s7_t2,s12_t5
+            - charity_donations: total_amount=$3750 (4 events)
+              evidence: s1_t0,s3_t2,s5_t1,s9_t0
+
+        Returns "" if no relevant cardinal entry exists (caller falls back
+        to the standard query-time decomposer).
+
+        Only fires when attention classifies the query as numeric_cardinal
+        (subset of aggregation with explicit count/total signal). For
+        pure enumeration queries ("list all my doctors"), the caller
+        should still invoke decompose_for_query() — those don't reduce
+        to a single number.
+        """
+        self._check_init()
+        if self._numeric_agg is None or not self._numeric_agg.is_available():
+            return ""
+        from radiomind.core.attention import is_numeric_cardinal, extract_focus_entity
+        if not is_numeric_cardinal(query):
+            return ""
+
+        focus = extract_focus_entity(query) or ""
+        hits = self._numeric_agg.query_by_focus(
+            user_id=user_id, domain=domain, focus=focus,
+        )
+        if not hits:
+            return ""
+
+        lines = ["DRAFT CARDINAL VIEW (extracted at ingest-time — verify against the memories below; the count may include duplicates or misclassifications the extractor didn't catch. Trust memories over this draft on any conflict):"]
+        for entry in hits[:3]:
+            if entry.total_amount is not None:
+                amt = f"${entry.total_amount:,.2f}".rstrip("0").rstrip(".")
+                lines.append(
+                    f"- {entry.entity_class}: total_amount={amt} "
+                    f"({entry.count} events), evidence: {','.join(entry.evidence[:6])}"
+                )
+            else:
+                mem = ""
+                if entry.members:
+                    mem = f" (members: {', '.join(entry.members[:10])})"
+                lines.append(
+                    f"- {entry.entity_class}: count={entry.count}{mem}, "
+                    f"evidence: {','.join(entry.evidence[:6])}"
+                )
+        return "\n".join(lines) + "\n\n"
+
+    def list_cardinals(
+        self, domain: str = "", user_id: str = ""
+    ) -> list:
+        """Debug / inspection hook: return all cardinal entries."""
+        self._check_init()
+        if self._numeric_agg is None:
+            return []
+        return self._numeric_agg.list_all(user_id=user_id, domain=domain)
 
     # --- Meta ---
 

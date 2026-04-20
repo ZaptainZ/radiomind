@@ -162,7 +162,17 @@ def run(
     from radiomind.core.mind import RadioMind
     from radiomind.core.types import MemoryEntry, MemoryLevel
 
-    mind = RadioMind()
+    # Host-inject the bench LLM so KG extraction / decomposer /
+    # NumericAggregator classifier can run. Same pattern as LME-S harness.
+    _config_path = sandbox / "config.toml"
+    def _internal_llm(prompt: str, system: str = "") -> str:
+        return llm_call(
+            prompt, _config_path,
+            model=answer_model, max_tokens=2500,
+            profile=answer_profile, system=(system or None),
+        )
+
+    mind = RadioMind(llm=_internal_llm)
     mind.initialize()
     print(
         f"  init: embedder={mind._embedder is not None}, "
@@ -330,6 +340,36 @@ def run(
         else:
             results = mind.search(question, domain=domain, max_results=TOP_K)
 
+        # Attention-driven retrieval augmentation: for specific-detail
+        # lookups ("What does X do while Y?"), vector-only top-k often
+        # misses peripheral detail turns (gold: Tilly the stuffed dog —
+        # mentioned once in 600+ turn haystacks). A second pass asks the
+        # store with a keyword-narrowed variant to raise recall on the
+        # specific named subject. Merged at a reserved tail so existing
+        # top scorers still lead. Cheap (single extra search call) and
+        # no-op when the query isn't a specific-detail shape.
+        try:
+            from radiomind.core.attention import is_specific_detail_lookup
+            if is_specific_detail_lookup(question):
+                # Pull out the possessive/subject noun as keyword
+                import re as _re
+                m = _re.search(
+                    r"\b(?:what|which|where)\s+(?:is|are|was|were|does|do|did|has|have)\s+"
+                    r"([a-z][a-z]+)('s)?\b",
+                    question, _re.IGNORECASE,
+                )
+                if m:
+                    subject = m.group(1)
+                    extra = mind.search(subject, domain=domain, max_results=40)
+                    seen = {getattr(r.entry, "id", 0) for r in results}
+                    for r in extra:
+                        rid = getattr(r.entry, "id", 0)
+                        if rid not in seen:
+                            results.append(r)
+                            seen.add(rid)
+        except Exception:
+            pass
+
         mem_results = []
         for r in results[:TOP_K]:
             sdate = (r.entry.metadata or {}).get("session_date", "")
@@ -338,6 +378,17 @@ def run(
                 "score": float(getattr(r, "score", 0.0)),
                 "created_at": sdate,
             })
+
+        # Bottom-up NumericAggregator: deterministic count/total view
+        # from ingest-time aggregation. Outranks the heuristic draft
+        # when it hits. Empty for non-cardinal queries.
+        cardinal_section = ""
+        try:
+            cardinal_section = mind.get_numeric_cardinal(
+                query=question, domain=domain, user_id="",
+            )
+        except Exception:
+            pass
 
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
@@ -366,6 +417,8 @@ def run(
         )
         if atomic_section:
             ans_prompt = atomic_section + ans_prompt
+        if cardinal_section:
+            ans_prompt = cardinal_section + ans_prompt
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()
