@@ -182,3 +182,48 @@ ingest 时增量维护 `cardinal_cache[user][domain][entity_class] = {count, evi
 ### 诚实边界说明
 - S1 NumericAggregator 的核心问题（Q2 charity 过抽、Q4 coffee maker 漏抽）未完全解决，需 full trinity（当前只做了 Reducer）
 - S3 specific_detail 的主语抽取用 regex（拿 `what/which + is/are/does + X` 的 X），对 "What other exercises can help John with basketball?" 类不够（找不到 subject noun）
+
+---
+
+## 继续：S2.2 + S3.2 + S4b（全部完成）
+
+### S2.2 — Guardian for amount events
+`_guardian_verify_amounts()` 读每个 amount 事件的原 turn 文本，核对是否真属该 class。对 `charity_donations` / `savings_events` / `income_events` / `spending_events` 四类有 `CLASS_DEFINITIONS` 严格 rubric。
+- 触发条件：class 有 ≥3 event 且 total_amount > 0
+- Revoke 机制：LLM 返回 revoke 列表，count / total_amount / history / evidence 全部回滚
+- 保守约束：只运行在有 CLASS_DEFINITIONS 的 class 上，避免滥用
+
+### S3.2 — Temporal + Open-domain sub-pipelines
+新模块 `src/radiomind/refinement/query_pipelines.py`（~230 行）：
+- `TemporalPrecisionPipeline` — 对 "When did X?" / "For how long..." 跑三体（Guardian 抽 anchor events, Explorer 链接日期, Reducer 出严格 date answer），产出 `TEMPORAL PRECISION VIEW` 前缀
+- `OpenDomainSpecificPipeline` — 对 "what might X enjoy?" 跑三体（Guardian 列出 retrieved 里的具体命名实体, Explorer 做 2-hop 推理, Reducer 禁止 abstract hedging），产出 `OPEN-DOMAIN SPECIFIC PICK` 前缀
+
+两个 pipeline 都走单 LLM 调用，non-match 时 no-op。接入 LoCoMo + LME-S 双 harness。
+
+### S4b — Drop flags; 自动路由
+- 新增 `--benchmark-mode {a2a-strict, a2a-practice, max}`：
+  - `a2a-strict`：设 `RADIOMIND_ATTENTION_ROUTER=off`，所有 attention sub-pipeline 都关（对标 Mem0 单轮 baseline）
+  - `a2a-practice`（默认）：attention 自动路由，我方看家做法全开（numeric cardinal + temporal + open-domain + specific-detail），多轮 agentic 仍关
+  - `max`：全开含多轮 agentic
+- `--agentic` / `--temporal-math` 标为 DEPRECATED 但保留向后兼容
+- `mind.run_*` 方法检查 `_attention_router_enabled()` env var
+
+### 回归稳定性修复
+v9 小样本突然回归 0/5 PASS：LLM batch 返回空 → regex fallback 启动 → heuristic 出 "Those Kitchen Shelves" / "In The Fridge" 之类伪类。根因：`_heuristic_class` 对任何短语都造一个 class，没有 ontology 验证。
+**修**：新增 `_heuristic_class_is_recognized()` 过滤——heuristic candidate 的 class 必须是 `_ONTOLOGY_ROLLUP` 的 key 或 parent class（kitchen_items / musical_instruments 等），否则 valid=False 丢弃。
+
+### Batch 配置调整
+- `batch_size`：20 → 12（避免 JSON 输出超 2500 token 被截断）
+- `max_chars_per_turn`：800 → 600
+- max_tokens 在 bench 保持 2500
+
+### 当前状态（2026-04-20 收尾）
+- 代码量：~1400 行新增（numeric_aggregator 850 + query_pipelines 230 + mind 150 + attention 140 + bench 接入 + tests 190）
+- 测试：211/211 pass
+- 提交：已 `5f6538d`（S1+S2+S3 partial）；后续工作未 commit
+- CLI：`--benchmark-mode` 可用；deprecated flag 兼容
+
+### 下一轮
+- 用 a2a-practice 模式跑 LME-S 小样本再验证（Guardian 应修 Q2 charity）
+- 用 a2a-practice 跑 LoCoMo n=100 看 3 个新 pipeline 合并效果
+- 若通过 → n=1540 全量 LoCoMo + n=500 全量 LME-S

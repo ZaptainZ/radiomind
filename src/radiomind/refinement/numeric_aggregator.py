@@ -153,6 +153,54 @@ EXPLICIT_COUNT_PATTERNS = [
 # / "My Pearl drum set" / descriptive mentions embedded in longer
 # sentences. A single LLM call per ~30 turns outputs the full candidate
 # set directly — same batching pattern as KG triple extraction.
+GUARDIAN_AMOUNT_PROMPT = """You are the Guardian: re-examine claimed {entity_class} events.
+
+Batch extraction produced this list of amount events. Some may be
+**misclassified** (the target isn't really {entity_class}) and should
+be revoked. Read each event's evidence turn and decide keep vs revoke.
+
+Events (each block: event_id | turn_id | amount | member | evidence_text):
+{events}
+
+Class definition:
+{class_definition}
+
+Rules:
+- KEEP only events where the evidence turn clearly shows the user doing
+  a {entity_class} action with the stated amount.
+- REVOKE when the amount/action is actually a different class
+  (e.g. spending / purchasing / income not matching {entity_class}).
+- If in doubt, REVOKE. Precision matters more than recall for amounts.
+
+Output STRICT JSON:
+{{
+  "keep": [0, 2, 4],
+  "revoke": [{{"event_id": 1, "reason": "purchase, not charity"}}, ...]
+}}"""
+
+
+CLASS_DEFINITIONS = {
+    "charity_donations": (
+        "Money the user gave to a NAMED CHARITY ORGANIZATION, fundraiser, "
+        "nonprofit, gala for a cause, political cause, or religious tithing. "
+        "Generic gifts, purchases, rent, bills, family transfers are NOT charity."
+    ),
+    "savings_events": (
+        "Money the user SAVED on a specific purchase, typically phrased as "
+        "'saved $N on X' / 'got $N off X' / 'discount of $N'. Not general "
+        "thrift or budget-cutting."
+    ),
+    "income_events": (
+        "Money the user EARNED from a sale, job, refund, or gift received. "
+        "Not purchase-related money movements."
+    ),
+    "spending_events": (
+        "Money the user SPENT on a specific purchase of goods/services. "
+        "Not donations, not savings."
+    ),
+}
+
+
 REDUCER_DEDUP_PROMPT = """You are the Reducer: given a candidate list of members
 claimed for one entity class, return the deduplicated + strictly-scoped
 final list.
@@ -472,14 +520,18 @@ class NumericAggregator:
 
         candidates: list[dict[str, Any]] = []
         if llm_available:
-            # Batch extraction: LLM sees raw user turns and outputs events
+            # Batch extraction: LLM reads raw user turns → event list
             try:
                 candidates = self._batch_extract_llm(user_turns, session_date)
             except Exception:
                 candidates = []
 
         if not candidates:
-            # Fallback to regex fast-path
+            # LLM batch returned no candidates (LLM unavailable, per-batch
+            # failures, or genuine "no events in haystack"). Fall back to
+            # regex so users without an LLM still get *something*; a strict
+            # quality filter downstream drops the obviously noise members
+            # ("Those", "In The Fridge", single pronouns).
             for mid, content, meta in user_turns:
                 turn_id = self._turn_id(mid, meta)
                 ts = self._turn_ts(meta, session_date)
@@ -520,14 +572,26 @@ class NumericAggregator:
                     touched[target_cls] = entry
                 self._apply_delta(entry, c)
 
-        # Post-pass: Reducer-style dedup within each class.
-        # Batch extraction sees each turn in isolation so the same
-        # physical entity ("Fender Stratocaster" in batch 1, "guitar" /
-        # "acoustic guitar" in later batches) produces multiple separate
-        # members. A single LLM pass reviews the accumulated member list
-        # per class, merges aliases, drops misclassified items, and
-        # produces a final count. Only fires when the class has ≥3
-        # members (cheap membership doesn't pay to review).
+        # Build turn_id → content lookup for Guardian evidence examination.
+        turn_text_by_id = {self._turn_id(mid, meta): content
+                           for mid, content, meta in user_turns}
+
+        # Post-pass 1: Guardian verification on amount-polarity entries
+        # with ≥3 events. Evidence-grounded re-check that each event's
+        # source turn actually matches the class definition. Revokes
+        # misclassified events (e.g. charity_donations over-counting
+        # non-charity transfers). Only fires when we have a class
+        # definition rubric and ≥3 events (single events are harmless).
+        if self._llm and touched:
+            for cls, entry in list(touched.items()):
+                if cls in CLASS_DEFINITIONS and entry.count >= 3 and entry.total_amount:
+                    try:
+                        self._guardian_verify_amounts(entry, turn_text_by_id)
+                    except Exception:
+                        pass
+
+        # Post-pass 2: Reducer-style dedup within each class (for OWN
+        # entries with ≥3 members). Merges aliases, drops misclassified.
         if self._llm and touched:
             for cls, entry in list(touched.items()):
                 if len(entry.members) >= 3:
@@ -539,6 +603,123 @@ class NumericAggregator:
         for entry in touched.values():
             self._persist(entry)
         return touched
+
+    def _guardian_verify_amounts(
+        self, entry: CardinalEntry, turn_text_by_id: dict[str, str],
+    ) -> None:
+        """Guardian pass: re-examine amount events against evidence turns.
+
+        For amount-polarity classes with strict rubrics (charity_donations,
+        savings_events, ...), re-read each event's evidence turn and revoke
+        events that don't match the class definition. Updates entry.count,
+        entry.total_amount, entry.history in place.
+
+        Only considers events represented in entry.history with non-empty
+        turn_id and numeric delta. Misses nothing if history is complete.
+        """
+        if not self._llm or not entry.total_amount:
+            return
+        class_def = CLASS_DEFINITIONS.get(entry.entity_class)
+        if not class_def:
+            return
+
+        # Gather amount events from history
+        amount_events = []
+        for i, h in enumerate(entry.history):
+            if h.get("reason") != "amount":
+                continue
+            turn_id = h.get("turn_id") or ""
+            delta_str = h.get("delta", "")
+            # Parse delta like "+$500.00"
+            m = re.match(r"\+\$([\d.]+)", delta_str)
+            if not m:
+                continue
+            try:
+                amt = float(m.group(1))
+            except ValueError:
+                continue
+            evidence = turn_text_by_id.get(turn_id, h.get("phrase", ""))[:500]
+            if not evidence:
+                continue
+            amount_events.append({
+                "history_idx": i,
+                "event_id": len(amount_events),
+                "turn_id": turn_id,
+                "amount": amt,
+                "evidence": evidence.replace("\n", " "),
+            })
+
+        if len(amount_events) < 3:
+            return
+
+        # Build prompt
+        event_block = "\n\n".join(
+            f"event_id={e['event_id']} | turn_id={e['turn_id']} | "
+            f"amount=${e['amount']} | evidence: {e['evidence']}"
+            for e in amount_events
+        )
+        prompt = GUARDIAN_AMOUNT_PROMPT.format(
+            entity_class=entry.entity_class,
+            events=event_block,
+            class_definition=class_def,
+        )
+        raw = ""
+        try:
+            if hasattr(self._llm, "generate"):
+                resp = self._llm.generate(
+                    prompt, system="Output only strict JSON.",
+                )
+                raw = getattr(resp, "text", "") or ""
+            else:
+                raw = self._llm(prompt, "Output only strict JSON.")
+        except Exception:
+            return
+        cleaned = re.sub(r"^```(?:json|JSON)?\s*\n?", "", raw.strip())
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned).strip()
+        try:
+            obj = json.loads(cleaned)
+            revoke_list = obj.get("revoke", []) or []
+        except Exception:
+            return
+        revoke_ids = set()
+        for r in revoke_list:
+            try:
+                revoke_ids.add(int(r["event_id"] if isinstance(r, dict) else r))
+            except (ValueError, KeyError, TypeError):
+                continue
+        if not revoke_ids:
+            return
+
+        # Apply revocations
+        revoked_history_idx = set()
+        revoked_amount = 0.0
+        for e in amount_events:
+            if e["event_id"] in revoke_ids:
+                revoked_history_idx.add(e["history_idx"])
+                revoked_amount += e["amount"]
+
+        if not revoked_history_idx:
+            return
+
+        entry.count = max(0, entry.count - len(revoked_history_idx))
+        entry.total_amount = (entry.total_amount or 0) - revoked_amount
+        # Rebuild history excluding revoked events; add a revoke marker
+        entry.history = [
+            h for i, h in enumerate(entry.history) if i not in revoked_history_idx
+        ]
+        entry.history.append({
+            "ts": time.time(), "turn_id": "", "delta": "guardian_revoke",
+            "reason": "guardian",
+            "phrase": f"revoked {len(revoked_history_idx)} events (-${revoked_amount:.2f})",
+        })
+        # Clean evidence list: drop turn_ids that were revoked
+        revoked_turns = {
+            amount_events[e]["turn_id"]
+            for e in range(len(amount_events))
+            if amount_events[e]["event_id"] in revoke_ids
+        }
+        entry.evidence = [t for t in entry.evidence if t not in revoked_turns]
+        entry.updated_at = time.time()
 
     def _reducer_dedup(self, entry: CardinalEntry) -> None:
         """LLM pass: merge alias members within a class; drop misclassified.
@@ -908,9 +1089,11 @@ class NumericAggregator:
 
         # Heuristic backfill ONLY for candidates the LLM did not see
         # (LLM off / partial output). An LLM-judged `valid=False` must
-        # survive — the whole point of the LLM step is to reject the
-        # regex fast-path noise (pronouns, fragments, adjectives). If
-        # heuristic resurrected those it would defeat filtering.
+        # survive. Heuristic candidates are STRICTLY filtered — only
+        # accepted when the head noun maps to a known ontology bucket
+        # (musical_instruments / kitchen_items / ...). This prevents
+        # noise like "Back", "Home", "Those Kitchen Shelves" from
+        # leaking through when LLM is silently unavailable.
         for c in non_amount:
             if c.get("_llm_classified"):
                 continue
@@ -918,6 +1101,11 @@ class NumericAggregator:
                 continue
             phrase = c.get("phrase", "")
             cls, member = _heuristic_class(phrase)
+            if not _heuristic_class_is_recognized(cls, member):
+                c["valid"] = False
+                c["entity_class"] = ""
+                c["canonical_member"] = ""
+                continue
             c["entity_class"] = cls
             if not c.get("canonical_member"):
                 c["canonical_member"] = member
@@ -975,8 +1163,8 @@ class NumericAggregator:
         self,
         user_turns: list[tuple[int, str, dict]],
         session_date: str | None,
-        batch_size: int = 20,
-        max_chars_per_turn: int = 800,
+        batch_size: int = 12,
+        max_chars_per_turn: int = 600,
     ) -> list[dict[str, Any]]:
         """One LLM call per batch of user turns; output cardinal candidates.
 
@@ -1398,6 +1586,43 @@ _PHRASE_TAIL_CLEANUP = re.compile(
     r"|my\s+(?:home|house|place|office|apartment))\b.*$",
     re.IGNORECASE,
 )
+
+
+def _heuristic_class_is_recognized(cls: str, member: str) -> bool:
+    """Filter heuristic output to ontology-recognized classes.
+
+    The heuristic (last-token head noun) produces anything — including
+    "backs", "thes", "ons", "news" — from random phrase tails. Without
+    a filter these show up as bogus cardinal classes. The filter keeps
+    only members whose class:
+      - directly maps to an _ONTOLOGY_ROLLUP parent, OR
+      - is a known bigram key in _ONTOLOGY_ROLLUP, OR
+      - is itself a canonical parent class name (kitchen_items,
+        musical_instruments, ...).
+    Also rejects obviously-malformed members (single-token fragments
+    that aren't proper nouns).
+    """
+    if not cls or not member:
+        return False
+    cls_low = cls.lower()
+    # Known ontology keys / parents
+    parent_classes = {v for vs in _ONTOLOGY_ROLLUP.values() for v in vs}
+    if cls_low in _ONTOLOGY_ROLLUP:
+        return True
+    if cls_low in parent_classes:
+        return True
+    # Accept singular-form lookup as well
+    if _singularize(cls_low) in _ONTOLOGY_ROLLUP:
+        return True
+    # Reject when member is a single non-capitalized common word
+    mtokens = member.split()
+    if len(mtokens) == 1 and mtokens[0][0].islower():
+        return False
+    # Reject when member starts with a determiner / adjective that
+    # leaked through ("Those ...", "This ...", "New ...")
+    if mtokens and mtokens[0].lower() in {"those", "these", "this", "that", "a", "an", "the", "my", "your", "our", "their", "new", "old", "great", "nice"}:
+        return False
+    return False
 
 
 def _heuristic_class(phrase: str) -> tuple[str, str]:

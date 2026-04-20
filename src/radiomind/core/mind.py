@@ -636,6 +636,71 @@ class RadioMind:
                 pass
         return atoms
 
+    # --- Query-time trinity pipelines (attention 4th law) ---
+
+    @staticmethod
+    def _attention_router_enabled() -> bool:
+        """Honor `RADIOMIND_ATTENTION_ROUTER=off` (a2a-strict bench mode)."""
+        import os
+        val = (os.environ.get("RADIOMIND_ATTENTION_ROUTER") or "on").strip().lower()
+        return val != "off"
+
+    def run_temporal_precision(
+        self,
+        query: str,
+        retrieved_memories: list,
+        reference_date: str = "",
+    ) -> str:
+        """Return TEMPORAL PRECISION VIEW prefix for temporal_precision queries.
+
+        No-op for queries that don't match the temporal_precision attention
+        pattern OR when the attention router is disabled (bench A2A-strict
+        mode). When active, runs Guardian/Explorer/Reducer over retrieved
+        memories + session_date metadata to produce a strict-date answer
+        the caller can prefix to the answer prompt.
+        """
+        self._check_init()
+        if not self._attention_router_enabled():
+            return ""
+        from radiomind.core.attention import is_temporal_precision
+        if self._llm is None or not self._llm.is_available():
+            return ""
+        if not is_temporal_precision(query):
+            return ""
+        from radiomind.refinement.query_pipelines import TemporalPrecisionPipeline
+        pipe = TemporalPrecisionPipeline(self._llm)
+        result = pipe.run(query, retrieved_memories, reference_date=reference_date)
+        if result is None:
+            return ""
+        return TemporalPrecisionPipeline.format_prefix(result)
+
+    def run_open_domain_specific(
+        self,
+        query: str,
+        retrieved_memories: list,
+    ) -> str:
+        """Return OPEN-DOMAIN SPECIFIC PICK prefix for open_domain queries.
+
+        No-op for non-open-domain queries OR when attention router is off.
+        When active, forces the answer to a specific named entity from
+        retrieved memories rather than letting the answer model hedge
+        with generic suggestions.
+        """
+        self._check_init()
+        if not self._attention_router_enabled():
+            return ""
+        from radiomind.core.attention import is_open_domain_specific
+        if self._llm is None or not self._llm.is_available():
+            return ""
+        if not is_open_domain_specific(query):
+            return ""
+        from radiomind.refinement.query_pipelines import OpenDomainSpecificPipeline
+        pipe = OpenDomainSpecificPipeline(self._llm)
+        result = pipe.run(query, retrieved_memories)
+        if result is None:
+            return ""
+        return OpenDomainSpecificPipeline.format_prefix(result)
+
     # --- Numeric cardinal (bottom-up counts) ---
 
     def get_numeric_cardinal(
@@ -664,6 +729,8 @@ class RadioMind:
         to a single number.
         """
         self._check_init()
+        if not self._attention_router_enabled():
+            return ""
         if self._numeric_agg is None or not self._numeric_agg.is_available():
             return ""
         from radiomind.core.attention import is_numeric_cardinal, extract_focus_entity

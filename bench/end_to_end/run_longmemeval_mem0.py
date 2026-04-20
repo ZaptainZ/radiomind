@@ -404,6 +404,26 @@ def run(
         except Exception:
             pass
 
+        # Attention-driven trinity pipelines (S3.2):
+        # temporal_precision & open_domain_specific queries get their
+        # own dedicated Guardian/Explorer/Reducer passes that produce
+        # a strict-answer prefix to the answer prompt.
+        temporal_section = ""
+        open_domain_section = ""
+        try:
+            temporal_section = mind.run_temporal_precision(
+                query=question, retrieved_memories=mem_results,
+                reference_date=q_date or "",
+            )
+        except Exception:
+            pass
+        try:
+            open_domain_section = mind.run_open_domain_specific(
+                query=question, retrieved_memories=mem_results,
+            )
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -445,6 +465,10 @@ def run(
             # Deterministic cardinal view outranks the heuristic draft.
             # Both placed ahead of the memory block.
             ans_prompt = cardinal_section + ans_prompt
+        if temporal_section:
+            ans_prompt = temporal_section + ans_prompt
+        if open_domain_section:
+            ans_prompt = open_domain_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable
@@ -548,10 +572,24 @@ def main() -> int:
     p.add_argument("--n", type=int, default=30)
     p.add_argument("--sandbox", default="/tmp/rm-e2e-lme-s-mem0")
     p.add_argument("--no-reranker", action="store_true")
+    p.add_argument(
+        "--benchmark-mode", default="a2a-practice",
+        choices=("a2a-strict", "a2a-practice", "max"),
+        help=(
+            "Protocol alignment with Mem0: "
+            "'a2a-strict' matches Mem0's single-pass single-LLM setup "
+            "(all attention sub-pipelines OFF); "
+            "'a2a-practice' (default) runs each architecture's native "
+            "default-practice (RadioMind's attention × trinity auto-router); "
+            "'max' additionally enables multi-round agentic decomposition."
+        ),
+    )
     p.add_argument("--temporal-math", action="store_true",
-                   help="Our date-arithmetic module (off by default — Mem0 doesn't use it)")
+                   help="DEPRECATED: now auto-routed by attention classifier; "
+                        "flag kept for backward compat.")
     p.add_argument("--agentic", action="store_true",
-                   help="Our agentic decomposition (off by default — Mem0 doesn't use it)")
+                   help="DEPRECATED: --benchmark-mode max enables this; "
+                        "flag kept for backward compat.")
     p.add_argument("--no-refinement", action="store_true",
                    help="Skip three-body chat refinement at ingest (default on — builds L3 principles)")
     p.add_argument("--answer-model", default="gpt-4o")
@@ -576,17 +614,37 @@ def main() -> int:
         flush=True,
     )
 
+    # benchmark-mode translates to the lower-level boolean flags.
+    # a2a-strict:   single-pass retrieval + single-LLM answer, no
+    #               attention sub-pipelines (kept on-strict for Mem0 parity).
+    # a2a-practice: attention auto-routes to sub-pipelines (numeric
+    #               cardinal / temporal precision / open-domain /
+    #               specific-detail); --agentic multi-round OFF.
+    # max:          everything on, including multi-round agentic retrieval.
+    import os as _os
+    mode = args.benchmark_mode
+    if mode == "a2a-strict":
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "off"
+    elif mode == "max":
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "on"
+        args.agentic = True
+    else:  # a2a-practice
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "on"
+    use_temporal_math = args.temporal_math or (mode != "a2a-strict")
+    use_agentic = args.agentic
+
     cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
         answer_profile=args.answer_profile, judge_profile=args.judge_profile,
         use_reranker=not args.no_reranker,
-        use_temporal_math=args.temporal_math,
-        use_agentic=args.agentic,
+        use_temporal_math=use_temporal_math,
+        use_agentic=use_agentic,
         use_refinement=not args.no_refinement,
         checkpoint_path=cp_path,
     )
+    report["benchmark_mode"] = mode
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(report, ensure_ascii=False, indent=2))

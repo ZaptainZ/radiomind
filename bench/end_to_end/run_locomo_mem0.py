@@ -390,6 +390,27 @@ def run(
         except Exception:
             pass
 
+        # Attention-driven trinity pipelines (S3.2):
+        # - temporal_precision  → TEMPORAL PRECISION VIEW prefix
+        # - open_domain_specific → OPEN-DOMAIN SPECIFIC PICK prefix
+        # Both pipelines are no-op for queries that don't match their
+        # attention pattern. Cheap (single LLM call each when active).
+        temporal_section = ""
+        open_domain_section = ""
+        try:
+            temporal_section = mind.run_temporal_precision(
+                query=question, retrieved_memories=mem_results,
+                reference_date=ref_human,
+            )
+        except Exception:
+            pass
+        try:
+            open_domain_section = mind.run_open_domain_specific(
+                query=question, retrieved_memories=mem_results,
+            )
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
         # before memories so raw turns remain the model's last-seen
@@ -419,6 +440,10 @@ def run(
             ans_prompt = atomic_section + ans_prompt
         if cardinal_section:
             ans_prompt = cardinal_section + ans_prompt
+        if temporal_section:
+            ans_prompt = temporal_section + ans_prompt
+        if open_domain_section:
+            ans_prompt = open_domain_section + ans_prompt
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()
@@ -523,8 +548,16 @@ def main() -> int:
     p.add_argument("--n", type=int, default=200)
     p.add_argument("--sandbox", default="/tmp/rm-e2e-locomo-mem0")
     p.add_argument("--no-reranker", action="store_true")
-    p.add_argument("--temporal-math", action="store_true")
-    p.add_argument("--agentic", action="store_true")
+    p.add_argument(
+        "--benchmark-mode", default="a2a-practice",
+        choices=("a2a-strict", "a2a-practice", "max"),
+        help="Protocol alignment with Mem0 (a2a-strict / a2a-practice / max). "
+             "See LME-S harness for full definition.",
+    )
+    p.add_argument("--temporal-math", action="store_true",
+                   help="DEPRECATED: auto-routed by attention classifier.")
+    p.add_argument("--agentic", action="store_true",
+                   help="DEPRECATED: --benchmark-mode max enables this.")
     p.add_argument("--no-refinement", action="store_true",
                    help="Skip three-body chat refinement at ingest (default on — builds L3 principles)")
     p.add_argument("--categories", default="1,2,3,4")
@@ -550,18 +583,31 @@ def main() -> int:
         f"agentic={args.agentic}",
         flush=True,
     )
+    import os as _os
+    mode = args.benchmark_mode
+    if mode == "a2a-strict":
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "off"
+    elif mode == "max":
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "on"
+        args.agentic = True
+    else:
+        _os.environ["RADIOMIND_ATTENTION_ROUTER"] = "on"
+    use_temporal_math = args.temporal_math or (mode != "a2a-strict")
+    use_agentic = args.agentic
+
     cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
         answer_profile=args.answer_profile, judge_profile=args.judge_profile,
         use_reranker=not args.no_reranker,
-        use_temporal_math=args.temporal_math,
-        use_agentic=args.agentic,
+        use_temporal_math=use_temporal_math,
+        use_agentic=use_agentic,
         use_refinement=not args.no_refinement,
         categories=cats,
         checkpoint_path=cp_path,
     )
+    report["benchmark_mode"] = mode
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(report, ensure_ascii=False, indent=2))
 
