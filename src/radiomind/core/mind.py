@@ -29,6 +29,61 @@ from radiomind.storage.knowledge_graph import KnowledgeGraph
 from radiomind.storage.pyramid import PyramidAggregator, PyramidSearch
 
 
+def _task_description_for(sig, query: str, reference_date: str) -> str | None:
+    """Translate an AttentionSignature into a task prompt for trinity.
+
+    Each wants shape surfaces different tensions — the task description
+    names those tensions without naming specific stance labels. The LLM
+    picks the three opposing stances from them.
+    """
+    wants = sig.wants
+    if wants == "date":
+        return (
+            f"Answer this temporal precision question from the evidence. "
+            f"Reference date (today): {reference_date or 'unknown'}. "
+            f"Tensions to triangulate: anchor-based (specific dated events) "
+            f"vs chain-based (multi-event timeline) vs window-based "
+            f"(approximate range when exact dates are missing). "
+            f"Question: {query}"
+        )
+    if wants == "inference":
+        return (
+            f"Answer this open-domain question by picking ONE specific named "
+            f"entity the evidence actually mentions. Tensions to triangulate: "
+            f"literal-evidence (pick what's directly said) vs inferred-fit "
+            f"(pick what best matches user's known preferences) vs "
+            f"abstention-safe (say 'insufficient' rather than invent). "
+            f"Question: {query}"
+        )
+    if wants == "detail":
+        return (
+            f"Answer this specific-detail question about a named subject. "
+            f"Tensions to triangulate: exact-mention (pick the memory that "
+            f"literally names the attribute) vs nearby-inference (the "
+            f"memory implies it) vs insufficient-abstain. Question: {query}"
+        )
+    return None
+
+
+def _format_memories(memories: list, max_items: int = 25) -> str:
+    """Render retrieved memories into a block for trinity evidence."""
+    if not memories:
+        return ""
+    lines = []
+    for m in memories[:max_items]:
+        if hasattr(m, "entry"):  # SearchResult
+            sdate = (m.entry.metadata or {}).get("session_date", "") if hasattr(m.entry, "metadata") else ""
+            txt = (m.entry.content or "")[:400].replace("\n", " ")
+        elif isinstance(m, dict):
+            sdate = m.get("created_at") or m.get("session_date") or ""
+            txt = (m.get("memory") or m.get("content") or "")[:400].replace("\n", " ")
+        else:
+            sdate = ""
+            txt = str(m)[:400].replace("\n", " ")
+        lines.append(f"[{sdate}] {txt}" if sdate else txt)
+    return "\n".join(lines)
+
+
 class RadioMind:
     """Bionic memory core for AI agents.
 
@@ -642,64 +697,69 @@ class RadioMind:
     def _attention_router_enabled() -> bool:
         """Honor `RADIOMIND_ATTENTION_ROUTER=off` (a2a-strict bench mode)."""
         import os
-        val = (os.environ.get("RADIOMIND_ATTENTION_ROUTER") or "on").strip().lower()
-        return val != "off"
+        return (os.environ.get("RADIOMIND_ATTENTION_ROUTER") or "on").strip().lower() != "off"
 
-    def run_temporal_precision(
+    def answer_hint(
         self,
         query: str,
         retrieved_memories: list,
         reference_date: str = "",
     ) -> str:
-        """Return TEMPORAL PRECISION VIEW prefix for temporal_precision queries.
+        """Attention-routed trinity refinement of retrieved memories.
 
-        No-op for queries that don't match the temporal_precision attention
-        pattern OR when the attention router is disabled (bench A2A-strict
-        mode). When active, runs Guardian/Explorer/Reducer over retrieved
-        memories + session_date metadata to produce a strict-date answer
-        the caller can prefix to the answer prompt.
+        Returns a short prefix string the caller prepends to the answer
+        prompt, or "" when the query doesn't benefit from refinement.
+        One LLM call for dates/inferences/details; no-op for plain
+        lookup or aggregation (the aggregation path is served by
+        get_numeric_cardinal, not this one).
+
+        The trinity chooses three opposing stances for the specific
+        task shape — we don't name the stances here.
         """
         self._check_init()
         if not self._attention_router_enabled():
             return ""
-        from radiomind.core.attention import is_temporal_precision
         if self._llm is None or not self._llm.is_available():
             return ""
-        if not is_temporal_precision(query):
+
+        from radiomind.core.attention import analyze
+        from radiomind.refinement.trinity import debate
+
+        sig = analyze(query)
+        task = _task_description_for(sig, query, reference_date)
+        if task is None:
             return ""
-        from radiomind.refinement.query_pipelines import TemporalPrecisionPipeline
-        pipe = TemporalPrecisionPipeline(self._llm)
-        result = pipe.run(query, retrieved_memories, reference_date=reference_date)
+
+        evidence = _format_memories(retrieved_memories, max_items=25)
+        result = debate(task, evidence, self._llm)
         if result is None:
             return ""
-        return TemporalPrecisionPipeline.format_prefix(result)
+        final = str(result.get("final_answer") or "").strip()
+        if not final or final.lower() in {"insufficient", "none", "unknown"}:
+            return ""
+        return (
+            f"ATTENTION-ROUTED TRINITY VIEW "
+            f"(three opposing stances reconciled; trust this over hedging "
+            f"unless retrieval contradicts):\n"
+            f"- answer: {final}\n\n"
+        )
+
+    # Backward-compat wrappers so existing bench harness calls still work.
+    def run_temporal_precision(
+        self, query: str, retrieved_memories: list, reference_date: str = "",
+    ) -> str:
+        from radiomind.core.attention import analyze
+        if analyze(query).wants != "date":
+            return ""
+        return self.answer_hint(query, retrieved_memories, reference_date)
 
     def run_open_domain_specific(
-        self,
-        query: str,
-        retrieved_memories: list,
+        self, query: str, retrieved_memories: list,
     ) -> str:
-        """Return OPEN-DOMAIN SPECIFIC PICK prefix for open_domain queries.
-
-        No-op for non-open-domain queries OR when attention router is off.
-        When active, forces the answer to a specific named entity from
-        retrieved memories rather than letting the answer model hedge
-        with generic suggestions.
-        """
-        self._check_init()
-        if not self._attention_router_enabled():
+        from radiomind.core.attention import analyze
+        if analyze(query).wants != "inference":
             return ""
-        from radiomind.core.attention import is_open_domain_specific
-        if self._llm is None or not self._llm.is_available():
-            return ""
-        if not is_open_domain_specific(query):
-            return ""
-        from radiomind.refinement.query_pipelines import OpenDomainSpecificPipeline
-        pipe = OpenDomainSpecificPipeline(self._llm)
-        result = pipe.run(query, retrieved_memories)
-        if result is None:
-            return ""
-        return OpenDomainSpecificPipeline.format_prefix(result)
+        return self.answer_hint(query, retrieved_memories)
 
     # --- Numeric cardinal (bottom-up counts) ---
 

@@ -1,35 +1,17 @@
 """Bottom-up numeric-fact aggregator.
 
-RadioMind's preservative storage keeps every turn intact but leaves the
-answer LLM to re-derive cardinal facts ("how many instruments do I own")
-from top-k retrieved turns on every query. That re-derivation is the
-source of our multi-session aggregation errors (reported 5 instruments
-when gold is 4, $2750 when gold is $3750): a single LLM pass over top-30
-turns can't enumerate completely.
+Moves aggregation work (counting instruments, summing donations) from
+query time to ingest time. Maintains a per-(user, domain, entity_class)
+cardinal cache so "how many X do I own" hits deterministic state
+instead of re-deriving from top-k retrieval on every query.
 
-This module moves that work to ingest time: as turns land, we scan for
-ownership/acquisition/disposal/amount verbs, extract the entity, classify
-it into an ontology bucket ("instruments", "kitchen_items", "charity_
-donations"), and maintain a per-user×domain×class cardinal cache. A
-query-time question like "how many instruments do I own" then hits a
-deterministic ground-truth (count=4, evidence=[s2_t1,s4_t3,s7_t2,s12_t5])
-instead of re-deriving from retrieval.
+Extraction: LLM batch-extract (one call per ~12 user turns) with regex
+keyword gate to filter ~70% of non-cardinal turns. Regex fallback when
+LLM is unavailable. Ontology rollup writes each event to both specific
+and parent classes (guitars → musical_instruments).
 
-Version history preserves time-sliced questions ("how many did I have in
-June"): every ±1 delta records {ts, turn_id, reason}. Query time can
-replay to any past timestamp. This is how preservative-storage still
-supports temporal-aware cardinality.
-
-Design notes:
-- Storage lives in the same SQLite file as the knowledge graph
-  (knowledge.db) — logically adjacent to KG triples, both are
-  structured-extract products of ingest.
-- Detection is regex-fast-path + LLM-classifier-batch. The regex is the
-  cheap filter (zero LLM cost on non-cardinal turns); the LLM only sees
-  plausible candidates and only to normalize entity→class.
-- Scope is deliberately narrow for S1: first-person ownership statements
-  and dollar-amount events. S2/S3 can widen to third-party claims and
-  compound verbs if S1 alone doesn't close the gap.
+Query-time refinement: trinity.debate() over candidate members / amount
+events to dedup and filter misclassified.
 """
 from __future__ import annotations
 
@@ -40,6 +22,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
+
+from radiomind.refinement.ontology import ROLLUP, ALIASES
 
 
 NUMERIC_SCHEMA = """
@@ -153,32 +137,6 @@ EXPLICIT_COUNT_PATTERNS = [
 # / "My Pearl drum set" / descriptive mentions embedded in longer
 # sentences. A single LLM call per ~30 turns outputs the full candidate
 # set directly — same batching pattern as KG triple extraction.
-GUARDIAN_AMOUNT_PROMPT = """You are the Guardian: re-examine claimed {entity_class} events.
-
-Batch extraction produced this list of amount events. Some may be
-**misclassified** (the target isn't really {entity_class}) and should
-be revoked. Read each event's evidence turn and decide keep vs revoke.
-
-Events (each block: event_id | turn_id | amount | member | evidence_text):
-{events}
-
-Class definition:
-{class_definition}
-
-Rules:
-- KEEP only events where the evidence turn clearly shows the user doing
-  a {entity_class} action with the stated amount.
-- REVOKE when the amount/action is actually a different class
-  (e.g. spending / purchasing / income not matching {entity_class}).
-- If in doubt, REVOKE. Precision matters more than recall for amounts.
-
-Output STRICT JSON:
-{{
-  "keep": [0, 2, 4],
-  "revoke": [{{"event_id": 1, "reason": "purchase, not charity"}}, ...]
-}}"""
-
-
 CLASS_DEFINITIONS = {
     "charity_donations": (
         "Money the user gave to a NAMED CHARITY ORGANIZATION, fundraiser, "
@@ -201,178 +159,52 @@ CLASS_DEFINITIONS = {
 }
 
 
-REDUCER_DEDUP_PROMPT = """You are the Reducer: given a candidate list of members
-claimed for one entity class, return the deduplicated + strictly-scoped
-final list.
+BATCH_EXTRACT_PROMPT = """Extract OWNERSHIP and MONEY events from user turns.
 
-Entity class: {entity_class}
+OWN — every tangible countable item the USER owns or has. Ownership
+reveals are enough, no purchase verb required:
+  "I've had my Fender for 5 years"   → OWN Fender (musical_instruments)
+  "My Pearl drum set sounds amazing" → OWN Pearl drum set
+  "I replaced the kitchen faucet"    → OWN kitchen faucet (kitchen_items)
+  "My niece got a new violin"        → NOT OWN (niece is not the user)
+  "I'm thinking of buying X"         → NOT OWN (intention, not possession)
 
-Candidate members (from ingest-time extraction across many conversation turns;
-may include duplicates, aliases, misclassifications):
-{members}
+AMOUNT — every money event. Class depends on target:
+  "I donated $500 to Red Cross"         → charity_donations $500
+  "I raised $1500 at the fundraiser"    → charity_donations $1500
+  "I saved $300 on the Jimmy Choo heels"→ savings_events $300 (member=heels)
+  "I bought the heels for $500"         → spending_events $500
+  "I earned $200 from the sale"         → income_events $200
 
-Rules:
-1. **Dedup aliases**: merge entries that refer to the same physical entity.
-   - "acoustic guitar" + "Yamaha FG800" → "Yamaha FG800" (specific name wins)
-   - "Fender Stratocaster" + "guitar" + "black Fender" → "Fender Stratocaster"
-   - "Pearl Export drum set" + "drum set" + "5-piece Pearl" → "Pearl Export drum set"
-   If multiple members could be the same entity based on context, MERGE them.
-2. **Drop misclassified**: remove any member that doesn't strictly belong
-   to the class. E.g. if class is `musical_instruments`:
-   - "silver chain", "engagement ring" → DROP (not instruments)
-   - If class is `kitchen_items`: drop food/groceries.
-3. **Preserve specifics**: when merging, keep the most specific name.
-4. **Do NOT add new entries** beyond what's in the input list. Only
-   merge and filter.
+A single purchase can emit BOTH (OWN + AMOUNT) with the same turn index.
 
-Output STRICT JSON with the final deduplicated list:
-{{
-  "final_members": ["Fender Stratocaster", "Yamaha FG800", "Pearl Export drum set", "Korg B1"],
-  "removed": ["silver chain (not instrument)", "guitar (alias of Fender)"]
-}}"""
+Entity class scope (strict):
+  musical_instruments: guitar/piano/drums/ukulele/violin/pedal/etc. (NOT toy models)
+  kitchen_items:       DURABLE tools — faucet/toaster/blender/microwave/etc.
+                       NEVER food, groceries, ingredients
+  clothing_items:      shoes/jacket/boots/heels/dress/etc.
+  vehicles, pets, books_read, hikes, trips, electronics, furniture, sporting_goods
+  charity_donations:   ONLY named charities/fundraisers/nonprofits
+                       NOT gifts to family, rent, bills
+  income_events, savings_events, spending_events
 
-
-BATCH_EXTRACT_PROMPT = """You extract OWNERSHIP and MONEY events from user messages.
-
-Do this in **two passes per turn**:
-
-PASS 1 (OWN) — for each turn, list every tangible countable item the
-user refers to as their own. Ownership REVEAL is enough — no purchase
-verb required. These all trigger OWN:
-  "I've had my Fender for 5 years"         → OWN member="Fender"
-  "I've been playing my black Stratocaster" → OWN member="black Stratocaster"
-  "My Pearl drum set sounds amazing"        → OWN member="Pearl drum set"
-  "my piano, a Korg B1, which I've had for 3 years" → OWN member="Korg B1"
-  "I bought a Yamaha FG800"                 → OWN member="Yamaha FG800"
-  "my old drum set, a 5-piece Pearl Export" → OWN member="Pearl Export drum set"
-  "I just bought a new overdrive pedal"     → OWN member="overdrive pedal"
-  "my acoustic guitar, a Yamaha FG800"      → OWN member="Yamaha FG800"
-  "I replaced the kitchen faucet"           → OWN member="kitchen faucet"
-  "My niece got a new violin"               → NOT OWN (niece is not the user)
-
-PASS 2 (AMOUNT) — for each turn, list every money event:
-  "I donated $500 to Red Cross"             → AMOUNT charity_donations $500 member="Red Cross"
-  "I raised $1500 at the cancer-walk gala"  → AMOUNT charity_donations $1500 member="cancer walk"
-  "I saved $300 on the Jimmy Choo heels"    → AMOUNT savings_events $300 member="Jimmy Choo heels"
-  "I saved $20 with the coupon"             → AMOUNT savings_events $20 member="" (no specific item)
-  "I bought the heels for $500"             → AMOUNT spending_events $500 member="heels"
-  "I earned $200 from the sale"             → AMOUNT income_events $200
-
-**CHARITY IS STRICT**: only count as charity_donations if the target is
-explicitly a charity / fundraiser / nonprofit / cause. Generic gifts,
-purchases, and transfers to non-charity recipients are NOT charity.
-Examples of WHAT IS charity: Red Cross, cancer walk, school fundraiser,
-gala for a cause, political donation, religious tithing.
-Examples of WHAT IS NOT charity: "I gave my cousin $100", "paid rent",
-"bought a gift for mom" — emit these as spending_events or skip.
-
-**If a turn triggers both** (e.g. "I bought a Korg B1 for $600"), emit
-BOTH records — one OWN, one AMOUNT, both with the same turn number.
-
-Canonical entity_class buckets — STRICT scope definitions:
-
-  musical_instruments ← guitar, piano, drum set, keyboard, ukulele, violin,
-    pedal, amp, cello, bass, flute, trumpet, saxophone, harmonica
-    EXCLUDE: model airplanes, toys, non-musical devices (no "F-16 model")
-
-  kitchen_items       ← **DURABLE** appliances, fixtures, tools used in a
-    kitchen: faucet, toaster, coffee maker, blender, mat, shelf, microwave,
-    kettle, dishwasher, stove, oven, mixer, fridge, rice cooker, espresso
-    machine, air fryer, food processor.
-    **EXCLUDE FOOD AND CONSUMABLES**: pasta, rice, beans, apples, flour,
-    eggs, vegetables, meat, bread, ingredients, groceries — these are
-    NEVER kitchen_items. If user "bought rice at the store", DO NOT emit.
-
-  clothing_items      ← shoes, sneakers, boots, heels, dress, jacket, coat,
-    jeans, shirt, hat. Each distinct garment = 1 item.
-
-  vehicles            ← car, truck, motorcycle, bike, SUV, sedan
-
-  pets                ← dog, cat, hamster, snake, bird, fish, rabbit
-    EXCLUDE: pet supplies (litter scoop, dental chews — those are
-    spending_events, not pets themselves)
-
-  books_read          ← books the user **read or owns** (novels, series,
-    reference). EXCLUDE websites, blogs, apps.
-
-  hikes               ← distinct hike / trek / trail walk EVENTS.
-    Count EACH HIKE SESSION, not each trail type. If user mentioned
-    "I went hiking at Red Rock Canyon last Saturday" and "I did the
-    John Muir Trail the following weekend" → 2 separate hikes.
-    "I've been hiking a lot" → 1 hike (generic mention).
-
-  trips               ← distinct TRIP events (vacation, visit, journey).
-    "Our Bali trip" = 1 trip.
-
-  electronics         ← phones, laptops, cameras, lenses, tripods, monitors,
-    keyboards (computing), consoles, TVs, gaming chairs, PCs
-
-  furniture           ← desk, chair, table, bench, sofa, shelf (non-kitchen)
-
-  sporting_goods      ← tennis racket, golf clubs, bike helmet, surfboard,
-    helmet (for bike/sport)
-
-  charity_donations   ← **STRICT**: money the user gave to a
-    **NAMED CHARITY ORGANIZATION or CHARITY EVENT/FUNDRAISER**.
-    Examples: "I donated $500 to the Red Cross",
-              "I raised $1500 at the cancer walk fundraiser",
-              "I contributed $200 to the school fundraiser gala".
-    EXCLUDE: generic gifts ("I gave $100 to my cousin"), dues, bills,
-    purchases. If the target is not explicitly a charity or fundraiser,
-    it's spending_events, not charity_donations.
-
-  income_events       ← money earned from sale, work, refund, gift
-  savings_events      ← saved $N on a purchase (discount). Member=item.
-  spending_events     ← paid $N for specific items. NOT charity.
-
-Rules:
-- Only count as OWN if the USER themselves possesses it. Ignore items
-  belonging to niece/grandmother/friend unless the user inherited or now
-  possesses them.
-- Dedupe within a turn — if the same item is mentioned twice, emit one
-  OWN record only.
-- Across turns we dedupe by canonical_member, so repeating the same
-  instrument across multiple turns stays one count — still emit one
-  OWN event per turn where it's referenced (downstream merges).
-- "I'm thinking of buying X" / "I'm planning to get X" / "I might get X"
-  is NOT ownership yet — skip.
-- "My niece got a violin" / "my grandmother's piano" — NOT user's.
-
-Output format per record:
-  - turn: integer turn number
-  - polarity: "own" | "dispose" | "amount"
-  - entity_class: canonical bucket (plural, underscores)
-  - canonical_member: specific item name (e.g. "Fender Stratocaster",
-    "Kitchen Faucet", "heels"). For AMOUNT without a target item, "".
-  - amount: numeric (no $ sign) for AMOUNT polarity; null otherwise
-  - currency: "USD" / "EUR" / etc.; default "USD"
-
-Coverage over brevity: if in doubt emit the OWN record. Missing events
-costs downstream aggregation queries; extra records are merged.
-
-User turns:
+Turns:
 {turns}
 
-Output STRICT JSON only:
+Output STRICT JSON — one record per event (a turn may yield multiple):
 {{
   "events": [
     {{"turn": 2, "polarity": "own", "entity_class": "musical_instruments",
       "canonical_member": "Fender Stratocaster", "amount": null, "currency": null}},
-    {{"turn": 5, "polarity": "own", "entity_class": "musical_instruments",
-      "canonical_member": "Pearl Export drum set", "amount": null, "currency": null}},
     {{"turn": 7, "polarity": "amount", "entity_class": "charity_donations",
       "canonical_member": "", "amount": 500, "currency": "USD"}}
   ]
 }}"""
 
 
-# Prompt for LLM-side entity→class normalization. Batched per ingest.
-# Critical: phrases extracted by regex over long haystacks include massive
-# amounts of noise ("back", "home", "great deal", "enough rewards to cover
-# the cost of the", pronouns, sentence fragments). The LLM's FIRST job is
-# aggressive rejection: valid=false by default, valid=true ONLY when the
-# phrase unambiguously names a countable tangible entity the user actually
-# owns, acquired, disposed of, or paid.
+# Filter stage for regex-extracted candidates (no LLM batch). Rejects
+# pronoun/fragment/abstract phrases that the regex fast-path picks up
+# from long haystacks.
 CLASSIFY_PROMPT = """You normalize cardinality candidates into ontology buckets.
 
 Given a list of (turn_id, polarity, object_phrase) items extracted from user messages
@@ -412,16 +244,7 @@ Output STRICT JSON — a list of records in the same order, no prose, no fence:
 
 @dataclass
 class CardinalEntry:
-    """Per-(user, domain, entity_class) aggregate.
-
-    count: current cardinal (after all +/- events applied).
-    total_amount: cumulative amount for amount-type classes
-        (e.g. charity_donations.total_amount = running sum in dollars).
-    evidence: turn_ids of distinct contributing events.
-    members: deduped canonical member names for list-mode classes
-        (e.g. ['Yamaha FG800', 'Fender Stratocaster', ...]).
-    history: chronological log of deltas, each {ts, turn_id, delta, reason, amount}.
-    """
+    """Per-(user, domain, entity_class) cardinal aggregate with evidence trail."""
     user_id: str
     domain: str
     entity_class: str
@@ -435,11 +258,7 @@ class CardinalEntry:
 
 
 class NumericAggregator:
-    """Bottom-up numeric cardinal accumulator.
-
-    Lifecycle mirrors KnowledgeGraph: open() on init, close() on shutdown,
-    process_turns() on ingest. Thread-safety is single-writer (same as KG).
-    """
+    """Bottom-up numeric cardinal accumulator. Single-writer SQLite."""
 
     def __init__(self, db_path: Path, llm: Any | None = None):
         self._db_path = db_path
@@ -478,22 +297,8 @@ class NumericAggregator:
     ) -> dict[str, CardinalEntry]:
         """Scan user turns for cardinal signals; update the cache.
 
-        Strategy:
-          - When an LLM is available, **batch-extract** candidates directly
-            from the user turns (one LLM call per ~30 turns). This catches
-            implicit ownership reveals ("My Fender", "I've had X for Y years")
-            that regex can't reach.
-          - Fallback path when no LLM: regex fast-path (cheap but leaky).
-          - Either way, follow-up classifier normalizes class buckets.
-
-        Args:
-            turns: list of (memory_id, content, role, metadata). Non-user
-                turns are ignored.
-            user_id, domain: partition keys for the cache.
-            session_date: coarse fallback timestamp if a turn lacks one.
-
-        Returns:
-            Dict of affected entity_class -> CardinalEntry (post-update).
+        LLM batch-extract when available; regex fast-path otherwise.
+        Returns dict of affected entity_class -> CardinalEntry (post-update).
         """
         if not self._conn:
             return {}
@@ -576,27 +381,25 @@ class NumericAggregator:
         turn_text_by_id = {self._turn_id(mid, meta): content
                            for mid, content, meta in user_turns}
 
-        # Post-pass 1: Guardian verification on amount-polarity entries
-        # with ≥3 events. Evidence-grounded re-check that each event's
-        # source turn actually matches the class definition. Revokes
-        # misclassified events (e.g. charity_donations over-counting
-        # non-charity transfers). Only fires when we have a class
-        # definition rubric and ≥3 events (single events are harmless).
+        # Trinity refinement over amount events: fires on classes with
+        # a strict rubric (charity_donations / savings_events / ...) and
+        # ≥3 events — triangulates precision-vs-recall-vs-skepticism via
+        # trinity.debate() to revoke misclassified amounts.
         if self._llm and touched:
             for cls, entry in list(touched.items()):
                 if cls in CLASS_DEFINITIONS and entry.count >= 3 and entry.total_amount:
                     try:
-                        self._guardian_verify_amounts(entry, turn_text_by_id)
+                        self._refine_amount_events(entry, turn_text_by_id)
                     except Exception:
                         pass
 
-        # Post-pass 2: Reducer-style dedup within each class (for OWN
-        # entries with ≥3 members). Merges aliases, drops misclassified.
+        # Trinity refinement over members: dedup aliases, drop misclassified,
+        # strict-subset guardrail. Triggers when ≥3 members accumulated.
         if self._llm and touched:
             for cls, entry in list(touched.items()):
                 if len(entry.members) >= 3:
                     try:
-                        self._reducer_dedup(entry)
+                        self._refine_members(entry)
                     except Exception:
                         pass
 
@@ -604,185 +407,131 @@ class NumericAggregator:
             self._persist(entry)
         return touched
 
-    def _guardian_verify_amounts(
+    def _refine_amount_events(
         self, entry: CardinalEntry, turn_text_by_id: dict[str, str],
     ) -> None:
-        """Guardian pass: re-examine amount events against evidence turns.
-
-        For amount-polarity classes with strict rubrics (charity_donations,
-        savings_events, ...), re-read each event's evidence turn and revoke
-        events that don't match the class definition. Updates entry.count,
-        entry.total_amount, entry.history in place.
-
-        Only considers events represented in entry.history with non-empty
-        turn_id and numeric delta. Misses nothing if history is complete.
-        """
+        """Trinity over amount events: revoke those not matching the class rubric."""
         if not self._llm or not entry.total_amount:
             return
         class_def = CLASS_DEFINITIONS.get(entry.entity_class)
         if not class_def:
             return
 
-        # Gather amount events from history
-        amount_events = []
+        amount_events: list[dict[str, Any]] = []
         for i, h in enumerate(entry.history):
             if h.get("reason") != "amount":
                 continue
-            turn_id = h.get("turn_id") or ""
-            delta_str = h.get("delta", "")
-            # Parse delta like "+$500.00"
-            m = re.match(r"\+\$([\d.]+)", delta_str)
+            m = re.match(r"\+\$([\d.]+)", h.get("delta", ""))
             if not m:
                 continue
             try:
                 amt = float(m.group(1))
             except ValueError:
                 continue
-            evidence = turn_text_by_id.get(turn_id, h.get("phrase", ""))[:500]
-            if not evidence:
+            tid = h.get("turn_id") or ""
+            ev = (turn_text_by_id.get(tid) or h.get("phrase") or "")[:500].replace("\n", " ")
+            if not ev:
                 continue
             amount_events.append({
-                "history_idx": i,
-                "event_id": len(amount_events),
-                "turn_id": turn_id,
-                "amount": amt,
-                "evidence": evidence.replace("\n", " "),
+                "history_idx": i, "event_id": len(amount_events),
+                "turn_id": tid, "amount": amt, "evidence": ev,
             })
-
         if len(amount_events) < 3:
             return
 
-        # Build prompt
-        event_block = "\n\n".join(
-            f"event_id={e['event_id']} | turn_id={e['turn_id']} | "
-            f"amount=${e['amount']} | evidence: {e['evidence']}"
+        evidence_block = "\n\n".join(
+            f"event_id={e['event_id']} | amount=${e['amount']} | {e['evidence']}"
             for e in amount_events
         )
-        prompt = GUARDIAN_AMOUNT_PROMPT.format(
-            entity_class=entry.entity_class,
-            events=event_block,
-            class_definition=class_def,
+        from radiomind.refinement.trinity import debate
+        result = debate(
+            task=(
+                f"Decide which of the extracted {entry.entity_class} events "
+                f"do NOT actually match the class and must be revoked. "
+                f"Class rubric: {class_def}"
+            ),
+            evidence=evidence_block,
+            llm=self._llm,
+            extra_schema='  "revoke_ids": [int, ...]',
         )
-        raw = ""
-        try:
-            if hasattr(self._llm, "generate"):
-                resp = self._llm.generate(
-                    prompt, system="Output only strict JSON.",
-                )
-                raw = getattr(resp, "text", "") or ""
-            else:
-                raw = self._llm(prompt, "Output only strict JSON.")
-        except Exception:
-            return
-        cleaned = re.sub(r"^```(?:json|JSON)?\s*\n?", "", raw.strip())
-        cleaned = re.sub(r"\n?```\s*$", "", cleaned).strip()
-        try:
-            obj = json.loads(cleaned)
-            revoke_list = obj.get("revoke", []) or []
-        except Exception:
+        if not result:
             return
         revoke_ids = set()
-        for r in revoke_list:
+        for r in result.get("revoke_ids") or []:
             try:
-                revoke_ids.add(int(r["event_id"] if isinstance(r, dict) else r))
-            except (ValueError, KeyError, TypeError):
+                revoke_ids.add(int(r))
+            except (ValueError, TypeError):
                 continue
         if not revoke_ids:
             return
 
-        # Apply revocations
-        revoked_history_idx = set()
+        revoked_idx: set[int] = set()
         revoked_amount = 0.0
+        revoked_turns: set[str] = set()
         for e in amount_events:
             if e["event_id"] in revoke_ids:
-                revoked_history_idx.add(e["history_idx"])
+                revoked_idx.add(e["history_idx"])
                 revoked_amount += e["amount"]
-
-        if not revoked_history_idx:
+                revoked_turns.add(e["turn_id"])
+        if not revoked_idx:
             return
 
-        entry.count = max(0, entry.count - len(revoked_history_idx))
+        entry.count = max(0, entry.count - len(revoked_idx))
         entry.total_amount = (entry.total_amount or 0) - revoked_amount
-        # Rebuild history excluding revoked events; add a revoke marker
-        entry.history = [
-            h for i, h in enumerate(entry.history) if i not in revoked_history_idx
-        ]
+        entry.history = [h for i, h in enumerate(entry.history) if i not in revoked_idx]
         entry.history.append({
-            "ts": time.time(), "turn_id": "", "delta": "guardian_revoke",
-            "reason": "guardian",
-            "phrase": f"revoked {len(revoked_history_idx)} events (-${revoked_amount:.2f})",
+            "ts": time.time(), "turn_id": "", "delta": "trinity_revoke",
+            "reason": "trinity_amount_refine",
+            "phrase": f"-{len(revoked_idx)} events (-${revoked_amount:.2f})",
         })
-        # Clean evidence list: drop turn_ids that were revoked
-        revoked_turns = {
-            amount_events[e]["turn_id"]
-            for e in range(len(amount_events))
-            if amount_events[e]["event_id"] in revoke_ids
-        }
         entry.evidence = [t for t in entry.evidence if t not in revoked_turns]
         entry.updated_at = time.time()
 
-    def _reducer_dedup(self, entry: CardinalEntry) -> None:
-        """LLM pass: merge alias members within a class; drop misclassified.
-
-        The Reducer of the three-body primitive applied to one cardinal
-        entry. Input: class name + current member list + evidence turn
-        references. Output: a deduplicated + filtered member list with
-        count equal to len(final list).
-
-        Conservative: only trusts the reducer when it returns a strict
-        subset of the input members (to prevent LLM hallucination from
-        ADDING new members). Guardian-style verification.
-        """
+    def _refine_members(self, entry: CardinalEntry) -> None:
+        """Trinity over the member list: dedup aliases, drop misclassified."""
         if not self._llm or not entry.members:
             return
-        prompt = REDUCER_DEDUP_PROMPT.format(
-            entity_class=entry.entity_class,
-            members="\n".join(f"- {m}" for m in entry.members),
+        from radiomind.refinement.trinity import debate
+        result = debate(
+            task=(
+                f"From this list of candidate members for class "
+                f"{entry.entity_class!r}, produce a strictly filtered + "
+                f"deduplicated final list. Merge aliases (keep the most "
+                f"specific name). Drop items that don't belong to the class. "
+                f"DO NOT invent members that aren't in the input."
+            ),
+            evidence="\n".join(f"- {m}" for m in entry.members),
+            llm=self._llm,
+            extra_schema='  "final_members": [str, ...]',
         )
-        raw = ""
-        try:
-            if hasattr(self._llm, "generate"):
-                resp = self._llm.generate(
-                    prompt, system="Output only strict JSON.",
-                )
-                raw = getattr(resp, "text", "") or ""
-            else:
-                raw = self._llm(prompt, "Output only strict JSON.")
-        except Exception:
+        if not result:
             return
-        cleaned = re.sub(r"^```(?:json|JSON)?\s*\n?", "", raw.strip())
-        cleaned = re.sub(r"\n?```\s*$", "", cleaned).strip()
-        try:
-            obj = json.loads(cleaned)
-            final_members = obj.get("final_members", [])
-            if not isinstance(final_members, list):
-                return
-        except Exception:
+        final = result.get("final_members") or []
+        if not isinstance(final, list):
             return
-        # Guardian check: reducer must not invent new members.
-        original_lower = {m.lower() for m in entry.members}
-        valid_final = []
-        for m in final_members:
+        originals = [m for m in entry.members]
+        originals_low = {m.lower() for m in originals}
+        kept: list[str] = []
+        for m in final:
             ms = str(m).strip()
             if not ms:
                 continue
-            # Accept if identical or is a rename of something in original
-            if ms.lower() in original_lower:
-                valid_final.append(ms)
-            else:
-                # Fuzzy containment: reducer might have canonicalized
-                # (e.g. "acoustic guitar" + "Yamaha FG800" → "Yamaha FG800")
-                for orig in entry.members:
-                    if ms.lower() in orig.lower() or orig.lower() in ms.lower():
-                        valid_final.append(ms)
-                        break
-        if not valid_final:
+            if ms.lower() in originals_low:
+                kept.append(ms)
+                continue
+            # Allow rename when the new name is a substring of an original
+            for orig in originals:
+                if ms.lower() in orig.lower() or orig.lower() in ms.lower():
+                    kept.append(ms)
+                    break
+        if not kept:
             return
-        entry.members = valid_final
-        entry.count = len(valid_final)
+        entry.members = kept
+        entry.count = len(kept)
         entry.history.append({
             "ts": time.time(), "turn_id": "", "delta": "dedup",
-            "reason": "reducer", "phrase": f"{len(original_lower)}→{len(valid_final)}",
+            "reason": "trinity_member_refine",
+            "phrase": f"{len(originals)}→{len(kept)}",
         })
 
     @staticmethod
@@ -796,7 +545,7 @@ class NumericAggregator:
         out = [direct]
         seen = {direct}
         for key in (direct, _singularize(direct)):
-            for parent in _ONTOLOGY_ROLLUP.get(key, ()):
+            for parent in ROLLUP.get(key, ()):
                 if parent not in seen:
                     out.append(parent)
                     seen.add(parent)
@@ -877,24 +626,13 @@ class NumericAggregator:
     def query_by_focus(
         self, user_id: str, domain: str, focus: str, max_results: int = 5
     ) -> list[CardinalEntry]:
-        """Fuzzy lookup cardinal entries whose class matches the query focus.
-
-        focus: noun phrase extracted from the query ("instruments",
-            "charity donations", "kitchen items", "money"). First resolved
-            through the alias table (e.g. "instruments"→"musical_instruments",
-            "money"→"charity_donations"), then matched to entity_class with
-            stem rules for singular/plural variations.
-
-        Returns a list of entries ranked by match confidence. Rollup parent
-        classes typically outrank specific ones because ingest writes to
-        both — the parent has a higher count and matches the broader query.
-        """
+        """Fuzzy lookup by query focus: alias-resolve then stem-match."""
         if not self._conn or not focus:
             return []
         focus_norm = _normalize_focus(focus)
 
         # Alias resolution → target class (may be direct or alias)
-        target_cls = _CLASS_ALIASES.get(focus_norm, focus_norm)
+        target_cls = ALIASES.get(focus_norm, focus_norm)
 
         rows = self._conn.execute(
             "SELECT * FROM cardinal_entries WHERE user_id = ? AND domain = ? ORDER BY updated_at DESC",
@@ -1029,18 +767,10 @@ class NumericAggregator:
     def _classify_batch(
         self, candidates: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        """Enrich candidates with entity_class + canonical_member.
+        """Enrich each candidate with entity_class + canonical_member.
 
-        Strategy:
-          1. Amount candidates always get class from verb hint (no LLM).
-          2. Own/dispose/explicit candidates: LLM classifies semantically
-             ("acoustic guitar" → "musical_instruments" rollup) when
-             available. LLM is the preferred path, not a fallback.
-          3. Heuristic (head-noun singularized to bucket) is the true
-             fallback when LLM is absent or fails — so the pipeline
-             survives offline runs but LLM-enabled runs get the proper
-             ontology rollup needed for aggregation queries like
-             "how many instruments".
+        Amount events take class from verb hint; own/dispose prefer LLM
+        classification, with heuristic (head-noun singularized) as fallback.
         """
         # Amount candidates: class from verb hint (regex path) or from
         # LLM batch extraction. Don't overwrite if an entity_class is
@@ -1116,16 +846,11 @@ class NumericAggregator:
 
     @staticmethod
     def _turn_has_cardinal_signal(content: str) -> bool:
-        """Loose gate: does this turn likely contain a cardinal event?
+        """Loose gate: drop turns with no ownership/money/acquisition signal.
 
-        The LLM batch call is expensive on 500-turn haystacks (25+ API
-        calls per question). Most turns carry no cardinal signal at all
-        (greetings, hypotheticals, assistant replies). A cheap keyword
-        gate filters these out BEFORE they hit the LLM — ~10× cost
-        reduction with minimal recall loss (the keyword list is broad).
-
-        Precision doesn't matter here: false positives just mean the LLM
-        classifies and discards. Only recall matters.
+        Precision-unimportant (LLM downstream will re-filter); recall must
+        be high — any missing keyword silently drops that turn from the
+        cardinal pipeline.
         """
         if not content:
             return False
@@ -1166,17 +891,7 @@ class NumericAggregator:
         batch_size: int = 12,
         max_chars_per_turn: int = 600,
     ) -> list[dict[str, Any]]:
-        """One LLM call per batch of user turns; output cardinal candidates.
-
-        Each batch sends ~30 user turns with stable turn numbers so the
-        LLM can reference them in its output. Truncates overlong turns to
-        keep prompt size bounded (~30 × 500 char = 15K chars ≈ 4K tokens
-        input per batch). Returns a flat list of candidate dicts matching
-        the shape expected by downstream _classify_batch / _apply_delta.
-
-        Failures (parse error / empty output) return [] for that batch —
-        caller can fall back to regex for those turns.
-        """
+        """One LLM call per batch of user turns; output cardinal candidates."""
         if not self._llm:
             return []
         # Pre-filter turns via cheap keyword gate so ~80% of haystack
@@ -1352,127 +1067,6 @@ class NumericAggregator:
 
 # ---------- helpers ----------
 
-# Ontology rollup: specific head-noun → broader aggregation buckets.
-# When ingesting "I bought a guitar", we write events to BOTH "guitars" and
-# "musical_instruments" so aggregation queries hit the right level. Keeps
-# the cache schema simple (no hierarchical parent columns) while giving
-# query-side rollup for free.
-#
-# Covers the aggregation classes that actually show up in LongMemEval-S /
-# LoCoMo error modes. Extendable via config later; for S1 built-in is
-# sufficient.
-_ONTOLOGY_ROLLUP: dict[str, tuple[str, ...]] = {
-    # Musical instruments
-    "guitar": ("musical_instruments",),
-    "guitars": ("musical_instruments",),
-    "piano": ("musical_instruments",),
-    "pianos": ("musical_instruments",),
-    "keyboard": ("musical_instruments",),
-    "ukulele": ("musical_instruments",),
-    "ukuleles": ("musical_instruments",),
-    "violin": ("musical_instruments",),
-    "drum": ("musical_instruments",),
-    "drums": ("musical_instruments",),
-    "cello": ("musical_instruments",),
-    "bass": ("musical_instruments",),
-    "flute": ("musical_instruments",),
-    "trumpet": ("musical_instruments",),
-    "saxophone": ("musical_instruments",),
-    "harp": ("musical_instruments",),
-    "mandolin": ("musical_instruments",),
-    "banjo": ("musical_instruments",),
-    "harmonica": ("musical_instruments",),
-    "instrument": ("musical_instruments",),
-    # Kitchen items
-    "faucet": ("kitchen_items",),
-    "toaster": ("kitchen_items",),
-    "mat": ("kitchen_items",),
-    "shelf": ("kitchen_items",),
-    "blender": ("kitchen_items",),
-    "coffeemaker": ("kitchen_items",),
-    "coffee": ("kitchen_items",),  # "coffee maker"
-    "mixer": ("kitchen_items",),
-    "microwave": ("kitchen_items",),
-    "fridge": ("kitchen_items",),
-    "dishwasher": ("kitchen_items",),
-    "stove": ("kitchen_items",),
-    "oven": ("kitchen_items",),
-    "kettle": ("kitchen_items",),
-    # Multi-word kitchen items (bigram lookup)
-    "coffee_maker": ("kitchen_items",),
-    "coffee_makers": ("kitchen_items",),
-    "kitchen_mat": ("kitchen_items",),
-    "kitchen_mats": ("kitchen_items",),
-    "kitchen_faucet": ("kitchen_items",),
-    "kitchen_shelf": ("kitchen_items",),
-    "kitchen_shelves": ("kitchen_items",),
-    "rice_cooker": ("kitchen_items",),
-    "rice_cookers": ("kitchen_items",),
-    "slow_cooker": ("kitchen_items",),
-    "slow_cookers": ("kitchen_items",),
-    "air_fryer": ("kitchen_items",),
-    "air_fryers": ("kitchen_items",),
-    "food_processor": ("kitchen_items",),
-    "food_processors": ("kitchen_items",),
-    # Pets
-    "dog": ("pets",),
-    "cat": ("pets",),
-    "hamster": ("pets",),
-    "snake": ("pets",),
-    "bird": ("pets",),
-    "fish": ("pets",),
-    "rabbit": ("pets",),
-    # Vehicles
-    "car": ("vehicles",),
-    "truck": ("vehicles",),
-    "suv": ("vehicles",),
-    "sedan": ("vehicles",),
-    "motorcycle": ("vehicles",),
-    # Books / reading
-    "book": ("books_read",),
-    "novel": ("books_read",),
-    # Hikes / trips / visits
-    "hike": ("hikes",),
-    "trek": ("hikes",),
-    "walk": ("hikes",),
-    "trail": ("hikes",),
-    "trip": ("trips",),
-    "vacation": ("trips",),
-    "visit": ("trips",),
-    "journey": ("trips",),
-    # Classes / lessons
-    "class": ("classes_taken",),
-    "course": ("classes_taken",),
-    "lesson": ("classes_taken",),
-    "workshop": ("classes_taken",),
-    "session": ("classes_taken",),
-    # Birds seen (for "how many species of birds" type queries)
-    "species": ("bird_species", "wildlife_sightings"),
-}
-
-
-# Reverse index: alias / synonym → canonical class. Used by query_by_focus
-# to resolve "instruments" / "music instruments" → musical_instruments.
-_CLASS_ALIASES: dict[str, str] = {
-    "instruments": "musical_instruments",
-    "instrument": "musical_instruments",
-    "music_instruments": "musical_instruments",
-    "musical_instrument": "musical_instruments",
-    "kitchen_things": "kitchen_items",
-    "kitchenware": "kitchen_items",
-    "kitchen": "kitchen_items",
-    "money": "charity_donations",  # "how much money did I raise for charity"
-    "charity": "charity_donations",
-    "donations": "charity_donations",
-    "contributions": "charity_donations",
-    "income": "income_events",
-    "earnings": "income_events",
-    "savings": "savings_events",
-    "expenses": "spending_events",
-    "spending": "spending_events",
-    "birds": "bird_species",
-    "species_of_birds": "bird_species",
-}
 
 
 _AMOUNT_VERB_CLASS = {
@@ -1589,30 +1183,21 @@ _PHRASE_TAIL_CLEANUP = re.compile(
 
 
 def _heuristic_class_is_recognized(cls: str, member: str) -> bool:
-    """Filter heuristic output to ontology-recognized classes.
+    """Keep only heuristic outputs whose class is in the ontology.
 
-    The heuristic (last-token head noun) produces anything — including
-    "backs", "thes", "ons", "news" — from random phrase tails. Without
-    a filter these show up as bogus cardinal classes. The filter keeps
-    only members whose class:
-      - directly maps to an _ONTOLOGY_ROLLUP parent, OR
-      - is a known bigram key in _ONTOLOGY_ROLLUP, OR
-      - is itself a canonical parent class name (kitchen_items,
-        musical_instruments, ...).
-    Also rejects obviously-malformed members (single-token fragments
-    that aren't proper nouns).
+    Rejects noise like "backs"/"thes"/"news" and stray determiners.
     """
     if not cls or not member:
         return False
     cls_low = cls.lower()
     # Known ontology keys / parents
-    parent_classes = {v for vs in _ONTOLOGY_ROLLUP.values() for v in vs}
-    if cls_low in _ONTOLOGY_ROLLUP:
+    parent_classes = {v for vs in ROLLUP.values() for v in vs}
+    if cls_low in ROLLUP:
         return True
     if cls_low in parent_classes:
         return True
     # Accept singular-form lookup as well
-    if _singularize(cls_low) in _ONTOLOGY_ROLLUP:
+    if _singularize(cls_low) in ROLLUP:
         return True
     # Reject when member is a single non-capitalized common word
     mtokens = member.split()
@@ -1628,16 +1213,9 @@ def _heuristic_class_is_recognized(cls: str, member: str) -> bool:
 def _heuristic_class(phrase: str) -> tuple[str, str]:
     """Best-effort class bucket + canonical member from a phrase.
 
-    Example: "a brand-new Yamaha FG800 acoustic guitar" →
-             class="guitars", member="Yamaha FG800 Acoustic Guitar"
-             "Roland digital piano at home" →
-             class="pianos", member="Roland Digital Piano"
-             "coffee maker" → class="coffee_makers" (bigram matches ontology)
-
-    Prefers bigram class if the last two tokens form a known ontology key
-    (e.g. "coffee_maker" under kitchen_items) — keeps compound-noun items
-    like "coffee maker" / "phone charger" / "kitchen mat" from being
-    buried under the generic head-noun ("makers", "chargers", "mats").
+    Prefers a bigram class when the last two tokens match the ontology
+    (e.g. "coffee maker" → coffee_makers) so compound-noun items don't
+    collapse to the head-noun bucket ("makers"/"chargers").
     """
     p = phrase.strip().lower()
     if not p:
@@ -1668,7 +1246,7 @@ def _heuristic_class(phrase: str) -> tuple[str, str]:
         head_singular = _singularize(tokens[-1])
         bigram = f"{tokens[-2]}_{head_singular}"
         bigram_plural = f"{tokens[-2]}_{tokens[-1]}"
-        if bigram in _ONTOLOGY_ROLLUP or bigram_plural in _ONTOLOGY_ROLLUP:
+        if bigram in ROLLUP or bigram_plural in ROLLUP:
             cls = f"{tokens[-2]}_{_pluralize(head_singular)}"
             member = " ".join(
                 t.capitalize() if t.isalpha() and len(t) > 1 else t for t in tokens
