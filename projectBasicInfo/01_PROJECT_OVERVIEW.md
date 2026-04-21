@@ -749,7 +749,7 @@ class RadioMindHermesProvider(MemoryProvider):
 | **L3 存储 (LoRA)** | MLX (Mac) / QLoRA (Linux) | Mac 原生优化，Linux 用 CUDA |
 | **推理 (LoRA)** | Ollama + ADAPTER 指令 | 热加载 LoRA，<1s 切换 |
 | **推理 (炼化)** | Ollama (本地) / OpenAI API (云端) | 本地优先，云端可选 |
-| **Embedding** | ONNX MiniLM-L6-v2 (384维) | 86MB、无 torch（沿用 HomeGenie） |
+| **检索能力模块（Embedding + Reranker）** | Embedding: DashScope text-embedding-v4 (2048维) / ONNX MiniLM (384维 离线 fallback)。Reranker: 可选 gte-rerank-v2 (DashScope) / BAAI/bge-reranker-v2-m3 (本地) | 统一 `[retrieval_provider]` 配置段：一个 key、一个 base_url、一个 enable 开关；同一供应商（DashScope/Jina/Voyage/Cohere 都打包两者）。Reranker 作为子开关 `use_reranker`，默认关（对 A2A-strict 友好） |
 | **经验文件** | Markdown + YAML frontmatter | 人类可读可编辑（沿用 RadioHeader） |
 | **配置** | TOML | 所有外部依赖通过配置声明，不写死 |
 | **接口协议** | IPC (Unix socket) + MCP + Python API | 多种接入方式 |
@@ -800,7 +800,7 @@ class RadioMindHermesProvider(MemoryProvider):
 | MCP Server | ✅ | 8 工具, Claude Desktop/Cursor 兼容 |
 | 隐私分级 | ✅ | open/guarded/sealed, 跨域流动控制 |
 | 知识图谱 | ✅ | SQLite 三元组, 时间有效性, 自动提取 |
-| Embedding | ✅ | ONNX MiniLM (可选), 静默降级 |
+| Embedding | ✅ | DashScope v4 (2048-dim 默认) → 本地 ONNX MiniLM 384-dim → FTS-only, 独立 `[embedding]` 段 |
 | 社区共享 | ✅ | Stigmergy 评分, PII 过滤, 社区池同步 |
 | CLI | ✅ | 18+ 命令 |
 | Python API | ✅ | RadioMind 主类, 标准接口 |

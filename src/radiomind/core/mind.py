@@ -228,7 +228,51 @@ class RadioMind:
         prefer_local = bool(self.config.get("retrieval.embedder.prefer_local", False))
 
         def _try_dashscope() -> object | None:
+            """Resolve DashScope-compatible embedder from retrieval_provider section.
+
+            Read order (first-hit wins):
+              1. [retrieval_provider] — unified retrieval capability module
+                 (embedding + reranker share one key/base_url/enable switch)
+              2. [embedding] — legacy dedicated section, kept for back-compat
+              3. [llm.openai] — legacy piggyback when pointed at DashScope
+            """
             try:
+                # 1. Unified retrieval provider
+                rp = self.config.get("retrieval_provider", {}) or {}
+                if rp.get("enabled", True):
+                    base = (rp.get("base_url") or "").strip()
+                    key = (rp.get("api_key") or "").strip()
+                    if base and key:
+                        from radiomind.storage.embedding_dashscope import DashScopeEmbedder
+                        kwargs: dict = {}
+                        model = (rp.get("embedding_model") or "").strip()
+                        if model:
+                            kwargs["model"] = model
+                        dim = rp.get("embedding_dim")
+                        if isinstance(dim, int) and dim > 0:
+                            kwargs["dim"] = dim
+                        ds = DashScopeEmbedder(base, key, **kwargs)
+                        if ds.load():
+                            return ds
+
+                # 2. Legacy [embedding] section
+                emb = self.config.get("embedding", {}) or {}
+                base = (emb.get("base_url") or "").strip()
+                key = (emb.get("api_key") or "").strip()
+                if base and key:
+                    from radiomind.storage.embedding_dashscope import DashScopeEmbedder
+                    kwargs: dict = {}
+                    model = (emb.get("model") or "").strip()
+                    if model:
+                        kwargs["model"] = model
+                    dim = emb.get("dim")
+                    if isinstance(dim, int) and dim > 0:
+                        kwargs["dim"] = dim
+                    ds = DashScopeEmbedder(base, key, **kwargs)
+                    if ds.load():
+                        return ds
+
+                # 3. Legacy [llm.openai] piggyback
                 oc = self.config.get("llm.openai", {}) or {}
                 base = (oc.get("base_url") or "").strip()
                 key = (oc.get("api_key") or "").strip()
@@ -256,19 +300,25 @@ class RadioMind:
         else:
             self._embedder = _try_dashscope() or _try_local()
 
-        # Reranker — opt-in via config (off by default: 2.3GB download,
-        # ~30ms/query latency). When present, gives the retrieval pipeline
-        # its last +10-20% R@5 by cross-encoder rescoring of top-20 RRF.
-        # Fallback order: local BGE (offline, fast) → DashScope gte-rerank-v2
-        # (API, no torch needed) → none.
+        # Reranker — part of the unified retrieval capability module.
+        # Activation:
+        #   [retrieval_provider].use_reranker = true  (preferred — one module, one switch)
+        #   retrieval.reranker.enabled = true         (legacy — kept for back-compat)
+        # Resolution (first-hit wins):
+        #   local CrossEncoder → [retrieval_provider] API key → [reranker]
+        #   → [llm.openai] piggyback (legacy)
         self._reranker = None
-        if self.config.get("retrieval.reranker.enabled", False):
+        rp_cfg = self.config.get("retrieval_provider", {}) or {}
+        rerank_on = bool(
+            rp_cfg.get("use_reranker", False)
+            or self.config.get("retrieval.reranker.enabled", False)
+        )
+        if rerank_on:
             try:
                 from radiomind.storage.reranker import CrossEncoderReranker
-                model_id = self.config.get("retrieval.reranker.model", "BAAI/bge-reranker-v2-m3")
-                # cache_dir=None → use HF default cache (~/.cache/huggingface/hub),
-                # which the user may have populated manually with bge-reranker-v2-m3.
-                # Avoids re-downloading the 2.3GB model per sandbox.
+                model_id = self.config.get(
+                    "retrieval.reranker.model", "BAAI/bge-reranker-v2-m3",
+                )
                 r = CrossEncoderReranker(model_id=model_id, cache_dir=None)
                 if r.load():
                     self._reranker = r
@@ -276,14 +326,43 @@ class RadioMind:
                 self._reranker = None
             if self._reranker is None:
                 try:
-                    oc = self.config.get("llm.openai", {}) or {}
-                    base = (oc.get("base_url") or "").strip()
-                    key = (oc.get("api_key") or "").strip()
-                    if base and key and "dashscope" in base.lower():
-                        from radiomind.storage.reranker_dashscope import DashScopeReranker
-                        rr = DashScopeReranker(api_key=key)
-                        if rr.load():
-                            self._reranker = rr
+                    # 1. Unified retrieval provider — same key + base_url as embedder
+                    if rp_cfg.get("enabled", True):
+                        key = (rp_cfg.get("api_key") or "").strip()
+                        if key:
+                            from radiomind.storage.reranker_dashscope import DashScopeReranker
+                            kwargs: dict = {}
+                            model = (rp_cfg.get("reranker_model") or "").strip()
+                            if model:
+                                kwargs["model"] = model
+                            rr = DashScopeReranker(api_key=key, **kwargs)
+                            if rr.load():
+                                self._reranker = rr
+
+                    # 2. Legacy [reranker] section
+                    if self._reranker is None:
+                        rr_cfg = self.config.get("reranker", {}) or {}
+                        key = (rr_cfg.get("api_key") or "").strip()
+                        if key:
+                            from radiomind.storage.reranker_dashscope import DashScopeReranker
+                            kwargs: dict = {}
+                            model = (rr_cfg.get("model") or "").strip()
+                            if model:
+                                kwargs["model"] = model
+                            rr = DashScopeReranker(api_key=key, **kwargs)
+                            if rr.load():
+                                self._reranker = rr
+
+                    # 3. Legacy [llm.openai] DashScope piggyback
+                    if self._reranker is None:
+                        oc = self.config.get("llm.openai", {}) or {}
+                        base = (oc.get("base_url") or "").strip()
+                        key = (oc.get("api_key") or "").strip()
+                        if base and key and "dashscope" in base.lower():
+                            from radiomind.storage.reranker_dashscope import DashScopeReranker
+                            rr = DashScopeReranker(api_key=key)
+                            if rr.load():
+                                self._reranker = rr
                 except Exception:
                     pass
 
