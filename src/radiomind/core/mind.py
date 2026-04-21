@@ -80,11 +80,16 @@ def _task_description_for(sig, query: str, reference_date: str) -> str | None:
         )
     if wants == "inference":
         return (
-            f"Answer this open-domain question by picking ONE specific named "
-            f"entity the evidence actually mentions. Tensions to triangulate: "
-            f"literal-evidence (pick what's directly said) vs inferred-fit "
-            f"(pick what best matches user's known preferences) vs "
-            f"abstention-safe (say 'insufficient' rather than invent).\n"
+            f"Answer this open-domain question by picking ONE SPECIFIC PROPER "
+            f"NOUN that the evidence literally contains (book title, brand, "
+            f"place name, person name, product). Generic categories like "
+            f"'a mystery novel' or 'running shoes' are WRONG; the answer "
+            f"must be a nameable entity copied from the evidence. If no "
+            f"such proper noun exists in the evidence, output literally "
+            f"'insufficient' (better to abstain than invent).\n"
+            f"Tensions to triangulate: literal-evidence (copy from memories) "
+            f"vs inferred-fit (most plausible given preferences) vs "
+            f"abstention-safe.\n"
             f"Question: {query}{shape_line}"
         )
     if wants == "detail":
@@ -228,12 +233,15 @@ class RadioMind:
         prefer_local = bool(self.config.get("retrieval.embedder.prefer_local", False))
 
         def _try_dashscope() -> object | None:
-            """Resolve DashScope-compatible embedder from retrieval_provider section.
+            """Resolve OpenAI-compatible embedder.
 
             Read order (first-hit wins):
               1. [retrieval_provider] — unified retrieval capability module
-                 (embedding + reranker share one key/base_url/enable switch)
-              2. [embedding] — legacy dedicated section, kept for back-compat
+                 (embedding + reranker share one key/base_url/enable switch).
+                 `provider` is a semantic label (dashscope/openrouter/jina/...);
+                 the embedder class is the OpenAI-compatible DashScopeEmbedder
+                 (name is historical — it speaks OpenAI's /embeddings protocol).
+              2. [embedding] — legacy dedicated section
               3. [llm.openai] — legacy piggyback when pointed at DashScope
             """
             try:
@@ -326,16 +334,23 @@ class RadioMind:
                 self._reranker = None
             if self._reranker is None:
                 try:
-                    # 1. Unified retrieval provider — same key + base_url as embedder
+                    # 1. Unified retrieval provider. Dispatch by provider:
+                    #    - dashscope: native /services/rerank endpoint
+                    #    - openrouter/cohere/jina/voyage: OpenAI-compat /rerank
                     if rp_cfg.get("enabled", True):
                         key = (rp_cfg.get("api_key") or "").strip()
+                        base = (rp_cfg.get("base_url") or "").strip()
+                        provider = (rp_cfg.get("provider") or "dashscope").strip().lower()
                         if key:
-                            from radiomind.storage.reranker_dashscope import DashScopeReranker
-                            kwargs: dict = {}
                             model = (rp_cfg.get("reranker_model") or "").strip()
-                            if model:
-                                kwargs["model"] = model
-                            rr = DashScopeReranker(api_key=key, **kwargs)
+                            if provider == "dashscope":
+                                from radiomind.storage.reranker_dashscope import DashScopeReranker
+                                kwargs = {"model": model} if model else {}
+                                rr = DashScopeReranker(api_key=key, **kwargs)
+                            else:
+                                from radiomind.storage.reranker_openai_compat import OpenAICompatReranker
+                                kwargs = {"model": model} if model else {}
+                                rr = OpenAICompatReranker(base, key, **kwargs)
                             if rr.load():
                                 self._reranker = rr
 

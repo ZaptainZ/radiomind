@@ -162,7 +162,10 @@ class ProfileManager:
             return ""
 
         parts = [
-            "USER CONTEXT (accumulated profile — use as background when relevant to the question):",
+            "USER CONTEXT (accumulated profile — the answer MUST reference at "
+            "least one specific detail from this block when relevant to the "
+            "question. Generic advice without citing the user's actual "
+            "preferences/goals/identity is wrong.):",
         ]
         if self._user.who:
             who_str = ", ".join(f"{k}: {v}" for k, v in self._user.who.items() if v)
@@ -249,6 +252,13 @@ class ProfileManager:
             "- When a question uses 'previous' / 'former' / 'old', prefer the "
             "value whose memory date precedes any newer contradicting memory — "
             "that is the one that was superseded.",
+            "- CRITICAL abstention rule: when the question asks about an "
+            "attribute A of entity E (e.g. 'how many engineers do I lead as "
+            "Software Engineer MANAGER') and the memories mention E with a "
+            "DIFFERENT role/attribute (e.g. 'Senior Software Engineer'), the "
+            "correct answer is 'The information provided is not enough' — "
+            "DO NOT answer from the wrong-entity memory. An answer that "
+            "presumes E's unstated attribute is WRONG.",
         ]
 
         # Dynamic adjustment from behavior log (last N graded outcomes):

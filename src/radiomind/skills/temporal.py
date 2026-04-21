@@ -72,9 +72,15 @@ def _match_phrase(content: str, phrase: str) -> float:
 
 
 def _find_event_date(
-    phrase: str, memories: list, threshold: float = 0.6,
+    phrase: str, memories: list, threshold: float = 0.4,
 ) -> datetime | None:
-    """Scan memories for best date match. Prefer temporal_anchor entries."""
+    """Scan memories for best date match. Prefer temporal_anchor entries.
+
+    Lowered threshold from 0.6 to 0.4 because the phrase LLM captures is
+    often a short fragment ("FarmFresh subscription") that won't have
+    60%+ tokens in a real memory ("I decided to cancel my FarmFresh").
+    Too strict → skill never fires → trinity hallucinates dates.
+    """
     best: tuple[float, datetime] | None = None
     # Two passes: anchor entries first, then general memories
     anchor_first: list[tuple[Any, bool]] = []
