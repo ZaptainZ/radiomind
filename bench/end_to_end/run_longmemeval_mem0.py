@@ -424,6 +424,12 @@ def run(
         except Exception:
             pass
 
+        profile_section = ""
+        try:
+            profile_section = mind.profile_hint(query=question)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -474,6 +480,8 @@ def run(
             ans_prompt = temporal_section + ans_prompt
         if open_domain_section:
             ans_prompt = open_domain_section + ans_prompt
+        if profile_section:
+            ans_prompt = profile_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable
@@ -524,6 +532,18 @@ def run(
             is_correct = _parse_judge_verdict(verdict)
         except Exception as e:
             verdict = f"[judge error: {e}]"
+
+        # Meta self-observation — feeds dynamic calibration next run
+        try:
+            from radiomind.refinement.salvage import looks_abstained as _abstained
+            mind.record_answer_outcome(
+                query=question,
+                evidence_count=len(mem_results),
+                abstained=_abstained(answer or ""),
+                correct=is_correct,
+            )
+        except Exception:
+            pass
 
         overall["n"] += 1
         overall["correct"] += int(is_correct)

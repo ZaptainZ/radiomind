@@ -27,52 +27,9 @@ Facts:
 
 Output EXACTLY two lines, prefixed with "ENTITIES:" and "PATTERN:" — nothing else."""
 
-# Three-body aggregation prompts (Guardian / Explorer / Reducer).
-# Replace the single-shot aggregation when the LLM backend supports it —
-# produces richer, typed patterns that retrieval can route into via
-# attention tags. Each agent runs in parallel, so total latency = 1 call.
-_AGGREGATE_GUARDIAN = """You are the Guardian. From the facts below, list only what the evidence EXPLICITLY supports — concrete entities, events, counts. Nothing inferred.
-
-Facts from "{domain}":
-{facts}
-
-Output JSON only:
-{{"entities": [{{"name": "Dr. Smith", "count": 3, "kind": "doctor"}}, ...], "events": [{{"what": "charity run", "count": 2, "dates": ["2023-03", "2023-09"]}}, ...]}}
-
-Include up to 15 entities and 10 events. Skip anything that requires interpretation."""
-
-_AGGREGATE_EXPLORER = """You are the Explorer. From the facts below, find IMPLIED patterns that cross multiple facts — lifestyle signals, unstated preferences, inferred states.
-
-Facts from "{domain}":
-{facts}
-
-Output JSON only:
-{{"implicit_patterns": [
-  {{"claim": "user has stable employment", "evidence_count": 4, "confidence": 0.8}},
-  {{"claim": "user prefers outdoor activities over indoor", "evidence_count": 3, "confidence": 0.7}}
-], "lifestyle_signals": [{{"signal": "regular specialist appointments", "count": 5}}]}}
-
-Include up to 5 implicit patterns + up to 5 lifestyle signals. Each claim MUST specify how many facts back it."""
-
-_AGGREGATE_REDUCER = """You are the Reducer. Given the Guardian's explicit entities/events AND the Explorer's implicit patterns, distill into 1-3 high-value pattern entries that retrieval can serve directly.
-
-Guardian output:
-{guardian}
-
-Explorer output:
-{explorer}
-
-Output JSON only:
-{{"patterns": [
-  {{"text": "User has visited 3 different doctors: Dr. Smith (primary), Dr. Lee (dermatologist), Dr. Chen (ENT)", "kind": "enumeration", "confidence": 0.95}},
-  {{"text": "User demonstrates financial stability (stable job + owns home + regular vacations)", "kind": "inferred_state", "confidence": 0.8}},
-  {{"text": "User completed 2 charity tournaments", "kind": "count", "confidence": 0.9}}
-]}}
-
-Rules:
-- Each pattern must be RETRIEVABLE: includes literal entity names / numbers / specific claims
-- "kind" is one of: enumeration, count, inferred_state, preference, temporal_summary
-- At most 3 patterns — pick the highest-value ones. Drop trivial / redundant."""
+# Aggregation uses the trinity primitive — three opposing stances picked
+# per-call by the LLM (e.g. "explicit-only / implicit-only / distilled")
+# rather than hardcoded named roles.
 
 PRINCIPLE_PROMPT = """You are a memory analyst distilling a one-sentence principle the user lives by,
 based on the patterns below. The principle should be concrete and actionable, not philosophical.
@@ -326,8 +283,16 @@ class PyramidSearch:
         # When no attention_tags provided, keep the legacy uniform
         # 0.1-per-level boost. Level ints: FACT=0, PATTERN=1, PRINCIPLE=2.
         lw = self._level_weights(attention_tags or [])
+        # Tag boost: if the query's attention signature maps to a tag
+        # carried on an entry, multiply its score. Cheap overlay that
+        # activates the lateral (same-level, same-tag) channel.
+        tag_boosts = self._tag_boosts(attention_tags or [])
         filtered.sort(
-            key=lambda r: -(r.score * lw[min(int(r.entry.level), 2)]),
+            key=lambda r: -(
+                r.score
+                * lw[min(int(r.entry.level), 2)]
+                * self._entry_tag_boost(r.entry, tag_boosts)
+            ),
         )
 
         # 5b. Latest-wins conflict resolution.
@@ -421,6 +386,36 @@ class PyramidSearch:
         except Exception:
             # KG integration is additive — never fail the whole search on KG errors
             return []
+
+    @staticmethod
+    def _tag_boosts(attention_tags: list[str]) -> dict[str, float]:
+        """Map attention tags → entry-tag multipliers.
+
+        Powers the lateral retrieval channel: a `temporal` query boosts
+        entries tagged `temporal_anchor`/`date_bearing`; `aggregation`
+        boosts `ownership`/`amount`; `narrative` boosts `ownership`.
+        """
+        boosts: dict[str, float] = {}
+        for t in attention_tags or []:
+            if t in ("temporal", "temporal_precision"):
+                boosts["temporal_anchor"] = max(boosts.get("temporal_anchor", 1.0), 1.6)
+                boosts["date_bearing"] = max(boosts.get("date_bearing", 1.0), 1.25)
+            elif t == "aggregation":
+                boosts["ownership"] = max(boosts.get("ownership", 1.0), 1.2)
+                boosts["amount"] = max(boosts.get("amount", 1.0), 1.2)
+            elif t == "narrative":
+                boosts["ownership"] = max(boosts.get("ownership", 1.0), 1.1)
+        return boosts
+
+    @staticmethod
+    def _entry_tag_boost(entry, tag_boosts: dict[str, float]) -> float:
+        if not tag_boosts or not getattr(entry, "tags", None):
+            return 1.0
+        factor = 1.0
+        for tag in entry.tags:
+            factor *= tag_boosts.get(tag, 1.0)
+        # Cap aggregate tag boost to avoid runaway when an entry carries many
+        return min(factor, 2.5)
 
     @staticmethod
     def _level_weights(attention_tags: list[str]) -> tuple[float, float, float]:
@@ -901,65 +896,32 @@ class PyramidAggregator:
     def _three_body_aggregate(
         self, domain: str, facts: list[MemoryEntry]
     ) -> list[dict]:
-        """Run Guardian + Explorer + Reducer in parallel, return pattern dicts.
-
-        Returns [] on any error — caller falls through to legacy path.
-        """
-        from concurrent.futures import ThreadPoolExecutor
-        import json as _json
+        """Aggregate facts → patterns via trinity.debate() — single LLM call."""
+        from radiomind.refinement.trinity import debate
 
         facts_text = "\n".join(f"- {f.content}" for f in facts)
-
-        def _call(prompt: str, role: str) -> str:
-            try:
-                resp = self._llm.generate(
-                    prompt,
-                    system=f"You are the {role}. Output strict JSON only.",
-                )
-                return resp.text or ""
-            except Exception:
-                return ""
-
-        def _parse_json(raw: str) -> dict | None:
-            if not raw:
-                return None
-            text = raw.strip()
-            if text.startswith("```"):
-                text = _re.sub(r"^```(?:json|JSON)?\s*\n?", "", text)
-                text = _re.sub(r"\n?```\s*$", "", text).strip()
-            start = text.find("{")
-            end = text.rfind("}")
-            if start < 0 or end <= start:
-                return None
-            try:
-                return _json.loads(text[start : end + 1])
-            except Exception:
-                return None
-
-        guardian_prompt = _AGGREGATE_GUARDIAN.format(domain=domain, facts=facts_text)
-        explorer_prompt = _AGGREGATE_EXPLORER.format(domain=domain, facts=facts_text)
-
-        # Stage 1: Guardian + Explorer in parallel
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            g_fut = ex.submit(_call, guardian_prompt, "Guardian")
-            e_fut = ex.submit(_call, explorer_prompt, "Explorer")
-            guardian_raw = g_fut.result()
-            explorer_raw = e_fut.result()
-
-        guardian = _parse_json(guardian_raw) or {}
-        explorer = _parse_json(explorer_raw) or {}
-
-        if not guardian and not explorer:
-            return []
-
-        # Stage 2: Reducer consumes G+E and distills 1-3 patterns
-        reducer_prompt = _AGGREGATE_REDUCER.format(
-            guardian=_json.dumps(guardian, ensure_ascii=False)[:2000],
-            explorer=_json.dumps(explorer, ensure_ascii=False)[:2000],
+        result = debate(
+            task=(
+                f"From these facts in the '{domain}' domain, produce 1-3 "
+                f"high-value pattern entries a retrieval layer can serve "
+                f"directly. Tensions to triangulate: explicit-only "
+                f"(literal entities, counts, dates) vs implicit-patterns "
+                f"(inferred lifestyle/preferences across facts) vs "
+                f"distilled (both merged into concrete retrievable claims "
+                f"with literal entity names + numbers).\n"
+                f"Each pattern must include literal names or numbers so "
+                f"keyword retrieval can match it. Kind ∈ enumeration, "
+                f"count, inferred_state, preference, temporal_summary."
+            ),
+            evidence=facts_text,
+            llm=self._llm,
+            extra_schema=(
+                '  "patterns": [{"text": str, "kind": str, "confidence": float}]'
+            ),
         )
-        reducer_raw = _call(reducer_prompt, "Reducer")
-        reducer = _parse_json(reducer_raw) or {}
-        patterns = reducer.get("patterns", [])
+        if not result:
+            return []
+        patterns = result.get("patterns") or []
         if not isinstance(patterns, list):
             return []
         return [p for p in patterns if isinstance(p, dict) and p.get("text")]

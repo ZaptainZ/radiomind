@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 _MIGRATIONS: list[tuple[int, Callable]] = []
 
@@ -97,3 +97,17 @@ def _add_multi_user_and_history(conn) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_agent ON memories(agent_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_session ON memories(session_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_history_mem ON memory_history(memory_id)")
+
+
+@register(version=4)
+def _add_tags(conn) -> None:
+    """Add `tags` column — comma-separated semantic labels for lateral linking.
+
+    Enables query-time filtering/boost along attention focus (wants / focus
+    entity / event kind) independent of the level hierarchy. Stored as a
+    flat TEXT for simplicity; indexed via FTS over the tags column.
+    """
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(memories)").fetchall()]
+    if "tags" not in cols:
+        conn.execute("ALTER TABLE memories ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tags ON memories(tags)")

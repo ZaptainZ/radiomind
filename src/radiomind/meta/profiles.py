@@ -45,6 +45,13 @@ class ProfileManager:
         self._habits = habits  # optional HabitStore for digest injection
         self._user = UserProfile()
         self._self = SelfProfile()
+        # Self-observation — feeds dynamic calibration
+        from radiomind.meta.behavior_log import BehaviorLog
+        self._behavior = BehaviorLog(data_dir)
+
+    @property
+    def behavior(self):
+        return self._behavior
 
     def open(self) -> None:
         self._data_dir.mkdir(parents=True, exist_ok=True)
@@ -92,6 +99,86 @@ class ProfileManager:
             self._save_user()
 
         return updated
+
+    def merge_profile_fragments(self, fragments: dict) -> bool:
+        """Merge LLM-extracted fragments into persisted profile.
+
+        fragments = {"who": {...}, "how": {...list[str]...}, "what": {...}}
+        who: scalar fields (last non-empty wins).
+        how/what: list fields (accumulate deduplicated, keep str for JSON).
+        """
+        if not isinstance(fragments, dict):
+            return False
+        updated = False
+
+        for k, v in (fragments.get("who") or {}).items():
+            if isinstance(v, str) and v.strip() and self._user.who.get(k) != v.strip():
+                self._user.who[k] = v.strip()
+                updated = True
+
+        for category, target in (("how", self._user.how), ("what", self._user.what)):
+            cat = fragments.get(category) or {}
+            if not isinstance(cat, dict):
+                continue
+            for field, values in cat.items():
+                if isinstance(values, str):
+                    values = [values]
+                if not isinstance(values, list):
+                    continue
+                existing_str = target.get(field, "")
+                existing_parts = [p.strip() for p in existing_str.split(";") if p.strip()]
+                merged_changed = False
+                for v in values:
+                    vs = str(v).strip()
+                    if vs and vs not in existing_parts:
+                        existing_parts.append(vs)
+                        merged_changed = True
+                if merged_changed:
+                    target[field] = "; ".join(existing_parts)
+                    updated = True
+
+        if updated:
+            self._user.updated_at = time.time()
+            self._save_user()
+        return updated
+
+    def profile_hint(self, query: str, token_budget: int = 180) -> str:
+        """Return a compact user-context prefix for answer prompts.
+
+        Injects when the query seems preference-anchored (recommendation,
+        suggestion, advice, personal style). Returns "" when profile is
+        empty or query doesn't benefit. Kept short — doesn't blanket every
+        answer prompt with context.
+        """
+        if not (self._user.who or self._user.how or self._user.what):
+            return ""
+        ql = (query or "").lower()
+        preference_signals = (
+            "recommend", "suggest", "advice", "tip", "prefer", "like",
+            "should i", "what should", "any ideas", "建议", "推荐",
+            "偏好", "喜欢",
+        )
+        if not any(s in ql for s in preference_signals):
+            return ""
+
+        parts = [
+            "USER CONTEXT (accumulated profile — use as background when relevant to the question):",
+        ]
+        if self._user.who:
+            who_str = ", ".join(f"{k}: {v}" for k, v in self._user.who.items() if v)
+            if who_str:
+                parts.append(f"- identity: {who_str}")
+        for field, val in self._user.how.items():
+            if val:
+                parts.append(f"- {field}: {val}")
+        for field, val in self._user.what.items():
+            if val:
+                parts.append(f"- {field}: {val}")
+        text = "\n".join(parts) + "\n\n"
+        # Rough budget
+        if len(text) > token_budget * 4:
+            text = text[: token_budget * 4] + "...\n\n"
+        return text
 
     # --- Self Profile ---
 
@@ -163,6 +250,32 @@ class ProfileManager:
             "value whose memory date precedes any newer contradicting memory — "
             "that is the one that was superseded.",
         ]
+
+        # Dynamic adjustment from behavior log (last N graded outcomes):
+        # - If abstaining too often relative to accuracy, push to commit
+        # - If low-evidence accuracy is poor, push to abstain instead
+        try:
+            stats = self._behavior.stats()
+            if stats.get("n", 0) >= 20 and stats.get("graded_n", 0) >= 10:
+                ar = stats.get("abstention_rate", 0.0)
+                acc = stats.get("accuracy_overall", 0.0)
+                # Over-abstaining when overall accuracy is still low → commit more
+                if ar > 0.3 and acc < 0.85:
+                    parts.append(
+                        "- RECENT-SELF: abstention rate {:.0%} across {} answers; "
+                        "when 2+ retrieved memories agree, commit rather than say "
+                        "'information not enough'.".format(ar, stats['graded_n'])
+                    )
+                low = stats.get("by_density", {}).get("low", {})
+                if low.get("n", 0) >= 10 and low.get("accuracy", 1.0) < 0.5:
+                    parts.append(
+                        "- RECENT-SELF: low-evidence answers are unreliable "
+                        "({:.0%} on {} samples); when fewer than 3 memories support "
+                        "an answer, prefer honest abstention over confabulation."
+                        .format(low['accuracy'], low['n'])
+                    )
+        except Exception:
+            pass
         # If we've accumulated habits, give the answer agent a one-line
         # summary so it anchors its answer on the user's established patterns.
         if self._habits is not None:

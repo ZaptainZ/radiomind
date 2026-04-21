@@ -76,30 +76,39 @@ class TestChatRefinement:
         result = cr.refine(domain="work")
         assert result.duration_s > 0
 
-    def test_parse_insights(self, store, habits):
-        router = make_mock_router()
-        cr = ChatRefinement(store, habits, router)
-        insights = cr._parse_insights(
-            "INSIGHT: user prefers autonomy\nCONFIDENCE: 0.8\nINSIGHT: user is methodical\nCONFIDENCE: 0.6"
-        )
-        assert len(insights) == 2
-        assert insights[0].confidence == 0.8
-        assert insights[1].confidence == 0.6
-
-    def test_parse_none(self, store, habits):
-        router = make_mock_router()
-        cr = ChatRefinement(store, habits, router)
-        insights = cr._parse_insights("NONE")
-        assert len(insights) == 0
-
-    def test_debate_calls_three_agents(self, store, habits):
+    def test_debate_parses_trinity_insights(self, store, habits):
+        """Trinity output maps to DebateRound.insights — stance names are free."""
+        import json as _json
         store.add(MemoryEntry(content="user likes running", domain="health"))
-        router = make_mock_router({"Guardian": "consistent", "Explorer": "novel", "Reducer": "merge"})
+        store.add(MemoryEntry(content="user runs on weekends", domain="health"))
+        # Trigger on "triangulate" (always in trinity prompt)
+        canned = _json.dumps({
+            "stances": [
+                {"name": "consistency", "emphasis": "aligns", "conclusion": "ok"},
+                {"name": "novelty", "emphasis": "fresh", "conclusion": "ok"},
+                {"name": "parsimony", "emphasis": "simple", "conclusion": "ok"},
+            ],
+            "final_answer": "user is a weekend runner",
+            "insights": [
+                {"description": "user prefers autonomy", "confidence": 0.8,
+                 "evidence": "m1", "falsifier": "if they join a team"},
+                {"description": "user is methodical", "confidence": 0.6,
+                 "evidence": "m2", "falsifier": ""},
+            ],
+        })
+        router = make_mock_router({"triangulate": canned})
         cr = ChatRefinement(store, habits, router)
-        round_result = cr._debate_round("health")
-        assert round_result.guardian_response != ""
-        assert round_result.explorer_response != ""
-        assert round_result.reducer_response != ""
+        rr = cr._debate_round("health")
+        assert len(rr.insights) == 2
+        assert rr.insights[0].confidence == 0.8
+        assert rr.insights[1].confidence == 0.6
+
+    def test_debate_empty_memories(self, store, habits):
+        """Empty domain → no insights."""
+        router = make_mock_router()
+        cr = ChatRefinement(store, habits, router)
+        rr = cr._debate_round("empty_domain")
+        assert rr.insights == []
 
 
 # --- Dream Refinement Tests ---

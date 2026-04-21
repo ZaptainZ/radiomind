@@ -1,5 +1,12 @@
 """Step-by-step refinement — let the host AI do the thinking.
 
+NOTE: role names (guardian/explorer/reducer) are retained here because
+they are part of the PUBLIC API — `mind.refine_step("guardian", ...)` is
+called by CLI and MCP clients and serves as the step index. Changing to
+task-described trinity would break external callers. Internal-only sites
+(pyramid aggregation, chat mining, answer-side salvage) have been
+migrated to the generic trinity primitive.
+
 Instead of RadioMind calling its own LLM internally (黑盒 mode),
 this module breaks refinement into steps that the host AI executes:
 

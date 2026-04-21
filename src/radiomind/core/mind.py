@@ -98,6 +98,46 @@ def _task_description_for(sig, query: str, reference_date: str) -> str | None:
     return None
 
 
+import re as _re
+
+
+_DATE_TOKEN_RE = _re.compile(
+    r"\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}"
+    r"|\d{1,2}[-/]\d{1,2}(?:[, ]+\d{4})?"
+    r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? ?\d{1,2})",
+    _re.IGNORECASE,
+)
+_AMOUNT_TOKEN_RE = _re.compile(r"\$\s*\d", _re.IGNORECASE)
+_OWN_VERBS_RE = _re.compile(
+    r"\bi\s+(?:just\s+|also\s+|then\s+|recently\s+)?"
+    r"(?:bought|got|picked|brought|purchased|acquired|adopted|received|"
+    r"replaced|fixed|installed|own|have)\b",
+    _re.IGNORECASE,
+)
+
+
+def _derive_fact_tags(content: str, meta: dict) -> list[str]:
+    """Compute tags at L0 FACT write time.
+
+    Tags surface cross-layer semantic signals:
+      - date_bearing: contains an explicit date or session_date
+      - amount: mentions money
+      - ownership: user-ownership verb pattern
+    Subclassers can extend. Kept cheap (regex only) — LLM-based tagging
+    happens elsewhere (KG, numeric aggregator) and adds its own tags
+    via metadata.
+    """
+    tags: list[str] = []
+    text = content or ""
+    if _DATE_TOKEN_RE.search(text) or (meta.get("session_date") and not meta.get("__suppress_date_tag")):
+        tags.append("date_bearing")
+    if _AMOUNT_TOKEN_RE.search(text):
+        tags.append("amount")
+    if _OWN_VERBS_RE.search(text):
+        tags.append("ownership")
+    return tags
+
+
 def _format_memories(memories: list, max_items: int = 25) -> str:
     """Render retrieved memories into a block for trinity evidence."""
     if not memories:
@@ -424,6 +464,7 @@ class RadioMind:
                 user_id=user_id,
                 agent_id=agent_id,
                 session_id=session_id,
+                tags=_derive_fact_tags(content, meta),
             )
             if "created_at" in meta:
                 try:
@@ -535,6 +576,79 @@ class RadioMind:
             except Exception:
                 pass
 
+        # User profile extraction: LLM batch over user turns to pull out
+        # who/how/what fragments. Language-agnostic; replaces the Chinese
+        # regex path which silently produced empty profiles on English
+        # haystacks. Merged into the persisted profile for later answer
+        # time `profile_hint()` injection.
+        profile_fragments_count = 0
+        if self._llm is not None and self._llm.is_available() and user_turns_for_kg:
+            try:
+                from radiomind.meta.profile_extractor import extract_batch as _prof_extract
+                _meta_by_mid_for_prof = {}
+                for (entry, content, role), t in zip(pending, turns):
+                    _meta_by_mid_for_prof[content] = dict(t.get("metadata") or {})
+                prof_turns = [
+                    (mid, content, _meta_by_mid_for_prof.get(content, {}))
+                    for mid, content in user_turns_for_kg
+                ]
+                fragments = _prof_extract(prof_turns, self._llm)
+                if any(fragments.get(k) for k in ("who", "how", "what")):
+                    if self._meta.merge_profile_fragments(fragments):
+                        profile_fragments_count = (
+                            len(fragments.get("who") or {})
+                            + sum(len(v) if isinstance(v, list) else 1
+                                  for v in (fragments.get("how") or {}).values())
+                            + sum(len(v) if isinstance(v, list) else 1
+                                  for v in (fragments.get("what") or {}).values())
+                        )
+            except Exception:
+                pass
+
+        # Temporal anchor extraction: scan user turns for dated events
+        # and write them as L2 PATTERN entries with kind=temporal_anchor.
+        # Dates are sparse (~5-15 per 500-turn haystack) so query-side
+        # temporal skill can O(anchors) instead of O(500).
+        temporal_anchors = 0
+        if self._llm is not None and self._llm.is_available() and user_turns_for_kg:
+            try:
+                from radiomind.refinement.temporal_anchor import extract as _extract_anchors
+                # Reuse the meta_by_mid map we built for numeric aggregator
+                _meta_by_mid_for_anchors = {}
+                for (entry, content, role), t in zip(pending, turns):
+                    _meta_by_mid_for_anchors[content] = dict(t.get("metadata") or {})
+                anchor_turns = [
+                    (mid, content, _meta_by_mid_for_anchors.get(content, {}))
+                    for mid, content in user_turns_for_kg
+                ]
+                anchors = _extract_anchors(anchor_turns, self._llm)
+                for a in anchors:
+                    dom = next(iter(domains_touched)) if domains_touched else (domain or "")
+                    entry = MemoryEntry(
+                        content=f"event: {a.event} [date={a.date}]",
+                        domain=dom,
+                        level=MemoryLevel.PATTERN,
+                        user_id=user_id,
+                        agent_id=agent_id,
+                        session_id=session_id,
+                        metadata={
+                            "kind": "temporal_anchor",
+                            "event": a.event,
+                            "event_date": a.date,
+                            "source_turn_id": a.turn_id,
+                        },
+                        tags=["temporal_anchor", "date_bearing"],
+                    )
+                    if self._embedder is not None:
+                        try:
+                            entry.embedding = self._embedder.encode(entry.content)
+                        except Exception:
+                            pass
+                    if self._store.add(entry, dedup=False) > 0:
+                        temporal_anchors += 1
+            except Exception:
+                pass
+
         aggregations: dict[str, int] = {}
         if run_aggregation and self._llm is not None and self._llm.is_available():
             for dom in domains_touched:
@@ -586,6 +700,8 @@ class RadioMind:
             "domains": sorted(domains_touched),
             "aggregations": aggregations,
             "cardinal_updates": cardinal_updates,
+            "temporal_anchors": temporal_anchors,
+            "profile_fragments": profile_fragments_count,
             "refinement_insights": refinement_insights,
         }
 
@@ -757,23 +873,26 @@ class RadioMind:
 
         from radiomind.core.attention import analyze
         from radiomind.refinement.trinity import debate
+        from radiomind.skills import try_resolve as try_skill
 
         sig = analyze(query)
 
-        # Structured layer first: deterministic temporal arithmetic over
-        # session_date metadata when the question reduces to date subtraction.
-        # Falls through to trinity only when the resolver can't identify
-        # anchor events. This is architectural layering — not a trinity bypass.
-        if sig.wants == "date":
-            from radiomind.refinement import temporal_resolver
-            tr = temporal_resolver.resolve(
-                query=query,
-                retrieved=retrieved_memories,
-                reference_date=reference_date,
-                answer_shape=sig.answer_shape,
-            )
-            if tr is not None:
-                return temporal_resolver.format_prefix(tr)
+        # Structured layer first: skills registry (temporal arithmetic,
+        # cardinality, etc.). Each skill declares its match() and returns
+        # None when it can't solve — we fall through to trinity then.
+        skill_result = try_skill(
+            query=query,
+            memories=retrieved_memories,
+            signature=sig,
+            context={
+                "mind": self,
+                "reference_date": reference_date,
+                "domain": "",
+                "user_id": "",
+            },
+        )
+        if skill_result is not None:
+            return skill_result.prefix()
 
         task = _task_description_for(sig, query, reference_date)
         if task is None:
@@ -881,6 +1000,40 @@ class RadioMind:
         return self._numeric_agg.list_all(user_id=user_id, domain=domain)
 
     # --- Meta ---
+
+    def record_answer_outcome(
+        self,
+        query: str,
+        evidence_count: int,
+        abstained: bool = False,
+        correct: bool | None = None,
+    ) -> None:
+        """Append one answer outcome to behavior log (feeds dynamic calibration)."""
+        self._check_init()
+        if self._meta is None:
+            return
+        try:
+            from radiomind.core.attention import analyze
+            sig = analyze(query)
+            self._meta.behavior.record(
+                wants=sig.wants,
+                answer_shape=sig.answer_shape,
+                evidence_count=int(evidence_count or 0),
+                abstained=abstained,
+                correct=correct,
+            )
+        except Exception:
+            pass
+
+    def profile_hint(self, query: str) -> str:
+        """Answer-side user-context prefix (empty when query isn't preference-anchored)."""
+        self._check_init()
+        if self._meta is None:
+            return ""
+        try:
+            return self._meta.profile_hint(query)
+        except Exception:
+            return ""
 
     def get_meta_calibration(self) -> str:
         """Meta-layer answer calibration hint.

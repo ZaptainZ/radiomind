@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS memories (
     user_id TEXT NOT NULL DEFAULT '',
     agent_id TEXT NOT NULL DEFAULT '',
     session_id TEXT NOT NULL DEFAULT '',
-    metadata TEXT NOT NULL DEFAULT '{}'
+    metadata TEXT NOT NULL DEFAULT '{}',
+    tags TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS memory_history (
@@ -137,8 +138,8 @@ class MemoryStore:
             """INSERT INTO memories
                (content, domain, timestamp, level, parent_id, status, privacy, embedding,
                 hit_count, last_hit_at, decay_count, created_at, updated_at,
-                user_id, agent_id, session_id, metadata)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                user_id, agent_id, session_id, metadata, tags)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 entry.content,
                 entry.domain,
@@ -157,6 +158,7 @@ class MemoryStore:
                 entry.agent_id,
                 entry.session_id,
                 json.dumps(entry.metadata),
+                ",".join(entry.tags) if entry.tags else "",
             ),
         )
         row_id = cur.lastrowid
@@ -200,8 +202,8 @@ class MemoryStore:
                 """INSERT INTO memories
                    (content, domain, timestamp, level, parent_id, status, privacy, embedding,
                     hit_count, last_hit_at, decay_count, created_at, updated_at,
-                    user_id, agent_id, session_id, metadata)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    user_id, agent_id, session_id, metadata, tags)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     entry.content, entry.domain, entry.created_at,
                     int(entry.level), entry.parent_id,
@@ -210,6 +212,7 @@ class MemoryStore:
                     entry.created_at, entry.updated_at or entry.created_at,
                     entry.user_id, entry.agent_id, entry.session_id,
                     json.dumps(entry.metadata),
+                    ",".join(entry.tags) if entry.tags else "",
                 ),
             )
             row_id = cur.lastrowid
@@ -264,7 +267,7 @@ class MemoryStore:
             """UPDATE memories SET content=?, domain=?, level=?, parent_id=?,
                status=?, privacy=?, embedding=?, hit_count=?, last_hit_at=?,
                decay_count=?, updated_at=?, user_id=?, agent_id=?, session_id=?,
-               metadata=?
+               metadata=?, tags=?
                WHERE id=?""",
             (
                 entry.content,
@@ -282,6 +285,7 @@ class MemoryStore:
                 entry.agent_id,
                 entry.session_id,
                 json.dumps(entry.metadata),
+                ",".join(entry.tags) if entry.tags else "",
                 entry.id,
             ),
         )
@@ -604,4 +608,8 @@ class MemoryStore:
             agent_id=row["agent_id"] if "agent_id" in keys else "",
             session_id=row["session_id"] if "session_id" in keys else "",
             metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+            tags=(
+                [t for t in row["tags"].split(",") if t]
+                if "tags" in keys and row["tags"] else []
+            ),
         )

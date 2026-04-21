@@ -411,6 +411,12 @@ def run(
         except Exception:
             pass
 
+        profile_section = ""
+        try:
+            profile_section = mind.profile_hint(query=question)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
         # before memories so raw turns remain the model's last-seen
@@ -447,6 +453,8 @@ def run(
             ans_prompt = temporal_section + ans_prompt
         if open_domain_section:
             ans_prompt = open_domain_section + ans_prompt
+        if profile_section:
+            ans_prompt = profile_section + ans_prompt
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()
@@ -500,6 +508,17 @@ def run(
                 is_correct = ("correct" in tail) and ("wrong" not in tail)
         except Exception as e:
             verdict = f"[judge error: {e}]"
+
+        try:
+            from radiomind.refinement.salvage import looks_abstained as _abstained
+            mind.record_answer_outcome(
+                query=question,
+                evidence_count=len(mem_results),
+                abstained=_abstained(answer or ""),
+                correct=is_correct,
+            )
+        except Exception:
+            pass
 
         cat_name = CATEGORY_NAMES.get(category, str(category))
         overall["n"] += 1

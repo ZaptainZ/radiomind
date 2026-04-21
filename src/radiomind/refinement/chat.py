@@ -1,12 +1,10 @@
-"""Chat Refinement — Three-Body Debate (三体博弈).
+"""Chat Refinement — habit mining via trinity.
 
-Inspired by Three Kingdoms: three agents with competing interests
-produce more robust insights than two. (ICLR 2025 DMAD: 91% vs 82%)
-
-Roles:
-  Guardian (魏) — rewards consistency with existing habits
-  Explorer (吴) — rewards novelty and new patterns
-  Reducer  (蜀) — rewards parsimony and merging
+Three-way debate is the primitive. The three opposing stances here are
+natural tensions of habit mining: consistency (what aligns with existing
+habits?) vs novelty (unexpected patterns?) vs parsimony (merge-redundant).
+The LLM picks and labels those stances per-call; we don't hardcode role
+names.
 """
 
 from __future__ import annotations
@@ -18,58 +16,6 @@ from radiomind.core.llm import LLMRouter
 from radiomind.core.types import Habit, MemoryEntry, MemoryStatus, RefinementResult
 from radiomind.storage.database import MemoryStore
 from radiomind.storage.hdc import HabitStore
-
-GUARDIAN_SYSTEM = """You are the Guardian (守护者). Your goal is CONSISTENCY.
-Evaluate whether the new memories align with existing habits and knowledge.
-Flag contradictions. Reinforce what fits.
-Every claim you make MUST cite evidence from the listed memories.
-Respond in the user's language, concisely."""
-
-EXPLORER_SYSTEM = """You are the Explorer (探索者). Your goal is NOVELTY.
-Find patterns, unexpected connections, fresh insights.
-Every claim you make MUST cite evidence from the listed memories.
-Respond in the user's language, concisely."""
-
-REDUCER_SYSTEM = """You are the Reducer (精简者). Your goal is PARSIMONY.
-Identify redundancy; argue for merging or removing.
-Every claim you make MUST cite evidence from the listed memories.
-Respond in the user's language, concisely."""
-
-DEBATE_PROMPT = """Here are the user's recent memories in the "{domain}" domain:
-
-{memories}
-
-Existing habits:
-{habits}
-
-As the {role}, analyze these memories using this exact structure:
-
-POSITION: <one-sentence stance>
-EVIDENCE: <reference specific memory lines or habits that support your position>
-ACTION: <add | strengthen | merge | remove — one concrete recommendation>
-FALSIFIER: <what future memory would prove your position wrong>
-
-Keep it tight."""
-
-SYNTHESIS_PROMPT = """Three analysts debated about user memories in the "{domain}" domain.
-
-Guardian (consistency): {guardian}
-
-Explorer (novelty): {explorer}
-
-Reducer (parsimony): {reducer}
-
-Extract 0-2 new insights worth remembering as habits. Each insight MUST have
-grounding in the evidence the debaters cited AND a condition that would
-disprove it (so we can re-evaluate later).
-
-Format EXACTLY:
-INSIGHT: <concise habit description>
-CONFIDENCE: <0.0-1.0>
-EVIDENCE: <which cited memories back this up>
-FALSIFIER: <future observation that would invalidate it>
-
-If nothing is worth adding, output: NONE"""
 
 
 @dataclass
@@ -145,123 +91,69 @@ class ChatRefinement:
         return self._llm.config.get("llm.ollama.model", "unknown")
 
     def _debate_round(self, domain: str) -> DebateRound:
+        """Mine habits from a domain via trinity.debate() — single LLM call."""
+        from radiomind.refinement.trinity import debate
+
         result = DebateRound(domain=domain)
         t0 = time.time()
 
-        # Pull a wider sample (80 vs 20) so long conversations — LoCoMo's
-        # 600-turn chats, LongMemEval's 500-turn haystacks — get a
-        # representative distribution in front of the three agents. The
-        # old limit=20 meant only the first 3% of a long conversation
-        # seeded debate, which produced generic pronouncements that
-        # displaced specific facts at retrieval time.
         memories = self._store.list_by_domain(domain, limit=80)
         if not memories:
             return result
 
         mem_text = "\n".join(f"- {m.content}" for m in memories[:60])
-        habit_text = "\n".join(f"- {h.description}" for h in self._habits.all_habits()) or "(none)"
+        habit_text = "\n".join(
+            f"- {h.description}" for h in self._habits.all_habits()
+        ) or "(none)"
 
-        guardian_model = self._cfg.get("guardian_model", "") or ""
-        explorer_model = self._cfg.get("explorer_model", "") or ""
-        reducer_model = self._cfg.get("reducer_model", "") or ""
-        guardian_backend = self._cfg.get("guardian_backend", "") or ""
-        explorer_backend = self._cfg.get("explorer_backend", "") or ""
-        reducer_backend = self._cfg.get("reducer_backend", "") or ""
-
-        # Three agents speak. The three calls are independent — no shared
-        # state between Guardian / Explorer / Reducer turns — so we fan them
-        # out to a ThreadPoolExecutor. On a sequential backend (one Ollama
-        # server) this is a wash; on heterogeneous backends (Guardian =
-        # local, Explorer = cloud) it's a real 3× latency win.
-        from concurrent.futures import ThreadPoolExecutor
-
-        speakers = [
-            ("Guardian", GUARDIAN_SYSTEM, guardian_model, guardian_backend),
-            ("Explorer", EXPLORER_SYSTEM, explorer_model, explorer_backend),
-            ("Reducer", REDUCER_SYSTEM, reducer_model, reducer_backend),
-        ]
-        with ThreadPoolExecutor(max_workers=3) as ex:
-            futures = [
-                ex.submit(self._speak, role, domain, mem_text, habit_text, sys_prompt, model, backend)
-                for role, sys_prompt, model, backend in speakers
-            ]
-            result.guardian_response = futures[0].result()
-            result.explorer_response = futures[1].result()
-            result.reducer_response = futures[2].result()
-
-        # Synthesize
-        synth_prompt = SYNTHESIS_PROMPT.format(
-            domain=domain,
-            guardian=result.guardian_response,
-            explorer=result.explorer_response,
-            reducer=result.reducer_response,
+        debate_result = debate(
+            task=(
+                f"Mine 0-2 durable habit insights about the user from the "
+                f"memories in the '{domain}' domain. Tensions: consistency "
+                f"(what reinforces existing habits?) vs novelty (patterns "
+                f"not yet captured?) vs parsimony (merge-redundant / "
+                f"simplest explanation).\n"
+                f"Existing habits:\n{habit_text}\n"
+                f"Each insight MUST have evidence (cite memory text) and "
+                f"a falsifier (what future memory would invalidate it). "
+                f"Output [] when nothing durable emerges."
+            ),
+            evidence=mem_text,
+            llm=self._llm,
+            extra_schema=(
+                '  "insights": [{"description": str, "confidence": float, '
+                '"evidence": str, "falsifier": str}]'
+            ),
         )
-        try:
-            resp = self._llm.generate(synth_prompt, system="You extract insights from debates.")
-            result.synthesis = resp.text
-            result.tokens_used = resp.tokens_prompt + resp.tokens_completion
-            result.insights = self._parse_insights(resp.text)
-        except Exception as e:
-            result.synthesis = f"[synthesis failed: {e}]"
-
         result.duration_s = time.time() - t0
+        if not debate_result:
+            result.synthesis = "[debate returned nothing]"
+            return result
+
+        result.synthesis = str(debate_result.get("final_answer") or "")
+        insights_raw = debate_result.get("insights") or []
+        if not isinstance(insights_raw, list):
+            insights_raw = []
+        parsed: list[Habit] = []
+        for item in insights_raw:
+            if not isinstance(item, dict):
+                continue
+            desc = str(item.get("description") or "").strip()
+            if not desc:
+                continue
+            try:
+                conf = float(item.get("confidence") or 0.5)
+            except (TypeError, ValueError):
+                conf = 0.5
+            parsed.append(Habit(
+                description=desc,
+                status=MemoryStatus.CANDIDATE,
+                confidence=min(max(conf, 0.0), 1.0),
+                evidence=str(item.get("evidence") or "")[:300],
+                falsifier=str(item.get("falsifier") or "")[:200],
+            ))
+        result.insights = parsed
         return result
-
-    def _speak(
-        self, role: str, domain: str, memories: str, habits: str,
-        system: str, model: str, backend: str = "",
-    ) -> str:
-        prompt = DEBATE_PROMPT.format(
-            domain=domain, memories=memories, habits=habits, role=role
-        )
-        try:
-            resp = self._llm.generate(prompt, system=system, model=model, backend=backend)
-            return resp.text.strip()
-        except Exception as e:
-            return f"[{role} unavailable: {e}]"
-
-    def _parse_insights(self, text: str) -> list[Habit]:
-        if text.strip().upper().startswith("NONE") or "\nNONE" in text.upper():
-            return []
-
-        insights = []
-        lines = text.strip().split("\n")
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            if line.upper().startswith("INSIGHT:"):
-                desc = line[len("INSIGHT:"):].strip()
-                confidence = 0.5
-                evidence = ""
-                falsifier = ""
-                # Look ahead up to 4 lines for attribute fields
-                j = i + 1
-                while j < len(lines) and j <= i + 4:
-                    up = lines[j].strip()
-                    up_upper = up.upper()
-                    if up_upper.startswith("CONFIDENCE:"):
-                        try:
-                            confidence = float(up.split(":", 1)[1].strip())
-                        except ValueError:
-                            pass
-                    elif up_upper.startswith("EVIDENCE:"):
-                        evidence = up.split(":", 1)[1].strip()
-                    elif up_upper.startswith("FALSIFIER:"):
-                        falsifier = up.split(":", 1)[1].strip()
-                    elif up_upper.startswith("INSIGHT:"):
-                        break
-                    j += 1
-                i = j - 1
-                if desc:
-                    insights.append(Habit(
-                        description=desc,
-                        status=MemoryStatus.CANDIDATE,
-                        confidence=min(max(confidence, 0.0), 1.0),
-                        evidence=evidence,
-                        falsifier=falsifier,
-                    ))
-            i += 1
-        return insights
 
     def _get_active_domains(self) -> list[str]:
         domains = self._store.list_domains()

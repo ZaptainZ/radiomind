@@ -54,6 +54,7 @@ class MemoryEntry:
     agent_id: str = ""
     session_id: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass

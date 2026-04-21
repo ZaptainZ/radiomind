@@ -1,41 +1,19 @@
-"""On-demand three-body salvage — the answer-side safety net.
+"""Answer-side salvage — trinity fallback when the answer model abstains.
 
-Completes the "三体 + 注意力 everywhere" doctrine. Current pipeline:
-  ingest → three-body refinement (✓ done)
-  aggregate → three-body aggregator (✓ done, upward)
-  retrieve → attention-aware level routing (✓ done, downward)
-  answer → (vanilla LLM call)
-         ↑ THIS LAYER was still a single-shot black box. If the answer
-           model abstains ("information not enough"), we accept the loss.
-
-This module adds the missing final layer: when the answer layer
-abstains on a question where retrieval DID return plausible evidence,
-trigger a focused three-body debate to salvage a best-guess.
-
-- Guardian: lists what the evidence DOES support explicitly
-- Explorer: considers what plausible inference is unlocked by the
-  evidence even if nothing states it verbatim
-- Reducer: picks the best-guess answer + confidence, or confirms that
-  true abstention is warranted
-
-Output replaces the original answer when Reducer delivers a commit;
-otherwise keeps the abstention (true "we don't know"). No new ingest,
-no new storage — this is a query-time safety net only.
+When the answer model says "information not enough" but retrieval DID
+return plausible evidence, run a trinity debate to decide whether to
+commit a best-guess or confirm true abstention. Three opposing stances:
+literal-support vs plausible-inference vs strict-abstain — chosen by
+the trinity primitive per call.
 """
 from __future__ import annotations
 
-import json
-import re
 from dataclasses import dataclass
 from typing import Callable
 
 from radiomind.core.types import SearchResult
 
 
-# Phrases indicating the answer model abstained. These are the triggers
-# for salvage — if the answer contains any of these, we consider running
-# trinity fallback. Conservative list: we want to salvage "I don't know"
-# but NOT "this is not X" (genuine contradictions).
 _ABSTAIN_PATTERNS = (
     "information is not enough",
     "information provided is not enough",
@@ -72,49 +50,6 @@ def looks_abstained(answer: str) -> bool:
     return any(p in low for p in _ABSTAIN_PATTERNS)
 
 
-_SALVAGE_GUARDIAN = """You are the Guardian. The answer model just abstained on this question:
-Q: {question}
-
-Retrieved memories (what we have):
-{memories}
-
-Task: list ONLY what the memories EXPLICITLY support about this question. Do NOT guess. Cite the turn_id for each claim.
-
-Output JSON: {{"explicit_claims": [{{"claim": "...", "from": "turn_id"}}, ...], "strongest_signal": "..."}}"""
-
-_SALVAGE_EXPLORER = """You are the Explorer. The answer model just abstained on this question:
-Q: {question}
-
-Retrieved memories:
-{memories}
-
-Task: find the BEST plausible inference. Loosen the bar — if a memory nearly answers the question, propose the answer that fits even if not stated verbatim. Consider patterns, lifestyle signals, world knowledge, default assumptions.
-
-Output JSON: {{"plausible_answers": [{{"answer": "...", "reason": "...", "confidence": 0.6}}, ...]}}
-
-Include up to 3 candidates, sorted by confidence."""
-
-_SALVAGE_REDUCER = """You are the Reducer. The answer model abstained on:
-Q: {question}
-
-Guardian's explicit claims:
-{guardian}
-
-Explorer's plausible inferences:
-{explorer}
-
-Decide: is this a case for committing to a best-guess, or is true abstention warranted?
-
-Rules:
-- If Guardian has explicit claims that actually answer the question → commit to that answer.
-- If Explorer's top inference has confidence >= 0.6 AND is supported by at least 2 pieces of evidence → commit.
-- If the question is truly unanswerable from the memories → keep abstention.
-- For questions asking "what might / what could / who likely" → it's an inference question and strong Explorer candidate should commit.
-
-Output JSON:
-{{"decision": "commit"|"abstain", "answer": "<final answer text if commit, else empty>", "reason": "<one sentence>", "confidence": 0-1}}"""
-
-
 @dataclass
 class SalvageResult:
     committed: bool
@@ -124,12 +59,7 @@ class SalvageResult:
 
 
 class AbstentionSalvager:
-    """Query-time trinity fallback for answer-layer abstentions.
-
-    Sits AFTER the answer LLM call — if the answer is an abstention AND
-    retrieval returned evidence, this fires a 3-call trinity debate to
-    produce a best-guess answer.
-    """
+    """Query-time trinity fallback for answer-layer abstentions."""
 
     def __init__(self, llm_fn: Callable[[str, str], str]):
         """llm_fn: (prompt, system) → response text."""
@@ -142,58 +72,54 @@ class AbstentionSalvager:
         retrieved: list[SearchResult],
         max_mem_lines: int = 40,
     ) -> SalvageResult | None:
-        """Return salvaged answer if trinity commits, else None to preserve original."""
         if not looks_abstained(answer):
             return None
         if not retrieved:
             return None
 
+        from radiomind.refinement.trinity import debate
+
         mem_text = self._format_memories(retrieved[:max_mem_lines])
-
-        # Parallel Guardian + Explorer
-        from concurrent.futures import ThreadPoolExecutor
-        g_prompt = _SALVAGE_GUARDIAN.format(question=question, memories=mem_text)
-        e_prompt = _SALVAGE_EXPLORER.format(question=question, memories=mem_text)
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            g_fut = ex.submit(self._call, g_prompt, "Guardian")
-            e_fut = ex.submit(self._call, e_prompt, "Explorer")
-            guardian_raw = g_fut.result()
-            explorer_raw = e_fut.result()
-
-        guardian = self._parse_json(guardian_raw) or {}
-        explorer = self._parse_json(explorer_raw) or {}
-        if not guardian and not explorer:
-            return None
-
-        r_prompt = _SALVAGE_REDUCER.format(
-            question=question,
-            guardian=json.dumps(guardian, ensure_ascii=False)[:1500],
-            explorer=json.dumps(explorer, ensure_ascii=False)[:1500],
+        result = debate(
+            task=(
+                f"The answer model abstained on this question with "
+                f"'insufficient' language, but evidence is present. Decide "
+                f"whether to commit a best-guess or confirm true abstention.\n"
+                f"Tensions: literal-support (only what's EXPLICITLY stated) "
+                f"vs plausible-inference (pattern + world-knowledge "
+                f"inference when not stated verbatim) vs strict-abstain "
+                f"(genuine ambiguity).\n"
+                f"Commit when Explorer-style inference has confidence ≥ 0.6 "
+                f"AND ≥ 2 memory citations; or when Guardian-style explicit "
+                f"claims actually answer the question. 'What might / could / "
+                f"likely' questions are inference-type — prefer commit on "
+                f"strong Explorer candidates.\n"
+                f"Question: {question}"
+            ),
+            evidence=mem_text,
+            llm=_CallableBackend(self._llm),
+            extra_schema=(
+                '  "decision": "commit"|"abstain",\n'
+                '  "committed_answer": str (empty if abstain),\n'
+                '  "confidence": float'
+            ),
         )
-        reducer_raw = self._call(r_prompt, "Reducer")
-        reducer = self._parse_json(reducer_raw) or {}
-        if not reducer:
+        if not result:
             return None
-
-        decision = str(reducer.get("decision", "")).lower()
-        final_answer = str(reducer.get("answer", "")).strip()
-        if decision == "commit" and final_answer:
-            return SalvageResult(
-                committed=True,
-                answer=final_answer,
-                reason=str(reducer.get("reason", "")),
-                confidence=float(reducer.get("confidence", 0.7)),
-            )
-        # Abstention confirmed — return None so caller keeps the original
-        return None
-
-    # --- internals ---
-
-    def _call(self, prompt: str, role: str) -> str:
+        decision = str(result.get("decision") or "").lower()
+        committed_answer = str(result.get("committed_answer") or "").strip()
+        if decision != "commit" or not committed_answer:
+            return None
         try:
-            return self._llm(prompt, f"You are the {role}. Output strict JSON only.") or ""
-        except Exception:
-            return ""
+            conf = float(result.get("confidence") or 0.7)
+        except (TypeError, ValueError):
+            conf = 0.7
+        return SalvageResult(
+            committed=True,
+            answer=committed_answer,
+            reason=str(result.get("final_answer") or "")[:200],
+            confidence=conf,
+        )
 
     @staticmethod
     def _format_memories(results: list[SearchResult]) -> str:
@@ -208,19 +134,20 @@ class AbstentionSalvager:
             lines.append(f"{prefix} {r.entry.content}")
         return "\n".join(lines)
 
-    @staticmethod
-    def _parse_json(raw: str) -> dict | None:
-        if not raw:
-            return None
-        text = raw.strip()
-        if text.startswith("```"):
-            text = re.sub(r"^```(?:json|JSON)?\s*\n?", "", text)
-            text = re.sub(r"\n?```\s*$", "", text).strip()
-        start = text.find("{")
-        end = text.rfind("}")
-        if start < 0 or end <= start:
-            return None
-        try:
-            return json.loads(text[start : end + 1])
-        except Exception:
-            return None
+
+class _CallableBackend:
+    """Adapter: trinity.debate expects `.generate(prompt, system)` OR a
+    bare callable. The salvager gets a bare callable, so we wrap it in
+    an object with `.generate`."""
+    def __init__(self, fn):
+        self._fn = fn
+
+    def generate(self, prompt, system=""):
+        class _R:
+            pass
+        r = _R()
+        r.text = self._fn(prompt, system) or ""
+        return r
+
+    def is_available(self):
+        return True
