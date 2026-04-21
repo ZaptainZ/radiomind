@@ -29,22 +29,54 @@ from radiomind.storage.knowledge_graph import KnowledgeGraph
 from radiomind.storage.pyramid import PyramidAggregator, PyramidSearch
 
 
+_ANSWER_SHAPE_GUIDANCE = {
+    "relative_offset": (
+        "The answer must be phrased as a RELATIVE OFFSET "
+        "(e.g. '7 days ago', '3 weeks ago', '2 months since X'). "
+        "Do NOT give an absolute date like 'March 12, 2023'."
+    ),
+    "absolute_date": (
+        "The answer must be an ABSOLUTE DATE "
+        "(e.g. 'October 25, 2022', '2023-04-10'). "
+        "Do NOT give a relative offset."
+    ),
+    "duration": (
+        "The answer must be a DURATION "
+        "(e.g. '4 hours', '3 weeks', '9 months'). "
+        "No specific dates unless asked."
+    ),
+    "number": "The answer must be an integer count only (e.g. '4', '10').",
+    "amount": "The answer must be a dollar amount (e.g. '$3,750').",
+    "named_entity": (
+        "The answer must be a SPECIFIC NAMED ENTITY the evidence mentions "
+        "(book title, person name, place, product name — not a generic "
+        "description). If no specific entity is present, say 'insufficient'."
+    ),
+    "list": "The answer must be an enumerated list.",
+}
+
+
 def _task_description_for(sig, query: str, reference_date: str) -> str | None:
     """Translate an AttentionSignature into a task prompt for trinity.
 
-    Each wants shape surfaces different tensions — the task description
-    names those tensions without naming specific stance labels. The LLM
-    picks the three opposing stances from them.
+    Each wants shape surfaces a different tension; the answer_shape
+    adds a formatting constraint. The LLM picks the three opposing
+    stances per call — we only name the tension and the required output.
     """
     wants = sig.wants
+    if wants not in ("date", "inference", "detail"):
+        return None
+    shape_hint = _ANSWER_SHAPE_GUIDANCE.get(sig.answer_shape, "")
+    shape_line = f"\nAnswer-shape constraint: {shape_hint}" if shape_hint else ""
+
     if wants == "date":
         return (
-            f"Answer this temporal precision question from the evidence. "
-            f"Reference date (today): {reference_date or 'unknown'}. "
+            f"Answer this temporal question from the evidence. "
+            f"Reference date (today): {reference_date or 'unknown'}.\n"
             f"Tensions to triangulate: anchor-based (specific dated events) "
             f"vs chain-based (multi-event timeline) vs window-based "
-            f"(approximate range when exact dates are missing). "
-            f"Question: {query}"
+            f"(approximate range when exact dates are missing).\n"
+            f"Question: {query}{shape_line}"
         )
     if wants == "inference":
         return (
@@ -52,15 +84,16 @@ def _task_description_for(sig, query: str, reference_date: str) -> str | None:
             f"entity the evidence actually mentions. Tensions to triangulate: "
             f"literal-evidence (pick what's directly said) vs inferred-fit "
             f"(pick what best matches user's known preferences) vs "
-            f"abstention-safe (say 'insufficient' rather than invent). "
-            f"Question: {query}"
+            f"abstention-safe (say 'insufficient' rather than invent).\n"
+            f"Question: {query}{shape_line}"
         )
     if wants == "detail":
         return (
             f"Answer this specific-detail question about a named subject. "
             f"Tensions to triangulate: exact-mention (pick the memory that "
             f"literally names the attribute) vs nearby-inference (the "
-            f"memory implies it) vs insufficient-abstain. Question: {query}"
+            f"memory implies it) vs insufficient-abstain.\n"
+            f"Question: {query}{shape_line}"
         )
     return None
 
@@ -726,6 +759,22 @@ class RadioMind:
         from radiomind.refinement.trinity import debate
 
         sig = analyze(query)
+
+        # Structured layer first: deterministic temporal arithmetic over
+        # session_date metadata when the question reduces to date subtraction.
+        # Falls through to trinity only when the resolver can't identify
+        # anchor events. This is architectural layering — not a trinity bypass.
+        if sig.wants == "date":
+            from radiomind.refinement import temporal_resolver
+            tr = temporal_resolver.resolve(
+                query=query,
+                retrieved=retrieved_memories,
+                reference_date=reference_date,
+                answer_shape=sig.answer_shape,
+            )
+            if tr is not None:
+                return temporal_resolver.format_prefix(tr)
+
         task = _task_description_for(sig, query, reference_date)
         if task is None:
             return ""

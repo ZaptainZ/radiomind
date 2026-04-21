@@ -124,6 +124,17 @@ class QueryDecomposer:
         if not self.is_available() or not retrieved:
             return []
 
+        # Evidence guard: if the focus entity (or any strong noun from the
+        # question) doesn't appear in any top-k content, there's nothing
+        # to decompose — emitting atoms here would invite the LLM to
+        # fabricate. Abstention-type questions ("how many pages left in
+        # Sapiens" when haystack has no Sapiens mention) must fall
+        # through to the answer model's "insufficient" verdict.
+        if not self._has_relevant_evidence(
+            question, focus, retrieved[:max_turns_in]
+        ):
+            return []
+
         # Build turn-id-prefixed memory block
         turns_text = self._format_turns(retrieved[:max_turns_in])
         focus_label = focus or "(inferred from question)"
@@ -223,6 +234,47 @@ class QueryDecomposer:
         return created
 
     # ---------- internals ----------
+
+    _STOP = {
+        "what", "which", "how", "when", "where", "who", "why", "do", "did",
+        "does", "have", "had", "has", "is", "are", "was", "were", "am", "my",
+        "your", "our", "their", "his", "her", "the", "a", "an", "of", "to",
+        "in", "on", "at", "for", "by", "with", "from", "as", "that", "this",
+        "many", "much", "long", "some", "any", "all",
+    }
+
+    @classmethod
+    def _question_noun_tokens(cls, question: str, focus: str | None) -> set[str]:
+        import re as _re
+        tokens = set()
+        if focus:
+            for t in _re.findall(r"[a-z0-9]+", focus.lower()):
+                if len(t) > 2 and t not in cls._STOP:
+                    tokens.add(t)
+        for t in _re.findall(r"[a-z0-9]+", (question or "").lower()):
+            if len(t) > 2 and t not in cls._STOP and not t.isdigit():
+                tokens.add(t)
+        return tokens
+
+    @classmethod
+    def _has_relevant_evidence(
+        cls, question: str, focus: str | None, retrieved: list[SearchResult],
+    ) -> bool:
+        """Refuse to decompose when top-k carries no content relevant to the question.
+
+        Requires at least one question noun-token to appear in some retrieved
+        turn's content. Tokens are filtered to content words (length > 2,
+        non-stop, non-digit); if the question yields zero such tokens
+        (degenerate), we keep the old permissive behavior.
+        """
+        needles = cls._question_noun_tokens(question, focus)
+        if not needles:
+            return True
+        for r in retrieved:
+            content = (r.entry.content or "").lower()
+            if any(n in content for n in needles):
+                return True
+        return False
 
     @staticmethod
     def _format_turns(retrieved: list[SearchResult]) -> str:

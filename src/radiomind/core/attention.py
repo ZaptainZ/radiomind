@@ -67,7 +67,10 @@ _CARDINAL_COUNT_RE = re.compile(
 _CARDINAL_CN_RE = re.compile(r"几(?:个|条|次|件|种|款|只|台|把|部)?|多少|总共|一共|总和|总数")
 
 _TEMPORAL_RE = re.compile(
-    r"\b(when|how\s+long|for\s+how\s+many\s+(?:days|weeks|months|years))\b",
+    r"\b(when|how\s+long|"
+    r"for\s+how\s+many\s+(?:days|weeks|months|years)|"
+    r"how\s+many\s+(?:days|weeks|months|years|hours|minutes|nights)\s+ago|"
+    r"how\s+many\s+(?:days|weeks|months|years)\s+(?:passed|between|since|before|after|have))\b",
     re.IGNORECASE,
 )
 _OPEN_DOMAIN_RE = re.compile(
@@ -142,18 +145,82 @@ def extract_focus_entity(query: str) -> str | None:
 class AttentionSignature:
     """One dict of hints per query; downstream routes off this.
 
-    wants tells what SHAPE of answer the query targets:
-      "count"     — numeric count/total
-      "date"      — specific date or duration
-      "detail"    — specific attribute of a named subject
-      "inference" — open-domain hypothetical expecting a named entity
-      "lookup"    — default factoid
-    aux_flags adds orthogonal signals the wants doesn't capture
-    (e.g. {"disambiguation": True} when query mentions previous/current).
+    wants: query intent
+      "count" / "date" / "detail" / "inference" / "lookup"
+
+    answer_shape: the shape the *answer* should take (separate from wants
+    because two count queries can expect number vs list; two date queries
+    can expect absolute YYYY-MM-DD vs relative "N days ago"):
+      "number"          — integer / scalar
+      "amount"          — $X
+      "absolute_date"   — YYYY-MM-DD style
+      "relative_offset" — "N days ago", "3 weeks after X"
+      "duration"        — "5 hours", "2 months"
+      "named_entity"    — specific proper noun
+      "list"            — enumeration
+      "sentence"        — free text (default)
+
+    aux_flags: orthogonal signals not captured by wants/shape
+    (e.g. disambiguation, comparison).
     """
     focus: str | None
     wants: str
     aux_flags: dict[str, bool]
+    answer_shape: str = "sentence"
+
+
+# Answer-shape detectors — specific cues that a query expects a
+# particular answer form beyond the generic wants bucket.
+_RELATIVE_OFFSET_RE = re.compile(
+    r"\b(?:how\s+long\s+(?:ago|since)|"
+    r"how\s+many\s+(?:days?|weeks?|months?|years?|hours?)\s+ago|"
+    r"\bago\b|\bsince\s+|\bbefore\s+|\bafter\s+)",
+    re.IGNORECASE,
+)
+_DURATION_RE = re.compile(
+    r"\b(?:how\s+long\s+(?:did|does|have|had)|"
+    r"for\s+how\s+(?:long|many)|"
+    r"duration|how\s+much\s+time)\b",
+    re.IGNORECASE,
+)
+_ABSOLUTE_DATE_RE = re.compile(r"\bwhen\s+(?:did|was|were|is|does)\b", re.IGNORECASE)
+_AMOUNT_RE = re.compile(
+    r"\bhow\s+much\s+(?:money|\$|did\s+i\s+(?:raise|donate|earn|save|spend|pay))"
+    r"|\btotal\s+amount\b|\bhow\s+much\s+(?:in\s+total|altogether)",
+    re.IGNORECASE,
+)
+_LIST_RE = re.compile(r"\blist\s+(?:all|every|the)\b", re.IGNORECASE)
+_NAMED_ENTITY_RE = re.compile(
+    r"\b(?:what\s+is\s+(?:the\s+)?name|which\s+\w+\s+(?:did|does)|who)\b",
+    re.IGNORECASE,
+)
+
+
+def _answer_shape_for(query: str, wants: str) -> str:
+    """Derive the answer-shape hint from query surface + wants bucket."""
+    q = query or ""
+    if wants == "count":
+        if _AMOUNT_RE.search(q):
+            return "amount"
+        if _LIST_RE.search(q):
+            return "list"
+        return "number"
+    if wants == "date":
+        # Order matters: "how long ago" = relative_offset, not duration
+        if _RELATIVE_OFFSET_RE.search(q):
+            return "relative_offset"
+        if _DURATION_RE.search(q):
+            return "duration"
+        if _ABSOLUTE_DATE_RE.search(q):
+            return "absolute_date"
+        return "relative_offset"  # temporal default is relative
+    if wants == "inference":
+        return "named_entity"
+    if wants == "detail":
+        if _NAMED_ENTITY_RE.search(q):
+            return "named_entity"
+        return "sentence"
+    return "sentence"
 
 
 def analyze(query: str) -> AttentionSignature:
@@ -203,6 +270,7 @@ def analyze(query: str) -> AttentionSignature:
         focus=extract_focus_entity(query),
         wants=wants,
         aux_flags=aux,
+        answer_shape=_answer_shape_for(query, wants),
     )
 
 
