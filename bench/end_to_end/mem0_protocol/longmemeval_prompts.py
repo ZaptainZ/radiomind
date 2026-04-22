@@ -59,6 +59,13 @@ IMPORTANT — RECENCY vs RECOLLECTION: for "N ago" / "recent" / "last week/month
 - Recollection: "I remember attending X [on some past day]", "I previously went to X", "that X I did a while ago", "I mentioned X earlier". The event happened BEFORE the memory's session date — do NOT treat the memory date as the event date (even if an "event: X [date=...]" anchor shows that date, the anchor only records the date the user mentioned it, not when the event happened).
 When a memory says "I remember attending X on a Saturday" without a specific date, the event is some earlier Saturday, NOT the day of the memory. Prefer candidates where the user explicitly participated on/around the target window over recollections.
 
+IMPORTANT — CATEGORY-VENUE MATCHING: when the question asks "where was the [category] event" and multiple candidates match the time window, prefer the one whose venue name or event title literally contains category-defining words:
+- "art event" / "art-related" → prefer venues named "Museum of Art", "Gallery", "Art Center", or events titled with "Art", "Exhibition", "Exhibit"; a crafting retreat at a "farm stay" is a weaker match even if crafting is creative work.
+- "music event" → prefer "Concert Hall", "Arena", "Venue", or titled "Concert", "Recital"; an open-mic at a cafe is weaker.
+- "sports event" → prefer "Stadium", "Arena", "Field"; a park jog is weaker.
+- Same rule for cooking / language / science / etc.
+Pick the candidate where the venue/title itself declares the category — the gold answer was written by someone using strict category matching.
+
 Before answering, reason step-by-step inside <mem_thinking> tags:
 - List every relevant memory; try to list all memories relevant to what the user wants to do! Eg. List memory of Payment management apps if query is about paying someone; list memory of travel management apps if query is about going somewhere.
 
