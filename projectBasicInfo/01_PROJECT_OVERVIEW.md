@@ -211,6 +211,48 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 
 ---
 
+## 检索 provider 统一 + reranker 默认开启（2026-04-21）
+
+把 embedder 和 reranker 拧到同一根配置段 `[retrieval_provider]`：一个 base_url、一个 api_key、一个 enable 开关。同一供应商（DashScope / Jina / Voyage / Cohere / OpenRouter）embedder + reranker 一起装。新增 OpenRouter provider。Reranker 作为子开关 `use_reranker`，**默认 on**（对 A2A-practice 自然，A2A-strict 模式再显式关）。prompt 做了轻量调参，让 reranker 在 long-context 不被噪声拖垮。
+
+详见 `logs/2026-04-21-retrieval-provider-unify-cc.md`、`logs/2026-04-21-embedding-rerank-decouple-cc.md`。
+
+---
+
+## 激活架构通道 + Skill Fallback 链条（2026-04-21/22）
+
+**e98f69f：激活**。把前期实现但未接通的 S3 tag（`specific_detail_lookup` / `temporal_precision` / `open_domain_specific` / `numeric_cardinal`）接进端到端答题路径——每个 attention tag 配一条 trinity-style 管道，通过 `answer_hint` 前缀注入到最终 prompt。同时接通：profile extractor、temporal anchors、tag registry、meta calibration 在 `run_longmemeval_mem0.py` / `run_locomo_mem0.py` 里的 wiring。
+
+**c532063：Skill Fallback 链条**。以 `age_interval` skill 为典型案例落 **三层 fallback** 模板：
+
+```
+Tier 1: token-overlap 词面匹配（快，零成本）
+   ↓ 失败
+Tier 2: trinity semantic debate（LLM 语义对齐，中成本）
+   ↓ 失败  
+Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
+```
+
+典型救场场景：用户自介 "as a 32-year-old Digital Marketing Specialist"，和 "How many years older am I than when I graduated from college?" 零 token overlap，retrieval 取 top-200 也召不回——只有 store-scan 能拿到。
+
+配套：`mind.answer_hint` / `run_temporal_precision` / `run_open_domain_specific` 签名增 `domain` + `user_id`，thread 进 skill context 让 store-scan 按域限定。两条 bench harness 和新增 `regress_activated_channels.py` 都同步下传 domain。
+
+新 skill：
+- `src/radiomind/skills/age_interval.py`：年龄差/出生年计算，三层 fallback 模板
+- `src/radiomind/skills/chain_reasoning.py`：多步链式推理 decompose + sub + compose
+- `src/radiomind/skills/list_ordering.py`：有序列表的第 N 项/相对位置
+
+**回归**：`bench/end_to_end/regress_activated_channels.py` 支持 `REGRESS_QIDS=c18a7dc8,370a8ff4,...` 跑指定题，结果写 `activated-regress-results.json`（含 section bitmap + 前缀注入文本 + 截断 answer，便于定位是 skill 没触发还是 ingest 层数据不够）。
+
+**诊断结论**（3 道历史难题）：skill 层工作正常，剩余 gap 在 ingest 层：
+- profile_extractor 漏抽 self-ID 句式
+- temporal anchor extractor 的 ordinal 推理不稳
+- cardinal 答案 LLM 稳定性
+
+详见 `logs/2026-04-22-skill-fallback-escalation-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
@@ -863,7 +905,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 227 tests, ~8200 行代码 (Python 7276 + Rust 898), 25 commits
+- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 138 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
