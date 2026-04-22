@@ -1,17 +1,17 @@
 [
   {
-    "qid": "c18a7dc8",
-    "qtype": "multi-session",
+    "qid": "d6233ab6",
+    "qtype": "single-session-preference",
     "correct": true,
-    "answer": "<mem_thinking>\nRelevant memories:\n1. \"completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley [date=2023-05-26]\"\n2. \"I have a Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley, which I completed at the age of 25. [date=2023-05-26]\"\n3. \"current age (store self-ID) → 32\" (from the structured skill note)\n4. \"graduated from college → 2023-05-26\" (from the structured skill note)\n\nThe question: \"How many years older am I than when I graduated from college?\"\n\nInterpretation: This asks for the difference between my current age and my age at graduation.\n\nFrom memory 2: Age at graduation = 25.\nFrom structured skill/note: Current age = 32.\nComputation: 32 - 25 = 7 years older.\n\nThe structured skill note also directly states a computed answer of \"7\", which matches this calculation.\n\nAll information is consistent and from user-provided facts. No contradictions.\n</mem_thinking>\n\nYou are 7 years older now than when you graduated from college.",
-    "gold": "7",
+    "answer": "<mem_thinking>\nThe user asks about attending a high school reunion. I need to check memories for any mention of high school experiences, feelings about nostalgia, or related events.\n\nRelevant memories:\n- 2023/05/23: \"event: was part of the debate team in high school\" – indicates a positive high school activity.\n- 2023/05/23: \"I still remember the happy high school experiences such as being part of the debate team and taking advanced placement courses in economics.\" – user explicitly recalls happy high school memories.\n- 2023/05/23: \"Now, I am surprised that I will become a Economics major so soon.\" – user is transitioning to college, suggesting recent high school graduation? Actually, the user says \"will become a Economics major so soon,\" which implies they are about to start university, not that they graduated long ago. This suggests the user is likely a recent high school graduate or current college student. A high school reunion typically occurs years after graduation, not immediately. The user might be referring to a potential future reunion.\n\nThe question is about attending a high school reunion, which is typically for alumni years after graduation. The memories show the user has happy high school memories and is just starting college (Economics major). Given the timeline (2023), if the user graduated high school recently (likely 2022 or 2023), a reunion might not be imminent. However, the user asks if it would be a \"good idea,\" implying they are considering it.\n\nNo memo",
+    "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high",
     "sections": {
       "cardinal": false,
-      "temporal": true,
+      "temporal": false,
       "open_domain": false,
       "profile": false,
       "atomic": false
     },
-    "prefixed": "STRUCTURED SKILL (age_interval, conf=0.90): trust this unless retrieval explicitly contradicts.\n- graduated from college → 2023-05-26\n- current age (store self-ID) → 32\nComputed answer: 7\n\n"
+    "prefixed": ""
   }
 ]
