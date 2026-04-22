@@ -1,0 +1,47 @@
+[
+  {
+    "qid": "c18a7dc8",
+    "qtype": "multi-session",
+    "correct": false,
+    "answer": "<mem_thinking>\n1. Identify the relevant facts needed to answer \"How many years older am I than when I graduated from college?\":\n   - The user's age at graduation.\n   - The user's current age.\n   - Or, the graduation date and current date to compute years since graduation.\n\n2. Scan memories for graduation information:\n   - Memory from 2023/05/26: \"completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley [date=2023-05-26]\"\n   - In the same conversation on 2023/05/26, the user states: \"I have a Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley, which I completed at the age of 25.\"\n\n3. Therefore, the user graduated (completed degree) at age 25. The graduation event is recorded on 2023-05-26.\n\n4. Determine the user's current age. Today's date is 2023/05/30. The most recent memory is from 2023/05/26. No memory states the user's current age. We cannot infer the user's current age from the memories provided. We only know they were 25 when they graduated on 2023-05-26.\n\n5. Since the graduation was just 4 days ago (2023-05-26 to 2023-05-30), the user is currently still 25 years old (assuming birthday hasn't passed in this interval, but we lack that data). The question asks \"how many years older am I than when I graduated from college?\" The time elapsed since graduation is 4 days, which is 0 years. The user is 0 years older in terms of full",
+    "gold": "7",
+    "sections": {
+      "cardinal": false,
+      "temporal": true,
+      "open_domain": false,
+      "profile": false,
+      "atomic": false
+    },
+    "prefixed": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: 4 days older\n\n"
+  },
+  {
+    "qid": "370a8ff4",
+    "qtype": "temporal-reasoning",
+    "correct": false,
+    "answer": "<mem_thinking>\nRelevant memories:\n1. \"event: recovered from the flu [date=2023-01-19]\" (Memory from 2023/01/19)\n2. \"event: went on 10th jog outdoors [date=2023-04-10]\" (Memory from 2023/04/10)\n\nThe question asks: \"How many weeks had passed since I recovered from the flu when I went on my 10th jog outdoors?\"\n\nWe need to compute the interval between the recovery date (2023-01-19) and the jog date (2023-04-10).\n\nFirst, compute the number of days between these dates.\nFrom 2023-01-19 to 2023-04-10:\n- January: from Jan 19 to Jan 31 inclusive is 13 days.\n- February: 2023 is not a leap year, so 28 days.\n- March: 31 days.\n- April: up to April 10 is 10 days.\nTotal days = 13 + 28 + 31 + 10 = 82 days.\n\nNow convert to weeks: 82 days ÷ 7 = 11 weeks and 5 days? Let's verify: 11 weeks * 7 = 77 days, remainder 5 days. So 11 weeks and 5 days.\n\nBut check: Is the interval inclusive or exclusive? The question says \"weeks had passed since I recovered... when I went on my 10th jog\". Typically, \"since\" means the start date is not counted. If recovered on Jan 19, then on Jan 20, 1 day passed. So from Jan 19 to April 10: count days after Jan 19 up to and including April 10? Actually, \"since recovery when I went on jog\" means the time elapsed between recovery and the jog. So interval = (date of jog) - (date of recovery). That's 82 days as computed.\n\nBut let's double-check: From Jan 19 to April 10:\nJan 19 to Jan 20 = 1 day, Jan 19 to Jan 31 = 12 days? Wait, careful: If we count days after Jan 19:\nJan 20",
+    "gold": "15",
+    "sections": {
+      "cardinal": false,
+      "temporal": true,
+      "open_domain": false,
+      "profile": false,
+      "atomic": false
+    },
+    "prefixed": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: 11 weeks and 4 days had passed since recovering from the flu when going on the 10th jog outdoors.\n\n"
+  },
+  {
+    "qid": "gpt4_ab202e7f",
+    "qtype": "multi-session",
+    "correct": false,
+    "answer": "<mem_thinking>\nThe question asks: \"How many kitchen items did I replace or fix?\" I need to count all distinct kitchen items the user replaced or fixed, based on memories. I will scan all memories for events involving kitchen items being replaced, fixed, or repaired.\n\nRelevant memories:\n1. 2023-05-21: \"replaced worn-out kitchen mat with new one from IKEA\" (kitchen mat - replaced)\n2. 2023-05-26: \"got rid of old toaster and replaced it with a toaster oven\" (toaster oven - replaced toaster)\n3. 2023-05-21: \"replaced old kitchen faucet with a new Moen one\" (kitchen faucet - replaced)\n4. 2023-05-13: \"fixed the kitchen shelves\" (kitchen shelves - fixed)\n5. 2023-05-13: \"fixed kitchen shelves\" (duplicate of above, same item)\n6. 2023-05-21: \"cleaned kitchen counters\" (cleaning, not replace/fix)\n7. 2023-05-21: \"bought new kitchen mat from IKEA for front of sink\" (same as #1)\n8. 2023-05-21: \"got new toaster oven\" (same as #2)\n9. 2023-05-25: \"had recent bread-making adventure\" (not replace/fix)\n10. 2023-05-30: \"donated old coffee maker to Goodwill\" (donated, not replaced/fixed by user)\n11. 2023-05-21: \"got new faucet\" (same as #3)\n12. 2023-05-30: \"received fancy espresso machine as gift from sister\" (received as gift, not replaced/fixed)\n13. Other memories mention kitchen items like espresso machine (gift), but not replaced/fixed by user.\n\nAlso note: The user mentions \"replaced old kitchen faucet\" (2023-05-21), \"fixed kitchen shelves\" (2023-05-13), \"replaced kitchen mat\" (2023-05-21), \"rep",
+    "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shel",
+    "sections": {
+      "cardinal": true,
+      "temporal": false,
+      "open_domain": false,
+      "profile": false,
+      "atomic": false
+    },
+    "prefixed": "DRAFT CARDINAL VIEW (extracted at ingest-time — verify against the memories below; the count may include duplicates or misclassifications the extractor didn't catch. Trust memories over this draft on any conflict) [low-count — VERIFY by scanning the retrieved memories below; emit an updated count if more items of this class are mentioned than the cardinal view shows]:\n- kitchen_items: count=5 (mem"
+  }
+]

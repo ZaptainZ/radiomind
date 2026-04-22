@@ -36,7 +36,9 @@ def try_resolve(
 
 # Built-in registrations
 def _bootstrap() -> None:
-    from radiomind.skills import temporal, cardinality  # noqa: F401
+    from radiomind.skills import (  # noqa: F401
+        temporal, cardinality, age_interval, list_ordering, chain_reasoning,
+    )
 
 
 _bootstrap()

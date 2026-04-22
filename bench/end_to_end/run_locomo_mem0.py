@@ -400,13 +400,13 @@ def run(
         try:
             temporal_section = mind.run_temporal_precision(
                 query=question, retrieved_memories=mem_results,
-                reference_date=ref_human,
+                reference_date=ref_human, domain=domain,
             )
         except Exception:
             pass
         try:
             open_domain_section = mind.run_open_domain_specific(
-                query=question, retrieved_memories=mem_results,
+                query=question, retrieved_memories=mem_results, domain=domain,
             )
         except Exception:
             pass

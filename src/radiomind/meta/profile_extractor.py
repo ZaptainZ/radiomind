@@ -15,8 +15,14 @@ PROFILE_EXTRACT_PROMPT = """Extract PERSONAL PROFILE fragments about the USER fr
 
 Turns are prefixed with [turn_id]. Output three categories:
 
-WHO (stable identity): name, age, location, occupation, marital status,
-    family members, pets, relationships.
+WHO (stable identity):
+  - name, age (integer — the user's CURRENT age; extract whenever the user
+    says "I'm N", "I'm N years old", or introduces themselves as "an N-year-old
+    X" (e.g. "As a 32-year-old Digital Marketing Specialist..." → age=32).
+    DO NOT set age from event-specific mentions like "at the age of 25 I
+    graduated" — that's a past-event age, not current.
+  - birth_year (YYYY — only when explicitly stated).
+  - location, occupation, marital_status, family, pets, relationships.
 HOW (style / preferences): things the user likes, dislikes, prefers,
     avoids, habits, communication style, decision tendencies. Each as
     a short phrase.

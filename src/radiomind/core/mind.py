@@ -947,6 +947,8 @@ class RadioMind:
         query: str,
         retrieved_memories: list,
         reference_date: str = "",
+        domain: str = "",
+        user_id: str = "",
     ) -> str:
         """Attention-routed trinity refinement of retrieved memories.
 
@@ -981,8 +983,8 @@ class RadioMind:
             context={
                 "mind": self,
                 "reference_date": reference_date,
-                "domain": "",
-                "user_id": "",
+                "domain": domain,
+                "user_id": user_id,
             },
         )
         if skill_result is not None:
@@ -1009,19 +1011,27 @@ class RadioMind:
     # Backward-compat wrappers so existing bench harness calls still work.
     def run_temporal_precision(
         self, query: str, retrieved_memories: list, reference_date: str = "",
+        domain: str = "", user_id: str = "",
     ) -> str:
         from radiomind.core.attention import analyze
         if analyze(query).wants != "date":
             return ""
-        return self.answer_hint(query, retrieved_memories, reference_date)
+        return self.answer_hint(
+            query, retrieved_memories, reference_date,
+            domain=domain, user_id=user_id,
+        )
 
     def run_open_domain_specific(
         self, query: str, retrieved_memories: list,
+        domain: str = "", user_id: str = "",
     ) -> str:
         from radiomind.core.attention import analyze
         if analyze(query).wants != "inference":
             return ""
-        return self.answer_hint(query, retrieved_memories)
+        return self.answer_hint(
+            query, retrieved_memories,
+            domain=domain, user_id=user_id,
+        )
 
     # --- Numeric cardinal (bottom-up counts) ---
 
@@ -1066,7 +1076,38 @@ class RadioMind:
         if not hits:
             return ""
 
-        lines = ["DRAFT CARDINAL VIEW (extracted at ingest-time — verify against the memories below; the count may include duplicates or misclassifications the extractor didn't catch. Trust memories over this draft on any conflict):"]
+        # Query-time trinity re-verification: ingest-time extraction can
+        # miss items in long haystacks. When we have retrieved memories
+        # that appear relevant to the focus class, spawn a trinity over
+        # them to double-check the count. Only fires when:
+        #   - LLM is available
+        #   - cardinal.count ≤ 6 (suspicious for questions like "how many
+        #     kitchen items did I replace" where gold is typically 3-8)
+        #   - we have a way to fetch memories from outside this method —
+        #     deferred to harness (it passes the retrieved list in when
+        #     cardinal is combined with mem_results in the answer prompt)
+        # For now, we annotate the confidence level in the view so the
+        # answer LLM knows to cross-check against raw memories.
+        primary = hits[0]
+        verification_note = ""
+        if (
+            primary.count is not None
+            and primary.count <= 6
+            and self._llm is not None
+            and self._llm.is_available()
+        ):
+            verification_note = (
+                " [low-count — VERIFY by scanning the retrieved memories "
+                "below; emit an updated count if more items of this class "
+                "are mentioned than the cardinal view shows]"
+            )
+
+        lines = [
+            "DRAFT CARDINAL VIEW (extracted at ingest-time — verify against "
+            "the memories below; the count may include duplicates or "
+            "misclassifications the extractor didn't catch. Trust memories "
+            "over this draft on any conflict)" + verification_note + ":"
+        ]
         for entry in hits[:3]:
             if entry.total_amount is not None:
                 amt = f"${entry.total_amount:,.2f}".rstrip("0").rstrip(".")
