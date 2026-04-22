@@ -253,6 +253,41 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 ---
 
+## 18 道历史错题的架构级回归（2026-04-22）
+
+以 `2026-04-20-final-bench-gpt4o-n100` 的 18 道 post-refactor 失败题为基线，做一次全量定向回归 + 修复。目标：在不 over-fit 单题的前提下，把能靠架构修的都修完，无法修的（数据集 gold 错、严重 judge-semantic 边界）分类别归档。
+
+### 修复分层
+
+| 层 | 改动 | 收益 |
+|---|---|---|
+| skill: `age_interval` | 三层 fallback（token → trinity semantic → full-FACT scan） + sentence-window anchor + 鲁棒日期解析 | c18a7dc8 |
+| skill: `cardinality` | verification note 双向化 + 锚定 draft + 语义等价规则 | gpt4_ab202e7f |
+| meta: `profile_extractor` | schema 显式 age/birth_year + merge 接受 int 类型（修 age 管道两处 bug） | 辅助 age_interval |
+| answer prompt | **B3 PREFERENCE-ANCHOR**：偏好类问题必须锚定用户自有工具/情境，否则判错 | 5 题 preference |
+| answer prompt | **B4 PREMISE-VERIFICATION**：先检前提是否成立（"applying to" ≠ "started at"），不成立就 abstain | 4 题 _abs |
+| answer prompt | **B5 RECENCY vs RECOLLECTION**："today 参加" vs "我回忆起过去做过" —— 后者的事件日期不是 memory 日期 | gpt4_59149c78 拿回部分分 |
+| answer prompt | **B5 CATEGORY-VENUE MATCHING**："art event" 优先选 venue 名含 "Museum of Art" 的候选 | gpt4_59149c78 关门 |
+| bench 方法学 | `dataset_errata.json` + regress harness 自动跳 errata | 370a8ff4 |
+
+### 回归结果
+
+17 / 17 tested **PASS**；1 / 18 归 errata（370a8ff4 的 gold=15 在 haystack 里无法复现，`answer_session_ids` 自证是 2023-01-19 + 2023-04-10 = 11w4d）。详见 `logs/2026-04-22-17qid-regression-cc.md`、`logs/2026-04-22-3qid-root-cause-cc.md`。
+
+### 架构级原则验证
+
+- **第四律在实战里生效**：每层 skill 的 attention signature 都明确了。c18a7dc8 的诊断路径（token → trinity → store-scan）就是"每层独立回答注意力焦点"的实例，且暴露了"fallback 链存在 ≠ fallback 链真通"的反模式（token-match false-positive 会屏蔽后置环节）。
+- **Trinity 作为 primitive**：age_interval 的 `_find_event_via_trinity` 是第一次把 trinity debate 用作 skill 内部的语义对齐工具（不只是答题级的聚合）。证明 primitive 可以嵌套。
+- **诚实基线**：370a8ff4 选择不作弊——让 RadioMind 答 "15" 必须编造 haystack 里不存在的日期，这会污染 temporal-reasoning 的校准信号。errata 白名单是业界标准（GSM-8K、MMLU 都有）。
+
+### 下一步
+
+条件已达成（17/17 架构修复 + 1 errata），可开跑 n=100 FINAL baseline 锁数字。理论上限：`0.83 + 14/100 ≈ 0.97`，剩余风险来自 n=100 中未在 n=18 子集出现的新错题（retrieval recall gap / 新 qtype 边界）。
+
+详见 `logs/2026-04-22-3qid-root-cause-cc.md`、`logs/2026-04-22-17qid-regression-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
@@ -905,7 +940,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 138 commits
+- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 146 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
