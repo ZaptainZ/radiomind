@@ -202,8 +202,12 @@ def main() -> int:
             pass
 
         try:
+            # 2500 is needed for verbose <mem_thinking> reasoning on
+            # complex multi-hop questions; 1500 cuts some off before
+            # the final answer, which the judge then rejects as
+            # no-answer. Cost delta is trivial at this scale.
             answer = llm_call(ans_prompt, cfg_dst, model=answer_model,
-                              max_tokens=1500, profile=profile)
+                              max_tokens=2500, profile=profile)
         except Exception as e:
             answer = f"[answer error: {e}]"
         print(f"  answer: {answer[:120].replace(chr(10), chr(32))}")
@@ -226,13 +230,14 @@ def main() -> int:
 
         results.append({
             "qid": qid, "qtype": qtype, "correct": is_correct,
-            "answer": str(answer)[:1500],
+            "answer": str(answer)[:3500],
             "gold": str(gold)[:120],
             "sections": {k: bool(v) for k, v in sections.items()},
             "prefixed": (
                 sections.get("temporal") or sections.get("open_domain")
                 or sections.get("cardinal") or sections.get("atomic") or ""
             )[:400],
+            "verdict": str(verdict)[:800],
         })
         mind.shutdown()
 

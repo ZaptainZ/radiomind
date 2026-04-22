@@ -54,6 +54,11 @@ IMPORTANT — PREMISE VERIFICATION: Before computing durations, counts, or "how 
 
 IMPORTANT — PREFERENCE QUESTIONS ("any tips for X?", "how do I handle X?", "recommend X for me"): scan memories for user's SPECIFIC context about X (tools they own, surfaces/equipment they have, prior efforts, pain points, stated constraints). Anchor every suggestion on that context by name. A response that gives only generic advice without referencing at least one user-specific detail will be judged wrong — the user wants YOUR memory of THEIR situation, not a web search.
 
+IMPORTANT — RECENCY vs RECOLLECTION: for "N ago" / "recent" / "last week/month" style questions with multiple candidate events, distinguish:
+- Actual participation: phrasing like "today I X-ed", "I just got back from X", "just attended X", "an hour ago I" — the event happened ON the memory's session date.
+- Recollection: "I remember attending X [on some past day]", "I previously went to X", "that X I did a while ago", "I mentioned X earlier". The event happened BEFORE the memory's session date — do NOT treat the memory date as the event date (even if an "event: X [date=...]" anchor shows that date, the anchor only records the date the user mentioned it, not when the event happened).
+When a memory says "I remember attending X on a Saturday" without a specific date, the event is some earlier Saturday, NOT the day of the memory. Prefer candidates where the user explicitly participated on/around the target window over recollections.
+
 Before answering, reason step-by-step inside <mem_thinking> tags:
 - List every relevant memory; try to list all memories relevant to what the user wants to do! Eg. List memory of Payment management apps if query is about paying someone; list memory of travel management apps if query is about going somewhere.
 
