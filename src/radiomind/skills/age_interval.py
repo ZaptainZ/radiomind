@@ -286,6 +286,56 @@ def _find_current_age_in_store(mind, domain: str | None = None) -> int | None:
     return None
 
 
+def _find_age_at_event_in_store(
+    mind, phrase: str, domain: str | None = None,
+) -> tuple[str, str, int] | None:
+    """Fallback: when neither token-match nor trinity over the top-N
+    retrieved memories can locate the anchor event (happens on long
+    haystacks where the 'at the age of 25' turn gets pushed out of
+    top-k by unrelated chatter), scan the whole domain's FACT layer
+    for any turn containing both a phrase-overlap hint AND an explicit
+    age-at-event marker ('at the age of N' / 'when I was N' / 'aged N').
+
+    Returns (memory_text, date_str, age) or None.
+    """
+    if mind is None or not getattr(mind, "_store", None):
+        return None
+    try:
+        from radiomind.core.types import MemoryLevel
+        facts = mind._store.list_by_domain(
+            domain or "", level=MemoryLevel.FACT, limit=500,
+        )
+    except Exception:
+        return None
+    stop = {"the", "a", "an", "i", "my", "was", "were", "from", "to", "at"}
+    tokens = [
+        t for t in re.findall(r"[a-z0-9]+", (phrase or "").lower())
+        if len(t) > 2 and t not in stop
+    ]
+    best: tuple[float, str, str, int] | None = None
+    for entry in facts:
+        content = entry.content or ""
+        age = _age_at_event(content)
+        if age is None:
+            continue
+        low = content.lower()
+        score = (
+            sum(1 for t in tokens if t in low) / len(tokens)
+            if tokens else 0.0
+        )
+        # Even 0-overlap entries are candidates here (phrase may be a
+        # pure paraphrase), but score ties favor literal overlap.
+        sdate = (entry.metadata or {}).get(
+            "event_date") or (entry.metadata or {}).get("session_date", "")
+        if not sdate:
+            continue
+        if best is None or score > best[0]:
+            best = (score, content[:200], str(sdate), age)
+    if best is None:
+        return None
+    return (best[1], best[2], best[3])
+
+
 class AgeIntervalSkill(Skill):
     name = "age_interval"
     priority = 15
@@ -311,20 +361,58 @@ class AgeIntervalSkill(Skill):
         if not phrase_b:
             return None
 
-        # Anchor B: event mentioned in memories. Try fast token-match first;
-        # escalate to trinity-based semantic match if that fails (e.g.
-        # "graduated from college" ↔ "completed Bachelor's at age 25").
+        # Anchor B: event mentioned in memories.
+        #
+        # Token-match alone is fragile on this shape of question:
+        # "graduated from college" → tokens {graduated, college} also match
+        # "my niece who just graduated from high school" (half overlap),
+        # which wins before the real "completed Bachelor's" memory. The
+        # false match then silently blocks trinity escalation.
+        #
+        # Strategy (in order):
+        #   1. Among token-matches, prefer one with extractable age_at_event.
+        #   2. In older/younger mode (where age_at_event is critical),
+        #      always run trinity escalation even if token-match found
+        #      something — the semantic match is much better at ignoring
+        #      distractors (niece, friend, parent graduations).
+        #   3. Fall back to the first token-match (date-only) if both fail.
         b_matches = _find_event_mentions(phrase_b, memories)
+        b_content = b_date_str = None
         b_age_at = None
-        if b_matches:
-            b_content, b_date_str = b_matches[0]
-        elif llm is not None:
+
+        # (1) Prefer a token-match that already carries age_at_event info.
+        for content, date_str in b_matches:
+            age = _age_at_event(content)
+            if age is not None:
+                b_content, b_date_str, b_age_at = content, date_str, age
+                break
+
+        # (2) Escalate to trinity in older/younger mode for better semantics.
+        if b_content is None and mode in ("older", "younger") and llm is not None:
             esc = _find_event_via_trinity(phrase_b, memories, llm)
-            if esc is None:
+            if esc is not None:
+                b_content, b_date_str, b_age_at = esc
+
+        # (2b) Store-scan for "at the age of N" anywhere in the domain.
+        # Long haystacks push the critical turn out of top-k retrieval.
+        # This catches that case symmetrically to the current-age store-scan.
+        if b_content is None and mode in ("older", "younger"):
+            domain_name = context.get("domain")
+            scan = _find_age_at_event_in_store(mind, phrase_b, domain_name)
+            if scan is not None:
+                b_content, b_date_str, b_age_at = scan
+
+        # (3) Last resort: first token-match (date-only, no age_at_event).
+        if b_content is None:
+            if b_matches:
+                b_content, b_date_str = b_matches[0]
+            elif llm is not None:
+                esc = _find_event_via_trinity(phrase_b, memories, llm)
+                if esc is None:
+                    return None
+                b_content, b_date_str, b_age_at = esc
+            else:
                 return None
-            b_content, b_date_str, b_age_at = esc
-        else:
-            return None
         b_date = _parse_date(b_date_str)
 
         # Combine sources for current age / current year

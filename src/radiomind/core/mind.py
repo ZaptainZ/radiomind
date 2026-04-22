@@ -1097,16 +1097,20 @@ class RadioMind:
             and self._llm.is_available()
         ):
             verification_note = (
-                " [low-count — VERIFY by scanning the retrieved memories "
-                "below; emit an updated count if more items of this class "
-                "are mentioned than the cardinal view shows]"
+                " [low-count — cross-check against retrieved memories. "
+                "Rules: (1) add to count if memories clearly mention items "
+                "the draft missed; (2) subtract only if the draft contains "
+                "obvious duplicates or misclassifications; (3) semantic "
+                "equivalents of the action (e.g. 'donated old X + got new X' "
+                "is a replacement; 'upgraded from X to Y' is a replacement) "
+                "count toward the draft — do not exclude on literal wording; "
+                "(4) ambiguous cases: prefer the draft's count]"
             )
 
         lines = [
-            "DRAFT CARDINAL VIEW (extracted at ingest-time — verify against "
-            "the memories below; the count may include duplicates or "
-            "misclassifications the extractor didn't catch. Trust memories "
-            "over this draft on any conflict)" + verification_note + ":"
+            "DRAFT CARDINAL VIEW (extracted at ingest-time — use as an "
+            "anchor; only override when retrieved memories clearly contradict "
+            "it, not on mere wording differences)" + verification_note + ":"
         ]
         for entry in hits[:3]:
             if entry.total_amount is not None:

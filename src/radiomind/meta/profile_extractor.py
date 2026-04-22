@@ -37,9 +37,10 @@ own language — if they said "I love hiking", output "loves hiking".
 Turns:
 {turns}
 
-Output STRICT JSON only:
+Output STRICT JSON only. Include every "who" field you have evidence for
+(age and birth_year are especially important — extract them whenever stated):
 {{
-  "who": {{"name": "...", "location": "...", "occupation": "...", "family": "...", "pets": "..."}},
+  "who": {{"name": "...", "age": 32, "birth_year": 1991, "location": "...", "occupation": "...", "marital_status": "...", "family": "...", "pets": "..."}},
   "how": {{"preferences": ["...", "..."], "aversions": ["..."], "habits": ["..."], "style": ["..."]}},
   "what": {{"goals": ["..."], "interests": ["..."], "current_focus": ["..."]}}
 }}
@@ -107,10 +108,15 @@ def extract_batch(
         if not obj:
             continue
 
-        # Merge who (scalar fields — last non-empty wins)
+        # Merge who (scalar fields — last non-empty wins). Accept both
+        # strings and numeric types: age/birth_year are often emitted as
+        # JSON integers and silently dropped if we filter to str only.
         for k, v in (obj.get("who") or {}).items():
-            if isinstance(v, str) and v.strip():
-                merged["who"][k] = v.strip()
+            if isinstance(v, str):
+                if v.strip():
+                    merged["who"][k] = v.strip()
+            elif isinstance(v, (int, float)):
+                merged["who"][k] = v
 
         # Merge how/what (list fields — accumulate unique)
         for category in ("how", "what"):
