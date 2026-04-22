@@ -39,10 +39,22 @@ _YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
 _DATE_FORMATS = ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y")
 
 
+_YMD_RE = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
+
+
 def _parse_date(s: str) -> datetime | None:
     if not s:
         return None
     s = str(s).strip()
+    # Robust first pass: extract YYYY(-|/)M(-|/)D from anywhere in the
+    # string. Handles LongMemEval's "2023/05/26 (Mon) 14:08" shape that
+    # the strict strptime fallback was missing into mid-year stubs.
+    m = _YMD_RE.search(s)
+    if m:
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            pass
     for fmt in _DATE_FORMATS:
         try:
             return datetime.strptime(s[: len(fmt) + 4], fmt)
@@ -312,6 +324,13 @@ def _find_age_at_event_in_store(
         t for t in re.findall(r"[a-z0-9]+", (phrase or "").lower())
         if len(t) > 2 and t not in stop
     ]
+    # Locate the actual "at the age of N" sentence so downstream
+    # validators (trinity_validate) see the critical phrase — not a
+    # random first-200-chars slice that may have chopped it off.
+    _AGE_SENT_RE = re.compile(
+        r"[^.!?]*(?:at\s+the\s+age\s+of|when\s+I\s+was|aged)\s+\d{1,3}[^.!?]*[.!?]?",
+        re.IGNORECASE,
+    )
     best: tuple[float, str, str, int] | None = None
     for entry in facts:
         content = entry.content or ""
@@ -329,8 +348,26 @@ def _find_age_at_event_in_store(
             "event_date") or (entry.metadata or {}).get("session_date", "")
         if not sdate:
             continue
+        # Extract the sentence around the age marker. If regex misses,
+        # fall back to a window centered on the match.
+        snippet = ""
+        sent_m = _AGE_SENT_RE.search(content)
+        if sent_m:
+            snippet = sent_m.group(0).strip()[:400]
+        else:
+            # Center 200-char window around the age phrase
+            age_m = re.search(
+                r"(?:at\s+the\s+age\s+of|when\s+I\s+was|aged)\s+\d{1,3}",
+                content, re.IGNORECASE,
+            )
+            if age_m:
+                start = max(0, age_m.start() - 80)
+                end = min(len(content), age_m.end() + 120)
+                snippet = content[start:end].strip()
+            else:
+                snippet = content[:300]
         if best is None or score > best[0]:
-            best = (score, content[:200], str(sdate), age)
+            best = (score, snippet, str(sdate), age)
     if best is None:
         return None
     return (best[1], best[2], best[3])
