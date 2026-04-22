@@ -25,12 +25,31 @@ _all_wrong = [
     q["question_id"] for q in json.loads(POST_JSON.read_text())["per_query"]
     if not q["correct"]
 ]
+
+# Dataset errata: qids whose gold labels are known-incorrect after haystack
+# audit. RadioMind's disagreement on these is correct; skip them unless
+# explicitly requested via REGRESS_QIDS so they don't distort fix-impact
+# measurements. See dataset_errata.json for the audit trail.
+ERRATA_JSON = Path(__file__).parent / "dataset_errata.json"
+_errata: dict = {}
+if ERRATA_JSON.exists():
+    _errata = json.loads(ERRATA_JSON.read_text()).get("longmemeval_s", {}) or {}
+ERRATA_QIDS = set(_errata.keys())
+
 _filter = (os.environ.get("REGRESS_QIDS") or "").strip()
 if _filter:
+    # Explicit request — honor it, errata included
     _wanted = set(_filter.split(","))
     TARGET_QIDS = [q for q in _all_wrong if q in _wanted]
 else:
-    TARGET_QIDS = _all_wrong
+    # Default: drop errata; measure what we can actually fix
+    TARGET_QIDS = [q for q in _all_wrong if q not in ERRATA_QIDS]
+    if ERRATA_QIDS:
+        print(
+            f"[errata] skipping {len(ERRATA_QIDS)} known dataset-gold errors: "
+            f"{sorted(ERRATA_QIDS)}",
+            flush=True,
+        )
 
 DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
 

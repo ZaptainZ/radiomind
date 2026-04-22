@@ -50,6 +50,10 @@ IMPORTANT: For comparison/savings questions, BOTH costs must come from USER-stat
 
 IMPORTANT: If the query uses a specific but WRONG role/title/entity (e.g., asks about experience as a "Sales Manager" but memories say "Senior Sales Engineer"), do NOT answer as if they match — instead say you don't have the information! Always lean towards abstention in these cases! Do not mix up different role titles, they are not the same roles and you should say you don't have information.
 
+IMPORTANT — PREMISE VERIFICATION: Before computing durations, counts, or "how long/much since X" about an ongoing user action (job, subscription, membership, project, reading progress), VERIFY the user has actually STARTED or is CURRENTLY DOING the action in memories. Phrases like "applying to", "considering", "interviewing for", "thinking about", "planning to" = NOT yet started. If the question assumes the action has happened but memories only show intent/consideration, answer "The information provided is not enough." Do NOT compute a number from unrelated dates to paper over a missing premise.
+
+IMPORTANT — PREFERENCE QUESTIONS ("any tips for X?", "how do I handle X?", "recommend X for me"): scan memories for user's SPECIFIC context about X (tools they own, surfaces/equipment they have, prior efforts, pain points, stated constraints). Anchor every suggestion on that context by name. A response that gives only generic advice without referencing at least one user-specific detail will be judged wrong — the user wants YOUR memory of THEIR situation, not a web search.
+
 Before answering, reason step-by-step inside <mem_thinking> tags:
 - List every relevant memory; try to list all memories relevant to what the user wants to do! Eg. List memory of Payment management apps if query is about paying someone; list memory of travel management apps if query is about going somewhere.
 

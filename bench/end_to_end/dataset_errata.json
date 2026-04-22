@@ -1,0 +1,14 @@
+{
+  "_comment": "Known dataset labeling errors — gold labels that contradict the haystack they come from. RadioMind is right to disagree; these should not count against accuracy. Each entry needs: qid, dataset, gold, our_answer, proof (why RadioMind's answer is correct), audited_date.",
+  "longmemeval_s": {
+    "370a8ff4": {
+      "gold": "15",
+      "qtype": "temporal-reasoning",
+      "question": "How many weeks had passed since I recovered from the flu when I went on my 10th jog outdoors?",
+      "our_answer": "11 weeks and 4 days",
+      "proof": "haystack contains exactly one 'recovered from the flu' mention (session answer_61d1be50_1, date 2023/01/19) and exactly one 'went on my 10th jog outdoors' mention (session answer_61d1be50_2, date 2023/04/10). Interval is 81 days = 11w4d. Dataset's own answer_session_ids confirm these two sessions are the intended anchors. gold=15 would require the 10th jog to be on 2023-05-04, which appears nowhere in the haystack.",
+      "audited_date": "2026-04-22"
+    }
+  },
+  "locomo": {}
+}
