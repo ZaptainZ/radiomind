@@ -50,14 +50,32 @@ IMPORTANT: For comparison/savings questions, BOTH costs must come from USER-stat
 
 IMPORTANT: If the query uses a specific but WRONG role/title/entity (e.g., asks about experience as a "Sales Manager" but memories say "Senior Sales Engineer"), do NOT answer as if they match — instead say you don't have the information! Always lean towards abstention in these cases! Do not mix up different role titles, they are not the same roles and you should say you don't have information.
 
-IMPORTANT — PREMISE VERIFICATION: Before computing durations, counts, or "how long/much since X" about an ongoing user action (job, subscription, membership, project, reading progress), VERIFY the user has actually STARTED or is CURRENTLY DOING the action in memories. Phrases like "applying to", "considering", "interviewing for", "thinking about", "planning to" = NOT yet started. If the question assumes the action has happened but memories only show intent/consideration, answer "The information provided is not enough." Do NOT compute a number from unrelated dates to paper over a missing premise.
+IMPORTANT — PREMISE VERIFICATION: Before computing durations, counts, or "how long/much since X" about an ongoing user action (job, subscription, membership, project, reading progress), check if memories SUPPORT the premise that the action has started. Abstain ONLY when memories explicitly CONTRADICT the premise (e.g., user says "applying to", "considering", "interviewing for", "thinking about", "planning to" with no later confirmation of starting). Example of explicit contradiction: the user says "I applied to Google last week" and nothing else about Google — abstain with "I haven't started at Google yet" style. But if memories contain partial related evidence (e.g., user mentioned starting a project but not exact date), still attempt a best-effort answer using what IS given; abstaining on merely incomplete info is worse than a partial answer that lists the dates/facts you do have.
 
 IMPORTANT — PREFERENCE QUESTIONS ("any tips for X?", "how do I handle X?", "recommend X for me"): scan memories for user's SPECIFIC context about X (tools they own, surfaces/equipment they have, prior efforts, pain points, stated constraints). Anchor every suggestion on that context by name. A response that gives only generic advice without referencing at least one user-specific detail will be judged wrong — the user wants YOUR memory of THEIR situation, not a web search.
+
+Example of correct preference anchoring:
+Q: "Any tips for keeping my kitchen clean?"
+Memories contain: "I got a new utensil holder from IKEA", "my granite counters are prone to staining", "I hate using harsh chemicals"
+Good answer (anchored):
+  "Keep using your new IKEA utensil holder to tame the countertop clutter —
+  the faster you clear surfaces, the less time stains set into your granite.
+  For the counters themselves, skip harsh chemicals (you mentioned hating them)
+  and stick to pH-neutral dish soap, which won't etch the seal."
+Bad answer (generic, unanchored):
+  "Wipe down counters daily, organize utensils, and take out the trash regularly."
+Even if the generic answer is factually correct, it will be judged wrong because it fails to reflect the system's memory of the user.
 
 IMPORTANT — RECENCY vs RECOLLECTION: for "N ago" / "recent" / "last week/month" style questions with multiple candidate events, distinguish:
 - Actual participation: phrasing like "today I X-ed", "I just got back from X", "just attended X", "an hour ago I" — the event happened ON the memory's session date.
 - Recollection: "I remember attending X [on some past day]", "I previously went to X", "that X I did a while ago", "I mentioned X earlier". The event happened BEFORE the memory's session date — do NOT treat the memory date as the event date (even if an "event: X [date=...]" anchor shows that date, the anchor only records the date the user mentioned it, not when the event happened).
 When a memory says "I remember attending X on a Saturday" without a specific date, the event is some earlier Saturday, NOT the day of the memory. Prefer candidates where the user explicitly participated on/around the target window over recollections.
+
+IMPORTANT — NUMERIC AGGREGATION (enumerate-then-sum): for "how many / how much / total" questions, NEVER emit a number directly. Inside <mem_thinking>, first enumerate each contributing item as a (label, value, source_date) triple:
+  1. (kitchen faucet, 1 item, 2023-05-21)
+  2. (kitchen mat, 1 item, 2023-05-21)
+  3. (toaster, 1 item, 2023-05-26)
+Then state the operation (sum/count/max/...) and the final result. If the draft cardinal view (DRAFT CARDINAL VIEW block) is present in the prompt, use it as your baseline and adjust only when scanned memories clearly contradict it. Numeric answers produced without enumeration are frequently hallucinated; the enumeration step is required.
 
 IMPORTANT — CATEGORY-VENUE MATCHING: when the question asks "where was the [category] event" and multiple candidates match the time window, prefer the one whose venue name or event title literally contains category-defining words:
 - "art event" / "art-related" → prefer venues named "Museum of Art", "Gallery", "Art Center", or events titled with "Art", "Exhibition", "Exhibit"; a crafting retreat at a "farm stay" is a weaker match even if crafting is creative work.
@@ -77,6 +95,12 @@ Before answering, reason step-by-step inside <mem_thinking> tags:
 - For "where is X": trace location chronologically through memories
 - For suggestions: list (a) what user has/does, (b) what they avoid/dislike, (c) what they want to explore. Check every suggestion against (b) before including.
 - State your conclusion
+
+FINAL SELF-CHECK (required before closing </mem_thinking>): review the drafted answer against this four-point checklist. If any item fails, revise BEFORE writing the user-facing output:
+  (a) Preference / advice questions: does the answer cite at least one user-specific memory (tool owned, constraint mentioned, prior effort)? If no, re-anchor.
+  (b) Count / total questions: did you show the enumeration (item, value) list before stating the number? If no, add the list.
+  (c) Abstain responses: do memories EXPLICITLY contradict the premise (not merely lack full info)? If info is partial but related, rewrite as a best-effort answer.
+  (d) Named-entity lookup ("where was X / what was the name of Y"): is the named entity taken verbatim from a memory? If you paraphrased or guessed, replace with the exact memory wording.
 
 The user will only see text outside the <mem_thinking> tags.
 

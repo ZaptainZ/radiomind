@@ -38,9 +38,10 @@ ERRATA_QIDS = set(_errata.keys())
 
 _filter = (os.environ.get("REGRESS_QIDS") or "").strip()
 if _filter:
-    # Explicit request — honor it, errata included
-    _wanted = set(_filter.split(","))
-    TARGET_QIDS = [q for q in _all_wrong if q in _wanted]
+    # Explicit request — honor every qid, even if not in the historical
+    # post-refactor failure list (useful after a new n=100 run surfaces
+    # regressions that weren't in the original 18).
+    TARGET_QIDS = [q.strip() for q in _filter.split(",") if q.strip()]
 else:
     # Default: drop errata; measure what we can actually fix
     TARGET_QIDS = [q for q in _all_wrong if q not in ERRATA_QIDS]
@@ -73,6 +74,8 @@ def main() -> int:
     # changes without burning budget.
     answer_model = os.environ.get("REGRESS_ANSWER_MODEL", "deepseek-v3.2")
     profile = os.environ.get("REGRESS_PROFILE", "openai")  # TokenPlan
+    judge_model = os.environ.get("REGRESS_JUDGE_MODEL", answer_model)
+    judge_profile = os.environ.get("REGRESS_JUDGE_PROFILE", profile)
 
     def _llm(prompt, system=""):
         return llm_call(prompt, cfg_dst, model=answer_model, max_tokens=2500,
@@ -219,8 +222,8 @@ def main() -> int:
             question_date=q_date or "",
         )
         try:
-            verdict = llm_call(judge_prompt, cfg_dst, model=answer_model,
-                               max_tokens=1200, profile=profile)
+            verdict = llm_call(judge_prompt, cfg_dst, model=judge_model,
+                               max_tokens=1200, profile=judge_profile)
             is_correct = _parse_judge_verdict(verdict)
         except Exception as e:
             verdict = f"[judge error: {e}]"
