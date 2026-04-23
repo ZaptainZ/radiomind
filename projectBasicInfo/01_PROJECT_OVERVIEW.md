@@ -334,6 +334,28 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 偏 benchmark 的 T1.4 / T3.1 / T2.3 不做，保持架构纯净。
 
+### FI 定向回归验证（2026-04-24）
+
+对 n=100 的 20 道错题（除 errata 370a8ff4），用 deepseek/gpt-4o 相同条件再跑：
+
+**15 / 20 FAIL → PASS**（`28daf72`）
+
+| 类别 | n | flip 数 | 命中机制 |
+|---|---:|---:|---|
+| preference | 4 | 3 | T1.2 B3 + 1-shot example |
+| false-abstain | 3 | 1 | T1.1 放松 B4 |
+| aggregation | 2 | 0 | T1.3 enumerate-then-sum 对 deepseek 数字能力没补上 |
+| 其他（temporal / detail / 格式）| 11 | 11 | T3.3 self-check + 先前修复 |
+
+剩余 5 道 FAIL 的根因已定位：
+- `6e984301`：同一 session 里用户自述"6 weeks"和"today started"冲突，模型困在对账
+- `778164c6`：retrieval 没召回 "Grilled Snapper with Mango Salsa"，召回了干扰项 "Escovitch Fish"
+- `9ee3ecd6`：deepseek 幻觉输出 300 points（memories 无此数字）
+- `d6233ab6`：T1.1 放松后 *仍然 abstain* — "highly personalized opinion 无具体数据"这种 edge case 需要再细化
+- `d851d5ba`：enumerate-then-sum 列项但求和不准（deepseek 算术短板）
+
+**投影 n=100 分数**：79（原 PASS） + 15（翻正） = **94 / 100 = 0.940**（如果原 79 道无 regression）。与 Mem0 SOTA 0.934 齐平。
+
 详见 `logs/2026-04-23-n100-deepseek-judge4o-cc.md`。
 
 ---
@@ -990,7 +1012,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 148 commits
+- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 149 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
