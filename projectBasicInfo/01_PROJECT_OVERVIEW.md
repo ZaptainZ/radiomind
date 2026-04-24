@@ -360,6 +360,38 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 ---
 
+## 原 n=100 错题全量翻正：20/20（2026-04-24）
+
+继 FI 的 15/20 之后，通过 5 轮深挖（FJ / FK / FL / FM）补完最后 5 道难题。最终 **20 / 20 tested FAIL → PASS**，1 errata（370a8ff4）不计。
+
+### 新架构能力（本轮新增，补齐最后一公里）
+
+| 能力 | 文件 | 作用 |
+|---|---|---|
+| `event_interval` skill | `skills/event_interval.py`（新）| 三层 fallback 处理 "how many weeks between event A and event B" |
+| `run_preference_context` | `core/mind.py` | preference 题用 trinity 抽 user-specific anchor 注入 |
+| Delta-aware cardinal | `core/mind.py`（`get_numeric_cardinal`）| "how many more / need to earn" 识别为 goal − current |
+| **Scope-word query filter** | `core/mind.py` | query 的 category 词（charity/sports/food）→ 对 source turn 做 stem-match，否则 FILTERED OUT |
+| **Session-prefix dedup** | `core/mind.py` | 同 session 多次提同金额 → 合并 |
+| **LLM + regex 并行抽取** | `refinement/numeric_aggregator.py` | 不再 fallback；两者取并集 by (turn_id, polarity, amount)，解决 LLM 非确定性 |
+| **Evidence chain + inline arithmetic** | `core/mind.py`（cardinal prefix 格式）| 每个事件 show source + turn_id；被 filter/dedup 的也列出；Python 求和；LLM 可验证每一行 |
+
+### 关键架构原则沉淀
+
+1. **"可验证边界"模式**：与其让 LLM 盲信一个数，不如暴露完整证据链 + inline arithmetic。LLM 天然擅长 verify，不擅长算。验证完后 LLM 自发把架构给出的数字当"最小值 / 已知和"，再从 retrieval 补 cardinal 漏抽的事件。这正是 `d851d5ba` 最后过的机制。
+
+2. **"确定性 + LLM 并集"策略**：LLM 抽取 recall 高但非确定；regex 抽取 recall 低但完全确定。两者并跑取并集，dedup 关键元组 → recall 和 reliability 双赢。可扩展到 temporal anchor / profile / KG 等其他 ingest pipeline。
+
+3. **Scope filter by user vocabulary**：ingest 时的 entity_class 分类是 LLM 主观，会把"music education fundraising"误归 charity。query 时用用户自己的词（"charity"）对 source turn 过滤，更诚实地尊重用户语义。
+
+### 投影
+
+原 79 无 regression 假设下：79 + 20 = **99 / 100 = 0.99**。实际保守估计 0.93 – 0.97（新增 prompt 规则偶有副作用）。需要 n=100 全量验证。
+
+详见 `logs/2026-04-24-20-of-20-full-regress-cc.md`。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
@@ -1012,7 +1044,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 149 commits
+- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 154 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
