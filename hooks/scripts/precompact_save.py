@@ -1,28 +1,22 @@
 #!/usr/bin/env python3
-"""RadioMind PreCompact Hook — emergency save before context compression.
+"""Legacy copy of PreCompact hook kept for backward compat.
 
-Always blocks. Forces the AI to save everything to RadioMind before
-the context window shrinks. This prevents memory loss during long sessions.
+The canonical source is src/radiomind/hooks/precompact_hook.py.
+This file mirrors the canonical behaviour: block compaction ONLY when
+no fresh memory was ingested in the recent save window, otherwise
+approve so /compact can proceed.
 """
+import sys
+from pathlib import Path
 
-import json
+# Delegate to the packaged hook so behaviour stays in one place.
+_here = Path(__file__).resolve()
+_root = _here.parents[2]  # repo root
+_pkg = _root / "src" / "radiomind" / "hooks"
+sys.path.insert(0, str(_pkg))
 
-SAVE_PROMPT = """Context is about to be compressed. Save important memories NOW:
-
-1. Call radiomind_ingest with key messages from this conversation
-2. Important: after compression, earlier messages will be summarized —
-   save any specific facts, preferences, or decisions before they're lost
-
-After saving, compression will proceed."""
-
-
-def main():
-    result = {
-        "decision": "block",
-        "reason": SAVE_PROMPT,
-    }
-    print(json.dumps(result))
+from precompact_hook import main as _main  # noqa: E402
 
 
 if __name__ == "__main__":
-    main()
+    _main()
