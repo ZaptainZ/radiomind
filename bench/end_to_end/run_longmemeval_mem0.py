@@ -430,6 +430,14 @@ def run(
         except Exception:
             pass
 
+        preference_section = ""
+        try:
+            preference_section = mind.run_preference_context(
+                query=question, retrieved_memories=mem_results, domain=domain,
+            )
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -482,6 +490,10 @@ def run(
             ans_prompt = open_domain_section + ans_prompt
         if profile_section:
             ans_prompt = profile_section + ans_prompt
+        if preference_section:
+            # Insert ahead of profile so preference-specific context
+            # is the freshest anchor the model sees for advice questions.
+            ans_prompt = preference_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable

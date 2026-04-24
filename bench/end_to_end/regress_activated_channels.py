@@ -169,6 +169,12 @@ def main() -> int:
             sections["profile"] = mind.profile_hint(query=question)
         except Exception:
             sections["profile"] = ""
+        try:
+            sections["preference_context"] = mind.run_preference_context(
+                query=question, retrieved_memories=mem_results, domain=domain,
+            )
+        except Exception:
+            sections["preference_context"] = ""
 
         atomic = ""
         try:
@@ -194,7 +200,8 @@ def main() -> int:
         ans_prompt = get_answer_generation_prompt(
             question=question, search_results=mem_results, question_date=q_date or "",
         )
-        for key in ("atomic", "cardinal", "temporal", "open_domain", "profile"):
+        for key in ("atomic", "cardinal", "temporal", "open_domain",
+                    "profile", "preference_context"):
             if sections.get(key):
                 ans_prompt = sections[key] + ans_prompt
         try:

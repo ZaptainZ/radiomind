@@ -1033,6 +1033,100 @@ class RadioMind:
             domain=domain, user_id=user_id,
         )
 
+    # --- Preference context injector ---
+
+    def run_preference_context(
+        self, query: str, retrieved_memories: list,
+        domain: str = "", user_id: str = "",
+    ) -> str:
+        """For preference / advice questions, extract relevant user-
+        specific context from memories and format as a prefix the
+        answer LLM can anchor on.
+
+        Typical preference questions ask for a personalized recommendation
+        ("should I attend my reunion?", "any tips for my kitchen?").
+        Without explicit context extraction, smaller answer models
+        sometimes default to generic advice or abstain — both judged
+        wrong by gold that expects user-anchored responses.
+
+        Uses one trinity call to triangulate what's relevant: too narrow
+        misses tangential context, too broad dumps noise.
+        """
+        self._check_init()
+        if not self._attention_router_enabled():
+            return ""
+        if self._llm is None or not self._llm.is_available():
+            return ""
+
+        # Preference-query triggers
+        import re
+        pref_re = re.compile(
+            r"\b(any\s+tips|do\s+you\s+think\s+.*\s+(?:good|bad|right|wise)\s+idea|"
+            r"should\s+I|recommend(?:ation)?|what\s+should|how\s+(?:do|should)\s+I|"
+            r"would\s+it\s+be\s+a\s+good)\b",
+            re.IGNORECASE,
+        )
+        if not pref_re.search(query):
+            return ""
+
+        # Format retrieved memories for trinity
+        lines = []
+        for m in retrieved_memories[:40]:
+            if isinstance(m, dict):
+                sdate = m.get("created_at") or m.get("session_date", "")
+                content = m.get("memory") or m.get("content") or ""
+            elif hasattr(m, "entry"):
+                sdate = (m.entry.metadata or {}).get("session_date", "")
+                content = m.entry.content or ""
+            else:
+                continue
+            if not content:
+                continue
+            lines.append(f"[{sdate}] {content[:300].replace(chr(10), ' ')}")
+        if not lines:
+            return ""
+        evidence = "\n".join(lines)
+
+        from radiomind.refinement.trinity import debate
+        result = debate(
+            task=(
+                f"The user asked a preference/advice question. Extract "
+                f"USER-SPECIFIC context from memories that the answer "
+                f"should anchor on: tools they own, habits, preferences "
+                f"and constraints they've mentioned, related experiences, "
+                f"people/places/things tied to the question topic. Include "
+                f"items that are tangentially related (e.g., 'was on debate "
+                f"team' for a 'high school reunion' question). Abstain only "
+                f"if no memory is even loosely related.\n"
+                f"Tensions: specificity (only directly-named topic context) "
+                f"vs inclusion (any tangential grounding) vs salience "
+                f"(filter trivial filler, keep revealing details).\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence,
+            llm=self._llm,
+            extra_schema=(
+                '  "context_items": [str, str, ...] (5-10 user-specific '
+                'details, each one short phrase)'
+            ),
+        )
+        if not result:
+            return ""
+        items = result.get("context_items") or []
+        if not isinstance(items, list) or not items:
+            return ""
+        # Filter noise
+        items = [str(x).strip() for x in items if str(x).strip()][:10]
+        if not items:
+            return ""
+        lines_out = [
+            "PREFERENCE CONTEXT (user-specific details the answer MUST "
+            "anchor on — at least one of these MUST be cited by name):"
+        ]
+        for it in items:
+            lines_out.append(f"- {it}")
+        return "\n".join(lines_out) + "\n\n"
+
     # --- Numeric cardinal (bottom-up counts) ---
 
     def get_numeric_cardinal(
@@ -1107,26 +1201,80 @@ class RadioMind:
                 "(4) ambiguous cases: prefer the draft's count]"
             )
 
+        # Delta-aware rewrite: "how many more / need to earn / left to reach"
+        # questions are NOT a simple aggregation — they're goal − current.
+        # When both the current balance AND a target threshold appear in
+        # memories, surface both alongside the computed delta so the
+        # answer model doesn't conflate "need to earn" with "threshold".
+        import re as _re
+        _DELTA_RE = _re.compile(
+            r"\b(how\s+(?:many|much)\s+more|"
+            r"how\s+(?:many|much)\s+.*\s+(?:left|remaining|until)|"
+            r"need\s+to\s+(?:earn|reach|save|accumulate)|"
+            r"(?:left|remaining)\s+to\s+redeem)\b",
+            _re.IGNORECASE,
+        )
+        is_delta = bool(_DELTA_RE.search(query))
+
         lines = [
             "DRAFT CARDINAL VIEW (extracted at ingest-time — use as an "
             "anchor; only override when retrieved memories clearly contradict "
             "it, not on mere wording differences)" + verification_note + ":"
         ]
         for entry in hits[:3]:
+            # Per-event breakdown with raw phrase (not just turn_id).
+            # Exposes qualifiers like "over $1,000" so the answer model
+            # can interpret them instead of seeing only the extracted
+            # number. Falls back to evidence-id list when history lacks
+            # phrase data.
+            phrases: list[str] = []
+            for h in (entry.history or [])[-12:]:
+                if h.get("reason") in ("trinity_amount_refine",
+                                       "trinity_member_refine"):
+                    continue
+                phr = str(h.get("phrase") or "").strip()
+                if not phr:
+                    continue
+                delta = str(h.get("delta") or "").strip()
+                tid = str(h.get("turn_id") or "").strip()
+                tag = f" [{tid}]" if tid else ""
+                prefix = f"{delta} :: " if delta else ""
+                phrases.append(f"  · {prefix}{phr[:140]}{tag}")
+
             if entry.total_amount is not None:
                 amt = f"${entry.total_amount:,.2f}".rstrip("0").rstrip(".")
                 lines.append(
                     f"- {entry.entity_class}: total_amount={amt} "
-                    f"({entry.count} events), evidence: {','.join(entry.evidence[:6])}"
+                    f"({entry.count} events). Per-event evidence:"
                 )
+                lines.extend(phrases or [
+                    f"  · (no per-event phrases recorded; turn IDs: "
+                    f"{','.join(entry.evidence[:6])})"
+                ])
             else:
                 mem = ""
                 if entry.members:
                     mem = f" (members: {', '.join(entry.members[:10])})"
                 lines.append(
-                    f"- {entry.entity_class}: count={entry.count}{mem}, "
-                    f"evidence: {','.join(entry.evidence[:6])}"
+                    f"- {entry.entity_class}: count={entry.count}{mem}. "
+                    f"Per-event evidence:"
                 )
+                lines.extend(phrases or [
+                    f"  · (no per-event phrases recorded; turn IDs: "
+                    f"{','.join(entry.evidence[:6])})"
+                ])
+
+        if is_delta and primary.total_amount is not None:
+            lines.append(
+                "")
+            lines.append(
+                f"DELTA QUESTION HINT: the question asks for "
+                f"'{query}' — this is goal − current, NOT the absolute "
+                f"goal. Scan memories for a target/threshold the user "
+                f"stated (e.g. 'need a total of N'). If found, answer = "
+                f"target − {entry.total_amount:g}. If the user says they "
+                f"need a total of X and currently have Y, answer = X − Y."
+            )
         return "\n".join(lines) + "\n\n"
 
     def list_cardinals(

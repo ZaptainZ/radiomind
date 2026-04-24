@@ -71,6 +71,8 @@ IMPORTANT — RECENCY vs RECOLLECTION: for "N ago" / "recent" / "last week/month
 - Recollection: "I remember attending X [on some past day]", "I previously went to X", "that X I did a while ago", "I mentioned X earlier". The event happened BEFORE the memory's session date — do NOT treat the memory date as the event date (even if an "event: X [date=...]" anchor shows that date, the anchor only records the date the user mentioned it, not when the event happened).
 When a memory says "I remember attending X on a Saturday" without a specific date, the event is some earlier Saturday, NOT the day of the memory. Prefer candidates where the user explicitly participated on/around the target window over recollections.
 
+IMPORTANT — DELTA vs ABSOLUTE: "how many X do I need to earn / how much more to reach Y / points left until redemption" questions ask for a DELTA, not the absolute goal. When memories state both a current value and a target ("I have 200 points now" + "I need a total of 300 to redeem"), the answer is target − current (= 100), NOT the target (300). Surface the two numbers in <mem_thinking> and compute the delta.
+
 IMPORTANT — NUMERIC AGGREGATION (enumerate-then-sum): for "how many / how much / total" questions, NEVER emit a number directly. Inside <mem_thinking>, first enumerate each contributing item as a (label, value, source_date) triple:
   1. (kitchen faucet, 1 item, 2023-05-21)
   2. (kitchen mat, 1 item, 2023-05-21)
