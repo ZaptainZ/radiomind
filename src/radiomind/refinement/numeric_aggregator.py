@@ -345,16 +345,45 @@ class NumericAggregator:
             except Exception:
                 candidates = []
 
-        if not candidates:
-            # LLM batch returned no candidates (LLM unavailable, per-batch
-            # failures, or genuine "no events in haystack"). Fall back to
-            # regex so users without an LLM still get *something*; a strict
-            # quality filter downstream drops the obviously noise members
-            # ("Those", "In The Fridge", single pronouns).
-            for mid, content, meta in user_turns:
-                turn_id = self._turn_id(mid, meta)
-                ts = self._turn_ts(meta, session_date)
-                candidates.extend(self._regex_extract(content, turn_id, ts))
+        # Regex extraction ALWAYS runs as a supplement (not just fallback).
+        # LLM extraction is non-deterministic — across runs on the same
+        # haystack, it picks up different subsets of amount events. Regex
+        # is deterministic and catches the variants we've enumerated
+        # ("we raised", "I helped raise", conjunction-led "and raised"),
+        # filling the gaps LLM misses. Duplicates across the two passes
+        # are resolved by turn_id match in _apply_candidate.
+        regex_candidates: list[dict[str, Any]] = []
+        for mid, content, meta in user_turns:
+            turn_id = self._turn_id(mid, meta)
+            ts = self._turn_ts(meta, session_date)
+            regex_candidates.extend(self._regex_extract(content, turn_id, ts))
+
+        if candidates:
+            # Merge: LLM candidates preferred (they have entity_class
+            # already). Regex-only candidates for (turn_id, polarity,
+            # amount) tuples not already covered get appended.
+            seen_keys: set[tuple[str, str, float]] = set()
+            for c in candidates:
+                if c["polarity"] == "amount":
+                    seen_keys.add((
+                        c.get("turn_id", ""), c["polarity"],
+                        round(float(c.get("amount") or 0.0), 2),
+                    ))
+            for rc in regex_candidates:
+                if rc["polarity"] != "amount":
+                    # own/dispose candidates are cheap to duplicate; LLM
+                    # handles those well enough, don't flood from regex
+                    continue
+                key = (
+                    rc.get("turn_id", ""), rc["polarity"],
+                    round(float(rc.get("amount") or 0.0), 2),
+                )
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                candidates.append(rc)
+        else:
+            candidates = regex_candidates
 
         if not candidates:
             return {}
