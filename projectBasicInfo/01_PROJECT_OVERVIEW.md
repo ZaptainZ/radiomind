@@ -390,6 +390,21 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 详见 `logs/2026-04-24-20-of-20-full-regress-cc.md`。
 
+### Dogfooding 顺手修：PreCompact hook（2026-04-24）
+
+`/compact` 触发时 PreCompact hook 原本硬编码 `decision: block`，无论是否刚 ingest 都阻挡，用户必须禁用 hook 才能压缩。
+
+修成**真验证**：
+- 读 `~/.radiomind/data/radiomind.db` 的 `MAX(memories.created_at)`
+- 距今 ≤ `RADIOMIND_COMPACT_FRESH_S`（默认 120s）→ approve
+- DB / 表不存在 → approve（fresh install 不阻挡）
+- 任何异常 → approve（hook 自身 bug 绝不 wedge 用户）
+- 否则 → block 并提示 `radiomind_ingest`
+
+改动文件：`src/radiomind/hooks/precompact_hook.py` + 历史副本 `hooks/scripts/precompact_save.py` 委托同一实现。4 个新 pytest 覆盖四种路径。
+
+这是**"AI 原生产品的 hook 必须自己也做 verifiable"**原则的落地——同 20/20 回归里的 "evidence chain" 思路一脉相承。
+
 ---
 
 ## 一、愿景与定位
@@ -1044,7 +1059,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 243 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 154 commits
+- **Stats**: 247 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 157 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
