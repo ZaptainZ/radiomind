@@ -1258,7 +1258,8 @@ class RadioMind:
             # phrase mentions the scope (literal or stem match).
             scoped_sum = 0.0
             scoped_count = 0
-            filtered_out: list[str] = []
+            # Chain-of-evidence: each kept event as (amount, phrase, tid)
+            kept_chain: list[tuple[float, str, str]] = []
             # Dedup: same amount mentioned twice in same session (e.g.,
             # t0 and t6 of the same conversation about the same event)
             # should count once. Key = (amount_int, session_prefix) where
@@ -1288,11 +1289,13 @@ class RadioMind:
 
                 # Check dedup key when in scope
                 is_dup = False
+                parsed_amt: float | None = None
                 if in_scope and delta:
                     m = _AMOUNT_IN_DELTA.search(delta)
                     if m:
                         try:
-                            amt_i = int(float(m.group(1).replace(",", "")))
+                            parsed_amt = float(m.group(1).replace(",", ""))
+                            amt_i = int(parsed_amt)
                             sm = _SESSION_PREFIX_RE.match(tid)
                             sess_prefix = sm.group(1) if sm else tid
                             key = (amt_i, sess_prefix)
@@ -1307,18 +1310,12 @@ class RadioMind:
 
                 phrases.append(f"  · {prefix}{phr[:140]}{tag}{mark}")
                 if not in_scope or is_dup:
-                    if not in_scope:
-                        filtered_out.append(phr[:80])
                     continue
-                # Parse amount from delta (only for kept events)
-                if delta:
-                    m = _AMOUNT_IN_DELTA.search(delta)
-                    if m:
-                        try:
-                            scoped_sum += float(m.group(1).replace(",", ""))
-                            scoped_count += 1
-                        except ValueError:
-                            pass
+                # Kept — accumulate sum + evidence chain
+                if parsed_amt is not None:
+                    scoped_sum += parsed_amt
+                    scoped_count += 1
+                    kept_chain.append((parsed_amt, phr[:160], tid))
 
             if entry.total_amount is not None:
                 amt = f"${entry.total_amount:,.2f}".rstrip("0").rstrip(".")
@@ -1332,20 +1329,71 @@ class RadioMind:
                 ])
                 if scope_word is not None and scoped_count > 0:
                     scoped_amt = f"${scoped_sum:,.2f}".rstrip("0").rstrip(".")
+                    # Build the evidence chain — show every event that
+                    # contributes, with its source snippet and turn id.
+                    # The model can mentally verify each line instead of
+                    # being asked to blindly trust a number.
                     lines.append(
-                        f"  ⇒ SCOPED TOTAL (filter='{scope_word}'): "
-                        f"{scoped_amt} from {scoped_count} of {entry.count} "
-                        f"events.\n"
-                        f"    ⚠ THIS IS THE FINAL ANSWER — copy {scoped_amt} "
-                        f"directly. The filter reflects the user's own "
-                        f"vocabulary: only events whose source turn literally "
-                        f"contains the word '{scope_word}' are part of the "
-                        f"'{scope_word}' total. Do NOT second-guess with "
-                        f"semantic reasoning like 'music education is also "
-                        f"charity' — the user's language is the ground truth. "
-                        f"Do NOT re-sum raw numbers from retrieved memories; "
-                        f"they will inflate the total by re-counting the "
-                        f"already-deduped / filtered events."
+                        f"\n  ⇒ DETERMINISTIC {scope_word.upper()} TOTAL: {scoped_amt}"
+                    )
+                    lines.append(
+                        f"    Evidence chain (each item {scope_word}-scoped, "
+                        f"deduplicated, sum computed by RadioMind, not LLM):"
+                    )
+                    addition_parts: list[str] = []
+                    for amt, pp, ttid in kept_chain:
+                        amt_str = f"${amt:,.0f}" if amt == int(amt) else f"${amt:,.2f}"
+                        addition_parts.append(amt_str)
+                        lines.append(
+                            f"      [✓] {amt_str:>8}  —  @ {ttid}"
+                        )
+                        lines.append(
+                            f"              source: \"{pp[:150]}\""
+                        )
+                    # Show any filtered/deduped items so the model knows
+                    # why those numbers are absent (and doesn't re-add them)
+                    for h in (entry.history or [])[-12:]:
+                        if h.get("reason") in ("trinity_amount_refine",
+                                               "trinity_member_refine"):
+                            continue
+                        phr2 = str(h.get("phrase") or "").strip()
+                        if not phr2:
+                            continue
+                        delta2 = str(h.get("delta") or "").strip()
+                        tid2 = str(h.get("turn_id") or "").strip()
+                        m2 = _AMOUNT_IN_DELTA.search(delta2)
+                        if not m2:
+                            continue
+                        try:
+                            amt2 = float(m2.group(1).replace(",", ""))
+                        except ValueError:
+                            continue
+                        amt2_str = f"${amt2:,.0f}" if amt2 == int(amt2) else f"${amt2:,.2f}"
+                        stem2 = (scope_word or "").rstrip("s")
+                        if stem2 and not _re.search(
+                            rf"\b{_re.escape(stem2)}", phr2, _re.IGNORECASE,
+                        ):
+                            lines.append(
+                                f"      [✗ SCOPE] {amt2_str:>8} — @ {tid2} — "
+                                f"excluded because source has no "
+                                f"'{scope_word}': \"{phr2[:120]}\""
+                            )
+                    # Inline arithmetic so the LLM can verify the sum
+                    # itself and commit to the number
+                    if addition_parts:
+                        lines.append(
+                            f"    Arithmetic: {' + '.join(addition_parts)} = {scoped_amt}"
+                        )
+                    lines.append(
+                        f"    ★ Your final answer MUST be {scoped_amt}. The "
+                        f"chain above is verifiable line-by-line — each "
+                        f"event's source snippet is shown with its turn id. "
+                        f"If you derive a different number from raw memories, "
+                        f"you are either missing the dedup (same event "
+                        f"mentioned at multiple turns of the same session), "
+                        f"missing the scope filter ('{scope_word}' must appear "
+                        f"literally in the source turn), or accidentally "
+                        f"including a filtered event. Trust the chain."
                     )
             else:
                 mem = ""
