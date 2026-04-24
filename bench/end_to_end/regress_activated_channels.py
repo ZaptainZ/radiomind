@@ -246,7 +246,7 @@ def main() -> int:
             "prefixed": (
                 sections.get("temporal") or sections.get("open_domain")
                 or sections.get("cardinal") or sections.get("atomic") or ""
-            )[:400],
+            )[:2500],
             "verdict": str(verdict)[:800],
         })
         mind.shutdown()

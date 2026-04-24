@@ -106,14 +106,28 @@ DISPOSE_PATTERNS = [
 # Tolerates intervening adverbs/quantifiers ("another", "about", "around",
 # "roughly", "nearly") between the verb and the amount, which otherwise
 # would dodge the regex (e.g. "I donated another $500 to the shelter").
+#
+# Variants we explicitly catch (previously missed on d851d5ba charity
+# total, where half the events slipped past the narrow "i + verb" form):
+#   - "we raised $X"           → subject {i|we}
+#   - "I helped raise $X"      → helped modifier + base-form "raise"
+#   - "...and raised $X for Y" → conjunction-initiated "raised" at clause start
 AMOUNT_PATTERNS = [
     re.compile(
-        r"\bi\s+(?:just\s+|already\s+|later\s+|then\s+)?"
-        r"(?:raised|donated|earned|made|saved|spent|paid|contributed|gave|received)\s+"
-        r"(?:another\s+|additional\s+|about\s+|around\s+|roughly\s+|nearly\s+|approximately\s+)?"
+        r"\b(?:i|we)\s+(?:just\s+|already\s+|later\s+|then\s+|helped\s+)?"
+        r"(?:raised?|donated|earned|made|saved|spent|paid|contributed|gave|received)\s+"
+        r"(?:another\s+|additional\s+|about\s+|around\s+|roughly\s+|nearly\s+|approximately\s+|over\s+)?"
         r"(?:\$|usd\s*)?(\d[\d,\.]*)"
         r"(?:\s*(?:dollars?|usd|bucks?))?"
         r"(?:\s+(?:for|to|at|from|on|in)\s+(.{2,60}?))?(?:\.|,|!|\?|$)",
+        re.IGNORECASE,
+    ),
+    # Conjunction-led clause: "...5 km and raised $250 for a local food bank"
+    re.compile(
+        r"\b(?:and|then|also)\s+raised\s+"
+        r"(?:another\s+|about\s+|around\s+|over\s+)?"
+        r"(?:\$|usd\s*)?(\d[\d,\.]*)"
+        r"(?:\s+for\s+(.{2,60}?))?(?:\.|,|!|\?|$)",
         re.IGNORECASE,
     ),
 ]
@@ -583,7 +597,7 @@ class NumericAggregator:
             entry.history.append({
                 "ts": ts, "turn_id": turn_id,
                 "delta": "=%d" % target, "reason": "explicit_count",
-                "phrase": c.get("phrase", "")[:120],
+                "phrase": c.get("phrase", "")[:260],
             })
         elif polarity == "own":
             if member:
@@ -599,7 +613,7 @@ class NumericAggregator:
                 entry.evidence.append(turn_id)
             entry.history.append({
                 "ts": ts, "turn_id": turn_id, "delta": "+1",
-                "reason": "own", "phrase": c.get("phrase", "")[:120],
+                "reason": "own", "phrase": c.get("phrase", "")[:260],
             })
         elif polarity == "dispose":
             if member and member in entry.members:
@@ -609,7 +623,7 @@ class NumericAggregator:
                 entry.count -= 1
             entry.history.append({
                 "ts": ts, "turn_id": turn_id, "delta": "-1",
-                "reason": "dispose", "phrase": c.get("phrase", "")[:120],
+                "reason": "dispose", "phrase": c.get("phrase", "")[:260],
             })
         elif polarity == "amount":
             entry.total_amount = (entry.total_amount or 0.0) + delta_amount
@@ -619,7 +633,7 @@ class NumericAggregator:
             entry.history.append({
                 "ts": ts, "turn_id": turn_id,
                 "delta": "+$%.2f" % delta_amount, "reason": "amount",
-                "phrase": c.get("phrase", "")[:120],
+                "phrase": c.get("phrase", "")[:260],
             })
         entry.updated_at = time.time()
 
@@ -968,6 +982,13 @@ class NumericAggregator:
                 if not ec:
                     continue
                 turn_id, ts = chunk_turn_info[batch_idx]
+                # Keep a snippet of the source turn text so query-time
+                # scope filtering (get_numeric_cardinal) can re-verify
+                # whether the event actually mentions the query's
+                # scope word (e.g. "charity"). Without this, LLM-
+                # extracted events had empty phrases and were invisible
+                # to the scope filter.
+                _source_snippet = chunk[batch_idx][1][:240].replace("\n", " ").strip()
                 candidate: dict[str, Any] = {
                     "polarity": polarity,
                     "entity_class": ec,
@@ -976,7 +997,7 @@ class NumericAggregator:
                     "ts": ts,
                     "valid": True,
                     "_llm_classified": True,  # skip heuristic backfill
-                    "phrase": "",  # unused when LLM-extracted
+                    "phrase": _source_snippet,
                 }
                 if polarity == "amount":
                     try:

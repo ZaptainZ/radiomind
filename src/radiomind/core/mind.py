@@ -1216,6 +1216,31 @@ class RadioMind:
         )
         is_delta = bool(_DELTA_RE.search(query))
 
+        # Scoped aggregation: when the query includes a category word
+        # ("charity", "work", "food", "music", "sports", ...), the
+        # answer should only include events whose source turn literally
+        # mentions that category. Prevents ingest-time misclassification
+        # (e.g., a "music benefit concert raised $5k for education"
+        # event wrongly rolled into charity_donations) from inflating
+        # scoped totals.
+        #
+        # The detection is lightweight: extract a noun after "for X"
+        # or "on X" in the query. Generalizes across any single-word
+        # category without dataset-specific hardcoding.
+        scope_word: str | None = None
+        _SCOPE_WORD_RE = _re.compile(
+            r"\bfor\s+([a-z]{4,})\b|\bon\s+([a-z]{4,})\s+(?:in\s+total|overall|altogether|$)",
+            _re.IGNORECASE,
+        )
+        _scope_stop = {"total", "overall", "each", "every", "the", "their",
+                       "this", "that", "those", "these", "some", "any",
+                       "what", "which", "much", "many"}
+        sm = _SCOPE_WORD_RE.search(query)
+        if sm:
+            candidate = (sm.group(1) or sm.group(2) or "").lower()
+            if candidate and candidate not in _scope_stop:
+                scope_word = candidate
+
         lines = [
             "DRAFT CARDINAL VIEW (extracted at ingest-time — use as an "
             "anchor; only override when retrieved memories clearly contradict "
@@ -1228,6 +1253,19 @@ class RadioMind:
             # number. Falls back to evidence-id list when history lacks
             # phrase data.
             phrases: list[str] = []
+            # Scope-filtered re-computation: when the query has a scope
+            # word, walk the same history and sum only events whose
+            # phrase mentions the scope (literal or stem match).
+            scoped_sum = 0.0
+            scoped_count = 0
+            filtered_out: list[str] = []
+            # Dedup: same amount mentioned twice in same session (e.g.,
+            # t0 and t6 of the same conversation about the same event)
+            # should count once. Key = (amount_int, session_prefix) where
+            # session_prefix is turn_id minus the "_tN" suffix.
+            seen_amounts: set[tuple[int, str]] = set()
+            _AMOUNT_IN_DELTA = _re.compile(r"\+?\$?([\d,]+(?:\.\d+)?)")
+            _SESSION_PREFIX_RE = _re.compile(r"^(.+?)_t\d+$")
             for h in (entry.history or [])[-12:]:
                 if h.get("reason") in ("trinity_amount_refine",
                                        "trinity_member_refine"):
@@ -1239,7 +1277,48 @@ class RadioMind:
                 tid = str(h.get("turn_id") or "").strip()
                 tag = f" [{tid}]" if tid else ""
                 prefix = f"{delta} :: " if delta else ""
-                phrases.append(f"  · {prefix}{phr[:140]}{tag}")
+
+                in_scope = True
+                if scope_word is not None:
+                    stem = scope_word.rstrip("s")
+                    in_scope = bool(_re.search(
+                        rf"\b{_re.escape(stem)}", phr, _re.IGNORECASE,
+                    ))
+                mark = "" if in_scope else "  ← FILTERED OUT (no '" + (scope_word or "") + "' in source)"
+
+                # Check dedup key when in scope
+                is_dup = False
+                if in_scope and delta:
+                    m = _AMOUNT_IN_DELTA.search(delta)
+                    if m:
+                        try:
+                            amt_i = int(float(m.group(1).replace(",", "")))
+                            sm = _SESSION_PREFIX_RE.match(tid)
+                            sess_prefix = sm.group(1) if sm else tid
+                            key = (amt_i, sess_prefix)
+                            if key in seen_amounts:
+                                is_dup = True
+                            else:
+                                seen_amounts.add(key)
+                        except ValueError:
+                            pass
+                if is_dup:
+                    mark = "  ← DEDUPED (same amount, same session as another event)"
+
+                phrases.append(f"  · {prefix}{phr[:140]}{tag}{mark}")
+                if not in_scope or is_dup:
+                    if not in_scope:
+                        filtered_out.append(phr[:80])
+                    continue
+                # Parse amount from delta (only for kept events)
+                if delta:
+                    m = _AMOUNT_IN_DELTA.search(delta)
+                    if m:
+                        try:
+                            scoped_sum += float(m.group(1).replace(",", ""))
+                            scoped_count += 1
+                        except ValueError:
+                            pass
 
             if entry.total_amount is not None:
                 amt = f"${entry.total_amount:,.2f}".rstrip("0").rstrip(".")
@@ -1251,6 +1330,23 @@ class RadioMind:
                     f"  · (no per-event phrases recorded; turn IDs: "
                     f"{','.join(entry.evidence[:6])})"
                 ])
+                if scope_word is not None and scoped_count > 0:
+                    scoped_amt = f"${scoped_sum:,.2f}".rstrip("0").rstrip(".")
+                    lines.append(
+                        f"  ⇒ SCOPED TOTAL (filter='{scope_word}'): "
+                        f"{scoped_amt} from {scoped_count} of {entry.count} "
+                        f"events.\n"
+                        f"    ⚠ THIS IS THE FINAL ANSWER — copy {scoped_amt} "
+                        f"directly. The filter reflects the user's own "
+                        f"vocabulary: only events whose source turn literally "
+                        f"contains the word '{scope_word}' are part of the "
+                        f"'{scope_word}' total. Do NOT second-guess with "
+                        f"semantic reasoning like 'music education is also "
+                        f"charity' — the user's language is the ground truth. "
+                        f"Do NOT re-sum raw numbers from retrieved memories; "
+                        f"they will inflate the total by re-counting the "
+                        f"already-deduped / filtered events."
+                    )
             else:
                 mem = ""
                 if entry.members:
@@ -1263,6 +1359,13 @@ class RadioMind:
                     f"  · (no per-event phrases recorded; turn IDs: "
                     f"{','.join(entry.evidence[:6])})"
                 ])
+                if scope_word is not None and scoped_count > 0:
+                    lines.append(
+                        f"  ⇒ SCOPED COUNT (filter='{scope_word}'): "
+                        f"{scoped_count} of {entry.count} events match. "
+                        f"Use this as the authoritative count for "
+                        f"'{scope_word}'-scoped questions."
+                    )
 
         if is_delta and primary.total_amount is not None:
             lines.append(
