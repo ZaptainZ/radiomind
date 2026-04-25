@@ -39,30 +39,57 @@ def llm_call(
     prompt: str, config_path: Path,
     model: str = "gpt-4o", max_tokens: int = 800,
     profile: str = "openai", system: str | None = None,
+    max_retries: int = 3,
 ) -> str:
-    import tomllib
+    """One LLM call with retries on transient errors.
+
+    Retries on: SSL EOF, ConnectionResetError, urllib timeout, 429, 500-599.
+    Does NOT retry on 400/401/403/404 (real failures, retrying won't help).
+    Backoff: 1s, 2s, 4s.
+    """
+    import tomllib, time
     cfg = tomllib.loads(config_path.read_text())
     oc = cfg["llm"][profile]
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-    req = urllib.request.Request(
-        f"{oc['base_url'].rstrip('/')}/chat/completions",
-        data=json.dumps({
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.0,
-        }).encode(),
-        headers={
-            "Authorization": f"Bearer {oc['api_key']}",
-            "Content-Type": "application/json",
-        },
-    )
-    with _BYPASS_PROXY_OPENER.open(req, timeout=120) as r:
-        body = json.loads(r.read())
-    return body["choices"][0]["message"]["content"].strip()
+    payload = json.dumps({
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": 0.0,
+    }).encode()
+    headers = {
+        "Authorization": f"Bearer {oc['api_key']}",
+        "Content-Type": "application/json",
+    }
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                f"{oc['base_url'].rstrip('/')}/chat/completions",
+                data=payload, headers=headers,
+            )
+            with _BYPASS_PROXY_OPENER.open(req, timeout=120) as r:
+                body = json.loads(r.read())
+            return body["choices"][0]["message"]["content"].strip()
+        except urllib.error.HTTPError as e:
+            # Permanent failures don't retry
+            if e.code in (400, 401, 403, 404):
+                raise
+            # 429 / 5xx: transient, retry
+            last_exc = e
+        except (
+            urllib.error.URLError, ConnectionError,
+            TimeoutError, OSError,
+        ) as e:
+            # SSL EOF, connection refused, dns failure, etc.
+            last_exc = e
+        # Backoff before next attempt (no sleep on the final iteration)
+        if attempt < max_retries - 1:
+            time.sleep(2 ** attempt)
+    raise last_exc if last_exc is not None else RuntimeError("llm_call failed")
 
 
 _THINK_PATTERN = re.compile(r"<mem_thinking>[\s\S]*?</mem_thinking>", re.IGNORECASE)
@@ -503,9 +530,13 @@ def run(
         if calibration:
             ans_prompt = ans_prompt + "\n\n" + calibration
         try:
+            # 1500 tokens: deepseek (esp. DashScope backend) emits
+            # verbose <mem_thinking> blocks; 800 truncated 4 of 100 in
+            # the v2 run, dropping their final answer line and forcing
+            # FAIL. 1500 covers the long-tail cases observed.
             raw_answer = llm_call(
                 ans_prompt, config_path,
-                model=answer_model, max_tokens=800, profile=answer_profile,
+                model=answer_model, max_tokens=1500, profile=answer_profile,
             )
             answer = strip_thinking(raw_answer)
         except Exception as e:
@@ -534,12 +565,13 @@ def run(
         is_correct = False
         verdict = ""
         try:
-            # 1200 tokens: Mem0's judge asks for step-by-step in <judge_thinking>
-            # followed by "yes"/"no" on a new line. 300 tokens truncated the
-            # reasoning before the verdict (seen as 0% on n=30 smoke run).
+            # 2000 tokens: 1200 truncated the verdict mid-sentence on a
+            # v2 run question (judge wrote "3. The model response
+            # directly addresses…" then ran out before producing
+            # yes/no). 2000 leaves headroom for verbose judge_thinking.
             verdict = llm_call(
                 judge_prompt, config_path,
-                model=judge_model, max_tokens=1200, profile=judge_profile,
+                model=judge_model, max_tokens=2000, profile=judge_profile,
             )
             is_correct = _parse_judge_verdict(verdict)
         except Exception as e:

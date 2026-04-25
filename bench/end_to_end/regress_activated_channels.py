@@ -229,8 +229,11 @@ def main() -> int:
             question_date=q_date or "",
         )
         try:
+            # 2000 (was 1200): gpt-4o judge sometimes runs out before
+            # writing the trailing yes/no, dropping the verdict mid-
+            # sentence. Same fix mirrored in run_longmemeval_mem0.py.
             verdict = llm_call(judge_prompt, cfg_dst, model=judge_model,
-                               max_tokens=1200, profile=judge_profile)
+                               max_tokens=2000, profile=judge_profile)
             is_correct = _parse_judge_verdict(verdict)
         except Exception as e:
             verdict = f"[judge error: {e}]"
