@@ -15,7 +15,9 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from run_longmemeval_mem0 import llm_call, _parse_judge_verdict  # noqa: E402
+from run_longmemeval_mem0 import (  # noqa: E402
+    llm_call, _parse_judge_verdict, strip_thinking,
+)
 
 
 # Load the 18 wrong qids from the post-refactor run.
@@ -222,10 +224,13 @@ def main() -> int:
             answer = f"[answer error: {e}]"
         print(f"  answer: {answer[:120].replace(chr(10), chr(32))}")
 
-        # Judge
+        # Judge — strip <mem_thinking> first so the judge sees only
+        # the user-facing answer. Otherwise the long reasoning blob
+        # eats judge max_tokens before yes/no, causing false FAILs.
+        judge_response = strip_thinking(answer)
         judge_prompt = get_judge_prompt(
             question_type=qtype, question_id=qid,
-            question=question, answer=gold, response=answer,
+            question=question, answer=gold, response=judge_response,
             question_date=q_date or "",
         )
         try:
