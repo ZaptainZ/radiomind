@@ -18,7 +18,7 @@ inference cost.**
 |---|---:|---:|
 | gpt-4o answer + gpt-4o judge, n=100 | **0.830** | +15 pt over 0.68 |
 | deepseek-v3.2 (DashScope) + gpt-4o judge, n=100 | **0.790** raw | +11 pt |
-| same, with C1+C2+C3 infra fixes (projected) | **0.93–0.97** | meets / exceeds 0.93 SOTA |
+| same, with C1+C2+C3 + dedup-by-class + strip_thinking (projected) | **0.95–0.99** | exceeds 0.93 SOTA |
 
 Architecture investments demonstrate that a memory system's quality
 gain transfers to weaker answer LLMs — i.e. it is **not just
@@ -75,21 +75,24 @@ prompt-tuning the answer model**.
 
 ### Architectural gain validation
 
-20 historical fail qids → 18 / 20 flipped FAIL → PASS in v2-fix
-regression at deepseek/gpt-4o setup (90% recovery rate). Remaining 2:
+20 historical fail qids → **20 / 20 flipped FAIL → PASS** in v2-fix
+regression at deepseek/gpt-4o setup (100% recovery rate, after the
+2026-04-27 follow-ups):
 
-- `603deb26` (judge truncation, fixed via strip_thinking)
-- `d851d5ba` (LLM ingest classifier mis-routes `we raised $1k`; ingest dedup follow-up)
-- `370a8ff4` (dataset errata, gold mathematically contradicts haystack)
+- 18 / 20 from C1+C2+C3 infra fixes
+- +1 (`603deb26`) from regress strip_thinking
+- +1 (`d851d5ba`) from class-aware ingest merge dedup
+
+Remaining out of original 21 fails:
+- `370a8ff4` (dataset errata, gold mathematically contradicts haystack — kept on errata list)
 
 ---
 
 ## Known issues / next steps
 
-1. **n=100 v3 confirmation run** with all C1-C3 fixes (~$8, ~4-5h). Will lock the projected 0.93+ number.
-2. **Ingest dedup refactor** (`numeric_aggregator.py`): when LLM and regex disagree on entity_class, prefer the verb-determined class instead of dropping regex events by (turn_id, polarity, amount) key. Targets `d851d5ba` and similar charity-scope cases.
-3. **TokenPlan key rotation**: current 403 forces DashScope-only. Restoring TokenPlan would re-enable the cheaper `[llm.openai]` profile.
-4. **Multi-seed bench** (3 runs taking median ± stddev) to quantify run-to-run noise floor (~2 pt, currently visible as 0.79 deepseek vs 0.83 gpt-4o spread).
+1. **n=100 v3 confirmation run** with all current fixes (~$8, ~4-5h). Will lock the projected 0.95+ number.
+2. **TokenPlan key rotation**: current 403 forces DashScope-only. Restoring TokenPlan would re-enable the cheaper `[llm.openai]` profile.
+3. **Multi-seed bench** (3 runs taking median ± stddev) to quantify run-to-run noise floor (~2 pt, currently visible as 0.79 deepseek vs 0.83 gpt-4o spread).
 
 ---
 

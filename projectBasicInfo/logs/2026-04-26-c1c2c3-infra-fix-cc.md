@@ -74,9 +74,36 @@ vs Mem0 同协议 SOTA 0.93：**至少打平、最多领先 4pt**。
    - `603deb26`: 模型答 "10 times" matches gold "10"，但 judge 判 no。需要看 verdict 全文是判 strict 还是另有玄机
    - `d851d5ba`: charity 总和的多层难题（dedup + scope + 非确定性），历史已知顽题
 
+## 后续修复（2026-04-27）
+
+### 603deb26 → PASS
+**根因**：regress harness 没把 `<mem_thinking>` 从 answer 里 strip 掉就喂给 judge，gpt-4o judge 看到长 reasoning 被 max_tokens 截断，verdict 写到一半就停了。
+**修法**：commit `03453d4` — `regress_activated_channels.py` 加 `strip_thinking(answer)` 保持和主 bench 一致。
+
+### d851d5ba → PASS
+**根因**：DashScope 的 LLM 在 ingest 时把 `we raised $1,000 for the local children's hospital`（bake sale）分到非 charity 类（因为这一句字面没有 "charity"），regex 通过动词 `raised` 正确分类到 `charity_donations`。但 LLM/regex merge dedup 是按 `(turn_id, polarity, amount)`，同一 turn+amount 的 regex 版本被丢掉了 → cardinal `charity_donations` 类缺这条事件。
+
+**修法**：commit `836c78e` — dedup key 加上 `entity_class`：`(turn_id, polarity, amount, entity_class)`。当 LLM 和 regex 对同一物理事件的分类不一致时，**两个都保留**。各自落到自己的类 entry，scope query 只查 charity_donations，拿到 regex 的正确版本。
+
+**为什么之前以为修过实际没修**：FM run（4/22）通过是因为 TokenPlan 的 LLM 恰好把 bake sale 分对了类。**这是建立在 LLM 非确定性上的脆弱通过**，换 backend（DashScope）就破。class-aware dedup 才是真正的健壮性 fix。
+
+**验证**：
+- isolated full-haystack diag：`charity_donations` 抓到 7 events 含 bake sale × 2，total $11,750 ✓
+- 单题 retest（commit `836c78e` 后）：PASS
+
+## 最终战果（截至 2026-04-27）
+
+**20 / 20 v2 错题全 PASS**：
+- 18 道由 C1+C2+C3（max_tokens + retry）带回
+- 1 道由 strip_thinking 修（`603deb26`）
+- 1 道由 class-aware dedup 修（`d851d5ba`）
+
+剩余 1 道：`370a8ff4` —— dataset gold 错误，已在 errata 白名单。
+
 ## 修改文件
 
 - `bench/end_to_end/run_longmemeval_mem0.py`：llm_call retry + answer/judge max_tokens 提升
-- `bench/end_to_end/regress_activated_channels.py`：judge max_tokens 提升
+- `bench/end_to_end/regress_activated_channels.py`：judge max_tokens 提升 + strip_thinking 在 judge 之前
+- `src/radiomind/refinement/numeric_aggregator.py`：merge dedup key 加 entity_class
 - `~/.radiomind/config.toml`：backend 注释清晰化
-- `bench/end_to_end/activated-regress-results.json`：本次 20-qid 结果
+- `bench/end_to_end/activated-regress-results.json`：20-qid + 后续 retest 结果

@@ -433,18 +433,17 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 ### 回归战果（20 道 v2 错题，去除 errata）
 
-**18 / 20 FAIL → PASS**（命中率 90%）
-
-剩 2 道：
-- `603deb26`：judge 看到完整 mem_thinking 被截断（已通过 strip 修）
-- `d851d5ba`：charity 总和顽题，根因是 LLM-extract 给 `we raised $1,000` 误分类，regex 正确分类被 dedup 干掉。**留作 ingest 重构 task**
+**20 / 20 FAIL → PASS**（截至 2026-04-27 全部翻正）：
+- 18 道由 C1+C2+C3 带回
+- `603deb26` 由 regress harness 加 strip_thinking 修复
+- `d851d5ba` 由 ingest merge dedup 加上 entity_class 维度修复（class-aware dedup，commit `836c78e`）— 之前 FM run 通过靠的是 LLM 偶发分类对，换 backend 就破；现在不论 LLM 怎么分，regex 的正确分类都不会被丢
 
 ### 投影 n=100
 
-- 保守（原 79 PASS 完全稳定）：79 + 18 = **97 / 100 = 0.970**
-- 实际（含 prompt 改动副作用 1-3 道）：**0.93 - 0.95**
+- 保守（原 79 PASS 完全稳定）：79 + 20 = **99 / 100 = 0.990**
+- 实际（含 prompt 改动副作用 1-3 道）：**0.95 - 0.97**
 
-vs Mem0 同协议 SOTA 0.93：**至少打平、最多领先 4pt**，且用 1/10 成本的 deepseek answer。
+vs Mem0 同协议 SOTA 0.93：**领先 2-6 pt**，且用 1/10 成本的 deepseek answer。
 
 ### 配置 pinning
 
@@ -1109,7 +1108,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 252 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 162 commits
+- **Stats**: 252 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 164 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
