@@ -359,15 +359,36 @@ class NumericAggregator:
             regex_candidates.extend(self._regex_extract(content, turn_id, ts))
 
         if candidates:
-            # Merge: LLM candidates preferred (they have entity_class
-            # already). Regex-only candidates for (turn_id, polarity,
-            # amount) tuples not already covered get appended.
-            seen_keys: set[tuple[str, str, float]] = set()
+            # Merge: LLM candidates already carry entity_class from the
+            # batch extractor. Regex candidates carry a verb-derived
+            # cls_hint (e.g. "raised" → "charity_donations").
+            #
+            # Dedup key includes entity_class — when LLM and regex
+            # DISAGREE on class for the same physical event, KEEP BOTH.
+            # This was the d851d5ba bug: DashScope's LLM put a
+            # "we raised $1,000" event in a non-charity class, then the
+            # turn-level dedup dropped regex's correctly-classified
+            # charity_donations event with the same (turn_id, amount).
+            # The query "for charity in total" then missed the $1k.
+            #
+            # Keeping both is safe: each candidate contributes its
+            # amount to its own class entry. A query for "charity"
+            # only consults charity_donations (the regex one), so the
+            # LLM's misclassified copy in another class is harmless.
+            def _norm_class(c: dict) -> str:
+                return str(
+                    c.get("entity_class")
+                    or c.get("cls_hint")
+                    or "amount_events"
+                ).strip().lower()
+
+            seen_keys: set[tuple[str, str, float, str]] = set()
             for c in candidates:
                 if c["polarity"] == "amount":
                     seen_keys.add((
                         c.get("turn_id", ""), c["polarity"],
                         round(float(c.get("amount") or 0.0), 2),
+                        _norm_class(c),
                     ))
             for rc in regex_candidates:
                 if rc["polarity"] != "amount":
@@ -377,6 +398,7 @@ class NumericAggregator:
                 key = (
                     rc.get("turn_id", ""), rc["polarity"],
                     round(float(rc.get("amount") or 0.0), 2),
+                    _norm_class(rc),
                 )
                 if key in seen_keys:
                     continue
