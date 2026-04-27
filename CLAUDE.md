@@ -5,7 +5,7 @@
 - 关系: RadioHeader / RadioHand 的默认记忆模块，也可接入 Hermes/OpenClaw 等
 - Tech stack: Rust (守护进程) + Python (逻辑层) + SQLite + HDC + MLX
 - Status: v0.2 修复完成（P1 向量+验证+多用户+CRUD+doctor+LoCoMo，P2 LoRA 做对，P3 会话持久化+6 MCP tool+迁移框架，2026-04-15）
-- Stats: 227 tests, ~8200 行, GitHub: github.com/ZaptainZ/radiomind
+- Stats: 246 tests, ~20 120 行 (Python+Rust), GitHub: github.com/ZaptainZ/radiomind
 - API 三层: 极简 (radiomind.connect → 4方法) / 协议 (REST+MCP+Hermes) / 高级 (RadioMind 全量)
 - 炼化双模式: 宿主驱动 (refine_step, 零LLM费用) / 自驱动 (refine, 需要LLM)
 - LLM 零配置: 宿主AI → 环境变量(11 provider) → Ollama → config.toml → 纯记忆

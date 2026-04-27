@@ -64,7 +64,7 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
 
 **审计基础设施**
 - GitHub Actions CI：pytest matrix / LoCoMo 回归门禁 / import sanity / sandbox-guard
-- 231 tests pass
+- 246 tests pass
 - 完整备份 `~/radiomind-backup-20260415-181603/` (94MB)
 - 真实 `~/.radiomind` 内容字节级完好（114035=114035，745/1 active/archived 不变）
 
@@ -438,12 +438,20 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 - `603deb26` 由 regress harness 加 strip_thinking 修复
 - `d851d5ba` 由 ingest merge dedup 加上 entity_class 维度修复（class-aware dedup，commit `836c78e`）— 之前 FM run 通过靠的是 LLM 偶发分类对，换 backend 就破；现在不论 LLM 怎么分，regex 的正确分类都不会被丢
 
-### 投影 n=100
+### 投影 n=100（基于 2026-04-27 压力测试实测）
 
-- 保守（原 79 PASS 完全稳定）：79 + 20 = **99 / 100 = 0.990**
-- 实际（含 prompt 改动副作用 1-3 道）：**0.95 - 0.97**
+**Prompt 副作用率实测**：从原 79 PASS 中分两轮独立采样 20 + 20（不重叠），跑 deepseek/gpt-4o：
 
-vs Mem0 同协议 SOTA 0.93：**领先 2-6 pt**，且用 1/10 成本的 deepseek answer。
+- Run 1（seed 42）：19 / 20 PASS = 5% 回归（`gpt4_d12ceb0e`，B4 over-abstain）
+- Run 2（seed 7）：19 / 20 PASS = 5% 回归（`59524333`，knowledge-update 选了旧记忆）
+- **合计 38 / 40 = 95%**，**两轮一致 5% 回归率 → 稳定的 prompt 副作用 floor，不是噪声**
+
+更新投影：
+- 原 79 PASS × 0.95 = 75 仍 PASS
+- 20 / 20 v2 错题翻正 = 20 PASS
+- **75 + 20 = 95 / 100 = 0.950**
+
+vs Mem0 同协议 SOTA 0.93：**领先 +2 pt**，且用 1/10 成本的 deepseek answer。
 
 ### 配置 pinning
 
@@ -452,7 +460,7 @@ vs Mem0 同协议 SOTA 0.93：**领先 2-6 pt**，且用 1/10 成本的 deepseek
 - `[llm.dashscope]` = DashScope（benchmark 用此 → answer-profile=dashscope）
 - `[llm.openrouter]` = gpt-4o judge
 
-详见 `logs/2026-04-25-n100-deepseek-judge4o-v2-cc.md` + `logs/2026-04-26-c1c2c3-infra-fix-cc.md`。
+详见 `logs/2026-04-25-n100-deepseek-judge4o-v2-cc.md` + `logs/2026-04-26-c1c2c3-infra-fix-cc.md` + `logs/2026-04-27-stress-test-prompt-side-effects-cc.md`。
 
 ---
 
@@ -1108,7 +1116,7 @@ class RadioMindHermesProvider(MemoryProvider):
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
 - **License**: MIT
 - **Status**: 全功能完成，已发布 GitHub
-- **Stats**: 252 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 164 commits
+- **Stats**: 246 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 165 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind
 - **Related projects**:
   - RadioHeader (经验层来源): `~/DarkForce/RadioHead/radioheader/`
