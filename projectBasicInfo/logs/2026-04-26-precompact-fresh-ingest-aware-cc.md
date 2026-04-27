@@ -60,3 +60,28 @@ DB opened read-only (`mode=ro`) with 1s timeout, so a busy daemon write doesn't 
 `/compact` now passes silently in the common case (active session). The reminder only fires when memories really are stale — seatbelt, not wall.
 
 Knobs: `RADIOMIND_COMPACT_FRESH_S` (default 1800), `RADIOMIND_COMPACT_COOLDOWN_S` (default 600).
+
+## 2026-04-27 follow-up: rip out the seatbelt entirely
+
+The "fresh-ingest aware seatbelt" still bit the user the next day:
+
+```
+last_ingest:    2 days ago  → past 1800s FRESH window
+last_blocked_ts: 22h ago    → past 600s COOLDOWN
+→ block (first attempt in this window)
+```
+
+The user's explicit `/compact` is being overridden by paternalistic logic *again*. Every iteration of this hook found a new "but in this case we should block" edge case. The pattern is the bug: any block path is wrong when the user typed /compact themselves.
+
+**Final decision**: PreCompact hook is now a hard no-op — it just prints `{}` and exits. The file is kept (registered in settings.json) so future async pre-compaction work has a place to live, but it does not gate compaction on anything.
+
+The actual save protection is `stop_hook.py`, which auto-ingests every ~15 human messages. That's what makes long sessions safe. PreCompact never had a job that the Stop hook wasn't already doing better.
+
+Reduced tests from 10 → 3:
+- `test_approves_with_no_data`
+- `test_approves_regardless_of_state_or_db`
+- `test_does_not_create_state_file`
+
+Removed env knobs `RADIOMIND_COMPACT_FRESH_S` / `RADIOMIND_COMPACT_COOLDOWN_S` (no longer consulted).
+
+**Lesson**: when a hook iteration count is ≥4 and each one found a new edge case, the hook is fighting the user, not the problem. Just remove it.
