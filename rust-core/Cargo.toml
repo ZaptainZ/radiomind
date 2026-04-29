@@ -2,7 +2,7 @@
 name = "radiomind-core"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license-file = "../LICENSE"
 description = "RadioMind storage daemon — bionic memory core in Rust"
 
 [dependencies]

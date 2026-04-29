@@ -305,4 +305,8 @@ RadioHeader（规则与经验）→ RadioMind（记忆与习惯）→ RadioHand�
 
 ## 许可
 
-MIT
+**[PolyForm Noncommercial 1.0.0](LICENSE)** — 个人、研究、教育、爱好以及
+公益/公共机构等非商业用途免费。
+
+任何商业用途（包括但不限于在营利公司内部使用、付费服务、托管 SaaS、与付费
+软件捆绑等）需另行获取商业许可。请联系 **captainzi0905@gmail.com** 洽谈。

@@ -305,4 +305,10 @@ RadioHeader (rules & experience) → RadioMind (memory & habits) → RadioHand (
 
 ## License
 
-MIT
+**[PolyForm Noncommercial 1.0.0](LICENSE)** — free for noncommercial use
+(personal, research, education, hobby, charitable / public organizations).
+
+For any commercial use (use within a for-profit company, paid services,
+hosted SaaS, products bundled with paid software, etc.), a separate
+commercial license is required. Contact **captainzi0905@gmail.com** for
+licensing terms.

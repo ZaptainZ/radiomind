@@ -1101,7 +1101,7 @@ class RadioMindHermesProvider(MemoryProvider):
 | 配置原则 | 一切不写死，运行时自省 | 用户可能更改 LLM/后端/通道 |
 | 领域管理 | 不预设，从对话中自然生长 | 仿生：大脑的分类从经验涌现，非预装 |
 | 隐私策略 | 隐私项不外流 + 记忆口令身份验证 | 强记忆项作为口头密码，比传统密码更自然且难伪造 |
-| 开源许可 | MIT | 与 RadioHeader/Hermes 一致，采用门槛最低 |
+| 开源许可 | PolyForm Noncommercial 1.0.0 | 个人/研究/教育免费，商用需付费 license |
 | 产品命名 | Radio 家族: Header(规则) + Mind(记忆) + Hand(执行) | 头定规则、脑存记忆、手去执行 |
 | 项目范围 | 本项目只聚焦 RadioMind 记忆模块 | RadioHand 为独立项目 |
 | v0.1 语言 | Python 先行 → v0.3 Rust 核心 | Python 跨平台兼容所有目标 Agent 框架 |
@@ -1114,7 +1114,7 @@ class RadioMindHermesProvider(MemoryProvider):
 ## 十一、项目元信息
 
 - **Tech stack**: Rust (守护进程) + Python (逻辑层) | SQLite + HDC + MLX
-- **License**: MIT
+- **License**: PolyForm Noncommercial 1.0.0（商用咨询：captainzi0905@gmail.com）
 - **Status**: 全功能完成，已发布 GitHub
 - **Stats**: 246 tests, ~20 120 行代码 (Python 15 686 + Rust 4 434), 165 commits
 - **Repository**: https://github.com/ZaptainZ/radiomind

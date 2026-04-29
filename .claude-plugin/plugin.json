@@ -5,7 +5,7 @@
   "author": "Zaptain",
   "homepage": "https://github.com/ZaptainZ/radiomind",
   "repository": "https://github.com/ZaptainZ/radiomind",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": ["memory", "bionic", "habits", "HDC", "mcp", "rag", "lora"],
   "mcpServers": {
     "radiomind": {
