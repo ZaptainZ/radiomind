@@ -60,10 +60,21 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 |---|---|---:|---:|
 | Mem0 v3（baseline）                  | gpt-4o / gpt-4o          | 0.680   | — |
 | **RadioMind（架构 v3）**             | gpt-4o / gpt-4o          | **0.830**   | **+15.0 pt** |
-| **RadioMind + bench 基础设施修复**   | deepseek-v3.2 / gpt-4o   | **~0.95** | **+27 pt**，≈ 1/10 推理成本 |
+| **RadioMind（架构 v3）**             | deepseek-v3.2 / gpt-4o   | **0.860** | **+18.0 pt**，≈ 1/10 推理成本 |
 | MemMachine（当前 SOTA）              | gpt-4o / gpt-4o          | 0.930   | — |
 
-**0.95** 是 2026-04 架构投资完成后的 LongMemEval-S 投影分。实证支撑充分：历史 20 / 20 错题全部翻正，跨两轮独立分层采样测出**仅 5 % 副作用率**（38 / 40 原 PASS 题继续 PASS）——所以 40 道样本到 100 道的外推置信带很窄。
+按 qtype 分布（deepseek-v3.2 跑分，n=100）：
+
+| qtype | n | acc |
+|---|---:|---:|
+| single-session-assistant   | 16 | **1.000** |
+| knowledge-update           | 17 | 0.941 |
+| single-session-user        | 16 | 0.938 |
+| single-session-preference  | 16 | 0.875 |
+| multi-session              | 18 | 0.722 |
+| temporal-reasoning         | 17 | 0.706 |
+
+跨 session 整合和时间算术是失分聚集区，也是后续迭代的设计目标。
 
 ### LoCoMo cat 1-4（多轮对话，n=100）
 

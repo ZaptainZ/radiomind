@@ -438,20 +438,36 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 - `603deb26` 由 regress harness 加 strip_thinking 修复
 - `d851d5ba` 由 ingest merge dedup 加上 entity_class 维度修复（class-aware dedup，commit `836c78e`）— 之前 FM run 通过靠的是 LLM 偶发分类对，换 backend 就破；现在不论 LLM 怎么分，regex 的正确分类都不会被丢
 
-### 投影 n=100（基于 2026-04-27 压力测试实测）
+### Prompt 副作用率实测（2026-04-27）
 
-**Prompt 副作用率实测**：从原 79 PASS 中分两轮独立采样 20 + 20（不重叠），跑 deepseek/gpt-4o：
+从原 79 PASS 中分两轮独立采样 20 + 20（不重叠）：
 
 - Run 1（seed 42）：19 / 20 PASS = 5% 回归（`gpt4_d12ceb0e`，B4 over-abstain）
 - Run 2（seed 7）：19 / 20 PASS = 5% 回归（`59524333`，knowledge-update 选了旧记忆）
-- **合计 38 / 40 = 95%**，**两轮一致 5% 回归率 → 稳定的 prompt 副作用 floor，不是噪声**
+- **合计 38 / 40 = 95%**，两轮一致 5% 回归率
 
-更新投影：
-- 原 79 PASS × 0.95 = 75 仍 PASS
-- 20 / 20 v2 错题翻正 = 20 PASS
-- **75 + 20 = 95 / 100 = 0.950**
+### n=100 v3 实测（2026-04-30）
 
-vs Mem0 同协议 SOTA 0.93：**领先 +2 pt**，且用 1/10 成本的 deepseek answer。
+远端 macbook-pro 跑全量 n=100，deepseek-v3.2 + gpt-4o judge，20h 用时：
+
+**总分 0.860（86 / 100）**，vs Mem0 同协议 0.680 → **+18 pt**，1/10 推理成本。
+
+| qtype | n | acc |
+|---|---:|---:|
+| single-session-assistant   | 16 | **1.000** |
+| knowledge-update           | 17 | 0.941 |
+| single-session-user        | 16 | 0.938 |
+| single-session-preference  | 16 | 0.875 |
+| multi-session              | 18 | 0.722 |
+| temporal-reasoning         | 17 | 0.706 |
+
+5% 副作用率投影的 0.95 偏乐观 9 pt：v2-PASS 样本里 single-session 占比偏高（这些类已 ≥0.93），而 v3 的 stratified seed 给到了更多 multi-session（n=18, acc=0.722）和 temporal-reasoning（n=17, acc=0.706），这两类下面 pull average。
+
+**14 道失败定位：**
+- multi-session（5）：`d851d5ba` 慈善总额（class-aware dedup 在 v3 seed 又失效，需 deterministic regression test）、`c18a7dc8` 年龄 delta = 0、`d3ab962e` hike sum 错、`gpt4_ab202e7f` 漏 1 件、`bb7c3b45` 过 abstain
+- temporal-reasoning（5）：3 道过 abstain（含 `370a8ff4` errata 应自动过滤）、1 道 event_interval 误算、1 道实体错配
+- preference（2）：B3 anchor 没触发
+- abstain calibration 双向出错（净 0 但损 6 道）
 
 ### 配置 pinning
 
@@ -460,7 +476,7 @@ vs Mem0 同协议 SOTA 0.93：**领先 +2 pt**，且用 1/10 成本的 deepseek 
 - `[llm.dashscope]` = DashScope（benchmark 用此 → answer-profile=dashscope）
 - `[llm.openrouter]` = gpt-4o judge
 
-详见 `logs/2026-04-25-n100-deepseek-judge4o-v2-cc.md` + `logs/2026-04-26-c1c2c3-infra-fix-cc.md` + `logs/2026-04-27-stress-test-prompt-side-effects-cc.md`。
+详见 `logs/2026-04-25-n100-deepseek-judge4o-v2-cc.md` + `logs/2026-04-26-c1c2c3-infra-fix-cc.md` + `logs/2026-04-27-stress-test-prompt-side-effects-cc.md` + `logs/2026-04-30-n100-v3-deepseek-actual-0.86-cc.md`。
 
 ---
 

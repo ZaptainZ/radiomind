@@ -11,18 +11,33 @@ the full design rationale see `projectBasicInfo/01_PROJECT_OVERVIEW.md`.
 
 ## TL;DR
 
-**RadioMind beats Mem0's same-protocol LongMemEval-S SOTA at ~1/10 the
+**RadioMind achieves 0.860 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
+n=100), +18 pt over Mem0's 0.680 same-protocol baseline at ≈ 1/10 the
 inference cost.**
 
 | Configuration | Result | vs Mem0 same-protocol |
 |---|---:|---:|
-| gpt-4o answer + gpt-4o judge, n=100 | **0.830** | +15 pt over 0.68 |
-| deepseek-v3.2 (DashScope) + gpt-4o judge, n=100 | **0.790** raw | +11 pt |
-| same, with C1+C2+C3 + dedup-by-class + strip_thinking (projected after stress test) | **0.95** | +2pt over 0.93 SOTA |
+| gpt-4o answer + gpt-4o judge, n=100 (architecture v3) | **0.830** | +15 pt over 0.68 |
+| deepseek-v3.2 + gpt-4o judge, n=100 v2 (before infra fixes) | 0.790 | +11 pt |
+| **deepseek-v3.2 + gpt-4o judge, n=100 v3 (after infra fixes)** | **0.860** | **+18 pt**, ≈ 1/10 cost |
 
-Architecture investments demonstrate that a memory system's quality
-gain transfers to weaker answer LLMs — i.e. it is **not just
-prompt-tuning the answer model**.
+Architecture investments demonstrate that the quality gain transfers to
+the weaker (cheaper) answer LLM — i.e. it is **not just prompt-tuning
+the answer model**.
+
+By question type (n=100 v3, deepseek-v3.2):
+
+| qtype | n | acc |
+|---|---:|---:|
+| single-session-assistant   | 16 | **1.000** |
+| knowledge-update           | 17 | 0.941 |
+| single-session-user        | 16 | 0.938 |
+| single-session-preference  | 16 | 0.875 |
+| multi-session              | 18 | 0.722 |
+| temporal-reasoning         | 17 | 0.706 |
+
+Multi-session integration and temporal reasoning are the two failure-dense
+qtypes — design surfaces for the next iteration.
 
 ---
 
@@ -71,7 +86,7 @@ prompt-tuning the answer model**.
 | Mem0 v3 (gpt-4o answer + gpt-4o judge) | 0.680 | 0.916 |
 | MemMachine | 0.930 | 0.917 |
 | **RadioMind (gpt-4o answer)** | **0.830** | **0.890** |
-| **RadioMind (deepseek answer)** | **0.790** raw / **0.93–0.97** projected after C1-C3 | (pending re-run) |
+| **RadioMind (deepseek answer, n=100 v3)** | **0.860** | (not re-run with v3) |
 
 ### Architectural gain validation
 
@@ -98,17 +113,52 @@ Two independent stratified samples drawn from the 79 v2-PASS qids
 | **Combined**    | **38 / 40** | **2** | **5.0%** |
 
 Identical regression rate across two independent samples → stable
-prompt side-effect floor, not noise. Updated n=100 projection:
-**75 originally-passing × 0.95 + 20 recovered = 95 / 100 = 0.950**
-(beats Mem0 same-protocol SOTA 0.93 by +2pt).
+prompt side-effect floor, not noise.
+
+The 5% rate predicted **0.95** on n=100. The actual n=100 v3 run landed
+at **0.860** — gap explained by qtype mix: the 5% sample over-represented
+single-session qtypes (which already pass at >0.93), while v3's stratified
+sample drew more multi-session and temporal-reasoning items where
+RadioMind currently fails 28-30% of the time. The lesson: side-effect
+rate from a single qtype mix doesn't transfer linearly when the new
+mix is harder.
+
+### n=100 v3 failure analysis (2026-04-30)
+
+14 fails, concentrated in the two structurally hard qtypes:
+
+- **multi-session (5)**: `d851d5ba` charity sum (class-aware dedup didn't
+  re-cover this on a different seed — needs re-investigation), `c18a7dc8`
+  age delta computed as 0, `d3ab962e` hike sum 45 vs gold 8, `gpt4_ab202e7f`
+  count off by 1, `bb7c3b45` over-abstain.
+- **temporal-reasoning (5)**: 3 over-abstain (`b46e15ed`, `gpt4_fa19884d`,
+  `370a8ff4` errata), 1 event_interval miscount (`6e984301`), 1 entity
+  mismatch (`gpt4_59149c78`).
+- **abstain calibration (3 net 0)**: 3 should-abstain over-answer
+  (`031748ae_abs`, `29f2956b_abs`, plus 1), 3 should-answer over-abstain.
+- **preference (2)**: B3 anchor not triggered (`d6233ab6`, `95228167`).
+
+`370a8ff4` is on the errata whitelist but the main bench harness doesn't
+filter it (only `regress_activated_channels.py` does) — that's 1 wrongly-
+counted fail.
 
 ---
 
 ## Known issues / next steps
 
-1. **n=100 v3 confirmation run** with all current fixes (~$8, ~4-5h). Will lock the projected 0.95+ number.
-2. **TokenPlan key rotation**: current 403 forces DashScope-only. Restoring TokenPlan would re-enable the cheaper `[llm.openai]` profile.
-3. **Multi-seed bench** (3 runs taking median ± stddev) to quantify run-to-run noise floor (~2 pt, currently visible as 0.79 deepseek vs 0.83 gpt-4o spread).
+1. **`d851d5ba` regression**: the class-aware dedup fix recovered this on
+   the v2 seed but not v3. Indicates the bake-sale charity event lookup
+   is sensitive to which haystack ordering DashScope returns; need a
+   deterministic regression rather than a one-off fix.
+2. **Errata filter in main bench**: port the `dataset_errata.json` skip
+   logic from `regress_activated_channels.py` to `run_longmemeval_mem0.py`
+   so `370a8ff4` doesn't drag down the headline.
+3. **Multi-session + temporal-reasoning iteration**: the failure-dense
+   qtypes (10/14 = 71% of fails). Worth a focused architectural pass
+   on event chronology and cross-session entity tracking.
+4. **Multi-seed bench** (3 runs at the same n=100) to quantify how much
+   the 0.860 number itself swings with different stratified seeds.
+5. **TokenPlan key rotation**: current 403 forces DashScope-only.
 
 ---
 

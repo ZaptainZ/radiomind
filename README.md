@@ -58,12 +58,23 @@ We benchmark RadioMind against published Mem0 results using the **same Mem0 prot
 
 | System | Answer / Judge | Score | vs Mem0 same-protocol |
 |---|---|---:|---:|
-| Mem0 v3 (baseline)                | gpt-4o / gpt-4o      | 0.680  | — |
-| **RadioMind (architecture v3)**   | gpt-4o / gpt-4o      | **0.830**  | **+15.0 pt** |
-| **RadioMind + bench infra fixes** | deepseek-v3.2 / gpt-4o | **~0.95** | **+27 pt**, ≈ 1/10 inference cost |
-| MemMachine (current SOTA)         | gpt-4o / gpt-4o      | 0.930  | — |
+| Mem0 v3 (baseline)                | gpt-4o / gpt-4o        | 0.680  | — |
+| **RadioMind (architecture v3)**   | gpt-4o / gpt-4o        | **0.830**  | **+15.0 pt** |
+| **RadioMind (architecture v3)**   | deepseek-v3.2 / gpt-4o | **0.860**  | **+18.0 pt**, ≈ 1/10 inference cost |
+| MemMachine (current SOTA)         | gpt-4o / gpt-4o        | 0.930  | — |
 
-The **0.95** number is the projected LongMemEval-S score after the 2026-04 architecture investments (numeric aggregation, attention signatures, skill registry, class-aware ingest dedup). It's empirically anchored: 20 / 20 historical fails recovered, **5 % regression rate** measured across two independent stratified samples (38 / 40 originally-passing qids still pass) — so the projection from a 40-qid sample to 100 is statistically tight.
+By question type (deepseek-v3.2 run, n=100):
+
+| qtype | n | acc |
+|---|---:|---:|
+| single-session-assistant   | 16 | **1.000** |
+| knowledge-update           | 17 | 0.941 |
+| single-session-user        | 16 | 0.938 |
+| single-session-preference  | 16 | 0.875 |
+| multi-session              | 18 | 0.722 |
+| temporal-reasoning         | 17 | 0.706 |
+
+Multi-session integration and temporal date arithmetic are the failure-dense regions; these are the design surfaces under continued iteration.
 
 ### LoCoMo cat 1-4 (multi-turn dialog, n=100)
 
