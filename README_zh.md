@@ -305,6 +305,8 @@ RadioHeader（规则与经验）→ RadioMind（记忆与习惯）→ RadioHand�
 
 ## 许可
 
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
+
 **[PolyForm Noncommercial 1.0.0](LICENSE)** — 个人、研究、教育、爱好以及
 公益/公共机构等非商业用途免费。
 
