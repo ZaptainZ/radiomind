@@ -999,7 +999,19 @@ class RadioMind:
             return ""
 
         evidence = _format_memories(retrieved_memories, max_items=25)
-        result = debate(task, evidence, self._llm)
+        # Multi-round trinity for date / inference tasks. Single-round
+        # was responsible for 6e984301-style precision failures (9 weeks
+        # vs gold 3 weeks): the LLM picked the wrong anchor dates in
+        # round 1 and never reconsidered. With max_rounds=3, round 2
+        # gets shown round 1's stances and is asked to re-examine —
+        # if round 1's anchor was wrong, refinement catches it.
+        # converge_threshold=0.75 stops early when confident.
+        debate_rounds = 3 if sig.wants in {"date", "inference"} else 1
+        result = debate(
+            task, evidence, self._llm,
+            max_rounds=debate_rounds,
+            converge_threshold=0.75,
+        )
         if result is None:
             return ""
         final = str(result.get("final_answer") or "").strip()
