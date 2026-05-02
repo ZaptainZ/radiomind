@@ -144,4 +144,32 @@ if review is not None and review.action != "keep":
    要单独审计接入状态，不能假设"trinity 在 codebase 里就够了"。
 
 ## 修订
-（后续每修一个 GAP 应回到此日志更新对应行的状态）
+
+### 2026-05-02 全部 GAP 关闭
+
+按用户指令"先进行所有修复"逐一落地：
+
+| GAP | 实现 | commit | 状态 |
+|---|---|---|---|
+| GAP-4 双向 abstain gate | `BidirectionalAbstainGate` (salvage.py) + bench wire | `308a57c` | ✅ 关闭 |
+| GAP-5 ingest entity_class trinity 投票 | `_trinity_class_promotion` (numeric_aggregator.py) | `f78869e` | ✅ 关闭 |
+| GAP-1 检索 attention wants 路由 | `aux_flags["preference_anchor"]` + 焦点驱动二次召回 | `71ac289` | ✅ 关闭 |
+| GAP-2 scope filter 二阶约束 | `aux_flags["temporal_constraint"]` + cardinal short-circuit refusal | `71ac289` | ✅ 关闭 |
+| GAP-6 entity 消歧 trinity | `mind.run_entity_disambiguation` + bench wire | `8025c7b` | ✅ 关闭 |
+| GAP-3 skill 软路由 | `try_resolve_soft` (registry.py) + answer_hint switch | `8025c7b` | ✅ 关闭 |
+
+每个 GAP 都附带单元测试（共 35 个新测试，全过）。
+
+**13 个决策点 × 2 原语 矩阵更新**：所有原本 ⚠/❌ 状态全部转 ✅。
+
+### 关键执行经验
+
+1. **类型别名 IGNORECASE 陷阱**：def_ref_re 用 IGNORECASE 后 `[A-Z]` 失去
+   大小写约束，捕获过贪。修法：拆两个 regex（proper-noun 不 ignore，
+   common-noun ignore）。
+2. **Class-aware dedup 不能替代 trinity 类提升**：dedup 防止 merge 时丢
+   分类，但当 LLM 和 regex 都没分到具体类时，dedup 救不了。trinity
+   在 ingest 看原文证据投票才是根因解。
+3. **Soft routing 需要 LLM 兜底回退**：trinity 输出不可解析或 LLM 不
+   可用时，回退到 max-confidence 候选。直接返 None 会破坏现有 PASS
+   题的兜底链。
