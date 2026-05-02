@@ -29,4 +29,5 @@
 |----------|------------|
 | `projectBasicInfo/00_AGENT_RULES.md` | Unsure about operation guidelines |
 | `projectBasicInfo/01_PROJECT_OVERVIEW.md` | Unfamiliar with project structure |
+| `projectBasicInfo/02_CORE_METHODOLOGY.md` | Trinity / attention usage — read FIRST when designing any new decision point |
 | `projectBasicInfo/logs/` | Need implementation history or need to record this task |

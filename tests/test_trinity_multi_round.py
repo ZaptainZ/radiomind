@@ -164,6 +164,123 @@ def test_converge_threshold_can_be_loosened():
     assert len(llm.calls) == 1
 
 
+def test_n_stances_parameter_changes_prompt():
+    """n_stances=4 → prompt asks for 4 stances + 4 stance slots."""
+    llm = _SequencedLLM([{
+        "stances": [_stance(f"s{i}", "x") for i in range(4)],
+        "final_answer": "4-party",
+        "confidence": 0.8,
+    }])
+    result = debate("task", "evidence", llm, n_stances=4)
+    assert result["final_answer"] == "4-party"
+    # Prompt should reflect the count
+    assert "4 distinct opposing stances" in llm.calls[0]
+
+
+def test_n_stances_clamped_to_range():
+    """n_stances clamped to [2, 7]; values outside snap to bounds."""
+    llm = _SequencedLLM([{
+        "stances": [_stance("a", "x"), _stance("b", "y")],
+        "final_answer": "2-stance",
+        "confidence": 0.8,
+    }])
+    # n_stances=1 should clamp to 2
+    result = debate("task", "evidence", llm, n_stances=1)
+    assert result is not None
+    assert "2 distinct opposing stances" in llm.calls[0]
+
+
+def test_sub_trinity_recursion_low_confidence_stance():
+    """sub_trinity_depth=1 + a stance with confidence < 0.5 → spawns inner debate."""
+    # Outer round 1: stance "uncertain" has confidence 0.3 → triggers recursion
+    outer_round1 = {
+        "stances": [
+            {"name": "confident", "emphasis": "x", "conclusion": "A", "confidence": 0.9},
+            {"name": "uncertain", "emphasis": "y", "conclusion": "MAYBE B", "confidence": 0.3},
+            {"name": "skeptic", "emphasis": "z", "conclusion": "C", "confidence": 0.8},
+        ],
+        "final_answer": "tentative",
+        "confidence": 0.6,
+    }
+    # Inner debate for the "uncertain" stance — converges to a refined answer
+    inner_debate = {
+        "stances": [
+            _stance("literal", "B confirmed"),
+            _stance("inference", "B confirmed"),
+            _stance("skeptic", "B confirmed"),
+        ],
+        "final_answer": "REFINED B",
+        "confidence": 0.85,
+    }
+    llm = _SequencedLLM([outer_round1, inner_debate])
+    result = debate("task", "evidence", llm, sub_trinity_depth=1)
+    assert result is not None
+    # The "uncertain" stance's conclusion should now be the inner answer
+    uncertain_stance = next(
+        s for s in result["stances"] if s["name"] == "uncertain"
+    )
+    assert uncertain_stance["conclusion"] == "REFINED B"
+    assert uncertain_stance["confidence"] == 0.85
+    # Provenance recorded on outer + stance
+    assert any("sub_trinity_depth=" in p for p in result.get("provenance", []))
+    assert "sub_trinity" in (uncertain_stance.get("provenance") or [])
+    # Two LLM calls: outer + 1 inner (only 1 stance was weak)
+    assert len(llm.calls) == 2
+
+
+def test_sub_trinity_skipped_when_all_stances_confident():
+    """When every stance has confidence ≥ threshold → no recursion."""
+    llm = _SequencedLLM([{
+        "stances": [
+            {"name": "a", "emphasis": "x", "conclusion": "A", "confidence": 0.8},
+            {"name": "b", "emphasis": "y", "conclusion": "B", "confidence": 0.7},
+            {"name": "c", "emphasis": "z", "conclusion": "C", "confidence": 0.9},
+        ],
+        "final_answer": "ok",
+        "confidence": 0.8,
+    }])
+    result = debate("task", "evidence", llm, sub_trinity_depth=1)
+    assert result is not None
+    assert len(llm.calls) == 1  # No inner debate fired
+
+
+def test_profile_fast_is_single_round():
+    from radiomind.refinement.trinity import fast
+    llm = _SequencedLLM([{
+        "stances": [_stance("a", "x"), _stance("b", "y"), _stance("c", "z")],
+        "final_answer": "fast",
+        "confidence": 0.4,
+    }])
+    result = fast("task", "evidence", llm)
+    assert result["final_answer"] == "fast"
+    assert len(llm.calls) == 1
+
+
+def test_profile_balanced_is_two_rounds():
+    from radiomind.refinement.trinity import balanced
+    rsp = lambda f, c: {
+        "stances": [_stance("a", "x"), _stance("b", "y"), _stance("c", "z")],
+        "final_answer": f, "confidence": c,
+    }
+    # Round 1 low-conf, round 2 high-conf converges
+    llm = _SequencedLLM([rsp("r1", 0.4), rsp("r2", 0.85)])
+    result = balanced("task", "evidence", llm)
+    assert result["final_answer"] == "r2"
+    assert len(llm.calls) == 2
+
+
+def test_profile_parties_uses_n_stances():
+    from radiomind.refinement.trinity import parties
+    llm = _SequencedLLM([{
+        "stances": [_stance(f"s{i}", "x") for i in range(5)],
+        "final_answer": "5-party",
+        "confidence": 0.85,
+    }])
+    result = parties(5, "task", "evidence", llm)
+    assert result["final_answer"] == "5-party"
+    assert "5 distinct opposing stances" in llm.calls[0]
+
+
 def test_refinement_prompt_includes_prior_stances():
     """Round 2's prompt should contain prior round's stance content."""
     llm = _SequencedLLM([
