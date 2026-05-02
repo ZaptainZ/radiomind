@@ -226,6 +226,36 @@ def run(
     )
 
     data = json.loads(DATASET.read_text())
+
+    # Drop dataset-gold errata before sampling. These qids have been
+    # audited as having incorrect gold answers (e.g., 370a8ff4: gold=15
+    # weeks but the haystack supports 11w4d). RadioMind's disagreement
+    # is correct — counting them as fails distorts every n=100 number.
+    # Same skip logic as regress_activated_channels.py for consistency.
+    errata_path = Path(__file__).parent / "dataset_errata.json"
+    errata_qids: set[str] = set()
+    if errata_path.exists():
+        try:
+            errata_qids = set(
+                (json.loads(errata_path.read_text())
+                 .get("longmemeval_s", {}) or {}).keys()
+            )
+        except Exception:
+            errata_qids = set()
+    if errata_qids:
+        before = len(data)
+        data = [
+            q for q in data
+            if (q.get("question_id") or q.get("id")) not in errata_qids
+        ]
+        skipped = before - len(data)
+        if skipped:
+            print(
+                f"  [errata] skipped {skipped} qids with audited-bad gold: "
+                f"{sorted(errata_qids)}",
+                flush=True,
+            )
+
     if n_questions > 0:
         from collections import defaultdict
         import random

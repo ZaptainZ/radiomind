@@ -233,3 +233,55 @@ P0 + P1 是高 ROI 区，能从 0.860 到 0.92-0.93。P2 是真正的架构投�
 - 继续微调 B4 / B3 / RULE 12 等 prompt 表面规则（边际收益已耗尽）
 - 单题 patch（治标不治本）
 - 再做一次 stress test（同样的方法学不会带来新信息）
+
+---
+
+## 2026-05-02 修订：核心方法论对齐
+
+之前的修复方案把 "trinity / attention / 多 LLM 调用 / 算法工程" 混为一谈。
+现在锐化定义：
+
+**核心方法论（仅两条）：**
+1. **三体（trinity）**——三方辩论，可多轮讨论，可子三体递归（每个单体内部
+   再展开三体）。"多轮次"是 trinity 内部的迭代深度，不是独立原语。
+2. **注意力（4th law）**——`AttentionSignature` 驱动的层间 wants 分发。
+
+**系统设计（工具层）：** skills、NumericAggregator、scope filter、
+entity-link、retrieval pipeline、errata filter、deterministic test……
+都是上面两个原语的具体实现载体，可替换、可重构。
+
+### 16 个失败点重新对齐
+
+| Cat | 失败点 | 对齐方式 |
+|---|---|---|
+| 1. Abstain 校准（6 道） | trinity（守护/探索/精简，多轮讨论；守护者内可再子三体讨论"信息算不算够"） |
+| 2a. entity_class 抽取（1-2 道） | trinity（LLM/regex/NER 三方抽取，分歧时子三体深挖原文证据） |
+| 2b. scope 过滤过松（1-2 道） | attention（query wants 二阶约束传到存储层） |
+| 3. 检索召回（B3 anchor，2+ 道） | attention（preference qtype 显式声明 user_specific_anchor wants） |
+| 4a. soft routing（1 道） | trinity（skills 多方并行 + 投票）+ attention（每 skill 声明 wants 域） |
+| 4b. entity 消歧（1 道） | trinity（频率/上下文/attribute 三方，按 attribute 子三体） |
+| 5a. errata filter（1 道） | 纯系统设计（不应硬套核心原语） |
+| 5b. d851d5ba determinism | 由 Cat 2a 的 trinity 投票自然解决（不依赖单 LLM 输出） |
+| skill bug c18a7dc8（1 道） | 纯系统设计（单元测试） |
+
+**13 / 16 由 trinity + attention 覆盖，2 道是工程修复，1 道是 errata。**
+
+### 实施次序
+
+| Pri | 失败 | 落地 |
+|---|---|---|
+| **P0** | Cat 5a errata filter 移植 | 工程，<1h，立即 |
+| **P1** | Cat 1 trinity 接入答题路径（abstain 决策） | 已存在 trinity，加 wire-up + abstain 三体定义 |
+| **P1** | Cat 2a NumericAggregator entity_class trinity 投票 | 把单一 LLM 抽取改为 LLM/regex/NER 三体；分歧时子三体 |
+| **P2** | Cat 2b/3 attention `wants` 二阶过滤 | retrieval 层接 wants tag，preference / scope 都受益 |
+| **P2** | Cat 4 soft routing trinity | skills 多方 + attention domain 声明 |
+| **P3** | Cat 5 工程修复（skill 单测、errata CI） | 防御层 |
+
+### 设计原则
+
+- **每个新失败点先问"这是 trinity 没辩够 / attention 没分发到 / 还是纯系统问题？"**
+  前两个用核心原语，第三个用工程。
+- **不让系统设计层假装自己是核心原语**——dedup、scope filter、retrieval
+  调参就是系统设计，不是 trinity 也不是 attention。诚实定位。
+- **trinity 和 attention 之间也不互替**——trinity 是决策机制，attention
+  是分发机制；多数失败需要两者协同（先 attention 路由，trinity 再决策）。
