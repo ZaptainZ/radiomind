@@ -138,3 +138,33 @@ def test_returns_empty_when_trinity_unparseable(sandbox):
     )
     assert out == ""
     m.shutdown()
+
+
+def test_disambiguates_anaphoric_reference(sandbox):
+    """Question uses 'where was that event held' (anaphoric, no
+    definite-article 'the museum'). Detection should still trigger
+    on venue-suffix candidates in memories. Targets gpt4_59149c78
+    where the failure was a missing detection on 'that event'.
+    """
+    m = _make_mind({
+        "stances": [
+            {"name": "frequency", "emphasis": "x", "conclusion": "Met"},
+            {"name": "context", "emphasis": "x", "conclusion": "Met"},
+            {"name": "attribute", "emphasis": "x", "conclusion": "Met"},
+        ],
+        "final_answer": "Metropolitan chosen",
+        "chosen_candidate": "Metropolitan Museum",
+        "confidence": 0.85,
+    }, sandbox)
+    out = m.run_entity_disambiguation(
+        "I participated in an art event two weeks ago. Where was that "
+        "event held?",
+        retrieved_memories=[
+            _mem("I went to the Metropolitan Museum's art exhibit on Jan 18"),
+            _mem("Last month I visited the City Art Museum"),
+            _mem("The Metropolitan Museum's modern wing was closed yesterday"),
+            _mem("I had coffee near the City Art Museum on Saturday"),
+        ],
+    )
+    assert out, "expected anaphoric disambiguation prefix"
+    assert "Metropolitan Museum" in out

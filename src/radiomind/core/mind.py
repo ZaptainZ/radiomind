@@ -1129,22 +1129,36 @@ class RadioMind:
             task=(
                 f"The user asked a preference/advice question. Extract "
                 f"USER-SPECIFIC context from memories that the answer "
-                f"should anchor on: tools they own, habits, preferences "
-                f"and constraints they've mentioned, related experiences, "
-                f"people/places/things tied to the question topic. Include "
-                f"items that are tangentially related (e.g., 'was on debate "
-                f"team' for a 'high school reunion' question). Abstain only "
-                f"if no memory is even loosely related.\n"
-                f"Tensions: specificity (only directly-named topic context) "
-                f"vs inclusion (any tangential grounding) vs salience "
-                f"(filter trivial filler, keep revealing details).\n"
+                f"MUST anchor on. Each context_item MUST be a CONCRETE "
+                f"NOUN PHRASE — a named tool, course, club, hobby, "
+                f"place, person, fact about the user — copied verbatim "
+                f"or near-verbatim from the memories. Avoid generic "
+                f"descriptors like 'enjoys reunions' or 'has memories'. "
+                f"Examples of GOOD items: 'was on the debate team', "
+                f"'took advanced placement history', 'lived in Boston "
+                f"for 6 years', 'plays Korg B1 piano'. Examples of BAD "
+                f"items: 'is sociable', 'values relationships'.\n"
+                f"\n"
+                f"Tensions: specificity (only directly-named topic "
+                f"context) vs inclusion (any tangential grounding that "
+                f"the answer could anchor on) vs salience (filter "
+                f"trivial filler, keep revealing details that distinguish "
+                f"this user from others).\n"
+                f"\n"
+                f"REQUIRED OUTPUT: at least 3 concrete context_items "
+                f"unless memories are truly empty of any user-specific "
+                f"signal. Don't return an empty list when there are ANY "
+                f"named entities, courses, hobbies, places, or activities "
+                f"in the memories — extract them.\n"
+                f"\n"
                 f"Question: {query}"
             ),
             evidence=evidence,
             llm=self._llm,
             extra_schema=(
-                '  "context_items": [str, str, ...] (5-10 user-specific '
-                'details, each one short phrase)'
+                '  "context_items": [str, str, ...] (3-10 concrete '
+                'noun-phrase user-specific details, copied near-verbatim '
+                'from memories — never abstract descriptors)'
             ),
         )
         if not result:
@@ -1197,13 +1211,19 @@ class RadioMind:
         if self._llm is None or not self._llm.is_available():
             return ""
 
-        # 1. Surface "the X" definite reference plus likely entity type.
-        #    Two passes: proper-noun (case-sensitive, "the Metropolitan
-        #    Museum") and common-noun type (case-insensitive, "the
-        #    museum"). We do NOT want a single IGNORECASE pattern with
-        #    [A-Z] — IGNORECASE makes [A-Z] also match lowercase, which
-        #    captures the entire rest of "the museum exhibit on..." as
-        #    one big proper-noun phrase. Keep the two cases separate.
+        # 1. Surface a definite or anaphoric reference plus likely entity
+        #    type. Three passes:
+        #      a. Proper-noun reference ("the Metropolitan Museum") —
+        #         case-sensitive [A-Z].
+        #      b. Common-noun type with definite article ("the museum") —
+        #         case-insensitive on a fixed type list.
+        #      c. Anaphoric / event reference ("that event", "where was
+        #         it held", "where was the event held") — covers
+        #         questions that point back to an entity by demonstrative
+        #         instead of definite article. Expanded after gpt4_59149c78
+        #         showed up with "that event".
+        #    Keep the three cases separate: a single IGNORECASE [A-Z]
+        #    pattern would over-match the rest of the question.
         import re
         proper_re = re.compile(
             r"\bthe\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\b"
@@ -1212,7 +1232,17 @@ class RadioMind:
             r"\bthe\s+(museum|hospital|doctor|school|restaurant|store|"
             r"gym|park|cafe|bookstore|theater|theatre|library|club|"
             r"company|university|college|hotel|airport|stadium|church|"
-            r"clinic|center|centre)\b",
+            r"clinic|center|centre|venue|building|exhibit|event|place)\b",
+            re.IGNORECASE,
+        )
+        # Anaphoric: "where was {it|that|the event|the X} held / located"
+        anaphor_re = re.compile(
+            r"\bwhere\s+(?:was|is|were|did)\s+"
+            r"(?:it|that|that\s+(?:event|exhibit|venue|place|show|"
+            r"meeting|game|concert|trip)|the\s+(?:event|exhibit|venue|"
+            r"place|show|meeting|game|concert|trip))"
+            r"\s+(?:held|located|hosted|happen|happening|take\s+place|"
+            r"set|going\s+on|at)\b",
             re.IGNORECASE,
         )
         ref_phrase = ""
@@ -1223,6 +1253,11 @@ class RadioMind:
             m_common = common_re.search(query or "")
             if m_common:
                 ref_phrase = m_common.group(1).strip().lower()
+            elif anaphor_re.search(query or ""):
+                # Anaphoric reference — derive a generic type token so
+                # the candidate scan accepts venue-like proper nouns
+                # (Museum / Hospital / Restaurant / etc).
+                ref_phrase = "venue"
         if not ref_phrase:
             return ""
 
@@ -1239,6 +1274,17 @@ class RadioMind:
         # Walk memories, collect candidates whose surface form contains
         # the ref_phrase or matches its type.
         ref_low = ref_phrase.lower()
+        # Generic venue-like type tokens that accept ANY proper-noun
+        # candidate ending in a known place suffix (Museum/Hospital/...).
+        # Used by the anaphoric branch where ref is just "venue".
+        VENUE_SUFFIXES = {
+            "museum", "hospital", "doctor", "school", "restaurant",
+            "store", "gym", "park", "cafe", "bookstore", "theater",
+            "theatre", "library", "club", "company", "university",
+            "college", "hotel", "airport", "stadium", "church",
+            "clinic", "center", "centre", "venue", "exhibit", "event",
+            "place",
+        }
         seen_candidates: dict[str, int] = {}
         evidence_by_cand: dict[str, list[str]] = {}
         for m in retrieved_memories[:60]:
@@ -1252,25 +1298,39 @@ class RadioMind:
                 continue
             for cm in candidate_re.finditer(content):
                 cand = (cm.group(1) or cm.group(2) or "").strip()
+                # Strip leading determiner ("The Foo Museum" → "Foo Museum")
+                # and trailing possessive ("Foo Museum's" → "Foo Museum")
+                # so candidates normalize across surface forms before
+                # the suffix-match filter runs.
+                while cand.lower().startswith(("the ", "a ", "an ")):
+                    cand = cand[cand.find(" ") + 1:].strip()
+                while cand.endswith(("'s", "’s", ".", ",", ":", ";")):
+                    cand = cand[:-1] if cand.endswith(("'", "’", ".", ",", ":", ";")) else cand[:-2]
+                    cand = cand.strip()
                 if not cand or len(cand) < 4:
                     continue
-                # Filter: the candidate must surface-match the ref_phrase
-                # (substring match either way) so we disambiguate among
-                # the right TYPE of entity.
                 cand_low = cand.lower()
-                if ref_low not in cand_low and cand_low not in ref_low:
-                    # Type-match fallback: if ref is a common-noun type
-                    # (museum / hospital / ...), accept candidates that
-                    # END with that word.
-                    if not (ref_low in {"museum", "hospital", "doctor",
-                                         "school", "restaurant", "store",
-                                         "gym", "park", "cafe", "bookstore",
-                                         "theater", "library", "club",
-                                         "company", "university", "college",
-                                         "hotel", "airport", "stadium",
-                                         "church"}
-                             and cand_low.endswith(ref_low)):
-                        continue
+                # Direct substring match (ref vs candidate, either way) —
+                # works for proper-noun refs ("Metropolitan" matches
+                # "Metropolitan Museum").
+                if ref_low in cand_low or cand_low in ref_low:
+                    pass
+                # Common-noun type match — candidate ends with ref type
+                # word ("metropolitan museum" ends with "museum").
+                elif ref_low in VENUE_SUFFIXES and any(
+                    cand_low.endswith(suf) for suf in VENUE_SUFFIXES
+                ) and cand_low.endswith(ref_low):
+                    pass
+                # Anaphoric / generic-venue branch: ref_phrase is "venue"
+                # (set by anaphor_re). Accept ANY candidate that ends
+                # with a venue-like suffix.
+                elif ref_low == "venue" and any(
+                    cand_low.endswith(suf) for suf in VENUE_SUFFIXES
+                    if suf != "venue"
+                ):
+                    pass
+                else:
+                    continue
                 seen_candidates[cand] = seen_candidates.get(cand, 0) + 1
                 evidence_by_cand.setdefault(cand, []).append(
                     content[:200].replace("\n", " ")
