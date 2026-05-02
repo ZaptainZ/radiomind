@@ -1051,6 +1051,13 @@ class RadioMind:
 
         Uses one trinity call to triangulate what's relevant: too narrow
         misses tangential context, too broad dumps noise.
+
+        Routes off `AttentionSignature.aux_flags["preference_anchor"]`
+        (centralised in `core/attention.py`) instead of an inline regex
+        — see GAP-1 in the chain audit. When the signature flags a
+        preference query, the method also fires a second focused
+        retrieval pass over user-specific anchors (tools/surfaces/
+        constraints) so trinity gets richer evidence than top-k alone.
         """
         self._check_init()
         if not self._attention_router_enabled():
@@ -1058,19 +1065,15 @@ class RadioMind:
         if self._llm is None or not self._llm.is_available():
             return ""
 
-        # Preference-query triggers
-        import re
-        pref_re = re.compile(
-            r"\b(any\s+tips|do\s+you\s+think\s+.*\s+(?:good|bad|right|wise)\s+idea|"
-            r"should\s+I|recommend(?:ation)?|what\s+should|how\s+(?:do|should)\s+I|"
-            r"would\s+it\s+be\s+a\s+good)\b",
-            re.IGNORECASE,
-        )
-        if not pref_re.search(query):
+        # Preference detection now lives on AttentionSignature.
+        from radiomind.core.attention import analyze
+        sig = analyze(query)
+        if not sig.aux_flags.get("preference_anchor"):
             return ""
 
-        # Format retrieved memories for trinity
+        # First pass: format the caller-supplied top-k retrieval.
         lines = []
+        seen_content: set[str] = set()
         for m in retrieved_memories[:40]:
             if isinstance(m, dict):
                 sdate = m.get("created_at") or m.get("session_date", "")
@@ -1082,7 +1085,37 @@ class RadioMind:
                 continue
             if not content:
                 continue
+            seen_content.add(content)
             lines.append(f"[{sdate}] {content[:300].replace(chr(10), ' ')}")
+
+        # Second pass: focus-driven retrieval pulls user-specific anchors
+        # for the preference topic. This is the architectural fix for the
+        # B3 anchor failures (d6233ab6, 95228167) — when the top-k from
+        # the main retrieval missed memories tying the user to the topic,
+        # this focused pass surfaces them.
+        if sig.focus and domain:
+            try:
+                anchor_query = f"my {sig.focus}"
+                extra = self.search(
+                    anchor_query, domain=domain, max_results=20,
+                )
+                for r in extra or []:
+                    content = getattr(getattr(r, "entry", None), "content", "") or ""
+                    if not content or content in seen_content:
+                        continue
+                    seen_content.add(content)
+                    sdate = (
+                        (getattr(r, "entry", None).metadata or {}).get(
+                            "session_date", ""
+                        )
+                        if getattr(r, "entry", None) else ""
+                    )
+                    lines.append(
+                        f"[{sdate}] {content[:300].replace(chr(10), ' ')}"
+                    )
+            except Exception:
+                pass
+
         if not lines:
             return ""
         evidence = "\n".join(lines)
@@ -1159,8 +1192,22 @@ class RadioMind:
             return ""
         if self._numeric_agg is None or not self._numeric_agg.is_available():
             return ""
-        from radiomind.core.attention import is_numeric_cardinal, extract_focus_entity
+        from radiomind.core.attention import (
+            is_numeric_cardinal, extract_focus_entity, analyze,
+        )
         if not is_numeric_cardinal(query):
+            return ""
+
+        # 2nd-order scope filter (GAP-2): when the query carries a
+        # temporal / spatial constraint ("consecutive weekends",
+        # "between X and Y", "during my trip"), the precomputed cardinal
+        # sum across the user's whole history is the WRONG answer — the
+        # gold expects only events within the constraint window.
+        # Refuse to short-circuit the answer with the unfiltered
+        # cardinal view; let the caller fall through to the atomic
+        # decomposition path where per-event dates are visible.
+        sig = analyze(query)
+        if sig.aux_flags.get("temporal_constraint"):
             return ""
 
         focus = extract_focus_entity(query) or ""

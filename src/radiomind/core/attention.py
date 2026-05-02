@@ -85,6 +85,47 @@ _SPECIFIC_DETAIL_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Preference / advice queries — answer must anchor on user-specific
+# context (tools, surfaces, prior experiences). Detection here lifts
+# the regex out of mind.run_preference_context so the signal is part of
+# the AttentionSignature and downstream layers (retrieval, prompt
+# composition) can route off it.
+_PREFERENCE_RE = re.compile(
+    r"\b("
+    r"any\s+tips|"
+    r"do\s+you\s+think\s+.*\s+(?:good|bad|right|wise)\s+idea|"
+    r"should\s+I\b|"
+    r"recommend(?:ation)?|"
+    r"what\s+should|how\s+(?:do|should)\s+I\b|"
+    r"would\s+it\s+be\s+a\s+good|"
+    r"can\s+you\s+(?:recommend|suggest|advise)|"
+    r"give\s+me\s+(?:advice|tips|ideas)|"
+    r"any\s+(?:advice|suggestions|ideas)|"
+    r"what\s+(?:do|would)\s+you\s+(?:recommend|suggest)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Temporal / scope constraint markers — second-order filter for
+# aggregation queries. "Hikes I did on two consecutive weekends" should
+# constrain the cardinal sum to the consecutive-weekend window, not all
+# hikes ever. The exact window resolution happens downstream; here we
+# only flag that a constraint is present.
+_TEMPORAL_CONSTRAINT_RE = re.compile(
+    r"\b("
+    r"consecutive\s+(?:weekends?|days?|weeks?|months?)|"
+    r"(?:two|three|four|five)\s+(?:weekends?|days?|weeks?|months?)\s+in\s+a\s+row|"
+    r"between\s+\w+\s+and\s+\w+|"
+    r"during\s+(?:my|the)\s+\w+|"
+    r"in\s+(?:january|february|march|april|may|june|july|august|"
+    r"september|october|november|december)|"
+    r"(?:last|past|previous|next)\s+(?:week|weekend|month|year|"
+    r"\d+\s+days?|\d+\s+weeks?|\d+\s+months?)|"
+    r"on\s+the\s+same\s+(?:day|weekend|trip)"
+    r")\b",
+    re.IGNORECASE,
+)
+
 
 # --- Focus entity extraction (shared) ---
 
@@ -265,6 +306,17 @@ def analyze(query: str) -> AttentionSignature:
         aux["enumeration"] = True  # aggregation but not cardinal (list-all)
     if any(m in ql for m in COMPARISON_MARKERS):
         aux["comparison"] = True
+    # Preference / advice anchoring (closes GAP-1: previously detected
+    # only inside mind.run_preference_context via local regex; lifting
+    # it here makes the signal visible to retrieval and any other layer
+    # that wants to route differently for advice queries).
+    if _PREFERENCE_RE.search(query or ""):
+        aux["preference_anchor"] = True
+    # Temporal / scope constraint (closes GAP-2: aggregation queries
+    # like "hikes on two consecutive weekends" need a 2nd-order filter
+    # at scope time, not just by entity_class).
+    if _TEMPORAL_CONSTRAINT_RE.search(query or ""):
+        aux["temporal_constraint"] = True
 
     return AttentionSignature(
         focus=extract_focus_entity(query),
