@@ -415,6 +415,29 @@ class NumericAggregator:
         # class from the batch extractor).
         enriched = self._classify_batch(candidates)
 
+        # Trinity class promotion: when LLM + regex both produced an
+        # amount candidate but neither assigned it to a specific class
+        # (left it in generic `amount_events` or empty), look at the
+        # original sentence + neighboring context and let trinity decide
+        # whether the event belongs to a specific bucket
+        # (charity_donations / spending_events / income_events / ...).
+        #
+        # This was the d851d5ba failure mode: bake-sale charity event
+        # ended up in a generic class on a particular LLM seed. Class-
+        # aware dedup keeps both LLM- and regex-tagged copies, but if
+        # NEITHER carries the right specific class, the query-time scope
+        # filter for "charity" can't find the event. Trinity vote here
+        # closes that gap with bounded extra cost (one LLM call when
+        # there's at least one ambiguous amount per session).
+        try:
+            turn_text_by_id_pre = {
+                self._turn_id(mid, meta): content
+                for mid, content, meta in user_turns
+            }
+            self._trinity_class_promotion(enriched, turn_text_by_id_pre)
+        except Exception:
+            pass
+
         # Phase 3: apply deltas to cache.
         # touched acts as the primary source-of-truth during this call —
         # DB is only read on FIRST encounter of each class. Without this
@@ -558,6 +581,149 @@ class NumericAggregator:
         })
         entry.evidence = [t for t in entry.evidence if t not in revoked_turns]
         entry.updated_at = time.time()
+
+    def _trinity_class_promotion(
+        self,
+        candidates: list[dict[str, Any]],
+        turn_text_by_id: dict[str, str],
+    ) -> None:
+        """Trinity over generically-classed amount events: promote to specific class.
+
+        Closes the LLM-stochastic gap that caused d851d5ba: when both
+        LLM- and regex-extracted candidates for the same physical event
+        end up in `amount_events` (the generic class), the query-time
+        scope filter for "charity" or similar can't find them. Trinity
+        reads the original sentence + class rubrics and decides which
+        candidates should be promoted (and to which class).
+
+        The vote produces one entity_class per ambiguous event,
+        triangulated through three opposing stances:
+          - literal: only promote if the sentence names an entity
+            matching the class definition verbatim
+          - inference: promote when the verb + target pattern strongly
+            implies the class even without literal match
+          - skeptic: leave generic if the evidence is genuinely
+            ambiguous (better to under-classify than mis-classify)
+
+        Mutates `candidates` in place; no LLM call when there are
+        fewer than 2 ambiguous amount events (single-event cases are
+        cheap noise — let downstream `_refine_amount_events` handle).
+        """
+        if not self._llm:
+            return
+        # Build the "already-specific" coverage set: for each amount
+        # candidate that already has a specific class (charity_donations
+        # / spending_events / ...), record (turn_id, amount). Other
+        # candidates for the SAME physical event are redundant and
+        # should not be promoted (would create a duplicate entry).
+        already_specific: set[tuple[str, float]] = set()
+        for c in candidates:
+            if c.get("polarity") != "amount":
+                continue
+            cls = str(c.get("entity_class") or c.get("cls_hint") or "").strip().lower()
+            if cls and cls != "amount_events":
+                try:
+                    amt = round(float(c.get("amount") or 0.0), 2)
+                except (TypeError, ValueError):
+                    continue
+                already_specific.add((c.get("turn_id", ""), amt))
+
+        # Find amount candidates currently in a generic / empty class
+        # AND not already covered by a specific-class candidate for the
+        # same physical event.
+        ambiguous: list[tuple[int, dict[str, Any]]] = []
+        for i, c in enumerate(candidates):
+            if c.get("polarity") != "amount":
+                continue
+            cls = str(
+                c.get("entity_class") or c.get("cls_hint") or ""
+            ).strip().lower()
+            if cls and cls != "amount_events":
+                continue
+            try:
+                amt = round(float(c.get("amount") or 0.0), 2)
+            except (TypeError, ValueError):
+                continue
+            if (c.get("turn_id", ""), amt) in already_specific:
+                continue  # regex already classified this physical event
+            ambiguous.append((i, c))
+        if len(ambiguous) < 2:
+            return
+
+        # Build a compact evidence block (event_id → sentence).
+        events_for_prompt: list[tuple[int, dict[str, Any], str]] = []
+        for event_id, (_idx, c) in enumerate(ambiguous):
+            tid = c.get("turn_id") or ""
+            text = (turn_text_by_id.get(tid) or c.get("phrase") or "")
+            text = str(text)[:400].replace("\n", " ")
+            if not text:
+                continue
+            events_for_prompt.append((event_id, c, text))
+        if len(events_for_prompt) < 2:
+            return
+
+        amt_str = lambda c: f"${c.get('amount')}" if c.get("amount") else ""
+        evidence_block = "\n\n".join(
+            f"event_id={eid} | amount={amt_str(c)} | {text}"
+            for eid, c, text in events_for_prompt
+        )
+        class_options = list(CLASS_DEFINITIONS.keys()) + ["amount_events"]
+        rubric_block = "\n".join(
+            f"  - {name}: {desc}"
+            for name, desc in CLASS_DEFINITIONS.items()
+        )
+
+        from radiomind.refinement.trinity import debate
+        result = debate(
+            task=(
+                f"For each amount event below, decide which entity_class "
+                f"it belongs to. Three stances triangulate:\n"
+                f"  literal — only promote if the sentence names an entity "
+                f"matching the class definition verbatim\n"
+                f"  inference — promote when verb + target strongly imply "
+                f"the class (e.g. 'raised $X for the children's hospital' "
+                f"implies charity_donations)\n"
+                f"  skeptic — leave 'amount_events' when genuinely "
+                f"ambiguous; better under-classify than mis-classify.\n"
+                f"\nClass options: {class_options}\n"
+                f"Class rubrics:\n{rubric_block}\n"
+                f"\nReturn one assignment per event_id."
+            ),
+            evidence=evidence_block,
+            llm=self._llm,
+            extra_schema=(
+                '  "assignments": [\n'
+                '    {"event_id": int, "entity_class": str},\n'
+                '    ...\n'
+                '  ]'
+            ),
+        )
+        if not result:
+            return
+        assignments = result.get("assignments") or []
+        if not isinstance(assignments, list):
+            return
+
+        # Apply: update candidate entity_class when trinity picks a
+        # specific class. Don't downgrade existing specific assignments.
+        eid_to_idx = {eid: idx for eid, (idx, _) in enumerate(ambiguous)}
+        for a in assignments:
+            try:
+                eid = int(a.get("event_id"))
+                new_cls = str(a.get("entity_class") or "").strip().lower()
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if not new_cls or new_cls not in class_options:
+                continue
+            if new_cls == "amount_events":
+                continue  # no promotion, leave as-is
+            idx = eid_to_idx.get(eid)
+            if idx is None:
+                continue
+            cand = candidates[idx]
+            cand["entity_class"] = new_cls
+            cand["cls_hint"] = new_cls
+            cand.setdefault("provenance", []).append("trinity_class_promotion")
 
     def _refine_members(self, entry: CardinalEntry) -> None:
         """Trinity over the member list: dedup aliases, drop misclassified."""

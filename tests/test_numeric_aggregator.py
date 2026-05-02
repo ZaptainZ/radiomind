@@ -274,6 +274,165 @@ class TestLLMBatchExtraction:
         m.shutdown()
 
 
+class TestTrinityClassPromotion:
+    """Trinity class promotion at ingest: when LLM/regex leave amounts in
+    the generic `amount_events` bucket, trinity reads the original sentence
+    and decides whether to promote to a specific class. Closes the
+    d851d5ba failure mode where bake-sale charity events stayed generic
+    on certain LLM seeds and got missed by query-time scope filters.
+    """
+
+    def test_promotes_generic_amount_to_charity_donations(self, sandbox):
+        """LLM extracts amounts as generic; trinity promotes to charity."""
+        import json as _json
+        from radiomind import RadioMind
+
+        # Stateful mock: extraction returns generic class; trinity assigns
+        # specific class. Distinguish by prompt content.
+        call_count = {"n": 0}
+
+        def _mock_llm(prompt, system=""):
+            call_count["n"] += 1
+            if "Extract OWNERSHIP" in prompt or "events" in prompt.lower() and "OWNERSHIP" in prompt:
+                # Phase 1: batch extraction (generic class)
+                return _json.dumps({
+                    "events": [
+                        {"turn": 0, "polarity": "amount",
+                         "entity_class": "amount_events",
+                         "canonical_member": "", "amount": 1000, "currency": "USD"},
+                        {"turn": 1, "polarity": "amount",
+                         "entity_class": "amount_events",
+                         "canonical_member": "", "amount": 750, "currency": "USD"},
+                    ]
+                })
+            if "triangulate" in prompt.lower() and "assignments" in prompt.lower():
+                # Phase 2: trinity class promotion vote
+                return _json.dumps({
+                    "stances": [
+                        {"name": "literal", "emphasis": "named-charity",
+                         "conclusion": "promote both"},
+                        {"name": "inference", "emphasis": "verb+target",
+                         "conclusion": "promote both"},
+                        {"name": "skeptic", "emphasis": "ambiguity",
+                         "conclusion": "promote both"},
+                    ],
+                    "final_answer": "promote both to charity_donations",
+                    "assignments": [
+                        {"event_id": 0, "entity_class": "charity_donations"},
+                        {"event_id": 1, "entity_class": "charity_donations"},
+                    ],
+                })
+            # Other LLM calls (refinement, classify_batch) — return empty/no-op
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_mock_llm)
+        m.initialize()
+        # Sentences that pass the cardinal-signal gate (` for $`)
+        # but use verbs NOT in the regex AMOUNT_PATTERNS verb list
+        # (sponsored/pledged are unmapped). LLM is the sole class
+        # arbiter — and we mock it to return the generic class. This
+        # mirrors the d851d5ba failure mode: regex doesn't classify,
+        # LLM mis-classifies as generic, scope filter for "charity"
+        # misses the events.
+        m.ingest_turns_raw(
+            _turns(
+                # Gate keyword: "donation". Regex AMOUNT_PATTERNS need
+                # "i/we" subject — "Last weekend's drive" doesn't match,
+                # so regex extracts NO class hint. LLM is sole arbiter.
+                ("Last weekend's donation drive raised $1,000 for the "
+                 "children's hospital fund",
+                 "s1", "2025-01-10"),
+                ("The charity gala collected $750 in donations Friday night",
+                 "s2", "2025-02-11"),
+            ),
+            domain="personal", user_id="alice",
+        )
+        # Trinity should have promoted both into charity_donations
+        charity = m._numeric_agg.get_cardinal(
+            "alice", "personal", "charity_donations",
+        )
+        assert charity is not None, (
+            "trinity_class_promotion failed to promote generic amounts "
+            "into charity_donations"
+        )
+        assert charity.total_amount == 1750, (
+            f"expected $1750 (both promoted), got ${charity.total_amount}"
+        )
+        m.shutdown()
+
+    def test_skips_when_only_one_ambiguous_event(self, sandbox):
+        """Single ambiguous amount → skip trinity (not worth the LLM call)."""
+        import json as _json
+        from radiomind import RadioMind
+
+        trinity_called = {"n": 0}
+
+        def _mock_llm(prompt, system=""):
+            if "triangulate" in prompt.lower() and "assignments" in prompt.lower():
+                trinity_called["n"] += 1
+                return _json.dumps({
+                    "stances": [], "final_answer": "x",
+                    "assignments": [{"event_id": 0,
+                                    "entity_class": "charity_donations"}],
+                })
+            if "OWNERSHIP" in prompt:
+                return _json.dumps({
+                    "events": [
+                        {"turn": 0, "polarity": "amount",
+                         "entity_class": "amount_events",
+                         "canonical_member": "", "amount": 500, "currency": "USD"},
+                    ]
+                })
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_mock_llm)
+        m.initialize()
+        m.ingest_turns_raw(
+            _turns(("I gave $500 somewhere", "s1", "2025-01-10")),
+            domain="personal", user_id="alice",
+        )
+        # < 2 ambiguous → trinity should NOT fire (cost guard)
+        assert trinity_called["n"] == 0
+        m.shutdown()
+
+    def test_does_not_downgrade_already_specific_class(self, sandbox):
+        """Trinity result `amount_events` for a specific class → keep specific."""
+        import json as _json
+        from radiomind import RadioMind
+
+        def _mock_llm(prompt, system=""):
+            if "OWNERSHIP" in prompt:
+                # LLM already classifies as specific (charity_donations)
+                return _json.dumps({
+                    "events": [
+                        {"turn": 0, "polarity": "amount",
+                         "entity_class": "charity_donations",
+                         "canonical_member": "", "amount": 1000, "currency": "USD"},
+                        {"turn": 1, "polarity": "amount",
+                         "entity_class": "charity_donations",
+                         "canonical_member": "", "amount": 500, "currency": "USD"},
+                    ]
+                })
+            # Trinity should not fire (no ambiguous candidates)
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_mock_llm)
+        m.initialize()
+        m.ingest_turns_raw(
+            _turns(
+                ("I donated $1000 to Red Cross", "s1", "2025-01-10"),
+                ("I donated $500 to UNICEF", "s2", "2025-02-11"),
+            ),
+            domain="personal", user_id="alice",
+        )
+        charity = m._numeric_agg.get_cardinal(
+            "alice", "personal", "charity_donations",
+        )
+        assert charity is not None
+        assert charity.total_amount == 1500
+        m.shutdown()
+
+
 class TestPersistence:
     """Cache survives restart."""
 
