@@ -152,6 +152,10 @@ def _find_event_via_trinity(
             '  "event_memory": str (memory text snippet),\n'
             '  "age_at_event": int | null'
         ),
+        # balanced (2 rounds): semantic event matching often picks the
+        # wrong memory in round 1 when multiple events share keywords;
+        # round 2 reconsiders given the prior pick and the others.
+        max_rounds=2,
     )
     if not result:
         return None
@@ -195,6 +199,14 @@ def _trinity_validate(
         evidence=evidence,
         llm=llm,
         extra_schema='  "verdict": "commit"|"abstain"|"revise"',
+        # deep (3 rounds + depth-1 sub-trinity): this verdict directly
+        # decides the user-facing answer for age-interval questions.
+        # c18a7dc8-style failures (delta=0 vs gold=7) come from round 1
+        # picking the wrong anchor without re-examining; multi-round
+        # plus per-stance recursion pushes precision higher.
+        max_rounds=3,
+        sub_trinity_depth=1,
+        converge_threshold=0.75,
     )
     if not result:
         return False

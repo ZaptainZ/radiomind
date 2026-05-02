@@ -30,9 +30,43 @@ Trinity 不是固定 N 方的硬约定，而是**三个独立维度的可组合�
 | 场景 | 原语 | 为什么 |
 |---|---|---|
 | 路由判断 / abstain 决策 / skill 投票 | `trinity.fast` | 单轮三体，速度优先，1 LLM 调用 |
-| 偏好上下文 / entity 消歧 / 类提升 | `trinity.balanced` | 两轮，单 round 有时漂；二轮足以稳 |
+| 偏好上下文 / entity 消歧 | `trinity.balanced` | 两轮，单 round 有时漂；二轮足以稳 |
 | 日期算术 / age interval / 多 hop 推理 | `trinity.deep` | 三轮 + depth-1 子三体，精度优先 |
 | ROI/风险/流动性/机会 这类多利益 | `trinity.parties(4, ...)` | 三方不够，明确需要 N-party |
+
+### 收敛性 vs 发散性任务（关键设计判断）
+
+**多轮 trinity 不是 universally better**——只对**收敛性**任务有效。
+2026-05-02 的实证教训：把 `_trinity_class_promotion` 升级到
+`max_rounds=2` 让 `d851d5ba` 从 PASS 回归到 FAIL（$3,750 gold →
+$7,750 ans），原因是：
+
+| 任务类型 | 单轮特征 | 多轮影响 |
+|---|---|---|
+| **收敛性**（math 精度，event 锚点匹配，date 算术） | round 1 LLM 可能选错 anchor，不会反思 | 多轮让 round 2 看到 prior stances 后真的重审，**精度提升** |
+| **发散性**（class 分类，alias dedup，内容剪裁） | round 1 LLM 给一个尚可的分类决定 | 多轮让 LLM 看到 round 1 后**进一步"改进"**——但发散任务的"改进"= 更激进归类，反而漂移 |
+
+**判断规则：**
+- 是不是有"唯一对答案"？是 → 多轮（精度）；否 → 单轮（避免漂移）
+- 任务做完后，复跑能稳定再现答案吗？是收敛 → 多轮；否发散 → 单轮
+- 错误模式是"under-confident"（轮次能 boost）还是"drift"（轮次会放大）？前者多轮，后者单轮
+
+**已验证 profile 应用：**
+
+| 调用点 | profile | 类型 | 验证 |
+|---|---|---|---|
+| `mind.answer_hint`（date/inference） | `deep`（max_rounds=3） | 收敛 | 6e984301 PASS（9周→3周） |
+| `skills.age_interval._trinity_validate` | `deep`（max_rounds=3, depth=1） | 收敛 | c18a7dc8 PASS（0→7） |
+| `skills.event_interval._trinity_validate` | `deep` | 收敛 | 6e984301 内部也走这条 |
+| `skills.age_interval._find_event_via_trinity` | `balanced`（max_rounds=2） | 半收敛（语义匹配） | (与 _trinity_validate 同一 skill 内一致) |
+| `skills.event_interval` 锚点查找 | `balanced` | 半收敛 | 同上 |
+| `numeric_aggregator._refine_amount_events` | **`fast`（单轮）** | **发散** | 多轮让 d851d5ba 漂移 ✗ |
+| `numeric_aggregator._trinity_class_promotion` | **`fast`（单轮）** | **发散** | 同上 |
+| `numeric_aggregator._refine_members` | **`fast`（单轮）** | **发散** | 同上 |
+| `salvage.BidirectionalAbstainGate` | `fast` | 单点决策 | 已验证 |
+| `skills/registry.try_resolve_soft` | `fast` | 单点投票 | 已验证 |
+| `mind.run_entity_disambiguation` | `fast` | 单点投票 | 已验证 |
+| `mind.run_preference_context` | `fast`（单轮 + 强 prompt） | 发散（context 选取） | d6233ab6 PASS |
 
 ### API
 

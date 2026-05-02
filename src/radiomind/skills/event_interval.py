@@ -169,6 +169,10 @@ def _find_event_via_trinity(
             '  "event_date": str (YYYY-MM-DD or ""),\n'
             '  "event_memory": str (memory text snippet)'
         ),
+        # balanced (2 rounds): the wrong anchor in round 1 propagates
+        # to a wrong final interval; round 2 re-examines if a closer
+        # match exists.
+        max_rounds=2,
     )
     if not result:
         return None
@@ -272,6 +276,15 @@ def _trinity_validate(
         evidence=evidence,
         llm=llm,
         extra_schema='  "verdict": "commit"|"abstain"|"revise"',
+        # deep (3 rounds + depth-1 sub-trinity): the verdict directly
+        # decides the final user-facing interval. 6e984301-style "9
+        # weeks vs 3 weeks" failures are exactly the shape this profile
+        # is for: round 1 anchored on the wrong event, multi-round +
+        # weak-stance recursion forces re-examination of the anchor
+        # selection before committing the math.
+        max_rounds=3,
+        sub_trinity_depth=1,
+        converge_threshold=0.75,
     )
     if not result:
         return False

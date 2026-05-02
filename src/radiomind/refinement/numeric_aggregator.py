@@ -548,6 +548,12 @@ class NumericAggregator:
             evidence=evidence_block,
             llm=self._llm,
             extra_schema='  "revoke_ids": [int, ...]',
+            # Single-round (legacy). Empirical finding 2026-05-02: this
+            # decision is DIVERGENT (LLM has discretion over which events
+            # belong to a class), and multi-round causes drift —
+            # round 2 reconsiders round 1's revokes and tends to
+            # un-revoke. Stay single-round; precision via algorithm
+            # (regex / class rubric / dedup), not extra rounds.
         )
         if not result:
             return
@@ -697,6 +703,13 @@ class NumericAggregator:
                 '    ...\n'
                 '  ]'
             ),
+            # Single-round (legacy). Empirical finding 2026-05-02:
+            # class assignment is DIVERGENT — round 2 sees round 1's
+            # assignments and tends to RE-CLASSIFY borderline events
+            # MORE aggressively, inflating totals (d851d5ba regressed
+            # from PASS at 1-round to FAIL at 2-round on $7,750 vs
+            # gold $3,750). Stay single-round; the trinity vote across
+            # 3 stances within one round is enough.
         )
         if not result:
             return
@@ -747,6 +760,9 @@ class NumericAggregator:
             evidence="\n".join(f"- {m}" for m in entry.members),
             llm=self._llm,
             extra_schema='  "final_members": [str, ...]',
+            # Single-round (legacy). Same divergent-task pattern as
+            # class promotion / amount revoke: round 2 destabilises
+            # alias merges. Stay single-round.
         )
         if not result:
             return
