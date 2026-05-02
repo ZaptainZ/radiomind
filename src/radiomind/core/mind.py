@@ -969,7 +969,11 @@ class RadioMind:
 
         from radiomind.core.attention import analyze
         from radiomind.refinement.trinity import debate
-        from radiomind.skills import try_resolve as try_skill
+        # GAP-3: prefer soft routing — when multiple skills match, fire
+        # trinity to pick the best output instead of taking the first
+        # match. Hard routing (try_resolve) is kept for backward compat
+        # but the production path now goes through the soft variant.
+        from radiomind.skills.registry import try_resolve_soft as try_skill
 
         sig = analyze(query)
 
@@ -1159,6 +1163,183 @@ class RadioMind:
         for it in items:
             lines_out.append(f"- {it}")
         return "\n".join(lines_out) + "\n\n"
+
+    # --- Entity disambiguation (GAP-6) ---
+
+    def run_entity_disambiguation(
+        self, query: str, retrieved_memories: list,
+        domain: str = "", user_id: str = "",
+    ) -> str:
+        """Disambiguate definite references ("the museum", "the doctor")
+        when retrieved memories contain multiple candidate entities of
+        that type.
+
+        Closes GAP-6: questions like "what time was the Ancient
+        Civilizations exhibit held?" can match multiple museum entities
+        in the haystack (MoMA, Met, City Art Museum). Without an
+        explicit disambiguation step, the answer LLM picks one based on
+        retrieval order or surface salience, which can easily be wrong.
+        Trinity here votes between three independent disambiguation
+        stances:
+          - frequency: which candidate is most-mentioned overall
+          - context:   which candidate co-occurs with the question's
+                       other clues (date / event name / activity)
+          - attribute: which candidate is described as having the
+                       attribute the question asks about
+
+        Output is a short prefix string the caller prepends to the
+        answer prompt; "" when no disambiguation is needed (no
+        definite reference, or only one candidate).
+        """
+        self._check_init()
+        if not self._attention_router_enabled():
+            return ""
+        if self._llm is None or not self._llm.is_available():
+            return ""
+
+        # 1. Surface "the X" definite reference plus likely entity type.
+        #    Two passes: proper-noun (case-sensitive, "the Metropolitan
+        #    Museum") and common-noun type (case-insensitive, "the
+        #    museum"). We do NOT want a single IGNORECASE pattern with
+        #    [A-Z] — IGNORECASE makes [A-Z] also match lowercase, which
+        #    captures the entire rest of "the museum exhibit on..." as
+        #    one big proper-noun phrase. Keep the two cases separate.
+        import re
+        proper_re = re.compile(
+            r"\bthe\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\b"
+        )
+        common_re = re.compile(
+            r"\bthe\s+(museum|hospital|doctor|school|restaurant|store|"
+            r"gym|park|cafe|bookstore|theater|theatre|library|club|"
+            r"company|university|college|hotel|airport|stadium|church|"
+            r"clinic|center|centre)\b",
+            re.IGNORECASE,
+        )
+        ref_phrase = ""
+        m_proper = proper_re.search(query or "")
+        if m_proper:
+            ref_phrase = m_proper.group(1).strip()
+        else:
+            m_common = common_re.search(query or "")
+            if m_common:
+                ref_phrase = m_common.group(1).strip().lower()
+        if not ref_phrase:
+            return ""
+
+        # 2. Extract candidate entity strings from retrieved memories.
+        #    Heuristic: title-cased multi-word phrases ending in common
+        #    place suffixes, OR capitalized proper-noun runs.
+        candidate_re = re.compile(
+            r"\b([A-Z][a-zA-Z']+(?:\s+(?:of|the|de|du|von|van)\s+|\s+)"
+            r"(?:[A-Z][a-zA-Z']+(?:\s+[A-Z][a-zA-Z']+)*)?)"
+            r"|\b([A-Z][a-zA-Z']+\s+(?:Museum|Hospital|Clinic|School|"
+            r"University|College|Restaurant|Cafe|Center|Centre|Library|"
+            r"Theater|Theatre|Park|Stadium|Hotel|Bookstore|Gym|Airport))\b"
+        )
+        # Walk memories, collect candidates whose surface form contains
+        # the ref_phrase or matches its type.
+        ref_low = ref_phrase.lower()
+        seen_candidates: dict[str, int] = {}
+        evidence_by_cand: dict[str, list[str]] = {}
+        for m in retrieved_memories[:60]:
+            if isinstance(m, dict):
+                content = m.get("memory") or m.get("content") or ""
+            elif hasattr(m, "entry"):
+                content = getattr(m.entry, "content", "") or ""
+            else:
+                continue
+            if not content:
+                continue
+            for cm in candidate_re.finditer(content):
+                cand = (cm.group(1) or cm.group(2) or "").strip()
+                if not cand or len(cand) < 4:
+                    continue
+                # Filter: the candidate must surface-match the ref_phrase
+                # (substring match either way) so we disambiguate among
+                # the right TYPE of entity.
+                cand_low = cand.lower()
+                if ref_low not in cand_low and cand_low not in ref_low:
+                    # Type-match fallback: if ref is a common-noun type
+                    # (museum / hospital / ...), accept candidates that
+                    # END with that word.
+                    if not (ref_low in {"museum", "hospital", "doctor",
+                                         "school", "restaurant", "store",
+                                         "gym", "park", "cafe", "bookstore",
+                                         "theater", "library", "club",
+                                         "company", "university", "college",
+                                         "hotel", "airport", "stadium",
+                                         "church"}
+                             and cand_low.endswith(ref_low)):
+                        continue
+                seen_candidates[cand] = seen_candidates.get(cand, 0) + 1
+                evidence_by_cand.setdefault(cand, []).append(
+                    content[:200].replace("\n", " ")
+                )
+        if len(seen_candidates) < 2:
+            return ""
+
+        # 3. Build evidence block + fire trinity.
+        # Sort by frequency for stable output.
+        ranked = sorted(seen_candidates.items(), key=lambda kv: -kv[1])
+        ranked = ranked[:6]  # cap candidates so prompt stays bounded
+        ev_lines: list[str] = []
+        for cand, cnt in ranked:
+            ev_lines.append(f"CANDIDATE: {cand!r} (mentioned {cnt}x)")
+            for ex in evidence_by_cand[cand][:3]:
+                ev_lines.append(f"  - {ex}")
+        evidence_block = "\n".join(ev_lines)
+
+        from radiomind.refinement.trinity import debate
+        result = debate(
+            task=(
+                f"Disambiguate the entity the question refers to. The "
+                f"question uses a definite reference ('the {ref_phrase}') "
+                f"and the memories contain multiple candidates of that "
+                f"type. Pick ONE.\n"
+                f"Three stances triangulate:\n"
+                f"  frequency — pick the most-mentioned candidate\n"
+                f"  context   — pick the candidate that co-occurs with the "
+                f"question's other clues (date / event name / topic)\n"
+                f"  attribute — pick the candidate whose memories describe "
+                f"the attribute the question asks about\n"
+                f"Output the chosen candidate's exact name as it appears "
+                f"in CANDIDATE lines below.\n"
+                f"\nQuestion: {query}"
+            ),
+            evidence=evidence_block,
+            llm=self._llm,
+            extra_schema=(
+                '  "chosen_candidate": str (must be one of the CANDIDATE '
+                'names verbatim),\n'
+                '  "confidence": float (0..1)'
+            ),
+        )
+        if not result:
+            return ""
+        chosen = str(result.get("chosen_candidate") or "").strip()
+        if not chosen:
+            return ""
+        # Validate chosen is one of the candidates we saw.
+        chosen_low = chosen.lower()
+        valid = next(
+            (c for c, _ in ranked if c.lower() == chosen_low),
+            None,
+        )
+        if valid is None:
+            # Fuzzy: tolerate trailing punctuation or near-match on first words
+            for c, _ in ranked:
+                if chosen_low.startswith(c.lower()[:8]) or c.lower().startswith(chosen_low[:8]):
+                    valid = c
+                    break
+        if valid is None:
+            return ""
+
+        return (
+            f"ENTITY DISAMBIGUATION (the {ref_phrase} → resolved to "
+            f"{valid!r} via three-stance trinity vote):\n"
+            f"- treat 'the {ref_phrase}' in the answer as referring to "
+            f"{valid} unless a memory explicitly contradicts.\n\n"
+        )
 
     # --- Numeric cardinal (bottom-up counts) ---
 

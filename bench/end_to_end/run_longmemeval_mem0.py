@@ -495,6 +495,20 @@ def run(
         except Exception:
             pass
 
+        # Entity disambiguation (GAP-6): when the question uses a
+        # definite reference ("the museum", "the doctor") and retrieval
+        # surfaces multiple candidate entities of that type, fire a
+        # trinity disambiguation pass and inject the resolved name.
+        # Targets gpt4_59149c78 where the model picked City Art Museum
+        # instead of the Metropolitan Museum gold.
+        entity_section = ""
+        try:
+            entity_section = mind.run_entity_disambiguation(
+                query=question, retrieved_memories=mem_results, domain=domain,
+            )
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -551,6 +565,11 @@ def run(
             # Insert ahead of profile so preference-specific context
             # is the freshest anchor the model sees for advice questions.
             ans_prompt = preference_section + ans_prompt
+        if entity_section:
+            # Disambiguation goes RIGHT before memories so "the X"
+            # references in the answer prompt resolve to the trinity-
+            # chosen entity, not the most-recent surface mention.
+            ans_prompt = entity_section + ans_prompt
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable
