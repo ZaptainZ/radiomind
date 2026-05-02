@@ -572,20 +572,24 @@ def run(
         except Exception as e:
             answer = f"[answer error: {e}]"
 
-        # Trinity salvage: if the answer model abstained ("not enough
-        # information"), fire a three-body debate over retrieved memories
-        # to recover a best-guess. Only activates when looks_abstained().
+        # Trinity bidirectional abstain gate: review every answer (whether
+        # the model abstained OR committed) and decide keep/abstain/rewrite.
+        # Replaces the prior one-direction AbstentionSalvager so that BOTH
+        # error modes are caught:
+        #   - under-confidence: model said "not enough" but memories support
+        #   - over-confidence:  model gave a number but memories don't support
+        # The gate biases toward KEEP — it flips only when ≥2 trinity stances
+        # oppose the draft, so currently-correct answers don't regress.
         try:
-            from radiomind.refinement.salvage import AbstentionSalvager, looks_abstained
-            if looks_abstained(answer):
-                def _sv_llm(prompt: str, sys_prompt: str) -> str:
-                    return llm_call(prompt, config_path,
-                                     model=answer_model, max_tokens=400,
-                                     profile=answer_profile)
-                sv = AbstentionSalvager(_sv_llm)
-                salvage = sv.salvage(question, answer, results[:40])
-                if salvage and salvage.committed:
-                    answer = salvage.answer
+            from radiomind.refinement.salvage import BidirectionalAbstainGate
+            def _gate_llm(prompt: str, sys_prompt: str) -> str:
+                return llm_call(prompt, config_path,
+                                 model=answer_model, max_tokens=600,
+                                 profile=answer_profile)
+            gate = BidirectionalAbstainGate(_gate_llm)
+            review = gate.review(question, answer, results[:40])
+            if review is not None and review.action != "keep":
+                answer = review.answer
         except Exception:
             pass
 

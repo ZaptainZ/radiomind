@@ -1,10 +1,17 @@
-"""Answer-side salvage — trinity fallback when the answer model abstains.
+"""Answer-side salvage — trinity-based bidirectional abstain gate.
 
-When the answer model says "information not enough" but retrieval DID
-return plausible evidence, run a trinity debate to decide whether to
-commit a best-guess or confirm true abstention. Three opposing stances:
-literal-support vs plausible-inference vs strict-abstain — chosen by
-the trinity primitive per call.
+The answer model can mis-call the abstain decision in two directions:
+  (a) abstain when memories DO support an answer (under-confidence)
+  (b) commit a confident answer when memories DON'T (over-confidence)
+
+`BidirectionalAbstainGate.review()` runs a single trinity debate that
+covers both directions: literal-support vs plausible-inference vs
+strict-abstain stances independently judge whether the draft is
+adequately supported, then converge on one of three actions:
+  keep / abstain / rewrite.
+
+`AbstentionSalvager` is preserved for backward compatibility but the
+bench harness now goes through the bidirectional gate.
 """
 from __future__ import annotations
 
@@ -151,3 +158,132 @@ class _CallableBackend:
 
     def is_available(self):
         return True
+
+
+# --- Bidirectional abstain gate ----------------------------------------
+
+@dataclass
+class GateResult:
+    """One-shot decision from the bidirectional abstain gate."""
+    action: str          # "keep" | "abstain" | "rewrite"
+    answer: str          # final answer to use
+    reason: str          # short trinity rationale (debug)
+    confidence: float    # 0..1 from trinity self-report
+
+
+_ABSTAIN_TEXT = "The information provided is not enough."
+
+
+class BidirectionalAbstainGate:
+    """Trinity-based review that runs on EVERY answer (abstain or not)
+    and decides whether to keep, override-to-abstain, or rewrite as
+    a partial / hedged answer.
+
+    Symmetric design: covers both error directions (under-abstain and
+    over-abstain) in a single trinity call. The gate biases toward
+    `keep` — only flips when 2+ stances clearly judge the draft
+    inconsistent with memories. This avoids regressing the 86 currently-
+    correct answers.
+
+    Multi-round / sub-trinity hooks: when the outer trinity returns
+    `decision="rewrite"` with `confidence < 0.6`, the gate can fire a
+    sub-trinity to refine the rewrite. Initial implementation is
+    single-round; sub-trinity is reserved for cases where data shows
+    single-round trinity is insufficient.
+    """
+
+    def __init__(self, llm_fn: Callable[[str, str], str]):
+        """llm_fn: (prompt, system) → response text."""
+        self._llm = llm_fn
+
+    def review(
+        self,
+        question: str,
+        draft_answer: str,
+        retrieved: list[SearchResult],
+        max_mem_lines: int = 40,
+    ) -> GateResult | None:
+        """Trinity review of (question, draft_answer, memories).
+
+        Returns None when retrieval gave no memories (gate has nothing
+        to compare draft against — keep model's call) or when trinity
+        fails to produce a parseable verdict.
+        """
+        if not retrieved:
+            return None
+        if not draft_answer or not draft_answer.strip():
+            return None
+
+        from radiomind.refinement.trinity import debate
+
+        mem_text = AbstentionSalvager._format_memories(retrieved[:max_mem_lines])
+        is_abstained = looks_abstained(draft_answer)
+        draft_for_prompt = (draft_answer or "").strip()[:1500]
+
+        task = (
+            f"You are checking whether the DRAFT answer below is appropriately "
+            f"supported by the memories. Three stances independently judge, "
+            f"then reconcile:\n"
+            f"  - literal-support: does memory text DIRECTLY answer this?\n"
+            f"  - plausible-inference: can the answer be derived from indirect "
+            f"evidence (range midpoints, pattern + world-knowledge)?\n"
+            f"  - strict-abstain: is the question genuinely unanswerable from "
+            f"memories?\n\n"
+            f"Final decision:\n"
+            f"  keep — draft is supported (literal OR inferred); use draft\n"
+            f"  abstain — draft is unsupported; replace with "
+            f"\"The information provided is not enough.\"\n"
+            f"  rewrite — draft is partially supported; output a hedged "
+            f"version (range / 'I know X but not Y')\n\n"
+            f"Bias to KEEP. Only flip to abstain or rewrite when ≥2 stances "
+            f"clearly oppose the draft.\n"
+            f"\n"
+            f"Question: {question}\n"
+            f"Draft answer (model {'abstained' if is_abstained else 'committed'}): "
+            f"{draft_for_prompt}"
+        )
+
+        result = debate(
+            task=task,
+            evidence=mem_text,
+            llm=_CallableBackend(self._llm),
+            extra_schema=(
+                '  "decision": "keep"|"abstain"|"rewrite",\n'
+                '  "rewritten_answer": str (empty unless rewrite),\n'
+                '  "confidence": float (0..1)'
+            ),
+        )
+        if not result:
+            return None
+
+        decision = str(result.get("decision") or "keep").lower().strip()
+        try:
+            conf = float(result.get("confidence") or 0.6)
+        except (TypeError, ValueError):
+            conf = 0.6
+        reason = str(result.get("final_answer") or "")[:200]
+
+        if decision == "abstain":
+            return GateResult(
+                action="abstain",
+                answer=_ABSTAIN_TEXT,
+                reason=reason,
+                confidence=conf,
+            )
+        if decision == "rewrite":
+            rewritten = str(result.get("rewritten_answer") or "").strip()
+            if rewritten:
+                return GateResult(
+                    action="rewrite",
+                    answer=rewritten,
+                    reason=reason,
+                    confidence=conf,
+                )
+            # rewrite called but no new text → fall through to keep
+        # default: keep (also covers unknown decision values)
+        return GateResult(
+            action="keep",
+            answer=draft_answer,
+            reason=reason,
+            confidence=conf,
+        )
