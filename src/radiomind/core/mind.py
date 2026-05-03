@@ -1057,12 +1057,122 @@ class RadioMind:
         atoms = self._query_decomposer.decompose(
             question=query, retrieved=retrieved, domain=domain, focus=focus,
         )
+        # Atom-level trinity scope filter: when the query carries a
+        # second-order constraint (temporal_constraint via attention's
+        # aux_flags, or a focus-narrowed scope), the raw atom list often
+        # over-includes events that don't belong to the constraint
+        # window. Trinity-3-party with dimension-typed stances (in-scope
+        # / borderline / out-of-scope) classifies each atom batched in
+        # ONE LLM call. Targets d3ab962e ("hikes on consecutive
+        # weekends" — atoms include all hikes; constraint trimmer keeps
+        # only the consecutive-weekend pair) and gpt4_ab202e7f
+        # ("kitchen items" — atoms include borderline non-kitchen items;
+        # filter keeps strict kitchen domain).
+        try:
+            atoms = self._trinity_filter_atoms(query, atoms)
+        except Exception:
+            pass
         if promote and atoms:
             try:
                 self._query_decomposer.promote_if_valuable(atoms, domain=domain)
             except Exception:
                 pass
         return atoms
+
+    def _trinity_filter_atoms(self, query: str, atoms: list) -> list:
+        """Trinity-3-party scope check on the atom list.
+
+        Each atom is judged on three independent dimensions (NOT on the
+        decision itself — see CORE_METHODOLOGY stance-naming rule):
+          - literal-fit:  does the atom's surface match the query terms?
+          - scope-window: does the atom fall within any time / category
+                          / spatial scope the question implies?
+          - relevance-strength: how strongly does the atom support an
+                          answer to the question vs being filler?
+
+        Trinity outputs `keep_atom_ids` — a subset to retain. Empty or
+        unparseable trinity = no filter applied (return all atoms).
+        Single LLM call regardless of atom count.
+
+        Bias to KEEP-ALL: only filter when ≥2 dimensions agree an atom
+        is out-of-scope. This avoids over-trimming on queries that
+        DON'T carry a real constraint.
+        """
+        if self._llm is None or not atoms:
+            return atoms
+        try:
+            if not self._llm.is_available():
+                return atoms
+        except Exception:
+            return atoms
+        if len(atoms) <= 2:
+            # Too few atoms — filter would be more noise than signal.
+            return atoms
+
+        # Build a compact evidence block: atom_id → fact + count + conf
+        ev_lines = []
+        atom_index: dict[int, object] = {}
+        for i, a in enumerate(atoms):
+            atom_index[i] = a
+            count_tag = f" [×{getattr(a, 'count', 1)}]" if getattr(a, 'count', 1) > 1 else ""
+            try:
+                conf_v = float(getattr(a, "confidence", 0.0))
+            except (TypeError, ValueError):
+                conf_v = 0.0
+            ev_lines.append(
+                f"atom_id={i} | conf={conf_v:.2f}{count_tag} | "
+                f"{(getattr(a, 'fact', '') or '')[:200]}"
+            )
+        evidence = "\n".join(ev_lines)
+
+        from radiomind.refinement import trinity as _trinity
+        result = _trinity.fast(
+            task=(
+                f"Decide which atoms below are in-scope answers for the "
+                f"question. Three INDEPENDENT dimensions triangulate "
+                f"(NOT abstain-vs-commit; each judges its own dimension):\n"
+                f"  literal-fit: does the atom's surface match the query "
+                f"terms?\n"
+                f"  scope-window: does the atom fall within any time, "
+                f"category, or spatial scope the question implies "
+                f"(e.g. 'consecutive weekends', 'in March', "
+                f"'kitchen items only')?\n"
+                f"  relevance-strength: does the atom strongly support "
+                f"an answer vs being filler / tangential?\n"
+                f"\n"
+                f"Output `keep_atom_ids` listing only the atoms judged "
+                f"in-scope by ≥2 of the three dimensions. KEEP atoms "
+                f"by default; only DROP when ≥2 dimensions clearly say "
+                f"out-of-scope.\n"
+                f"\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence,
+            llm=self._llm,
+            extra_schema=(
+                '  "keep_atom_ids": [int, ...] (subset of atom_ids '
+                'judged in-scope)'
+            ),
+        )
+        if not result:
+            return atoms
+        keep_raw = result.get("keep_atom_ids") or []
+        if not isinstance(keep_raw, list):
+            return atoms
+        keep_ids: set[int] = set()
+        for x in keep_raw:
+            try:
+                keep_ids.add(int(x))
+            except (TypeError, ValueError):
+                continue
+        if not keep_ids:
+            return atoms  # empty filter result → ignore (don't drop all)
+        # Edge case: trinity dropped >50% of atoms — likely over-zealous.
+        # Keep all in that case to avoid false negatives.
+        if len(keep_ids) < max(1, len(atoms) // 2):
+            return atoms
+        filtered = [atom_index[i] for i in sorted(keep_ids) if i in atom_index]
+        return filtered or atoms
 
     # --- Query-time trinity pipelines (attention 4th law) ---
 
