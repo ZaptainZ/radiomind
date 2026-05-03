@@ -433,6 +433,141 @@ class TestTrinityClassPromotion:
         m.shutdown()
 
 
+class TestNERThirdSource:
+    """LLM-as-NER pass adds a third independent evidence channel to
+    `_trinity_class_promotion` (alongside LLM batch extraction and
+    regex verb hint). NER tags ORG / EVENT / CAUSE / VENUE point to
+    classes that surface verbs miss.
+    """
+
+    def test_ner_returns_empty_when_no_money_turns(self, sandbox):
+        """Pre-filter on $: turns without money signal don't reach NER."""
+        import json as _json
+        from radiomind import RadioMind
+
+        ner_called = {"n": 0}
+        def _llm(prompt, system=""):
+            if "Identify named entities" in prompt:
+                ner_called["n"] += 1
+                return _json.dumps({"ner": []})
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_llm)
+        m.initialize()
+        m.ingest_turns_raw(
+            _turns(
+                ("I went to the park yesterday", "s1", "2025-01-10"),
+                ("I love hiking in the mountains", "s2", "2025-02-11"),
+            ),
+            domain="personal", user_id="alice",
+        )
+        # No turns mention $ → NER call should be skipped entirely
+        assert ner_called["n"] == 0
+        m.shutdown()
+
+    def test_ner_called_on_money_turns(self, sandbox):
+        """Turns with $ pass the gate and trigger one NER call."""
+        import json as _json
+        from radiomind import RadioMind
+
+        ner_called = {"n": 0}
+        def _llm(prompt, system=""):
+            if "Identify named entities" in prompt:
+                ner_called["n"] += 1
+                return _json.dumps({
+                    "ner": [
+                        {"turn_id": "s1", "entities": [
+                            {"type": "ORG", "text": "Red Cross"},
+                            {"type": "MONEY", "text": "$500"},
+                            {"type": "CAUSE", "text": "disaster relief"},
+                        ]},
+                    ]
+                })
+            if "OWNERSHIP" in prompt:
+                return _json.dumps({"events": [
+                    {"turn": 0, "polarity": "amount",
+                     "entity_class": "amount_events",
+                     "canonical_member": "", "amount": 500, "currency": "USD"},
+                    {"turn": 1, "polarity": "amount",
+                     "entity_class": "amount_events",
+                     "canonical_member": "", "amount": 200, "currency": "USD"},
+                ]})
+            if "triangulate" in prompt.lower() and "assignments" in prompt.lower():
+                # Trinity sees evidence WITH NER tags now — confirm the
+                # promotion completes (test the wire-up, not the LLM).
+                return _json.dumps({
+                    "stances": [{"name": "x", "emphasis": "x", "conclusion": "x", "confidence": 0.8}] * 3,
+                    "final_answer": "promote both",
+                    "confidence": 0.85,
+                    "assignments": [
+                        {"event_id": 0, "entity_class": "charity_donations"},
+                        {"event_id": 1, "entity_class": "charity_donations"},
+                    ],
+                })
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_llm)
+        m.initialize()
+        # Both turns have $ — both should hit NER (in one batched call).
+        # Both phrasings use third-person subjects so regex
+        # AMOUNT_PATTERN (which requires "i/we" subject) doesn't
+        # classify EITHER. LLM extracts both as generic amount_events.
+        # ≥2 ambiguous candidates → trinity_class_promotion fires; NER
+        # tags inform the trinity vote (the entire purpose of this test).
+        m.ingest_turns_raw(
+            _turns(
+                # "raised $" passes the cardinal-signal gate; subject is
+                # third-person ("fundraiser"), so regex AMOUNT_PATTERN
+                # (requires "i/we" subject) doesn't extract.
+                ("The Red Cross fundraiser raised $500 for disaster relief",
+                 "s1", "2025-01-10"),
+                # "received" + "donations" pass gate; subject is "the
+                # organization" so regex AMOUNT_PATTERN doesn't match.
+                ("The literacy organization received $200 in donations last month",
+                 "s2", "2025-02-11"),
+            ),
+            domain="personal", user_id="alice",
+        )
+        assert ner_called["n"] >= 1
+        # Trinity then promoted via NER+LLM evidence (no regex available
+        # because both subjects are organizations, not "I/we").
+        charity = m._numeric_agg.get_cardinal(
+            "alice", "personal", "charity_donations",
+        )
+        assert charity is not None
+        assert charity.total_amount == 700
+        m.shutdown()
+
+    def test_ner_unparseable_does_not_crash(self, sandbox):
+        """NER returns garbage → empty NER dict, trinity still runs."""
+        import json as _json
+        from radiomind import RadioMind
+
+        def _llm(prompt, system=""):
+            if "Identify named entities" in prompt:
+                return "not json {invalid"
+            if "OWNERSHIP" in prompt:
+                return _json.dumps({"events": [
+                    {"turn": 0, "polarity": "amount",
+                     "entity_class": "charity_donations",
+                     "canonical_member": "", "amount": 100, "currency": "USD"},
+                ]})
+            return _json.dumps({"events": []})
+
+        m = RadioMind(llm=_llm)
+        m.initialize()
+        m.ingest_turns_raw(
+            _turns(("I donated $100 to charity", "s1", "2025-01-10")),
+            domain="personal", user_id="alice",
+        )
+        # Should not have crashed; charity entry should still exist
+        charity = m._numeric_agg.get_cardinal(
+            "alice", "personal", "charity_donations",
+        )
+        assert charity is not None
+        m.shutdown()
+
+
 class TestPersistence:
     """Cache survives restart."""
 

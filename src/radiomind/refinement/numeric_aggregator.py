@@ -434,7 +434,17 @@ class NumericAggregator:
                 self._turn_id(mid, meta): content
                 for mid, content, meta in user_turns
             }
-            self._trinity_class_promotion(enriched, turn_text_by_id_pre)
+            # Third extraction source: LLM-as-NER pass over money-bearing
+            # turns. Tags are passed to trinity_class_promotion as the
+            # `entity-from-ner` evidence channel — without them, the
+            # trinity has only LLM (literal) + regex (verb) which is
+            # 2-source, not the genuine 3-source vote the methodology
+            # calls for. Empty dict if LLM unavailable; trinity handles
+            # the missing channel gracefully.
+            ner_by_turn = self._extract_ner_entities(user_turns, session_date)
+            self._trinity_class_promotion(
+                enriched, turn_text_by_id_pre, ner_by_turn=ner_by_turn,
+            )
         except Exception:
             pass
 
@@ -588,10 +598,130 @@ class NumericAggregator:
         entry.evidence = [t for t in entry.evidence if t not in revoked_turns]
         entry.updated_at = time.time()
 
+    def _extract_ner_entities(
+        self,
+        user_turns: list[tuple[int, str, dict]],
+        session_date: str | None,
+    ) -> dict[str, list[tuple[str, str]]]:
+        """LLM-as-NER focused entity extraction for amount-bearing turns.
+
+        Third independent extraction source for the trinity_class_promotion
+        vote. While `_batch_extract_llm` does a multi-purpose extraction
+        (own/dispose/amount + class assignment in one call), THIS method
+        does a SINGLE-PURPOSE NER pass over user turns containing $ /
+        money keywords, returning raw named-entity tags (ORG / MONEY /
+        EVENT / PERSON / VENUE). It does NOT assign an entity_class —
+        that decision is left to the trinity vote downstream, where NER
+        tags are one of the three evidence channels alongside LLM
+        classification and regex verb hint.
+
+        Returns: dict mapping turn_id → [(entity_type, entity_text), ...]
+        Empty dict when LLM is unavailable or no turns carry money signals.
+        """
+        if not self._llm:
+            return {}
+        try:
+            if not self._llm.is_available():
+                return {}
+        except Exception:
+            return {}
+
+        # Pre-filter: only call NER on turns that mention money.
+        # Other turns don't help trinity_class_promotion (which only
+        # operates on amount candidates).
+        money_re = re.compile(r"\$\s*\d|\b(?:dollars?|usd|bucks?)\b", re.IGNORECASE)
+        target_turns: list[tuple[int, str, dict]] = []
+        for mid, content, meta in user_turns:
+            if money_re.search(content or ""):
+                target_turns.append((mid, content, meta))
+        if not target_turns:
+            return {}
+
+        # Batch call: pass turn_id + sentence; ask for NER tags.
+        # Bound to ~12 turns per call to keep prompt size reasonable.
+        out: dict[str, list[tuple[str, str]]] = {}
+        for start in range(0, len(target_turns), 12):
+            chunk = target_turns[start : start + 12]
+            lines = []
+            for mid, content, meta in chunk:
+                tid = self._turn_id(mid, meta)
+                snippet = content[:400].replace("\n", " ")
+                if snippet.startswith("[user] "):
+                    snippet = snippet[7:]
+                lines.append(f"[{tid}] {snippet}")
+            prompt = (
+                "Identify named entities in each user turn below. Output "
+                "ONLY entity TYPES and SURFACE TEXT — do NOT classify into "
+                "any specific category. Use these ENTITY TYPES strictly:\n"
+                "  ORG       — organizations, charities, fundraisers, "
+                "companies, schools, institutions\n"
+                "  MONEY     — currency amounts (numbers + currency)\n"
+                "  EVENT     — named events (gala, fundraiser, marathon, "
+                "concert, party, drive)\n"
+                "  PERSON    — proper-noun people\n"
+                "  VENUE     — physical places where events happen\n"
+                "  PRODUCT   — branded purchasable items\n"
+                "  CAUSE     — abstract causes (cancer research, "
+                "homelessness, animal welfare)\n"
+                "\n"
+                "Multiple entities per turn are fine. Skip turns with no "
+                "named entities of these types.\n"
+                "\n"
+                "Turns:\n"
+                f"{chr(10).join(lines)}\n"
+                "\n"
+                "Output STRICT JSON only:\n"
+                "{\n"
+                '  "ner": [\n'
+                '    {"turn_id": "...", "entities": [\n'
+                '      {"type": "ORG", "text": "..."},\n'
+                '      ...\n'
+                '    ]},\n'
+                '    ...\n'
+                '  ]\n'
+                "}"
+            )
+            raw = ""
+            try:
+                if hasattr(self._llm, "generate"):
+                    resp = self._llm.generate(
+                        prompt, system="Output only strict JSON.",
+                    )
+                    raw = getattr(resp, "text", "") or ""
+                else:
+                    raw = self._llm(prompt, "Output only strict JSON.")
+            except Exception:
+                continue
+            cleaned = re.sub(r"^```(?:json|JSON)?\s*\n?", "", (raw or "").strip())
+            cleaned = re.sub(r"\n?```\s*$", "", cleaned).strip()
+            try:
+                obj = json.loads(cleaned)
+            except Exception:
+                continue
+            ner_list = obj.get("ner") or []
+            if not isinstance(ner_list, list):
+                continue
+            for rec in ner_list:
+                if not isinstance(rec, dict):
+                    continue
+                tid = str(rec.get("turn_id") or "").strip()
+                ents = rec.get("entities") or []
+                if not tid or not isinstance(ents, list):
+                    continue
+                for e in ents:
+                    if not isinstance(e, dict):
+                        continue
+                    et = str(e.get("type") or "").strip().upper()
+                    txt = str(e.get("text") or "").strip()
+                    if et and txt:
+                        out.setdefault(tid, []).append((et, txt))
+        return out
+
     def _trinity_class_promotion(
         self,
         candidates: list[dict[str, Any]],
         turn_text_by_id: dict[str, str],
+        ner_by_turn: dict[str, list[tuple[str, str]]] | None = None,
     ) -> None:
         """Trinity over generically-classed amount events: promote to specific class.
 
@@ -669,8 +799,22 @@ class NumericAggregator:
             return
 
         amt_str = lambda c: f"${c.get('amount')}" if c.get("amount") else ""
+
+        def _ner_tag_block(tid: str) -> str:
+            """Render NER tags for a turn_id as a compact " | NER: ..." suffix."""
+            if not ner_by_turn:
+                return ""
+            tags = ner_by_turn.get(tid) or []
+            if not tags:
+                return ""
+            # Compact: "ORG=Red Cross, EVENT=charity gala, CAUSE=cancer research"
+            return " | NER: " + ", ".join(
+                f"{t}={v}" for t, v in tags[:6]
+            )
+
         evidence_block = "\n\n".join(
-            f"event_id={eid} | amount={amt_str(c)} | {text}"
+            f"event_id={eid} | amount={amt_str(c)} | "
+            f"{text}{_ner_tag_block(c.get('turn_id', ''))}"
             for eid, c, text in events_for_prompt
         )
         class_options = list(CLASS_DEFINITIONS.keys()) + ["amount_events"]
@@ -683,14 +827,22 @@ class NumericAggregator:
         result = debate(
             task=(
                 f"For each amount event below, decide which entity_class "
-                f"it belongs to. Three stances triangulate:\n"
-                f"  literal — only promote if the sentence names an entity "
-                f"matching the class definition verbatim\n"
-                f"  inference — promote when verb + target strongly imply "
-                f"the class (e.g. 'raised $X for the children's hospital' "
-                f"implies charity_donations)\n"
-                f"  skeptic — leave 'amount_events' when genuinely "
-                f"ambiguous; better under-classify than mis-classify.\n"
+                f"it belongs to. Three stances triangulate based on "
+                f"DIFFERENT evidence channels:\n"
+                f"  literal-from-llm — does the sentence literally name "
+                f"an entity matching the class definition?\n"
+                f"  verb-from-regex — does the action verb (raise/donate/"
+                f"save/spend/earn) imply the class mechanically?\n"
+                f"  entity-from-ner — do the named entities (NER tags "
+                f"in evidence: ORG, EVENT, CAUSE, VENUE, etc.) point to "
+                f"the class? Trust ORG/CAUSE for charity_donations "
+                f"specifically.\n"
+                f"  (the LLM picks any 3 of these dimensions per call;"
+                f"  3-source agreement = high confidence assignment.)\n"
+                f"\n"
+                f"PROMOTE conservatively when 2+ channels agree. Leave "
+                f"'amount_events' when channels disagree or evidence is "
+                f"genuinely ambiguous.\n"
                 f"\nClass options: {class_options}\n"
                 f"Class rubrics:\n{rubric_block}\n"
                 f"\nReturn one assignment per event_id."
