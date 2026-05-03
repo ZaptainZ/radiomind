@@ -894,6 +894,136 @@ class RadioMind:
             return filtered
         return results
 
+    # --- Iterative retrieval (multi-anchor attention via trinity) ---
+
+    def iterative_search(
+        self,
+        query: str,
+        domain: str | None = None,
+        user_id: str = "",
+        agent_id: str = "",
+        session_id: str = "",
+        max_results: int = 10,
+        max_passes: int = 2,
+        n_anchors: int = 3,
+        seed_results: list | None = None,
+    ) -> list:
+        """Multi-pass attention-driven search.
+
+        Pass 1: standard `search()` produces a seed result list (or the
+                caller may supply `seed_results` from an earlier call).
+        Anchor generation: an N-party trinity reads the question and seed
+                           results, then proposes N DIFFERENT focused
+                           sub-queries (each from one stance / angle:
+                           literal-topic / adjacent-experience / equipment
+                           / time-context / etc — chosen by the LLM).
+        Pass 2: each sub-query runs through `search()` independently;
+                results are merged and de-duplicated against the seed.
+
+        Returns a single deduplicated list. Falls back to seed (or empty)
+        when no LLM is available or the trinity fails.
+
+        Why this lives at the methodology level and not as a per-callsite
+        regex: ANY caller (preference context extraction, entity
+        candidate scan, multi-hop QA, future skill plug-ins) gets a
+        broader memory window without hardcoding query-expansion rules.
+        The trinity decides what angles matter for THIS question.
+        """
+        self._check_init()
+        # Pass 1 (or use caller's seed)
+        if seed_results is None:
+            seed = self.search(
+                query, domain=domain, user_id=user_id, agent_id=agent_id,
+                session_id=session_id, max_results=max_results,
+            )
+        else:
+            seed = list(seed_results)
+
+        if max_passes <= 1 or self._llm is None or not self._llm.is_available():
+            return seed
+
+        # Build evidence block for the anchor-generation trinity
+        seed_lines: list[str] = []
+        seen_content: set[str] = set()
+        for r in seed[:25]:
+            content = getattr(getattr(r, "entry", None), "content", "") or ""
+            if not content or content in seen_content:
+                continue
+            seen_content.add(content)
+            sdate = ""
+            try:
+                sdate = (r.entry.metadata or {}).get("session_date", "")
+            except Exception:
+                pass
+            seed_lines.append(f"[{sdate}] {content[:200].replace(chr(10), ' ')}")
+        evidence_block = "\n".join(seed_lines) or "(no seed memories)"
+
+        # N-party trinity generates one angle per stance.
+        from radiomind.refinement import trinity as _trinity
+        n = max(2, min(int(n_anchors), 7))
+        anchor_result = _trinity.parties(
+            n=n,
+            task=(
+                f"Generate {n} DIFFERENT focused search queries that would "
+                f"surface complementary user-specific memories for this "
+                f"question. Each stance picks a different angle (e.g. "
+                f"literal-topic / adjacent-experience / equipment-or-gear "
+                f"/ social-context / time-window / category-extension). "
+                f"Stances must NOT propose duplicate or near-duplicate "
+                f"queries. Each query should be 2-8 words, naturally "
+                f"phrased as a noun phrase (no question marks).\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence_block,
+            llm=self._llm,
+            extra_schema=(
+                f'  "queries": [str, ...] (exactly {n} items, one per stance, '
+                f'each a short noun phrase)'
+            ),
+        )
+        if not anchor_result:
+            return seed
+        queries_raw = anchor_result.get("queries") or []
+        if not isinstance(queries_raw, list):
+            return seed
+        anchor_queries = []
+        seen_q: set[str] = set()
+        for q in queries_raw[:n]:
+            qs = str(q).strip()
+            ql = qs.lower()
+            if not qs or ql in seen_q or ql == query.lower().strip():
+                continue
+            seen_q.add(ql)
+            anchor_queries.append(qs)
+        if not anchor_queries:
+            return seed
+
+        # Pass 2: parallel sub-queries, merge into seed.
+        merged = list(seed)
+        seen_ids: set = set()
+        for r in seed:
+            try:
+                seen_ids.add(getattr(r.entry, "id", None) or id(r))
+            except Exception:
+                pass
+        per_anchor_cap = max(3, max_results // 2)
+        for aq in anchor_queries:
+            try:
+                more = self.search(
+                    aq, domain=domain, user_id=user_id,
+                    agent_id=agent_id, session_id=session_id,
+                    max_results=per_anchor_cap,
+                )
+            except Exception:
+                continue
+            for r in more or []:
+                rid = getattr(r.entry, "id", None) or id(r)
+                if rid in seen_ids:
+                    continue
+                seen_ids.add(rid)
+                merged.append(r)
+        return merged
+
     # --- Attention-driven query decomposition ---
 
     def decompose_for_query(
@@ -1106,28 +1236,36 @@ class RadioMind:
             seen_content.add(content)
             lines.append(f"[{sdate}] {content[:300].replace(chr(10), ' ')}")
 
-        # Second pass: focus-driven retrieval pulls user-specific anchors
-        # for the preference topic. This is the architectural fix for the
-        # B3 anchor failures (d6233ab6, 95228167) — when the top-k from
-        # the main retrieval missed memories tying the user to the topic,
-        # this focused pass surfaces them.
-        if sig.focus and domain:
+        # Multi-anchor iterative retrieval: trinity-N-party generates
+        # complementary expansion queries, each surfacing a different
+        # angle of user-specific anchor (literal-topic / adjacent-
+        # experience / equipment / etc — chosen by the LLM). Targets
+        # d6233ab6 + 95228167 + similar where top-k missed user-tying
+        # memories that lived under different surface words.
+        # Falls back gracefully when LLM unavailable.
+        if domain:
             try:
-                anchor_query = f"my {sig.focus}"
-                extra = self.search(
-                    anchor_query, domain=domain, max_results=20,
+                # Build seed_results from the caller-supplied list so we
+                # don't re-pay the first-pass retrieval cost.
+                seed_objs = [m for m in retrieved_memories
+                              if hasattr(m, "entry")]
+                expanded = self.iterative_search(
+                    query=query, domain=domain,
+                    seed_results=seed_objs or None,
+                    max_passes=2, n_anchors=3, max_results=20,
                 )
-                for r in extra or []:
+                for r in expanded or []:
                     content = getattr(getattr(r, "entry", None), "content", "") or ""
                     if not content or content in seen_content:
                         continue
                     seen_content.add(content)
-                    sdate = (
-                        (getattr(r, "entry", None).metadata or {}).get(
+                    sdate = ""
+                    try:
+                        sdate = (r.entry.metadata or {}).get(
                             "session_date", ""
                         )
-                        if getattr(r, "entry", None) else ""
-                    )
+                    except Exception:
+                        pass
                     lines.append(
                         f"[{sdate}] {content[:300].replace(chr(10), ' ')}"
                     )
@@ -1301,7 +1439,42 @@ class RadioMind:
         }
         seen_candidates: dict[str, int] = {}
         evidence_by_cand: dict[str, list[str]] = {}
-        for m in retrieved_memories[:60]:
+        # Widen the candidate scan via iterative retrieval — for
+        # disambiguation we want to see ALL candidates of the
+        # ref_phrase type, not just whatever was in the caller's top-k.
+        # Trinity-multi-anchor surfaces additional candidates
+        # (e.g. "metropolitan museum exhibit", "city art museum free
+        # admission"). Falls back to caller's list when iterative is
+        # unavailable.
+        scan_pool: list = list(retrieved_memories or [])
+        if domain and len(scan_pool) < 30:
+            try:
+                widen_query = (
+                    f"the {ref_phrase}" if ref_phrase
+                    else (query or "")
+                )
+                seed_objs = [m for m in scan_pool if hasattr(m, "entry")]
+                expanded = self.iterative_search(
+                    query=widen_query, domain=domain,
+                    seed_results=seed_objs or None,
+                    max_passes=2, n_anchors=3, max_results=20,
+                )
+                if expanded:
+                    seen_in_pool: set = set()
+                    for r in scan_pool:
+                        try:
+                            seen_in_pool.add(getattr(r.entry, "id", id(r)))
+                        except Exception:
+                            pass
+                    for r in expanded:
+                        rid = getattr(r.entry, "id", id(r)) if hasattr(r, "entry") else id(r)
+                        if rid in seen_in_pool:
+                            continue
+                        seen_in_pool.add(rid)
+                        scan_pool.append(r)
+            except Exception:
+                pass
+        for m in scan_pool[:80]:
             if isinstance(m, dict):
                 content = m.get("memory") or m.get("content") or ""
             elif hasattr(m, "entry"):
