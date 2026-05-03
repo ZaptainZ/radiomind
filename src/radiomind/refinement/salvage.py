@@ -175,21 +175,36 @@ _ABSTAIN_TEXT = "The information provided is not enough."
 
 
 class BidirectionalAbstainGate:
-    """Trinity-based review that runs on EVERY answer (abstain or not)
-    and decides whether to keep, override-to-abstain, or rewrite as
-    a partial / hedged answer.
+    """Trinity-based review of the answer model's draft.
 
-    Symmetric design: covers both error directions (under-abstain and
-    over-abstain) in a single trinity call. The gate biases toward
-    `keep` — only flips when 2+ stances clearly judge the draft
-    inconsistent with memories. This avoids regressing the 86 currently-
-    correct answers.
+    DESIGN HISTORY (important — read before changing):
 
-    Multi-round / sub-trinity hooks: when the outer trinity returns
-    `decision="rewrite"` with `confidence < 0.6`, the gate can fire a
-    sub-trinity to refine the rewrite. Initial implementation is
-    single-round; sub-trinity is reserved for cases where data shows
-    single-round trinity is insufficient.
+    Initial design (commit 308a57c) ran the gate on EVERY draft (both
+    abstain and confident) hoping to catch BOTH error directions:
+      - under-abstain: model said "info not enough" but should answer
+      - over-confidence: model committed an answer but should abstain
+
+    n=100 v4 (commit 4613e7c, 2026-05-03) showed this symmetric design
+    causes systematic over-abstain — 7 of 10 v3→v4 regressions were
+    the gate flipping confident-and-correct drafts to "info not enough".
+    Trade-off measured: +2 over-confidence wins (031748ae_abs,
+    29f2956b_abs), -7 over-abstain losses, net -5.
+
+    Current design: revert to under-confidence-only (the working
+    direction). The gate runs ONLY when `looks_abstained(draft)` is
+    true; for confident drafts, the gate is skipped entirely. This
+    matches the original AbstentionSalvager behavior with the cleaner
+    keep/abstain/rewrite outcome surface.
+
+    Why not narrower over-confidence detection? Considered: only fire
+    when ≥2 abstain markers in the question OR retrieval scores
+    near-zero. Implemented none of these — the over-confidence wins
+    are concentrated on `_abs` test artifacts (qids whose gold marks
+    them as abstain-expected); without that signal at runtime, the
+    detector is too coarse and re-introduces the regressions.
+
+    Sub-trinity hooks remain available via the underlying
+    trinity.debate(sub_trinity_depth=...) call, currently unused here.
     """
 
     def __init__(self, llm_fn: Callable[[str, str], str]):
@@ -205,13 +220,20 @@ class BidirectionalAbstainGate:
     ) -> GateResult | None:
         """Trinity review of (question, draft_answer, memories).
 
-        Returns None when retrieval gave no memories (gate has nothing
-        to compare draft against — keep model's call) or when trinity
-        fails to produce a parseable verdict.
+        Returns None when:
+          - retrieval gave no memories (no comparison basis)
+          - draft is empty
+          - draft is NOT abstained (gate is under-confidence-only;
+            confident drafts are not second-guessed — see DESIGN HISTORY)
+          - trinity fails to produce a parseable verdict
         """
         if not retrieved:
             return None
         if not draft_answer or not draft_answer.strip():
+            return None
+        # Under-confidence direction only — running on confident drafts
+        # caused 7-of-10 v3→v4 regressions in n=100. See class docstring.
+        if not looks_abstained(draft_answer):
             return None
 
         from radiomind.refinement.trinity import debate

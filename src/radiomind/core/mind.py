@@ -999,14 +999,16 @@ class RadioMind:
             return ""
 
         evidence = _format_memories(retrieved_memories, max_items=25)
-        # Multi-round trinity for date / inference tasks. Single-round
-        # was responsible for 6e984301-style precision failures (9 weeks
-        # vs gold 3 weeks): the LLM picked the wrong anchor dates in
-        # round 1 and never reconsidered. With max_rounds=3, round 2
-        # gets shown round 1's stances and is asked to re-examine —
-        # if round 1's anchor was wrong, refinement catches it.
-        # converge_threshold=0.75 stops early when confident.
-        debate_rounds = 3 if sig.wants in {"date", "inference"} else 1
+        # Multi-round trinity ONLY for the `date` wants (genuine
+        # convergent task — date arithmetic has a unique correct
+        # answer). Originally also wired for `inference`, but n=100 v4
+        # showed multi-round on open-ended inference questions causes
+        # over-commitment: round 1 says "info not enough", round 2 sees
+        # the prior stances and "tries harder", producing a confident
+        # but wrong answer (gpt4_93159ced_abs). Inference is a divergent
+        # task — no single right answer to converge to — so single-round
+        # is correct.
+        debate_rounds = 3 if sig.wants == "date" else 1
         result = debate(
             task, evidence, self._llm,
             max_rounds=debate_rounds,

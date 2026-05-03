@@ -34,6 +34,33 @@ Trinity 不是固定 N 方的硬约定，而是**三个独立维度的可组合�
 | 日期算术 / age interval / 多 hop 推理 | `trinity.deep` | 三轮 + depth-1 子三体，精度优先 |
 | ROI/风险/流动性/机会 这类多利益 | `trinity.parties(4, ...)` | 三方不够，明确需要 N-party |
 
+### Stance 命名 = 结构压力（关键设计纪律）
+
+2026-05-03 发现：trinity 的 stance **名字本身**会强制 LLM 找该结论的支持理由，
+"Bias to KEEP" 这种 prompt 文字提示远敌不过角色名字的结构压力。
+
+```
+✅ 用维度命名 stance：每个角色只代表一种"看问题的角度"
+❌ 不要用结论命名 stance：避免角色名包含 commit/abstain/keep/revoke 等决策动词
+
+判断方法：把 stance 名读出来，能不能猜出它会投什么票？
+  能 → 结论型（错），它的票已被名字预定
+  不能 → 维度型（对），它的票由证据决定
+```
+
+| ✅ 工作良好（维度型） | ❌ 工作不良（结论型） |
+|---|---|
+| `strict / inclusive / consolidative` | `commit-friendly / abstain-safe` |
+| `anchor-based / chain-based / window-based` | `literal-support / strict-abstain` |
+| `stability-first / novelty-first / parsimony-first` | `merge / drop` |
+| `literal-mention / semantic-paraphrase / abstain-if-thin`*  | |
+
+\* 注意 `abstain-if-thin` 是**条件**（"if-thin"），不是结论——这种允许。
+
+**实证：** n=100 v4 的 BidirectionalAbstainGate 用了 `strict-abstain` 作为
+stance，导致 7 道 confident-correct draft 被错误翻成 abstain（详见
+`logs/2026-05-03-trinity-stance-naming-discovery-cc.md`）。
+
 ### 收敛性 vs 发散性任务（关键设计判断）
 
 **多轮 trinity 不是 universally better**——只对**收敛性**任务有效。

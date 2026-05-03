@@ -74,46 +74,30 @@ def test_trinity_unparseable_returns_none():
     assert result is None
 
 
-def test_keep_when_decision_keep():
-    """Trinity decision=keep → preserve draft answer."""
-    gate = _make_gate({
-        "stances": [{"name": "A", "emphasis": "x", "conclusion": "supported"}],
-        "final_answer": "supported",
-        "decision": "keep",
-        "rewritten_answer": "",
-        "confidence": 0.85,
-    })
-    result = gate.review("Q?", "the answer is 42", retrieved=[_mem("user said 42")])
-    assert result is not None
-    assert result.action == "keep"
-    assert result.answer == "the answer is 42"
-    assert result.confidence == 0.85
-
-
-def test_abstain_overrides_confident_draft():
-    """Over-confidence case: model gave answer, trinity says abstain."""
+def test_confident_draft_skips_gate_entirely():
+    """REGRESSION GUARD (n=100 v4 lesson): the gate must NOT touch
+    confident drafts. Running trinity on every draft caused systematic
+    over-abstain (7/10 v3→v4 regressions). The gate is under-confidence
+    only — confident drafts pass through unchanged.
+    """
     gate = _make_gate({
         "stances": [{"name": "Strict", "emphasis": "x", "conclusion": "abstain"}],
         "final_answer": "memories don't support",
         "decision": "abstain",
-        "confidence": 0.8,
+        "confidence": 0.95,
     })
+    # Even with trinity primed to say "abstain", a confident draft
+    # MUST short-circuit before trinity runs.
     result = gate.review(
         "What's my favorite color?",
         "Your favorite color is blue.",
-        retrieved=[_mem("we talked about cars")],
+        retrieved=[_mem("user said favorite color is blue")],
     )
-    assert result is not None
-    assert result.action == "abstain"
-    assert result.answer == "The information provided is not enough."
-    assert "memories don't support" in result.reason
+    assert result is None
 
 
-def test_keep_overrides_under_abstain():
-    """Under-confidence case: model abstained, trinity says keep."""
-    # Note: in the real flow the draft would be an abstain text. Here we
-    # simulate trinity overriding back to "keep" — which means keeping
-    # the abstain text. The override happens only on abstain/rewrite.
+def test_keep_when_abstained_draft_should_remain_abstained():
+    """Under-confidence path: model abstained, trinity says keep → return keep."""
     gate = _make_gate({
         "stances": [{"name": "Literal", "emphasis": "x", "conclusion": "support"}],
         "final_answer": "draft is fine",
@@ -128,8 +112,11 @@ def test_keep_overrides_under_abstain():
     assert result.answer == draft
 
 
-def test_rewrite_replaces_with_hedged_answer():
-    """Trinity decision=rewrite + non-empty rewritten_answer → use rewrite."""
+def test_rewrite_replaces_under_confidence_abstain():
+    """Under-confidence path with rewrite decision: replace abstain text
+    with trinity's hedged answer. Targets gpt4_d12ceb0e-style cases
+    where memories support a partial answer (range / inferable midpoint)
+    but the model bailed."""
     gate = _make_gate({
         "stances": [{"name": "Range", "emphasis": "x", "conclusion": "midpoint"}],
         "final_answer": "use range midpoint",
@@ -139,7 +126,7 @@ def test_rewrite_replaces_with_hedged_answer():
     })
     result = gate.review(
         "What's my parents' age?",
-        "Information not enough.",
+        "The information provided is not enough.",
         retrieved=[_mem("parents were in their early 30s when had me; user is 32")],
     )
     assert result is not None
@@ -148,7 +135,7 @@ def test_rewrite_replaces_with_hedged_answer():
 
 
 def test_rewrite_without_text_falls_back_to_keep():
-    """Trinity says rewrite but gives no rewritten_answer → keep draft."""
+    """Trinity says rewrite but gives no rewritten_answer → keep abstain draft."""
     gate = _make_gate({
         "stances": [{"name": "x", "emphasis": "x", "conclusion": "x"}],
         "final_answer": "no rewrite text",
@@ -156,21 +143,43 @@ def test_rewrite_without_text_falls_back_to_keep():
         "rewritten_answer": "",
         "confidence": 0.5,
     })
-    result = gate.review("Q?", "draft", retrieved=[_mem("foo")])
+    abstained_draft = "The information provided is not enough."
+    result = gate.review("Q?", abstained_draft, retrieved=[_mem("foo")])
     assert result is not None
     assert result.action == "keep"
-    assert result.answer == "draft"
+    assert result.answer == abstained_draft
+
+
+def test_commit_overrides_under_confidence_abstain():
+    """Trinity decision=abstain on an already-abstain draft is a no-op
+    (keep). But when abstain markers in draft + trinity says commit
+    via rewrite or keeps as keep — the salvage either rewrites with new
+    text or leaves the abstain in place. Cover the explicit abstain
+    decision against an abstain draft (rare but defined: keep abstain).
+    """
+    gate = _make_gate({
+        "stances": [{"name": "Strict", "emphasis": "x", "conclusion": "abstain"}],
+        "final_answer": "stays abstain",
+        "decision": "abstain",
+        "confidence": 0.85,
+    })
+    abstained_draft = "The information provided is not enough."
+    result = gate.review("Q?", abstained_draft, retrieved=[_mem("evidence")])
+    assert result is not None
+    assert result.action == "abstain"
+    assert result.answer == "The information provided is not enough."
 
 
 def test_unknown_decision_treated_as_keep():
-    """Defensive: unknown decision string → keep (don't break the answer)."""
+    """Defensive: unknown decision string → keep abstain draft unchanged."""
     gate = _make_gate({
         "stances": [{"name": "x", "emphasis": "x", "conclusion": "x"}],
         "final_answer": "garbled",
         "decision": "xyzzy",
         "confidence": 0.5,
     })
-    result = gate.review("Q?", "draft", retrieved=[_mem("foo")])
+    abstained_draft = "The information provided is not enough."
+    result = gate.review("Q?", abstained_draft, retrieved=[_mem("foo")])
     assert result is not None
     assert result.action == "keep"
-    assert result.answer == "draft"
+    assert result.answer == abstained_draft
