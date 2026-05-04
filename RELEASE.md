@@ -11,30 +11,30 @@ the full design rationale see `projectBasicInfo/01_PROJECT_OVERVIEW.md`.
 
 ## TL;DR
 
-**RadioMind achieves 0.860 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
-n=100), +18 pt over Mem0's 0.680 same-protocol baseline at ≈ 1/10 the
-inference cost.**
+**RadioMind achieves 0.920 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
+n=100), +24 pt over Mem0's 0.680 same-protocol baseline at ≈ 1/10 the
+inference cost — within 1 pt of MemMachine SOTA (0.930).**
 
 | Configuration | Result | vs Mem0 same-protocol |
 |---|---:|---:|
 | gpt-4o answer + gpt-4o judge, n=100 (architecture v3) | **0.830** | +15 pt over 0.68 |
-| deepseek-v3.2 + gpt-4o judge, n=100 v2 (before infra fixes) | 0.790 | +11 pt |
-| **deepseek-v3.2 + gpt-4o judge, n=100 v3 (after infra fixes)** | **0.860** | **+18 pt**, ≈ 1/10 cost |
+| deepseek-v3.2 + gpt-4o judge, n=100 v3 (legacy) | 0.860 | +18 pt |
+| **deepseek-v3.2 + gpt-4o judge, n=100 v5 (post all-arch upgrades)** | **0.920** | **+24 pt**, ≈ 1/10 cost |
 
 Architecture investments demonstrate that the quality gain transfers to
 the weaker (cheaper) answer LLM — i.e. it is **not just prompt-tuning
 the answer model**.
 
-By question type (n=100 v3, deepseek-v3.2):
+By question type (n=100 v5, deepseek-v3.2 / gpt-4o judge):
 
-| qtype | n | acc |
-|---|---:|---:|
-| single-session-assistant   | 16 | **1.000** |
-| knowledge-update           | 17 | 0.941 |
-| single-session-user        | 16 | 0.938 |
-| single-session-preference  | 16 | 0.875 |
-| multi-session              | 18 | 0.722 |
-| temporal-reasoning         | 17 | 0.706 |
+| qtype | n | acc | vs v3 |
+|---|---:|---:|---:|
+| single-session-user        | 16 | **1.000** | +6.2pt |
+| single-session-preference  | 16 | 0.938 | +6.2pt |
+| knowledge-update           | 16 | 0.938 | -0.4pt |
+| single-session-assistant   | 17 | 0.941 | -5.9pt |
+| temporal-reasoning         | 17 | **0.941** | **+23.5pt** ← multi-round trinity for date |
+| multi-session              | 18 | 0.778 | +5.6pt |
 
 Multi-session integration and temporal reasoning are the two failure-dense
 qtypes — design surfaces for the next iteration.

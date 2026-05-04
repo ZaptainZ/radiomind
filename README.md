@@ -60,21 +60,25 @@ We benchmark RadioMind against published Mem0 results using the **same Mem0 prot
 |---|---|---:|---:|
 | Mem0 v3 (baseline)                | gpt-4o / gpt-4o        | 0.680  | — |
 | **RadioMind (architecture v3)**   | gpt-4o / gpt-4o        | **0.830**  | **+15.0 pt** |
-| **RadioMind (architecture v3)**   | deepseek-v3.2 / gpt-4o | **0.860**  | **+18.0 pt**, ≈ 1/10 inference cost |
+| **RadioMind (v5 all-arch)**       | deepseek-v3.2 / gpt-4o | **0.920**  | **+24.0 pt**, ≈ 1/10 inference cost |
 | MemMachine (current SOTA)         | gpt-4o / gpt-4o        | 0.930  | — |
 
-By question type (deepseek-v3.2 run, n=100):
+By question type (deepseek-v3.2 run, n=100 v5):
 
 | qtype | n | acc |
 |---|---:|---:|
-| single-session-assistant   | 16 | **1.000** |
-| knowledge-update           | 17 | 0.941 |
-| single-session-user        | 16 | 0.938 |
-| single-session-preference  | 16 | 0.875 |
-| multi-session              | 18 | 0.722 |
-| temporal-reasoning         | 17 | 0.706 |
+| single-session-user        | 16 | **1.000** |
+| single-session-assistant   | 17 | 0.941 |
+| temporal-reasoning         | 17 | **0.941** |
+| single-session-preference  | 16 | 0.938 |
+| knowledge-update           | 16 | 0.938 |
+| multi-session              | 18 | 0.778 |
 
-Multi-session integration and temporal date arithmetic are the failure-dense regions; these are the design surfaces under continued iteration.
+Multi-session aggregation remains the failure-dense region (ingest-side
+recall ceiling on amount events scattered across sessions). Temporal
+reasoning's +23.5 pt vs v3 came from multi-round trinity on date
+arithmetic — round 2 reconsiders round 1's anchor pick before
+committing the math.
 
 ### LoCoMo cat 1-4 (multi-turn dialog, n=100)
 
