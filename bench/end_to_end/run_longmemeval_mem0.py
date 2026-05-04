@@ -32,6 +32,14 @@ from pathlib import Path
 
 DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
 
+# Socket-level default timeout. urllib's per-call timeout=120 has been
+# observed to NOT fire on half-open TLS connections (DashScope hung
+# requests at 1-2h with 0 CPU during 2026-05-05 multi-session runs),
+# leaving the bench wedged. socket.setdefaulttimeout puts a hard
+# backstop at the OS-socket layer that applies to every TCP read.
+import socket as _socket
+_socket.setdefaulttimeout(180)  # 3 min hard ceiling per socket op
+
 _BYPASS_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
