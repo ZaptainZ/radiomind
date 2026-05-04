@@ -1,5 +1,9 @@
 # RadioMind
 
+[![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.920-brightgreen.svg)](#validated-performance)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
+
 **A memory module that actually learns from conversations — plug it into any AI agent.**
 
 ```python
@@ -14,6 +18,8 @@ print(mind.digest())               # "User: morning runner, values sleep quality
 4 methods. Zero config. Your agent remembers everything and gets smarter over time.
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
+
+> **v0.2.0-rc1** (pre-release, 2026-05-04): LongMemEval-S **0.920** (deepseek-v3.2 / gpt-4o judge, n=100) — within 1pt of MemMachine SOTA (0.930) at ~1/10 the inference cost, +24pt over Mem0 same-protocol baseline. See [Validated performance](#validated-performance) and [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
 
 ---
 

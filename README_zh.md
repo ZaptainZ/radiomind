@@ -1,5 +1,9 @@
 # RadioMind
 
+[![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.920-brightgreen.svg)](#性能验证)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
+
 **一个能从对话中学习的记忆模块——插入任何 AI Agent 即可使用。**
 
 ```python
@@ -14,6 +18,8 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 4 个方法，零配置。你的 Agent 记住一切，且越用越聪明。
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
+
+> **v0.2.0-rc1**（预发布，2026-05-04）：LongMemEval-S **0.920**（deepseek-v3.2 / gpt-4o judge，n=100），距 MemMachine SOTA（0.930）仅 1pt，推理成本约 gpt-4o 协议的 1/10，比 Mem0 同协议基线领先 24pt。详见 [性能验证](#性能验证) 与 [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
 
 ---
 
