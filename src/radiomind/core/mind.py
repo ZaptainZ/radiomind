@@ -2075,45 +2075,6 @@ class RadioMind:
         except Exception:
             pass
 
-    def answer_shape_directive(self, query: str) -> str:
-        """Return a one-line answer-shape directive based on the
-        AttentionSignature's `answer_shape` field.
-
-        The signature's `answer_shape` (number / amount / duration /
-        absolute_date / relative_offset / named_entity / list /
-        sentence) describes the surface form the question expects.
-        Until now this field only drove the inner trinity refinement
-        (`_task_description_for`); it never reached the FINAL answer
-        prompt, so the answer LLM was free to add filler ("100 more
-        points" instead of just "100", "about 5 hours" instead of
-        "5 hours"). Several judge-stringency edge cases trace to
-        exactly this gap.
-
-        This method exposes the existing `_ANSWER_SHAPE_GUIDANCE` map
-        as a prompt block the bench harness (or any caller) can
-        append to the answer prompt. Returns "" for `sentence` (the
-        default — no shape constraint to impose).
-
-        No hardcoded qid logic. Generic mapping from signature →
-        directive; any future qtype that surfaces a non-default
-        answer_shape gets the right form guidance for free.
-        """
-        self._check_init()
-        if not self._attention_router_enabled():
-            return ""
-        from radiomind.core.attention import analyze
-        sig = analyze(query)
-        shape = sig.answer_shape
-        if not shape or shape == "sentence":
-            return ""
-        guidance = _ANSWER_SHAPE_GUIDANCE.get(shape, "")
-        if not guidance:
-            return ""
-        return (
-            f"ANSWER SHAPE (attention-derived; the question expects "
-            f"a {shape!r} answer):\n  {guidance}\n\n"
-        )
-
     def profile_hint(self, query: str) -> str:
         """Answer-side user-context prefix (empty when query isn't preference-anchored)."""
         self._check_init()

@@ -578,18 +578,6 @@ def run(
             # references in the answer prompt resolve to the trinity-
             # chosen entity, not the most-recent surface mention.
             ans_prompt = entity_section + ans_prompt
-        # Answer-shape directive from AttentionSignature.answer_shape.
-        # Closes the gap where attention's shape field never reached
-        # the final answer prompt. Targets judge-stringency edge cases
-        # (e.g., 9ee3ecd6 where "100 more points" was judged ≠ gold
-        # "100"). Empty for `sentence` shape (no constraint imposed).
-        try:
-            shape_directive = mind.answer_shape_directive(question)
-            if shape_directive:
-                ans_prompt = shape_directive + ans_prompt
-        except Exception:
-            pass
-
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable
