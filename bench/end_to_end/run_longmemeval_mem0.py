@@ -184,6 +184,7 @@ def run(
     use_agentic: bool,
     use_refinement: bool = True,
     checkpoint_path: Path | None = None,
+    qids_filter: set[str] | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -263,6 +264,20 @@ def run(
                 f"{sorted(errata_qids)}",
                 flush=True,
             )
+
+    if qids_filter:
+        before = len(data)
+        data = [
+            q for q in data
+            if (q.get("question_id") or q.get("id")) in qids_filter
+        ]
+        print(
+            f"  [qids-filter] kept {len(data)}/{before} matching "
+            f"{len(qids_filter)} requested qids",
+            flush=True,
+        )
+        # qids filter overrides stratified sampling
+        n_questions = 0
 
     if n_questions > 0:
         from collections import defaultdict
@@ -729,6 +744,8 @@ def main() -> int:
     p.add_argument("--out", default="bench/end_to_end/lme-s-mem0proto.json")
     p.add_argument("--checkpoint", default="",
                    help="Path to .jsonl checkpoint. Per-question results appended as they complete; on rerun with the same path, already-completed question_ids are skipped. Defaults to <out>.checkpoint.jsonl.")
+    p.add_argument("--qids", default="",
+                   help="Comma-separated qid list. When set, runs ONLY these qids and skips stratified sampling. For single-change validation against a baseline.")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -764,6 +781,10 @@ def main() -> int:
     use_agentic = args.agentic
 
     cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
+    qids_set = (
+        {s.strip() for s in args.qids.split(",") if s.strip()}
+        if args.qids else None
+    )
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
@@ -773,6 +794,7 @@ def main() -> int:
         use_agentic=use_agentic,
         use_refinement=not args.no_refinement,
         checkpoint_path=cp_path,
+        qids_filter=qids_set,
     )
     report["benchmark_mode"] = mode
 

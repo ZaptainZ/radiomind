@@ -101,6 +101,75 @@ def _find_event_mentions(
     return [(c, d) for _, c, d in hits[:limit]]
 
 
+def _trinity_select_anchor(
+    phrase: str, candidates: list[tuple[str, str]],
+    query: str, llm: Any,
+) -> tuple[str, str] | None:
+    """Trinity-3-party anchor selection from token-match candidates.
+
+    GAP-D — V5 weakness: when `_find_event_mentions` returns top-K
+    by lexical overlap with K ≥ 2, the top-1 by score is not
+    always the right anchor. Multiple memories often overlap the
+    question's keywords (e.g. "graduated college" matches both
+    "completed my Bachelor's" AND "my niece graduated"). Picking
+    wrong silently breaks the math (root cause of c18a7dc8).
+
+    Three independent stances rate each candidate by a different
+    dimension (CORE_METHODOLOGY: dimension-typed naming, never
+    conclusion-typed):
+      literal-match       — does it literally describe the event?
+      semantic-paraphrase — does it describe the SAME event with
+                            different words?
+      temporal-context    — does its date make biographical sense?
+
+    Trinity outputs `chosen_index` (0-based). Returns the picked
+    (memory_text, date_str), or None when llm/candidates empty.
+    Falls back to top-score on parse failure (never worse than V5).
+    """
+    if not llm or not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+    ev_lines = []
+    for i, (content, date_str) in enumerate(candidates):
+        snippet = (content or "")[:200].replace("\n", " ")
+        ev_lines.append(f"candidate_idx={i} | date={date_str} | {snippet}")
+    evidence = "\n".join(ev_lines)
+    from radiomind.refinement import trinity as _trinity
+    result = _trinity.fast(
+        task=(
+            f"Pick the BEST anchor candidate for this question's "
+            f"event reference. Three independent dimensions:\n"
+            f"  literal-match — does the candidate literally describe "
+            f"the event the question references (event phrase: "
+            f"{phrase!r})?\n"
+            f"  semantic-paraphrase — does the candidate describe the "
+            f"SAME event with different words (e.g. 'graduated college' "
+            f"matches 'completed my Bachelor's degree')?\n"
+            f"  temporal-context — does the candidate's date make "
+            f"biographical sense given the question's framing? Pick "
+            f"the candidate whose date is most plausibly the event the "
+            f"user is asking about, NOT a third-party event "
+            f"(niece's, friend's) the user only witnessed.\n"
+            f"\n"
+            f"Output `chosen_index` (0-based) of the best candidate.\n"
+            f"Question: {query}"
+        ),
+        evidence=evidence,
+        llm=llm,
+        extra_schema='  "chosen_index": int',
+    )
+    if not result:
+        return candidates[0]
+    try:
+        idx = int(result.get("chosen_index"))
+    except (TypeError, ValueError):
+        return candidates[0]
+    if 0 <= idx < len(candidates):
+        return candidates[idx]
+    return candidates[0]
+
+
 def _find_event_via_trinity(
     phrase: str, memories: list, llm: Any, max_memories: int = 30,
 ) -> tuple[str, str, int | None] | None:
@@ -451,9 +520,19 @@ class AgeIntervalSkill(Skill):
             if scan is not None:
                 b_content, b_date_str, b_age_at = scan
 
-        # (3) Last resort: first token-match (date-only, no age_at_event).
+        # (3) GAP-D: trinity-driven anchor selection from token-match
+        # candidates. Replaces "first token-match wins" — that heuristic
+        # was the cause of c18a7dc8 (v5 picked third-party event the user
+        # only witnessed instead of the user's own anchor). Trinity-3-party
+        # (literal-match / semantic-paraphrase / temporal-context) picks
+        # the right candidate by dimension. Single-candidate path stays
+        # untouched (no V5 regression risk).
         if b_content is None:
-            if b_matches:
+            if len(b_matches) >= 2 and llm is not None:
+                picked = _trinity_select_anchor(phrase_b, b_matches, query, llm)
+                if picked is not None:
+                    b_content, b_date_str = picked
+            elif b_matches:
                 b_content, b_date_str = b_matches[0]
             elif llm is not None:
                 esc = _find_event_via_trinity(phrase_b, memories, llm)
