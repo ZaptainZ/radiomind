@@ -1054,35 +1054,8 @@ class RadioMind:
             return []
 
         focus = extract_focus_entity(query)
-
-        # GAP-C: multi-session aggregation has historically relied on the
-        # caller's one-shot top-k retrieval. For questions like "How much
-        # did I save on the Jimmy Choo heels?" the relevant savings event
-        # may be phrased differently than the question terms; the bare
-        # top-k often misses it, leaving atom decomposition with nothing
-        # to find. Apply iterative_search BEFORE atom extraction: trinity
-        # multi-anchor expansion surfaces semantically-related memories
-        # the original query missed. Falls back to caller's `retrieved`
-        # when iterative is unavailable.
-        wider_retrieved = retrieved
-        if domain:
-            try:
-                # Use caller's retrieved as seed; trinity generates 3
-                # complementary expansion queries; merge & dedupe.
-                seed_objs = [m for m in (retrieved or []) if hasattr(m, "entry")]
-                expanded = self.iterative_search(
-                    query=query, domain=domain,
-                    seed_results=seed_objs or None,
-                    max_passes=2, n_anchors=3, max_results=30,
-                )
-                if expanded and len(expanded) > len(seed_objs or []):
-                    wider_retrieved = expanded
-            except Exception:
-                pass
-
         atoms = self._query_decomposer.decompose(
-            question=query, retrieved=wider_retrieved,
-            domain=domain, focus=focus,
+            question=query, retrieved=retrieved, domain=domain, focus=focus,
         )
         # Atom-level trinity scope filter: when the query carries a
         # second-order constraint (temporal_constraint via attention's
