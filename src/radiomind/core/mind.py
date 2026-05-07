@@ -1074,10 +1074,18 @@ class RadioMind:
                 expanded = self.iterative_search(
                     query=query, domain=domain,
                     seed_results=seed_objs or None,
-                    max_passes=2, n_anchors=3, max_results=30,
+                    max_passes=2, n_anchors=2, max_results=10,
                 )
+                # Cap: seed primary, extras only as bounded supplement.
+                # Untrimmed expansion (V6.2.0) returned 30-50 entries on
+                # enumeration questions, diluting atom decomposer's
+                # cardinal-view top-N (gpt4_ab202e7f regressed: V6.1
+                # captured all 5 kitchen items, V6.2.0 lost the 5th).
+                # seed_size + 3 keeps the seed's precision while still
+                # supplying recall headroom for paraphrased queries.
                 if expanded and len(expanded) > len(seed_objs or []):
-                    wider_retrieved = expanded
+                    cap = len(seed_objs or []) + 3
+                    wider_retrieved = expanded[:cap]
             except Exception:
                 pass
 
