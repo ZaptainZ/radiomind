@@ -1054,8 +1054,36 @@ class RadioMind:
             return []
 
         focus = extract_focus_entity(query)
+
+        # GAP-C: V5 weakness for over-abstain cluster (bb7c3b45 / 778164c6 /
+        # d6233ab6). Decompose-time retrieval currently serves only the
+        # caller-seed lexical-surface signature; questions phrased in
+        # paraphrased form (e.g. "How much did I save on X?" vs memory
+        # "saved $300 on X") miss the bare top-k, leaving atom decomposer
+        # nothing to find -> over-abstain. Per the 4th law (Attention),
+        # decompose-time retrieval should also serve the dimension-typed
+        # signals (semantic-paraphrase / aggregation-target). iterative_search
+        # already implements multi-anchor trinity expansion at the methodology
+        # layer; we wire it BEFORE the atom extractor so atoms see a wider
+        # memory window. Falls back silently to caller-seed `retrieved` on
+        # any failure (zero V5 regression risk).
+        wider_retrieved = retrieved
+        if domain:
+            try:
+                seed_objs = [m for m in (retrieved or []) if hasattr(m, "entry")]
+                expanded = self.iterative_search(
+                    query=query, domain=domain,
+                    seed_results=seed_objs or None,
+                    max_passes=2, n_anchors=3, max_results=30,
+                )
+                if expanded and len(expanded) > len(seed_objs or []):
+                    wider_retrieved = expanded
+            except Exception:
+                pass
+
         atoms = self._query_decomposer.decompose(
-            question=query, retrieved=retrieved, domain=domain, focus=focus,
+            question=query, retrieved=wider_retrieved,
+            domain=domain, focus=focus,
         )
         # Atom-level trinity scope filter: when the query carries a
         # second-order constraint (temporal_constraint via attention's
