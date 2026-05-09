@@ -11,11 +11,27 @@ both anchors — wrong answer hurts more than no answer.
 """
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime
 from typing import Any
 
 from radiomind.skills.base import Skill, SkillResult
+
+_logger = logging.getLogger(__name__)
+
+
+# Sentinel: trinity abstained (chose -1 OR retry-consistency failed).
+# Distinguishes "trinity says none of these are the right anchor" from
+# "trinity confidently picked one". Caller routes abstain → semantic
+# search (_find_event_via_trinity) instead of falling back to
+# candidates[0] (which was V6.1's only escape and equals V5's failure
+# mode).
+class _AbstainSentinel:
+    __slots__ = ()
+    def __repr__(self) -> str: return "<TRINITY_ABSTAIN>"
+
+TRINITY_ABSTAIN: _AbstainSentinel = _AbstainSentinel()
 
 
 # Trigger patterns — "how many years {older|younger|since|between}"
@@ -101,35 +117,12 @@ def _find_event_mentions(
     return [(c, d) for _, c, d in hits[:limit]]
 
 
-def _trinity_select_anchor(
+def _trinity_select_once(
     phrase: str, candidates: list[tuple[str, str]],
     query: str, llm: Any,
-) -> tuple[str, str] | None:
-    """Trinity-3-party anchor selection from token-match candidates.
-
-    GAP-D — V5 weakness: when `_find_event_mentions` returns top-K
-    by lexical overlap with K ≥ 2, the top-1 by score is not
-    always the right anchor. Multiple memories often overlap the
-    question's keywords (e.g. "graduated college" matches both
-    "completed my Bachelor's" AND "my niece graduated"). Picking
-    wrong silently breaks the math (root cause of c18a7dc8).
-
-    Three independent stances rate each candidate by a different
-    dimension (CORE_METHODOLOGY: dimension-typed naming, never
-    conclusion-typed):
-      literal-match       — does it literally describe the event?
-      semantic-paraphrase — does it describe the SAME event with
-                            different words?
-      temporal-context    — does its date make biographical sense?
-
-    Trinity outputs `chosen_index` (0-based). Returns the picked
-    (memory_text, date_str), or None when llm/candidates empty.
-    Falls back to top-score on parse failure (never worse than V5).
-    """
-    if not llm or not candidates:
-        return None
-    if len(candidates) == 1:
-        return candidates[0]
+) -> int | None:
+    """Single trinity LLM call. Returns chosen_index, -1 (abstain),
+    or None on parse/LLM failure. No fallback — caller decides."""
     ev_lines = []
     for i, (content, date_str) in enumerate(candidates):
         snippet = (content or "")[:200].replace("\n", " ")
@@ -152,22 +145,84 @@ def _trinity_select_anchor(
             f"user is asking about, NOT a third-party event "
             f"(niece's, friend's) the user only witnessed.\n"
             f"\n"
-            f"Output `chosen_index` (0-based) of the best candidate.\n"
+            f"Output `chosen_index` (0-based). If NONE of the candidates "
+            f"is the user's own anchor event (all are third-party / "
+            f"irrelevant), output -1 to abstain.\n"
             f"Question: {query}"
         ),
         evidence=evidence,
         llm=llm,
-        extra_schema='  "chosen_index": int',
+        extra_schema='  "chosen_index": int  (-1 for abstain)',
     )
     if not result:
-        return candidates[0]
+        return None
     try:
-        idx = int(result.get("chosen_index"))
+        return int(result.get("chosen_index"))
     except (TypeError, ValueError):
+        return None
+
+
+def _trinity_select_anchor(
+    phrase: str, candidates: list[tuple[str, str]],
+    query: str, llm: Any,
+) -> tuple[str, str] | _AbstainSentinel | None:
+    """Trinity-3-party anchor selection with retry-consistency + abstain.
+
+    GAP-D V6.1.1 hardening over V6.1:
+      - Retry-with-consistency: 2 trinity calls; trust only when both
+        return the same chosen_index. c18a7dc8 had ~60-80% V6.1 PASS
+        rate; consistency check pushes to ≥85% by filtering single-
+        call LLM noise.
+      - Abstain (-1) option: trinity can declare "none of these is the
+        user's own event"; caller routes to V5's _find_event_via_trinity
+        (semantic search), not candidates[0]. Stops the V6.1 silent
+        fallback to V5's failure mode on inconsistent / parse-failure.
+      - All inconsistencies → abstain (conservative).
+
+    Three stances (CORE_METHODOLOGY dimension-typed naming):
+      literal-match       — does it literally describe the event?
+      semantic-paraphrase — does it describe the SAME event differently?
+      temporal-context    — does its date make biographical sense?
+
+    Returns:
+      tuple[str, str]      — (content, date_str) when consistent valid pick
+      TRINITY_ABSTAIN      — trinity abstained or inconsistent picks
+      None                 — no LLM or empty candidates
+      candidates[0]        — single-candidate shortcut (untouched from V6.1)
+    """
+    if not llm or not candidates:
+        return None
+    if len(candidates) == 1:
         return candidates[0]
-    if 0 <= idx < len(candidates):
-        return candidates[idx]
-    return candidates[0]
+
+    idx1 = _trinity_select_once(phrase, candidates, query, llm)
+    idx2 = _trinity_select_once(phrase, candidates, query, llm)
+
+    decision = "abstain"
+    picked: tuple[str, str] | _AbstainSentinel = TRINITY_ABSTAIN
+
+    # Trust only when BOTH calls agree. Anything else → abstain
+    # (let the caller fall back to semantic search).
+    if idx1 is not None and idx1 == idx2:
+        if idx1 == -1:
+            decision = "abstain-explicit"
+        elif 0 <= idx1 < len(candidates):
+            decision = f"pick-{idx1}-consistent"
+            picked = candidates[idx1]
+        else:
+            decision = "abstain-invalid-index"
+    else:
+        if idx1 is None and idx2 is None:
+            decision = "abstain-both-parse-failed"
+        elif idx1 != idx2:
+            decision = f"abstain-inconsistent-{idx1}-vs-{idx2}"
+
+    _logger.debug(
+        "trinity_select_anchor: phrase=%r, n_candidates=%d, "
+        "idx1=%s, idx2=%s, decision=%s",
+        phrase, len(candidates), idx1, idx2, decision,
+    )
+    return picked
 
 
 def _find_event_via_trinity(
@@ -520,18 +575,29 @@ class AgeIntervalSkill(Skill):
             if scan is not None:
                 b_content, b_date_str, b_age_at = scan
 
-        # (3) GAP-D: trinity-driven anchor selection from token-match
-        # candidates. Replaces "first token-match wins" — that heuristic
-        # was the cause of c18a7dc8 (v5 picked third-party event the user
-        # only witnessed instead of the user's own anchor). Trinity-3-party
-        # (literal-match / semantic-paraphrase / temporal-context) picks
-        # the right candidate by dimension. Single-candidate path stays
-        # untouched (no V5 regression risk).
+        # (3) GAP-D + V6.1.1: trinity-driven anchor selection with
+        # retry-consistency + abstain. V6.1 always picked something
+        # (candidates[0] or trinity's first guess); V6.1.1 abstains
+        # on inconsistency and routes to the semantic-search escape
+        # (_find_event_via_trinity, V5 path) — strictly safer than
+        # silently picking the wrong third-party event.
         if b_content is None:
             if len(b_matches) >= 2 and llm is not None:
                 picked = _trinity_select_anchor(phrase_b, b_matches, query, llm)
-                if picked is not None:
+                if picked is TRINITY_ABSTAIN:
+                    # Trinity inconsistent or explicit abstain — try
+                    # semantic search before falling back to candidates[0].
+                    esc = _find_event_via_trinity(phrase_b, memories, llm)
+                    if esc is not None:
+                        b_content, b_date_str, b_age_at = esc
+                    else:
+                        b_content, b_date_str = b_matches[0]
+                elif picked is not None:
                     b_content, b_date_str = picked
+                else:
+                    # Defensive: shouldn't happen since llm is not None
+                    # and candidates non-empty, but cover for safety.
+                    b_content, b_date_str = b_matches[0]
             elif b_matches:
                 b_content, b_date_str = b_matches[0]
             elif llm is not None:
