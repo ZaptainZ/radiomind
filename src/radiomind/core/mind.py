@@ -1055,35 +1055,20 @@ class RadioMind:
 
         focus = extract_focus_entity(query)
 
-        # GAP-C: differentiated retrieval expansion driven by attention
-        # signature (4th law: each layer answers what attention signature
-        # it serves). Decompose-time retrieval currently serves only the
+        # GAP-C: V5 weakness for over-abstain cluster (bb7c3b45 / 778164c6 /
+        # d6233ab6). Decompose-time retrieval currently serves only the
         # caller-seed lexical-surface signature; questions phrased in
         # paraphrased form (e.g. "How much did I save on X?" vs memory
         # "saved $300 on X") miss the bare top-k, leaving atom decomposer
-        # nothing to find -> over-abstain.
-        #
-        # But not all aggregation queries are recall-bound. Cardinal-count
-        # ("how many X") and list-style enumeration are *precision*-bound:
-        # adding extras dilutes atom decomposer's cardinal-view top-N,
-        # pushing edge-case items out (V6.2.0 regression on gpt4_ab202e7f:
-        # V6.1 captured all 5 kitchen items, V6.2.0 lost the 5th).
-        #
-        # Route by signature:
-        #   wants == "count"  /  aux.enumeration  /  shape == "list"
-        #     -> precision-bound, keep V5/V6.1 seed unchanged
-        #   else (amount, duration, inference, preference, detail-lookup)
-        #     -> recall-bound, expand via iterative_search (cap seed+3 to
-        #        avoid noise pollution).
-        from radiomind.core.attention import analyze as _attn_analyze
-        sig = _attn_analyze(query)
-        is_enumeration = (
-            sig.wants == "count"
-            or sig.answer_shape == "list"
-            or sig.aux_flags.get("enumeration", False)
-        )
+        # nothing to find -> over-abstain. Per the 4th law (Attention),
+        # decompose-time retrieval should also serve the dimension-typed
+        # signals (semantic-paraphrase / aggregation-target). iterative_search
+        # already implements multi-anchor trinity expansion at the methodology
+        # layer; we wire it BEFORE the atom extractor so atoms see a wider
+        # memory window. Falls back silently to caller-seed `retrieved` on
+        # any failure (zero V5 regression risk).
         wider_retrieved = retrieved
-        if domain and not is_enumeration:
+        if domain:
             try:
                 seed_objs = [m for m in (retrieved or []) if hasattr(m, "entry")]
                 expanded = self.iterative_search(
@@ -1091,6 +1076,13 @@ class RadioMind:
                     seed_results=seed_objs or None,
                     max_passes=2, n_anchors=2, max_results=10,
                 )
+                # Cap: seed primary, extras only as bounded supplement.
+                # Untrimmed expansion (V6.2.0) returned 30-50 entries on
+                # enumeration questions, diluting atom decomposer's
+                # cardinal-view top-N (gpt4_ab202e7f regressed: V6.1
+                # captured all 5 kitchen items, V6.2.0 lost the 5th).
+                # seed_size + 3 keeps the seed's precision while still
+                # supplying recall headroom for paraphrased queries.
                 if expanded and len(expanded) > len(seed_objs or []):
                     cap = len(seed_objs or []) + 3
                     wider_retrieved = expanded[:cap]
