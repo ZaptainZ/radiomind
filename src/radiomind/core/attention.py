@@ -10,8 +10,12 @@ for backward compatibility with callers that haven't migrated.
 """
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
+from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 
 # --- Raw marker lists (used by both legacy classify and analyze) ---
@@ -379,3 +383,137 @@ def is_temporal_precision(query: str) -> bool:
 
 def is_open_domain_specific(query: str) -> bool:
     return analyze(query).wants == "inference"
+
+
+# --- V6.3-B: trinity-routed attention (普适性 fix) -------------------
+#
+# Background: regex-only `analyze()` classifies queries into wants ∈
+# {count, date, inference, detail, lookup}. The lexical patterns are
+# tuned on LongMemEval phrasings ("how many", "should I", "when did
+# I"). LoCoMo / dialog queries with equivalent semantic intent but
+# different surface form ("Which city is John excited about?" — what
+# *city* attribute → entity-attribute lookup) fall to wants=lookup,
+# the catch-all bucket with no specialized skill attached.
+#
+# `analyze_with_trinity(query, llm)` is a backward-compatible upgrade
+# path: when llm is None, behaves exactly like `analyze()` (regex
+# only). When llm is provided AND regex returned wants=lookup (the
+# only "uncertain" bucket), three trinity stances independently judge
+# the query from different cognitive angles and may upgrade wants to
+# count / date / inference / detail / preference. Stance design
+# (CORE_METHODOLOGY: dimension-typed naming) follows GAP-D / V6.1.1
+# pattern.
+#
+# Robustness: V6.1.1's retry-consistency is reused — two trinity
+# calls; trust only when both return the same wants. Inconsistent →
+# fall back to regex result. Cost: only triggered when regex is
+# uncertain; LongMemEval queries with high-confidence regex keep the
+# 0-cost fast path.
+
+# Valid `wants` categories the trinity may upgrade to. Must align
+# with AttentionSignature.wants enum.
+_TRINITY_UPGRADE_TARGETS = ("count", "date", "inference", "detail", "preference")
+
+
+def _route_via_trinity_once(query: str, llm: Any) -> str | None:
+    """Single trinity LLM call. Returns wants ∈ _TRINITY_UPGRADE_TARGETS,
+    'lookup' (no upgrade), or None on parse / LLM failure."""
+    from radiomind.refinement import trinity as _trinity
+    result = _trinity.fast(
+        task=(
+            "Three independent stances analyze the query from different "
+            "cognitive angles to determine what type of operation "
+            "answering it requires:\n"
+            "  literal-form    — analyze the grammatical/lexical form: "
+            "is this a cardinal-count question (how many X), date-"
+            "arithmetic (years between, since X), list/enumeration, "
+            "attribute lookup (which X / what is Y's Z), preference "
+            "advice (should I, recommend), or open-domain inference "
+            "(what might X be)?\n"
+            "  semantic-intent — what cognitive operation must the "
+            "answerer perform: aggregate (sum/count/list), retrieve a "
+            "specific entity attribute, infer a likely property, "
+            "compute a temporal interval, give a personal recommendation?\n"
+            "  answer-shape    — what shape will the correct answer "
+            "take: an integer, a named entity, a date, a duration, a "
+            "list, a sentence-form opinion?\n"
+            "\n"
+            "Output `wants` (lowercase, exactly one of: count / date / "
+            "inference / detail / preference / lookup) reflecting the "
+            "dominant cognitive operation across the three stances. "
+            "Use 'lookup' only when no specialized category fits."
+        ),
+        evidence=f"Query: {query}",
+        llm=llm,
+        extra_schema='  "wants": str',
+    )
+    if not result:
+        return None
+    raw = result.get("wants")
+    if not isinstance(raw, str):
+        return None
+    val = raw.strip().lower()
+    if val in _TRINITY_UPGRADE_TARGETS or val == "lookup":
+        return val
+    return None
+
+
+def analyze_with_trinity(
+    query: str, llm: Any | None = None,
+) -> AttentionSignature:
+    """V6.3-B: regex-pass + trinity-fallback attention router.
+
+    Behavior:
+      1. Run regex `analyze()` first (V6.1.1-compatible).
+      2. If llm is None OR regex locked a non-lookup wants
+         (count/date/inference/detail), short-circuit and return
+         the regex result. Zero LLM cost on confident classifications.
+      3. If regex returned wants=lookup AND llm is provided, run
+         trinity twice for retry-consistency. Both calls must agree
+         on the upgraded wants for the upgrade to take effect. On
+         inconsistency or parse failure, fall back to regex result
+         (never worse than current behavior).
+
+    The trinity prompt uses three dimension-typed stances
+    (literal-form / semantic-intent / answer-shape) that look at
+    the query from independent cognitive angles, mitigating regex
+    bias toward LongMemEval phrasings.
+    """
+    base = analyze(query)
+    if llm is None or base.wants != "lookup":
+        return base
+
+    # Trinity escalation only when regex returned lookup (no skill attached)
+    idx1 = _route_via_trinity_once(query, llm)
+    idx2 = _route_via_trinity_once(query, llm)
+
+    decision = "abstain"
+    upgraded_wants: str | None = None
+    if idx1 is not None and idx1 == idx2:
+        if idx1 in _TRINITY_UPGRADE_TARGETS:
+            upgraded_wants = idx1
+            decision = f"upgrade-to-{idx1}-consistent"
+        else:
+            decision = "no-upgrade-consistent-lookup"
+    else:
+        if idx1 is None and idx2 is None:
+            decision = "abstain-both-parse-failed"
+        elif idx1 != idx2:
+            decision = f"abstain-inconsistent-{idx1}-vs-{idx2}"
+
+    _logger.debug(
+        "analyze_with_trinity: query=%r regex_wants=lookup idx1=%s idx2=%s decision=%s",
+        query[:80], idx1, idx2, decision,
+    )
+
+    if upgraded_wants is None:
+        return base
+
+    # Construct upgraded signature: keep regex's focus + aux_flags;
+    # update wants and recompute answer_shape based on new wants.
+    return AttentionSignature(
+        focus=base.focus,
+        wants=upgraded_wants,
+        aux_flags=base.aux_flags,
+        answer_shape=_answer_shape_for(query, upgraded_wants),
+    )
