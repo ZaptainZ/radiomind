@@ -1290,10 +1290,143 @@ class RadioMind:
         from radiomind.core.attention import analyze_with_trinity
         if analyze_with_trinity(query, llm=self._llm).wants != "inference":
             return ""
+        # V6.4-A: candidate-entity trinity for "Which X / What X is/likely Y"
+        # questions. When the question is asking for a specific named
+        # entity (national park, company, dish, person, etc.), extract
+        # candidate entities of the asked type from retrieved memories
+        # and run a 3-stance trinity to pick the most plausible one.
+        # Returns a "ENTITY DISAMBIGUATION PICK" prefix if successful;
+        # falls through to V6.3 answer_hint on abstain / failure
+        # (never worse than current behavior).
+        entity_section = self._v64a_disambiguate_open_domain_entity(
+            query, retrieved_memories,
+        )
+        if entity_section:
+            return entity_section
         return self.answer_hint(
             query, retrieved_memories,
             domain=domain, user_id=user_id,
         )
+
+    def _v64a_disambiguate_open_domain_entity(
+        self, query: str, retrieved_memories: list,
+    ) -> str:
+        """V6.4-A: candidate-entity trinity for open-domain queries.
+
+        Two-stage:
+          1. LLM-as-NER extraction — surface all candidate entities of
+             the type the question asks about. <2 candidates → return ""
+             (let V6.3 answer_hint handle it).
+          2. Trinity-3-party pick with retry-consistency + abstain:
+             - evidence-direct  : which candidate is directly mentioned
+                                  doing the thing the question asks?
+             - inference-bridge : which candidate plausibly fits via a
+                                  bridging inference (user preferences /
+                                  contextual hints)?
+             - dialog-context   : which candidate matches dialog timing,
+                                  relationships, and surrounding facts?
+
+        Both trinity calls must agree on the same chosen_index. Any
+        inconsistency / abstain / parse failure → return "" and the
+        caller falls back to V6.3 answer_hint.
+
+        Methodology: same retry-consistency + abstain pattern as
+        V6.1.1 anchor selection (CORE_METHODOLOGY dimension-typed
+        stance naming).
+        """
+        if self._llm is None or not self._llm.is_available():
+            return ""
+        from radiomind.refinement import trinity as _trinity
+
+        # Stage 1: extract candidate entities
+        evidence = _format_memories(retrieved_memories, max_items=25)
+        extract = _trinity.fast(
+            task=(
+                "The user's question asks 'Which X / What X' for some "
+                "specific entity type X (e.g. national park, company, "
+                "dish, person, song, location). Extract from the memories "
+                "below ALL distinct candidate entities of that type that "
+                "are explicitly mentioned. List by surface form as they "
+                "appear in the memories. Do not invent candidates not "
+                "present in the memories.\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence,
+            llm=self._llm,
+            extra_schema='  "candidates": list[str]  (0-8 distinct entity names)',
+        )
+        if not extract:
+            return ""
+        candidates = extract.get("candidates")
+        if not isinstance(candidates, list):
+            return ""
+        candidates = [
+            str(c).strip() for c in candidates if isinstance(c, (str, int, float))
+        ]
+        candidates = [c for c in candidates if c]
+        if len(candidates) < 2:
+            return ""
+
+        # Stage 2: trinity pick (retry-consistency)
+        idx1 = self._v64a_trinity_pick_entity_once(
+            query, candidates, evidence,
+        )
+        idx2 = self._v64a_trinity_pick_entity_once(
+            query, candidates, evidence,
+        )
+        if idx1 is None or idx1 != idx2:
+            return ""
+        if not (0 <= idx1 < len(candidates)):
+            return ""
+        picked = candidates[idx1]
+        return (
+            f"ENTITY DISAMBIGUATION PICK (open-domain trinity; trust this "
+            f"over alternative candidates unless retrieval contradicts):\n"
+            f"  {picked}\n\n"
+        )
+
+    def _v64a_trinity_pick_entity_once(
+        self, query: str, candidates: list[str], evidence: str,
+    ) -> int | None:
+        """Single trinity LLM call for open-domain entity disambiguation.
+        Returns chosen_index, -1 (abstain), or None on parse / LLM failure.
+        """
+        from radiomind.refinement import trinity as _trinity
+        cand_lines = [f"  {i}. {c}" for i, c in enumerate(candidates)]
+        cand_block = "\n".join(cand_lines)
+        result = _trinity.fast(
+            task=(
+                f"Three independent stances pick the BEST candidate for "
+                f"this open-domain question. Each stance evaluates by a "
+                f"different dimension (CORE_METHODOLOGY: dimension-typed "
+                f"naming, never conclusion-typed):\n"
+                f"  evidence-direct  — which candidate is most directly "
+                f"described in the memories as doing / being / having "
+                f"what the question asks about?\n"
+                f"  inference-bridge — which candidate fits via a "
+                f"bridging inference (e.g. user preferences, related "
+                f"activities, contextual hints)?\n"
+                f"  dialog-context   — which candidate matches the "
+                f"surrounding dialog context (timing, relationships, "
+                f"sequence of events)?\n"
+                f"\n"
+                f"Candidates:\n{cand_block}\n"
+                f"\n"
+                f"Output `chosen_index` (0-based). If NO candidate is "
+                f"sufficiently supported by ANY stance, output -1 to "
+                f"abstain (caller will fall back to free-form inference).\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence,
+            llm=self._llm,
+            extra_schema='  "chosen_index": int  (-1 for abstain)',
+        )
+        if not result:
+            return None
+        try:
+            return int(result.get("chosen_index"))
+        except (TypeError, ValueError):
+            return None
 
     # --- Preference context injector ---
 
