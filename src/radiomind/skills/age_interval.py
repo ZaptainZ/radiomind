@@ -41,13 +41,31 @@ _TRIGGER_RE = re.compile(
     re.IGNORECASE,
 )
 
-# "How many years older am I than when I graduated" — second anchor phrase
-_WHEN_I_RE = re.compile(
-    r"when\s+i\s+(.+?)(?:\?|$|\.)", re.IGNORECASE,
+# Anchor-event phrase extractors. V6.3-A: subject-neutral — accept
+# any subject (first-person "I"/"you"/"we" pronouns OR third-party
+# proper noun like "Jolene") so the skill can also handle dialog-style
+# queries ("How many years since Jolene graduated?"). Captures the
+# event-phrase group only; the subject identity is not needed by the
+# downstream token-match (memory text alignment is subject-agnostic).
+#
+# Two regex variants:
+#   pronoun  — case-insensitive list of subject pronouns
+#   proper-noun — capitalized noun (no IGNORECASE; relies on case)
+_WHEN_PRONOUN_RE = re.compile(
+    r"when\s+(?:i|you|we|they|he|she)\s+(.+?)(?:\?|$|\.)",
+    re.IGNORECASE,
 )
-# "since I graduated from college"
-_SINCE_I_RE = re.compile(
-    r"since\s+i\s+(.+?)(?:\?|$|\.)", re.IGNORECASE,
+_WHEN_NAME_RE = re.compile(
+    r"when\s+[A-Z]\w+\s+(.+?)(?:\?|$|\.)"
+    # NO IGNORECASE — proper-noun capitalization is the disambiguator
+    # against question words like "when did" or "when do".
+)
+_SINCE_PRONOUN_RE = re.compile(
+    r"since\s+(?:i|you|we|they|he|she)\s+(.+?)(?:\?|$|\.)",
+    re.IGNORECASE,
+)
+_SINCE_NAME_RE = re.compile(
+    r"since\s+[A-Z]\w+\s+(.+?)(?:\?|$|\.)"
 )
 
 _YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
@@ -525,8 +543,13 @@ class AgeIntervalSkill(Skill):
         llm = mind._llm if mind else None
 
         phrase_b: str | None = None
-        wm = _WHEN_I_RE.search(query)
-        sm = _SINCE_I_RE.search(query)
+        # V6.3-A: try pronoun (first/second/third person) and proper-noun
+        # subject variants, in that order. Pronoun has IGNORECASE; proper-
+        # noun uses capitalization to disambiguate from question words.
+        wm = (_WHEN_PRONOUN_RE.search(query)
+              or _WHEN_NAME_RE.search(query))
+        sm = (_SINCE_PRONOUN_RE.search(query)
+              or _SINCE_NAME_RE.search(query))
         if wm:
             phrase_b = wm.group(1).strip().rstrip("?.!")
         elif sm:
