@@ -1271,8 +1271,12 @@ class RadioMind:
         self, query: str, retrieved_memories: list, reference_date: str = "",
         domain: str = "", user_id: str = "",
     ) -> str:
-        from radiomind.core.attention import analyze
-        if analyze(query).wants != "date":
+        # V6.3-B: route via trinity-augmented attention so queries
+        # whose surface form misses regex (e.g. LoCoMo dialog
+        # phrasings) but whose semantic intent is temporal still
+        # activate this skill.
+        from radiomind.core.attention import analyze_with_trinity
+        if analyze_with_trinity(query, llm=self._llm).wants != "date":
             return ""
         return self.answer_hint(
             query, retrieved_memories, reference_date,
@@ -1283,8 +1287,8 @@ class RadioMind:
         self, query: str, retrieved_memories: list,
         domain: str = "", user_id: str = "",
     ) -> str:
-        from radiomind.core.attention import analyze
-        if analyze(query).wants != "inference":
+        from radiomind.core.attention import analyze_with_trinity
+        if analyze_with_trinity(query, llm=self._llm).wants != "inference":
             return ""
         return self.answer_hint(
             query, retrieved_memories,
