@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.920-brightgreen.svg)](#性能验证)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.930-brightgreen.svg)](#性能验证)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **一个能从对话中学习的记忆模块——插入任何 AI Agent 即可使用。**
@@ -19,7 +19,7 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
-> **v0.2.0-rc1**（预发布，2026-05-04）：LongMemEval-S **0.920**（deepseek-v3.2 / gpt-4o judge，n=100），距 MemMachine SOTA（0.930）仅 1pt，推理成本约 gpt-4o 协议的 1/10，比 Mem0 同协议基线领先 24pt。详见 [性能验证](#性能验证) 与 [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
+> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-05-10 更新）：LongMemEval-S **0.930**（deepseek-v3.2 / gpt-4o judge，n=100，V6.1.1），**与 MemMachine SOTA（0.930）持平**，推理成本约 1/10，比 Mem0 同协议基线领先 25pt。详见 [性能验证](#性能验证) 与 [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
 
 ---
 
@@ -66,23 +66,25 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 |---|---|---:|---:|
 | Mem0 v3（baseline）                  | gpt-4o / gpt-4o          | 0.680   | — |
 | **RadioMind（架构 v3）**             | gpt-4o / gpt-4o          | **0.830**   | **+15.0 pt** |
-| **RadioMind（v5 全架构）**           | deepseek-v3.2 / gpt-4o   | **0.920** | **+24.0 pt**，≈ 1/10 推理成本 |
+| **RadioMind（v5 全架构）**           | deepseek-v3.2 / gpt-4o   | **0.920** | **+24.0 pt** |
+| **RadioMind（V6.1.1）**              | deepseek-v3.2 / gpt-4o   | **0.930** | **+25.0 pt**，≈ 1/10 推理成本 |
 | MemMachine（当前 SOTA）              | gpt-4o / gpt-4o          | 0.930   | — |
 
-按 qtype 分布（deepseek-v3.2 跑分，n=100 v5）：
+按 qtype 分布（deepseek-v3.2 跑分，n=100 V6.1.1）：
 
 | qtype | n | acc |
 |---|---:|---:|
 | single-session-user        | 16 | **1.000** |
+| knowledge-update           | 16 | **1.000** |
 | single-session-assistant   | 17 | 0.941 |
-| temporal-reasoning         | 17 | **0.941** |
 | single-session-preference  | 16 | 0.938 |
-| knowledge-update           | 16 | 0.938 |
-| multi-session              | 18 | 0.778 |
+| temporal-reasoning         | 17 | 0.882 |
+| multi-session              | 18 | 0.833 |
 
-跨 session 整合（multi-session）仍是失分集中区——ingest 侧召回顶。时间
-推理 v5 比 v3 涨 23.5pt，得益于多轮 trinity 对日期算术的应用：round 2
-看到 round 1 的 anchor stances 后会重审，避免 round 1 锚错日期。
+跨 session 整合 v5 → V6.1.1 从 0.778 涨到 0.833，得益于 GAP-D
+（age_interval skill 的多候选 anchor trinity 选择）+ retry-consistency
+（两次 trinity 调用结果一致才信任，过滤单次 LLM 噪声）。
+knowledge-update 达到 1.000。
 
 ### LoCoMo cat 1-4（多轮对话，n=100）
 

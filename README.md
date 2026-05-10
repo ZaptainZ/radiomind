@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.920-brightgreen.svg)](#validated-performance)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.930-brightgreen.svg)](#validated-performance)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **A memory module that actually learns from conversations — plug it into any AI agent.**
@@ -19,7 +19,7 @@ print(mind.digest())               # "User: morning runner, values sleep quality
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
-> **v0.2.0-rc1** (pre-release, 2026-05-04): LongMemEval-S **0.920** (deepseek-v3.2 / gpt-4o judge, n=100) — within 1pt of MemMachine SOTA (0.930) at ~1/10 the inference cost, +24pt over Mem0 same-protocol baseline. See [Validated performance](#validated-performance) and [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
+> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-05-10): LongMemEval-S **0.930** (deepseek-v3.2 / gpt-4o judge, n=100, V6.1.1) — **matches MemMachine SOTA (0.930)** at ~1/10 the inference cost, +25pt over Mem0 same-protocol baseline. See [Validated performance](#validated-performance) and [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
 
 ---
 
@@ -66,25 +66,25 @@ We benchmark RadioMind against published Mem0 results using the **same Mem0 prot
 |---|---|---:|---:|
 | Mem0 v3 (baseline)                | gpt-4o / gpt-4o        | 0.680  | — |
 | **RadioMind (architecture v3)**   | gpt-4o / gpt-4o        | **0.830**  | **+15.0 pt** |
-| **RadioMind (v5 all-arch)**       | deepseek-v3.2 / gpt-4o | **0.920**  | **+24.0 pt**, ≈ 1/10 inference cost |
+| **RadioMind (v5 all-arch)**       | deepseek-v3.2 / gpt-4o | **0.920**  | **+24.0 pt** |
+| **RadioMind (V6.1.1)**            | deepseek-v3.2 / gpt-4o | **0.930**  | **+25.0 pt**, ≈ 1/10 inference cost |
 | MemMachine (current SOTA)         | gpt-4o / gpt-4o        | 0.930  | — |
 
-By question type (deepseek-v3.2 run, n=100 v5):
+By question type (deepseek-v3.2 run, n=100 V6.1.1):
 
 | qtype | n | acc |
 |---|---:|---:|
 | single-session-user        | 16 | **1.000** |
+| knowledge-update           | 16 | **1.000** |
 | single-session-assistant   | 17 | 0.941 |
-| temporal-reasoning         | 17 | **0.941** |
 | single-session-preference  | 16 | 0.938 |
-| knowledge-update           | 16 | 0.938 |
-| multi-session              | 18 | 0.778 |
+| temporal-reasoning         | 17 | 0.882 |
+| multi-session              | 18 | 0.833 |
 
-Multi-session aggregation remains the failure-dense region (ingest-side
-recall ceiling on amount events scattered across sessions). Temporal
-reasoning's +23.5 pt vs v3 came from multi-round trinity on date
-arithmetic — round 2 reconsiders round 1's anchor pick before
-committing the math.
+Multi-session aggregation moved from 0.778 → 0.833 between v5 and
+V6.1.1 via GAP-D (trinity-driven anchor selection in age_interval
+skill, with retry-consistency to suppress single-call LLM noise).
+Knowledge-update reached 1.000.
 
 ### LoCoMo cat 1-4 (multi-turn dialog, n=100)
 
