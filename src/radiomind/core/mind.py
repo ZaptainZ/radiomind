@@ -1259,8 +1259,23 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
+        # V6.5: question-intent trinity prefix — derived independently
+        # from the question side (not from memories), so adds NO
+        # self-pollution risk (V6.4-B avoidance). Empty for default
+        # intents (sentence form, no granularity constraint).
+        intent_directive = ""
+        try:
+            from radiomind.core.attention import (
+                analyze_question_intent_with_trinity,
+                format_intent_directive,
+            )
+            intent = analyze_question_intent_with_trinity(query, llm=self._llm)
+            intent_directive = format_intent_directive(intent)
+        except Exception:
+            pass
         return (
-            f"ATTENTION-ROUTED TRINITY VIEW "
+            intent_directive
+            + f"ATTENTION-ROUTED TRINITY VIEW "
             f"(three opposing stances reconciled; trust this over hedging "
             f"unless retrieval contradicts):\n"
             f"- answer: {final}\n\n"

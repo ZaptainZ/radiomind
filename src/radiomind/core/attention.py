@@ -517,3 +517,318 @@ def analyze_with_trinity(
         aux_flags=base.aux_flags,
         answer_shape=_answer_shape_for(query, upgraded_wants),
     )
+
+
+# --- V6.5: question-intent trinity (题干侧拆解) ---------------------
+#
+# Background: V6.3-B applied trinity on the question-side ROUTING
+# decision (which wants bucket), but NOT on the deeper question
+# understanding (granularity / answer form / latent intent). V6.3
+# fails clustered as "abstract vs literal granularity mismatch"
+# (LoCoMo c3_a9fddfe69b "Nate's favorite book series ABOUT?"
+# gold=dragons but LLM answers book name) — the LLM never gets
+# told the question wants a THEME, not a TITLE.
+#
+# V6.5 design — flexible trinity (NOT hardcoded 3 stances):
+#   - STANCE_LIBRARY: dict of candidate stance dimensions; each entry
+#     has a description and a trigger lambda. New stances → just
+#     add a library entry, no main-flow change.
+#   - _select_intent_stances(query, base_sig): pick stances dynamically
+#     based on query features. Base 2 stances (literal + semantic)
+#     always; +granularity / direction / entity-type / temporal-precision
+#     as triggers fire. Result: 2-5 stances per query, sized to
+#     question complexity.
+#   - trinity.debate(n_stances=K) reused with retry-consistency +
+#     abstain pattern (V6.1.1).
+#   - Output: QuestionIntent (structured signature; NOT prose) →
+#     downstream answer prompt adds form-constraint note.
+#
+# CRITICAL avoid-V6.4-B-self-pollution: QuestionIntent is a
+# STRUCTURED signature (5 short fields), not a free-form profile.
+# It tells the answer LLM "the question wants TOPIC, not TITLE";
+# it does NOT tell the answer LLM "the answer might be X". The
+# generator/consumer LLM sessions stay separate via the structural
+# barrier of the signature.
+
+@dataclass
+class QuestionIntent:
+    """V6.5: structured intent signature derived from question-side
+    trinity. Conditions the answer prompt with granularity / form /
+    direction hints. NOT a candidate answer — strictly a question
+    decomposition.
+    """
+    literal_target: str        # what the query syntactically asks
+    semantic_target: str       # what the user truly asks
+    expected_granularity: str  # specific_entity / category / concept / direction / description
+    answer_form: str           # name / topic / judgment / list / duration / date / sentence
+    focus_entity_type: str | None  # entity type if applicable, else None
+    stances_used: tuple[str, ...] = ()  # which dimensions fired (for telemetry)
+
+
+# Stance library. Each entry: description for prompt + trigger
+# predicate that decides whether to include the stance for a given
+# query. New stances → add an entry; main flow unchanged.
+def _trigger_always(ql: str, sig) -> bool:
+    return True
+
+
+def _trigger_granularity(ql: str, sig) -> bool:
+    markers = ("about", "kind of", "type of", "series", "category",
+               "what does", "what do", "what is")
+    return any(m in ql for m in markers)
+
+
+def _trigger_direction(ql: str, sig) -> bool:
+    markers = ("status", "level", "condition", "might be", "is likely",
+               "would be", "could be")
+    return any(m in ql for m in markers)
+
+
+def _trigger_entity_type(ql: str, sig) -> bool:
+    return ql.startswith(("which ", "who ", "where "))
+
+
+def _trigger_temporal_precision(ql: str, sig) -> bool:
+    return sig.wants == "date" or "when " in ql or "how long" in ql
+
+
+def _trigger_complex_inference(ql: str, sig) -> bool:
+    markers = ("might", "could", "should", "would", "consider", "likely")
+    word_count = len(ql.split())
+    return word_count >= 10 and any(m in ql for m in markers)
+
+
+_STANCE_LIBRARY: dict[str, dict] = {
+    "literal-target": {
+        "desc": (
+            "literal-target — what does the query ASK syntactically? "
+            "(subject + verb + object slot; ignore inferred intent)"
+        ),
+        "trigger": _trigger_always,
+    },
+    "semantic-target": {
+        "desc": (
+            "semantic-target — what is the user TRULY asking semantically? "
+            "(the latent intent that an experienced reader would infer; "
+            "may differ from the syntactic slot)"
+        ),
+        "trigger": _trigger_always,
+    },
+    "granularity-check": {
+        "desc": (
+            "granularity-check — does the user expect a SPECIFIC instance, "
+            "a CATEGORY, a CONCEPT, or a THEME? 'about' / 'kind of' / "
+            "'type of' / 'series about X' signal THEME or CATEGORY, not "
+            "the specific item. 'What is X about' wants the THEME."
+        ),
+        "trigger": _trigger_granularity,
+    },
+    "direction-check": {
+        "desc": (
+            "direction-check — does the user expect a JUDGMENT direction "
+            "(positive/negative, high/low, sufficient/insufficient) "
+            "rather than a verbose description? 'might X's status be' / "
+            "'how is X' wants a directional verdict."
+        ),
+        "trigger": _trigger_direction,
+    },
+    "entity-type-check": {
+        "desc": (
+            "entity-type-check — if the question expects an entity, what "
+            "TYPE is it (person / location / company / dish / event / "
+            "object)? Pin the type so retrieval and answer can target it."
+        ),
+        "trigger": _trigger_entity_type,
+    },
+    "temporal-precision-check": {
+        "desc": (
+            "temporal-precision-check — does the user expect EXACT date / "
+            "approximate period / duration / relative offset? 'When did X' "
+            "= exact; 'how long ago' = duration; 'around when' = approximate."
+        ),
+        "trigger": _trigger_temporal_precision,
+    },
+    "complex-inference-check": {
+        "desc": (
+            "complex-inference-check — does the question require "
+            "multi-step or counterfactual inference (might / could / "
+            "would have)? If yes, the answer may need explicit bridging."
+        ),
+        "trigger": _trigger_complex_inference,
+    },
+}
+
+
+def _select_intent_stances(query: str, base_sig: AttentionSignature) -> list[str]:
+    """Choose which intent stances apply to this query. 2-5 stances."""
+    ql = (query or "").lower()
+    selected: list[str] = []
+    for name, entry in _STANCE_LIBRARY.items():
+        if entry["trigger"](ql, base_sig):
+            selected.append(name)
+    # Hard cap at 5 to keep prompt focused; literal + semantic are always
+    # included by _trigger_always so they take the first two slots.
+    return selected[:5]
+
+
+def _intent_trinity_once(
+    query: str, base_sig: AttentionSignature,
+    stances: list[str], llm: Any,
+) -> QuestionIntent | None:
+    """Single trinity LLM call. Returns parsed QuestionIntent or None."""
+    from radiomind.refinement import trinity as _trinity
+    dim_lines = []
+    for name in stances:
+        entry = _STANCE_LIBRARY.get(name)
+        if entry:
+            dim_lines.append(f"  {entry['desc']}")
+    dim_block = "\n".join(dim_lines)
+    task = (
+        f"Multiple stances analyze this question from different intent "
+        f"angles. Each stance examines a different dimension:\n"
+        f"{dim_block}\n"
+        f"\n"
+        f"Synthesize the stances into a structured intent signature. "
+        f"Be PRECISE on `expected_granularity` and `answer_form`: these "
+        f"are downstream constraints on the answer LLM. If 'about' / "
+        f"'kind of' is present, granularity should typically be "
+        f"`category` or `concept`, NOT `specific_entity`.\n"
+        f"\n"
+        f"Question: {query}"
+    )
+    schema = (
+        '  "literal_target": str,           '
+        '  "semantic_target": str,          '
+        '  "expected_granularity": str  (specific_entity | category | '
+        'concept | direction | description),  '
+        '  "answer_form": str  (name | topic | judgment | list | '
+        'duration | date | sentence),  '
+        '  "focus_entity_type": str | null'
+    )
+    result = _trinity.debate(
+        task=task,
+        evidence=f"(question-only analysis; no memory evidence needed)\n{query}",
+        llm=llm,
+        extra_schema=schema,
+        n_stances=len(stances),
+        max_rounds=1,
+    )
+    if not result:
+        return None
+    try:
+        return QuestionIntent(
+            literal_target=str(result.get("literal_target") or "").strip(),
+            semantic_target=str(result.get("semantic_target") or "").strip(),
+            expected_granularity=str(result.get("expected_granularity") or "").strip().lower(),
+            answer_form=str(result.get("answer_form") or "").strip().lower(),
+            focus_entity_type=(
+                str(result.get("focus_entity_type")).strip()
+                if result.get("focus_entity_type") not in (None, "null", "")
+                else None
+            ),
+            stances_used=tuple(stances),
+        )
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def analyze_question_intent_with_trinity(
+    query: str, llm: Any | None = None,
+) -> QuestionIntent | None:
+    """V6.5: question-side trinity for intent decomposition.
+
+    Picks a query-specific set of stances from _STANCE_LIBRARY (2-5
+    based on query features), runs trinity twice (retry-consistency),
+    returns QuestionIntent on agreement.
+
+    Returns None when:
+      - llm unavailable
+      - trinity inconsistent or parse failure
+      - both calls abstain
+
+    Callers should treat None as "no intent override" — fall back to
+    pre-V6.5 behavior. Never make the answer prompt rely on a non-null
+    return.
+    """
+    if llm is None or not getattr(llm, "is_available", lambda: True)():
+        return None
+    base_sig = analyze(query)
+    stances = _select_intent_stances(query, base_sig)
+    if len(stances) < 2:  # defensive; literal+semantic should always trigger
+        return None
+
+    intent1 = _intent_trinity_once(query, base_sig, stances, llm)
+    intent2 = _intent_trinity_once(query, base_sig, stances, llm)
+
+    decision = "abstain"
+    out: QuestionIntent | None = None
+    if intent1 is not None and intent2 is not None:
+        # Trust only when both calls agree on the load-bearing fields:
+        # expected_granularity AND answer_form. The narrative fields
+        # (literal_target / semantic_target) can vary in phrasing.
+        if (intent1.expected_granularity == intent2.expected_granularity
+                and intent1.answer_form == intent2.answer_form):
+            decision = "consistent"
+            out = intent1
+        else:
+            decision = (
+                f"inconsistent-granularity-{intent1.expected_granularity}-vs-"
+                f"{intent2.expected_granularity}"
+            )
+    elif intent1 is None and intent2 is None:
+        decision = "both-parse-failed"
+    else:
+        decision = "one-parse-failed"
+
+    _logger.debug(
+        "analyze_question_intent_with_trinity: query=%r stances=%s "
+        "decision=%s gran=%s form=%s",
+        query[:80], stances, decision,
+        getattr(out, "expected_granularity", None),
+        getattr(out, "answer_form", None),
+    )
+    return out
+
+
+# --- V6.5 helper: format an intent into a prompt directive --------
+
+def format_intent_directive(intent: QuestionIntent | None) -> str:
+    """Render a QuestionIntent into a one-paragraph prompt directive.
+
+    Returned string can be prepended to the answer prompt to bias the
+    answer LLM toward the right granularity / form. Returns "" when
+    intent is None or carries no non-default information.
+    """
+    if intent is None:
+        return ""
+    parts = []
+    gran = (intent.expected_granularity or "").lower()
+    form = (intent.answer_form or "").lower()
+    if gran == "category":
+        parts.append(
+            "the question expects a CATEGORY-level answer (the kind/type "
+            "of the thing), not a specific instance"
+        )
+    elif gran == "concept":
+        parts.append(
+            "the question expects a CONCEPT or THEME, not a specific item "
+            "or proper noun"
+        )
+    elif gran == "direction":
+        parts.append(
+            "the question expects a JUDGMENT DIRECTION (e.g. high/low, "
+            "positive/negative, sufficient/insufficient), not a verbose "
+            "description"
+        )
+    if form == "topic":
+        parts.append("answer should be the TOPIC the thing is about")
+    elif form == "judgment":
+        parts.append("answer should be the JUDGMENT VERDICT, brief")
+    elif form == "list":
+        parts.append("answer should be a LIST of distinct items")
+    if not parts:
+        return ""
+    return (
+        "QUESTION INTENT (V6.5 trinity-derived; honor this granularity):\n"
+        "  " + "; ".join(parts) + "\n\n"
+    )
