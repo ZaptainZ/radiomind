@@ -1290,23 +1290,32 @@ class RadioMind:
         from radiomind.core.attention import analyze_with_trinity
         if analyze_with_trinity(query, llm=self._llm).wants != "inference":
             return ""
-        # V6.4-A: candidate-entity trinity for "Which X / What X is/likely Y"
-        # questions. When the question is asking for a specific named
-        # entity (national park, company, dish, person, etc.), extract
-        # candidate entities of the asked type from retrieved memories
-        # and run a 3-stance trinity to pick the most plausible one.
-        # Returns a "ENTITY DISAMBIGUATION PICK" prefix if successful;
-        # falls through to V6.3 answer_hint on abstain / failure
-        # (never worse than current behavior).
+        # V6.4 architectural composition: SMALL ACTION + LARGE ACTION
+        # accumulate, NEVER replace. Lesson from V6.4-A initial design:
+        # returning entity_section ALONE bypassed answer_hint's
+        # "ATTENTION-ROUTED TRINITY VIEW" prefix — when the entity
+        # trinity picked a wrong candidate (because NER missed the
+        # abstract gold answer), there was no second prefix to
+        # rescue the LLM. Net result: -2 PASS on LoCoMo n=100.
+        #
+        # V6.4-A.1 fix: prepend ALL applicable sections, let the
+        # answer LLM weigh them. Each section is independent:
+        #   - character profile  — V6.4-B layered subject summary
+        #   - entity disambiguation — V6.4-A entity trinity pick
+        #   - answer hint — V6.3 trinity refinement (always-on baseline)
+        #
+        # Sections that abstain return "" and contribute nothing.
+        character_section = self._v64b_character_profile_section(
+            query, retrieved_memories,
+        )
         entity_section = self._v64a_disambiguate_open_domain_entity(
             query, retrieved_memories,
         )
-        if entity_section:
-            return entity_section
-        return self.answer_hint(
+        hint_section = self.answer_hint(
             query, retrieved_memories,
             domain=domain, user_id=user_id,
         )
+        return character_section + entity_section + hint_section
 
     def _v64a_disambiguate_open_domain_entity(
         self, query: str, retrieved_memories: list,
@@ -1384,6 +1393,147 @@ class RadioMind:
             f"over alternative candidates unless retrieval contradicts):\n"
             f"  {picked}\n\n"
         )
+
+    def _v64b_character_profile_section(
+        self, query: str, retrieved_memories: list,
+    ) -> str:
+        """V6.4-B: layered character profile for the query subject.
+
+        Architectural补充: extends the "user profile" layer to ALL
+        characters in dialog data. When the query subject is a
+        non-user character (LoCoMo: "What might Nate consider", "What
+        is Audrey's favorite X"), the answer LLM benefits from a
+        structured profile of THAT character — attributes, preferences,
+        activities, relationships — distilled from the memories,
+        rather than scanning raw turns.
+
+        Minimal viable design (lazy, no ingest-time changes):
+          1. Extract subject from query — proper-noun mention preceded
+             by typical possessive/agency markers.
+          2. LLM builds a structured profile of the subject from the
+             retrieved memories. Single LLM call, trinity-light.
+          3. Return "CHARACTER PROFILE for X: ..." prefix.
+
+        Returns "" when:
+          - No identifiable non-user subject in query (subject is "I",
+            "you", or the query is impersonal)
+          - LLM unavailable
+          - Profile extraction yields nothing useful
+
+        Composable with V6.4-A entity-disambiguation and V6.3
+        answer_hint per the SMALL-ACTION + LARGE-ACTION ACCUMULATE
+        principle.
+        """
+        if self._llm is None or not self._llm.is_available():
+            return ""
+        subject = self._v64b_extract_subject(query)
+        if not subject:
+            return ""
+        from radiomind.refinement import trinity as _trinity
+        evidence = _format_memories(retrieved_memories, max_items=25)
+        result = _trinity.fast(
+            task=(
+                f"Build a concise structured profile of the character "
+                f"`{subject}` from the memories below. The profile "
+                f"should expose attributes, preferences, recent "
+                f"activities, and relationships that are RELEVANT to "
+                f"the question. Keep it factual (only what memories "
+                f"directly support); do not invent details. If the "
+                f"memories say nothing specific about {subject}, "
+                f"return an empty profile (the caller will fall back "
+                f"to other reasoning layers).\n"
+                f"Question: {query}"
+            ),
+            evidence=evidence,
+            llm=self._llm,
+            extra_schema=(
+                '  "profile": {'
+                '    "attributes": list[str],   '
+                '    "preferences": list[str],  '
+                '    "activities": list[str],   '
+                '    "relationships": list[str] '
+                '  }'
+            ),
+        )
+        if not result:
+            return ""
+        profile = result.get("profile") or {}
+        if not isinstance(profile, dict):
+            return ""
+        # Filter: only emit non-empty sections
+        lines: list[str] = []
+        for key in ("attributes", "preferences", "activities", "relationships"):
+            vals = profile.get(key)
+            if not isinstance(vals, list):
+                continue
+            clean = [str(v).strip() for v in vals if isinstance(v, (str, int, float))]
+            clean = [v for v in clean if v]
+            if clean:
+                lines.append(f"  {key}: {'; '.join(clean[:5])}")
+        if not lines:
+            return ""
+        return (
+            f"CHARACTER PROFILE for {subject} (V6.4-B, distilled from "
+            f"memories; relevant facets first):\n"
+            + "\n".join(lines)
+            + "\n\n"
+        )
+
+    def _v64b_extract_subject(self, query: str) -> str | None:
+        """Extract the non-user proper-noun subject from a query.
+
+        Returns the subject name when the query is clearly about a
+        specific named character (LoCoMo dialog style). Returns None
+        for first/second-person ("I"/"you") queries or impersonal
+        queries — those are served by other layers (profile_hint
+        for user, answer_hint for impersonal).
+        """
+        import re as _re
+        # Question words and pronouns must NOT count as a proper-noun
+        # subject even when they appear capitalized at sentence start.
+        _NOT_A_SUBJECT = {
+            "What", "Which", "Who", "Where", "When", "Why", "How",
+            "I", "You", "He", "She", "We", "They", "It",
+            "This", "That", "These", "Those",
+            "The", "A", "An", "Is", "Are", "Was", "Were", "Has", "Have",
+            "Do", "Does", "Did", "Can", "Could", "Should", "Would",
+            "May", "Might", "Will", "Shall",
+        }
+
+        def _ok(name: str | None) -> str | None:
+            if not name or name in _NOT_A_SUBJECT:
+                return None
+            return name
+
+        # Pattern 1: possessive "X's"
+        m = _re.search(
+            r"\b(?:what|which|who|where|when|why|how)\b.*?\b"
+            r"([A-Z][a-z]+)'s\b",
+            query or "",
+        )
+        cand = _ok(m.group(1) if m else None)
+        if cand:
+            return cand
+        # Pattern 2: "<verb> X" — verb followed by capitalized subject
+        m = _re.search(
+            r"\b(?:might|does|did|do|would|could|should|will|"
+            r"is|are|was|were|has|have|had|likes|prefers|enjoys)\s+"
+            r"([A-Z][a-z]+)\b",
+            query or "",
+        )
+        cand = _ok(m.group(1) if m else None)
+        if cand:
+            return cand
+        # Pattern 3: "X <verb> ..." — subject first
+        m = _re.search(
+            r"^\s*([A-Z][a-z]+)\s+(?:might|does|did|do|would|could|"
+            r"should|is|likes|prefers|enjoys|considers|plans|wants)\b",
+            query or "",
+        )
+        cand = _ok(m.group(1) if m else None)
+        if cand:
+            return cand
+        return None
 
     def _v64a_trinity_pick_entity_once(
         self, query: str, candidates: list[str], evidence: str,
