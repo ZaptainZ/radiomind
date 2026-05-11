@@ -46,8 +46,14 @@ def _intent_response(
     literal: str = "",
     semantic: str = "",
     n_stances: int = 2,
+    directive_applicability: float = 0.85,
 ) -> dict:
-    """Build a canned LLM response with N stance objects."""
+    """Build a canned LLM response with N stance objects.
+
+    V6.5.1: directive_applicability defaults high (0.85) so existing
+    tests stay green; tests that exercise low-applicability gating
+    pass an explicit low value.
+    """
     return {
         "stances": [
             {"name": f"stance{i}", "emphasis": "x",
@@ -61,6 +67,7 @@ def _intent_response(
         "expected_granularity": granularity,
         "answer_form": answer_form,
         "focus_entity_type": focus_type,
+        "directive_applicability": directive_applicability,
     }
 
 
@@ -178,6 +185,67 @@ def test_intent_both_parse_failed_returns_none():
     llm = _SequenceStubLLM(["not valid json {", "also not valid"])
     out = analyze_question_intent_with_trinity("X?", llm=llm)
     assert out is None
+
+
+# === V6.5.1: directive_applicability self-gating ===
+
+
+def test_intent_low_applicability_returns_none():
+    """Both calls agree on fields but applicability < 0.6 → None (abstain)."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="specific_entity", answer_form="number",
+                         directive_applicability=0.3),
+        _intent_response(granularity="specific_entity", answer_form="number",
+                         directive_applicability=0.3),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "How many writings made it to the big screen?", llm=llm,
+    )
+    assert out is None  # trinity self-says directive would not help
+
+
+def test_intent_high_applicability_returns_signature():
+    """High applicability → emit intent (with applicability field)."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "What is X's favorite series about?", llm=llm,
+    )
+    assert out is not None
+    assert out.directive_applicability == 0.85
+
+
+def test_intent_borderline_applicability_averaged():
+    """One call 0.55, other 0.65 → avg 0.60 boundary, just emits."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.55),
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.65),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "What is X about?", llm=llm,
+    )
+    assert out is not None
+    assert abs(out.directive_applicability - 0.60) < 0.01
+
+
+def test_intent_applicability_below_threshold_avg_abstains():
+    """Avg slightly below 0.6 → abstain."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.5),
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.6),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "What is X about?", llm=llm,
+    )
+    assert out is None  # avg 0.55 < 0.6 threshold
 
 
 # === format_intent_directive — prompt rendering ===

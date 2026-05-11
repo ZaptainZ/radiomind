@@ -138,6 +138,7 @@ def run(
     use_refinement: bool = True,
     categories: tuple[int, ...] = (1, 2, 3, 4),
     checkpoint_path: Path | None = None,
+    qids_filter: set[str] | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -188,6 +189,24 @@ def run(
         for qa in conv.get("qa", []):
             if qa.get("category") in categories and qa.get("answer") is not None:
                 flat.append((conv_idx, qa))
+
+    # V6.5.1 smoke: optional qid filter — when set, skip stratified
+    # sampling and run only the specified qids (typically the flip-up
+    # / flip-down qids from a prior run to verify a targeted fix).
+    if qids_filter:
+        import hashlib as _hashlib
+        def _qid_of(conv_idx, qa):
+            q = qa.get("question", "")
+            h = _hashlib.md5(q.encode()).hexdigest()[:10]
+            return f"c{conv_idx}_{h}"
+        before = len(flat)
+        flat = [x for x in flat if _qid_of(x[0], x[1]) in qids_filter]
+        print(
+            f"  [qids-filter] kept {len(flat)}/{before} matching "
+            f"{len(qids_filter)} requested qids",
+            flush=True,
+        )
+        n_questions = 0  # disable stratified sampling
 
     if n_questions > 0 and n_questions < len(flat):
         import random
@@ -590,6 +609,8 @@ def main() -> int:
     p.add_argument("--out", default="bench/end_to_end/locomo-mem0proto.json")
     p.add_argument("--checkpoint", default="",
                    help="Checkpoint .jsonl path. Appends per-question results; resume via same path. Default <out>.checkpoint.jsonl")
+    p.add_argument("--qids", default="",
+                   help="Comma-separated qid list (LoCoMo qid format c{conv_idx}_{md5_10}). When set, runs only these qids and skips stratified sampling — for V6.5.1+ targeted smoke validation.")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -618,6 +639,10 @@ def main() -> int:
     use_agentic = args.agentic
 
     cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
+    qids_set = (
+        {s.strip() for s in args.qids.split(",") if s.strip()}
+        if args.qids else None
+    )
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
@@ -628,6 +653,7 @@ def main() -> int:
         use_refinement=not args.no_refinement,
         categories=cats,
         checkpoint_path=cp_path,
+        qids_filter=qids_set,
     )
     report["benchmark_mode"] = mode
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

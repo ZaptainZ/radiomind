@@ -556,12 +556,19 @@ class QuestionIntent:
     trinity. Conditions the answer prompt with granularity / form /
     direction hints. NOT a candidate answer — strictly a question
     decomposition.
+
+    V6.5.1: + `directive_applicability` field. Trinity self-rates
+    whether emitting a form/granularity directive will HELP or
+    CONFUSE the answer LLM for THIS question. Replaces hardcoded
+    "wants bucket whitelist" — trinity decides per-query via its
+    own confidence.
     """
     literal_target: str        # what the query syntactically asks
     semantic_target: str       # what the user truly asks
     expected_granularity: str  # specific_entity / category / concept / direction / description
     answer_form: str           # name / topic / judgment / list / duration / date / sentence
     focus_entity_type: str | None  # entity type if applicable, else None
+    directive_applicability: float = 0.0  # V6.5.1: trinity self-assessed (0-1)
     stances_used: tuple[str, ...] = ()  # which dimensions fired (for telemetry)
 
 
@@ -694,6 +701,20 @@ def _intent_trinity_once(
         f"'kind of' is present, granularity should typically be "
         f"`category` or `concept`, NOT `specific_entity`.\n"
         f"\n"
+        f"FINALLY, self-assess `directive_applicability` (0.0-1.0): "
+        f"how much would prepending a form/granularity directive to "
+        f"the answer LLM HELP for THIS question, vs CONFUSE it? "
+        f"  - High (≥0.7): the question has genuine form ambiguity "
+        f"(e.g. 'X about Y' could mean theme or title; 'might X be' "
+        f"could mean description or judgment direction). Directive "
+        f"helps.\n"
+        f"  - Low (<0.5): the question's form is OBVIOUS to any "
+        f"reader (e.g. 'how many' clearly wants a number; 'when' "
+        f"clearly wants a date). Directive is redundant or worse — "
+        f"might over-constrain and force list/category interpretation "
+        f"of a clear cardinal-count question.\n"
+        f"  - Mid (0.5-0.7): uncertain; safer to abstain.\n"
+        f"\n"
         f"Question: {query}"
     )
     schema = (
@@ -703,7 +724,9 @@ def _intent_trinity_once(
         'concept | direction | description),  '
         '  "answer_form": str  (name | topic | judgment | list | '
         'duration | date | sentence),  '
-        '  "focus_entity_type": str | null'
+        '  "focus_entity_type": str | null,  '
+        '  "directive_applicability": float  (0.0-1.0 self-assessed; '
+        '   <0.7 → caller skips directive)'
     )
     result = _trinity.debate(
         task=task,
@@ -716,6 +739,16 @@ def _intent_trinity_once(
     if not result:
         return None
     try:
+        applic_raw = result.get("directive_applicability")
+        applic: float = 0.0
+        if isinstance(applic_raw, (int, float)):
+            applic = float(applic_raw)
+        elif isinstance(applic_raw, str):
+            try:
+                applic = float(applic_raw)
+            except ValueError:
+                applic = 0.0
+        applic = max(0.0, min(1.0, applic))
         return QuestionIntent(
             literal_target=str(result.get("literal_target") or "").strip(),
             semantic_target=str(result.get("semantic_target") or "").strip(),
@@ -726,6 +759,7 @@ def _intent_trinity_once(
                 if result.get("focus_entity_type") not in (None, "null", "")
                 else None
             ),
+            directive_applicability=applic,
             stances_used=tuple(stances),
         )
     except (TypeError, ValueError, AttributeError):
@@ -768,8 +802,28 @@ def analyze_question_intent_with_trinity(
         # (literal_target / semantic_target) can vary in phrasing.
         if (intent1.expected_granularity == intent2.expected_granularity
                 and intent1.answer_form == intent2.answer_form):
-            decision = "consistent"
-            out = intent1
+            # V6.5.1: trinity self-assessed directive_applicability —
+            # gate emission on the average being ≥ 0.6. Below that,
+            # trinity itself says "directive won't help here" and we
+            # don't emit. Replaces the hardcoded wants-bucket
+            # whitelist with self-supervised gating.
+            applic = (intent1.directive_applicability
+                      + intent2.directive_applicability) / 2.0
+            if applic >= 0.6:
+                decision = f"consistent-applicable-{applic:.2f}"
+                # Average the applicability into the returned intent
+                # for downstream telemetry.
+                out = QuestionIntent(
+                    literal_target=intent1.literal_target,
+                    semantic_target=intent1.semantic_target,
+                    expected_granularity=intent1.expected_granularity,
+                    answer_form=intent1.answer_form,
+                    focus_entity_type=intent1.focus_entity_type,
+                    directive_applicability=applic,
+                    stances_used=intent1.stances_used,
+                )
+            else:
+                decision = f"consistent-but-not-applicable-{applic:.2f}"
         else:
             decision = (
                 f"inconsistent-granularity-{intent1.expected_granularity}-vs-"
@@ -782,10 +836,11 @@ def analyze_question_intent_with_trinity(
 
     _logger.debug(
         "analyze_question_intent_with_trinity: query=%r stances=%s "
-        "decision=%s gran=%s form=%s",
+        "decision=%s gran=%s form=%s applic=%s",
         query[:80], stances, decision,
         getattr(out, "expected_granularity", None),
         getattr(out, "answer_form", None),
+        getattr(out, "directive_applicability", None),
     )
     return out
 
