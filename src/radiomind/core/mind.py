@@ -1290,24 +1290,23 @@ class RadioMind:
         from radiomind.core.attention import analyze_with_trinity
         if analyze_with_trinity(query, llm=self._llm).wants != "inference":
             return ""
-        # V6.4 architectural composition: SMALL ACTION + LARGE ACTION
-        # accumulate, NEVER replace. Lesson from V6.4-A initial design:
-        # returning entity_section ALONE bypassed answer_hint's
-        # "ATTENTION-ROUTED TRINITY VIEW" prefix — when the entity
-        # trinity picked a wrong candidate (because NER missed the
-        # abstract gold answer), there was no second prefix to
-        # rescue the LLM. Net result: -2 PASS on LoCoMo n=100.
+        # V6.4-A.1: small-action + large-action ACCUMULATE, never replace.
+        # Initial V6.4-A returned entity_section ALONE, bypassing
+        # answer_hint and losing the ATTENTION-ROUTED TRINITY VIEW
+        # safety net → -2 PASS on LoCoMo. Fix: prepend entity section
+        # to answer_hint output so both layers contribute.
         #
-        # V6.4-A.1 fix: prepend ALL applicable sections, let the
-        # answer LLM weigh them. Each section is independent:
-        #   - character profile  — V6.4-B layered subject summary
-        #   - entity disambiguation — V6.4-A entity trinity pick
-        #   - answer hint — V6.3 trinity refinement (always-on baseline)
-        #
-        # Sections that abstain return "" and contribute nothing.
-        character_section = self._v64b_character_profile_section(
-            query, retrieved_memories,
-        )
+        # V6.4-B (character_profile) ROLLED BACK after n=100 measured
+        # -6 PASS vs V6.3 (0.900 → 0.840). Self-pollution mechanism:
+        # the same LLM that read raw memories also built the profile,
+        # so its first-pass inference errors got fed back to itself
+        # as "facts". All categories with named-subject queries
+        # regressed (temporal -2, single-hop -2, multi-hop -1,
+        # open-domain -1). The "user profile extended to all dialog
+        # characters" architecture remains correct in principle, but
+        # needs a fundamentally different implementation (e.g. ingest-
+        # time KG-anchored attribute extraction with confidence gating)
+        # that this trinity-light query-time variant cannot satisfy.
         entity_section = self._v64a_disambiguate_open_domain_entity(
             query, retrieved_memories,
         )
@@ -1315,7 +1314,7 @@ class RadioMind:
             query, retrieved_memories,
             domain=domain, user_id=user_id,
         )
-        return character_section + entity_section + hint_section
+        return entity_section + hint_section
 
     def _v64a_disambiguate_open_domain_entity(
         self, query: str, retrieved_memories: list,
