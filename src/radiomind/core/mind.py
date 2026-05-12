@@ -1259,17 +1259,29 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
-        # V6.5: question-intent trinity prefix — derived independently
-        # from the question side (not from memories), so adds NO
-        # self-pollution risk (V6.4-B avoidance). Empty for default
-        # intents (sentence form, no granularity constraint).
+        # V6.6 path 2: memory-signal based intent inference.
+        # Replaces V6.5 LLM trinity meta-judgment (which had cross-call
+        # noise on simple/complex classification — 5/10 PASS plateau).
+        # Path 2 derives form/granularity from regex signal distribution
+        # on retrieved memories: deterministic, 0 LLM cost, cross-call
+        # stable. Falls back to V6.5 trinity only if path 2 yields
+        # no signal (defensive fallback, kept for graceful degradation).
         intent_directive = ""
         try:
             from radiomind.core.attention import (
+                analyze_question_intent_from_memory_signals,
                 analyze_question_intent_with_trinity,
                 format_intent_directive,
             )
-            intent = analyze_question_intent_with_trinity(query, llm=self._llm)
+            intent = analyze_question_intent_from_memory_signals(
+                query, retrieved_memories,
+            )
+            if intent is None:
+                # Fall back to V6.5 trinity when memory signals
+                # are inconclusive (low recall path).
+                intent = analyze_question_intent_with_trinity(
+                    query, llm=self._llm,
+                )
             intent_directive = format_intent_directive(intent)
         except Exception:
             pass

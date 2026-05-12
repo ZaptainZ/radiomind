@@ -904,6 +904,132 @@ def analyze_question_intent_with_trinity(
     return out
 
 
+# --- V6.6 path 2: memory-signal based intent inference ---------
+#
+# Replaces V6.5 LLM trinity meta-judgment with deterministic signal
+# detection on retrieved memories. Insight: the TYPE distribution of
+# evidence the answerer will see is a strong reverse-signal for the
+# query's expected form/granularity.
+#
+# Examples:
+#   Q "When did X" + memories rich in dates → form=date (high conf)
+#   Q "What is X about" + memories rich in genre/theme nouns → form=topic
+#   Q "How many X" + memories with cardinal numbers → form=number
+#
+# Zero LLM cost. Deterministic. Cross-call stable (no LLM meta-judgment
+# noise that broke V6.5 series).
+
+import re as _re
+
+_MEMORY_SIGNAL_PATTERNS = {
+    "temporal": _re.compile(
+        r"\b(?:\d{4}-\d{1,2}-\d{1,2}|\d{4}/\d{1,2}/\d{1,2}|"
+        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}|"
+        r"\b\d{4}\b|"
+        r"\b(?:yesterday|today|tomorrow|last\s+\w+|next\s+\w+|ago|since)\b)",
+        _re.IGNORECASE,
+    ),
+    "numeric_amount": _re.compile(
+        r"\$\d+(?:\.\d+)?|\b\d+\s*(?:dollars?|cents?|bucks?|points?|times?|"
+        r"items?|days?|weeks?|months?|years?|hours?|minutes?)\b",
+        _re.IGNORECASE,
+    ),
+    "abstract_noun": _re.compile(
+        r"\b(?:theme|topic|concept|idea|spirit|nature|essence|genre|"
+        r"category|kind|sort|style|approach|method|strategy|philosophy|"
+        r"value|belief|principle|determination|perseverance|hard\s+work|"
+        r"passion|love|interest|preference)\b",
+        _re.IGNORECASE,
+    ),
+    "proper_noun_entity": _re.compile(
+        # Capitalized run NOT at sentence start, NOT preceded by a period
+        # Approximates proper nouns (Voyageurs, Under Armour, etc.)
+        r"(?<![.!?]\s)(?<!^)\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}\b"
+    ),
+    "judgment_state": _re.compile(
+        r"\b(?:wealthy|rich|poor|struggling|stable|unstable|high|low|"
+        r"successful|failing|healthy|sick|positive|negative|good|bad)\b",
+        _re.IGNORECASE,
+    ),
+}
+
+_SIGNAL_TO_FORM_GRANULARITY = {
+    "temporal":           ("date", "exact_date"),
+    "numeric_amount":     ("number", "specific_entity"),
+    "abstract_noun":      ("topic", "concept"),
+    "proper_noun_entity": ("named_entity", "specific_entity"),
+    "judgment_state":     ("judgment", "direction"),
+}
+
+
+def analyze_question_intent_from_memory_signals(
+    query: str, retrieved_memories: list, min_signal_count: int = 3,
+) -> QuestionIntent | None:
+    """V6.6 path 2: derive question intent from memory content signal distribution.
+
+    Counts deterministic regex hits across retrieved memories' content
+    for each signal type (temporal / numeric / abstract / proper-noun /
+    judgment). The dominant signal maps to expected form + granularity.
+
+    Returns QuestionIntent when:
+      - retrieved memories provide enough signal (≥ min_signal_count for dominant)
+      - dominant signal is significantly stronger than next (margin check)
+    Returns None when:
+      - empty / no clear dominant signal
+      - signals too weak (< min_signal_count)
+    """
+    if not retrieved_memories:
+        return None
+
+    counts: dict[str, int] = {k: 0 for k in _MEMORY_SIGNAL_PATTERNS}
+    for r in retrieved_memories[:25]:
+        if isinstance(r, dict):
+            content = r.get("memory") or r.get("content") or ""
+        elif hasattr(r, "entry"):
+            content = getattr(r.entry, "content", "") or ""
+        else:
+            continue
+        if not content:
+            continue
+        for signal_name, pattern in _MEMORY_SIGNAL_PATTERNS.items():
+            if pattern.search(content):
+                counts[signal_name] += 1
+
+    if not any(v >= min_signal_count for v in counts.values()):
+        return None
+
+    # Find dominant signal; require margin over second-place
+    ranked = sorted(counts.items(), key=lambda x: -x[1])
+    if ranked[0][1] < min_signal_count:
+        return None
+    if len(ranked) > 1 and ranked[0][1] - ranked[1][1] < 2:
+        # Too close to call — signal ambiguous
+        return None
+
+    dominant = ranked[0][0]
+    form, granularity = _SIGNAL_TO_FORM_GRANULARITY[dominant]
+
+    # Confidence proxy: how strong is the dominant signal relative to total?
+    total = sum(counts.values()) or 1
+    margin = ranked[0][1] / total
+    applic = min(0.95, 0.6 + margin * 0.3)  # range 0.6 - 0.95
+
+    _logger.debug(
+        "v6.6-path2: query=%r signals=%s dominant=%s margin=%.2f applic=%.2f",
+        (query or "")[:60], counts, dominant, margin, applic,
+    )
+
+    return QuestionIntent(
+        literal_target=f"(query about {dominant.replace('_', ' ')})",
+        semantic_target=f"(memory signal: {dominant})",
+        expected_granularity=granularity,
+        answer_form=form,
+        focus_entity_type=None,
+        directive_applicability=applic,
+        stances_used=("memory-signal-distribution",),
+    )
+
+
 # --- V6.5 helper: format an intent into a prompt directive --------
 
 def format_intent_directive(intent: QuestionIntent | None) -> str:
