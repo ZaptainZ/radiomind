@@ -735,6 +735,11 @@ def _intent_trinity_once(
         extra_schema=schema,
         n_stances=len(stances),
         max_rounds=1,
+        # V6.5.2: agent 侧写 — tell trinity it is a question-intent
+        # ANALYZER, not an answerer. Without this the V5 answerer prompt
+        # instructed LLM to abstain on thin evidence → V6.5 90% abstain
+        # rate. The role change is the load-bearing fix.
+        agent_role="question-intent-analyzer",
     )
     if not result:
         return None
