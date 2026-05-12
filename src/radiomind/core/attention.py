@@ -1030,6 +1030,135 @@ def analyze_question_intent_from_memory_signals(
     )
 
 
+# --- V6.6 path 1: query structural decomposition -------------------
+#
+# Decompose query into syntactic/semantic atoms (question_word, subject,
+# possessor, modifiers, introspection markers) and derive form/granularity
+# from STRUCTURAL signature alone. Zero LLM cost, fully deterministic.
+#
+# Complementary to path 2 (memory-signal): path 1 reads query side, path
+# 2 reads memory side. They can be combined.
+
+_QUERY_STRUCT_PATTERNS = {
+    # Introspection / theme markers (question wants concept/topic)
+    "introspection_about": _re.compile(
+        r"\b(?:what|which|tell\s+me)\b[^?]*?\babout\b[^?]*?\?", _re.IGNORECASE,
+    ),
+    # 'kind of / type of / sort of' → category
+    "kind_of": _re.compile(
+        r"\b(?:kind\s+of|type\s+of|sort\s+of|style\s+of)\b", _re.IGNORECASE,
+    ),
+    # 'favorite X' (preference) — usually wants the entity, but if also
+    # has introspection it wants the theme
+    "preference_pred": _re.compile(
+        r"\b(?:favorite|preferred|liked|loved)\b", _re.IGNORECASE,
+    ),
+    # Modal speculation → judgment/direction
+    "speculation": _re.compile(
+        r"\b(?:might|could\s+be|would\s+be|may\s+be|likely|"
+        r"probably|possibly)\b", _re.IGNORECASE,
+    ),
+    # 'status of / level of / condition of' → direction judgment
+    "status_property": _re.compile(
+        r"\b(?:status|level|condition|state)\s+(?:of|be)\b", _re.IGNORECASE,
+    ),
+    # 'When' as question word → date
+    "when_question": _re.compile(
+        r"^\s*when\s+(?:did|does|was|were|is|are|will)\b", _re.IGNORECASE,
+    ),
+    # 'How many' → cardinal number
+    "how_many": _re.compile(
+        r"\bhow\s+many\b", _re.IGNORECASE,
+    ),
+    # 'How much' (amount, money)
+    "how_much": _re.compile(
+        r"\bhow\s+much\b", _re.IGNORECASE,
+    ),
+    # 'Which X' (entity disambiguation) — caller checks if also has 'could/might'
+    "which_entity": _re.compile(
+        r"^\s*which\b", _re.IGNORECASE,
+    ),
+    # 'What does X do' → action lookup
+    "what_does_do": _re.compile(
+        r"\bwhat\s+(?:does|do|did)\b.*?\b(?:do|use|have)\b", _re.IGNORECASE,
+    ),
+    # 'Where X' → location
+    "where_question": _re.compile(
+        r"^\s*where\s+(?:did|does|was|were|is|are|will)\b", _re.IGNORECASE,
+    ),
+}
+
+
+def analyze_question_intent_from_query_structure(query: str) -> QuestionIntent | None:
+    """V6.6 path 1: derive intent from query's syntactic structure.
+
+    Pure regex pattern matching on query text. Zero LLM cost.
+
+    Decision tree (priority order):
+      1. introspection_about → form=topic, granularity=concept
+      2. speculation + status → form=judgment, granularity=direction
+      3. how_many / how_much → form=number, granularity=specific_entity
+      4. when_question → form=date, granularity=exact_date
+      5. which_entity + speculation → form=name, granularity=specific_entity (disambiguation)
+      6. which_entity (alone) → form=name, granularity=specific_entity
+      7. where_question → form=name, granularity=specific_entity (location)
+      8. kind_of → form=topic, granularity=category
+      9. preference_pred + about → form=topic, granularity=concept
+      10. what_does_do → form=description, granularity=specific_entity
+      11. None of above → return None (let downstream fall back)
+
+    Decision tree mirrors human linguistic intuition: surface form
+    of question dictates expected answer shape.
+    """
+    if not query:
+        return None
+    ql = query.strip()
+    hits = {name: bool(p.search(ql)) for name, p in _QUERY_STRUCT_PATTERNS.items()}
+
+    form: str | None = None
+    granularity: str | None = None
+    rule_fired: str = ""
+
+    if hits["introspection_about"]:
+        form, granularity, rule_fired = "topic", "concept", "introspection_about"
+    elif hits["speculation"] and hits["status_property"]:
+        form, granularity, rule_fired = "judgment", "direction", "speculation+status"
+    elif hits["how_many"] or hits["how_much"]:
+        form, granularity, rule_fired = "number", "specific_entity", "how_many_or_much"
+    elif hits["when_question"]:
+        form, granularity, rule_fired = "date", "exact_date", "when_question"
+    elif hits["which_entity"] and hits["speculation"]:
+        form, granularity, rule_fired = "name", "specific_entity", "which+speculation"
+    elif hits["which_entity"]:
+        form, granularity, rule_fired = "name", "specific_entity", "which_entity"
+    elif hits["where_question"]:
+        form, granularity, rule_fired = "name", "specific_entity", "where_question"
+    elif hits["kind_of"]:
+        form, granularity, rule_fired = "topic", "category", "kind_of"
+    elif hits["preference_pred"] and hits["introspection_about"]:
+        form, granularity, rule_fired = "topic", "concept", "favorite+about"
+    elif hits["what_does_do"]:
+        form, granularity, rule_fired = "description", "specific_entity", "what_does_do"
+
+    if form is None:
+        return None
+
+    _logger.debug(
+        "v6.6-path1: query=%r rule=%s form=%s granularity=%s",
+        ql[:60], rule_fired, form, granularity,
+    )
+
+    return QuestionIntent(
+        literal_target=f"({rule_fired})",
+        semantic_target=f"(structural rule: {rule_fired})",
+        expected_granularity=granularity,
+        answer_form=form,
+        focus_entity_type=None,
+        directive_applicability=0.85,  # structural rules are deterministic
+        stances_used=("query-structure-decomposition",),
+    )
+
+
 # --- V6.5 helper: format an intent into a prompt directive --------
 
 def format_intent_directive(intent: QuestionIntent | None) -> str:
