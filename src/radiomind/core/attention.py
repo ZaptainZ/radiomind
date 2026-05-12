@@ -771,26 +771,80 @@ def _intent_trinity_once(
         return None
 
 
+# V6.5.4: regex pre-filter markers.
+# Decision rule (empirically tested on 10-qid flip set):
+#   - HARMFUL markers + no SUITABLE marker → SIMPLE → skip trinity
+#   - SUITABLE markers + no HARMFUL marker → COMPLEX → trinity
+#   - BOTH or NEITHER → uncertain → let trinity decide via granularity/form
+#
+# Empirical accuracy on 10-qid flip sample: 80% (vs 70% single-LLM,
+# 50% trinity-classifier — see /tmp/v65_trinity_classifier.log for
+# rationale). LLM-based simple/complex meta-judgment is unstable
+# (retry-consistency cross-call inconsistent 4/10). Regex is 0-cost
+# and deterministic; misses (1/10: "what do X use to reach goals"
+# style) are covered by V6.5.3 self-protection (trinity gives
+# applicability < 0.6 on form mismatch → abstain).
+_TRINITY_HARMFUL_MARKERS = (
+    "when did", "when does", "when was", "when were", "when is",
+    "how many", "how much", "how often",
+    "what time", "what date",
+    "what does", "what do", "what did",
+)
+_TRINITY_SUITABLE_MARKERS = (
+    "might", "could be", "would be", "may be", "likely",
+    "about?", " about ",
+    "kind of", "type of", "sort of",
+    "status of", "level of", "condition of",
+    "referring to", "talking about",
+    "favorite",
+)
+
+
+def _v654_regex_prefilter(query: str) -> str:
+    """V6.5.4 pre-filter. Returns 'simple', 'complex', or 'uncertain'."""
+    ql = (query or "").lower()
+    has_harmful = any(m in ql for m in _TRINITY_HARMFUL_MARKERS)
+    has_suitable = any(m in ql for m in _TRINITY_SUITABLE_MARKERS)
+    if has_suitable and not has_harmful:
+        return "complex"
+    if has_harmful and not has_suitable:
+        return "simple"
+    return "uncertain"
+
+
 def analyze_question_intent_with_trinity(
     query: str, llm: Any | None = None,
 ) -> QuestionIntent | None:
-    """V6.5: question-side trinity for intent decomposition.
+    """V6.5.4: regex pre-filter + V6.5.3 trinity for question decomposition.
 
-    Picks a query-specific set of stances from _STANCE_LIBRARY (2-5
-    based on query features), runs trinity twice (retry-consistency),
-    returns QuestionIntent on agreement.
+    Pipeline:
+      1. V6.5.4 regex pre-filter — if query is unambiguously SIMPLE
+         (e.g. "When did X" without complex markers), return None
+         immediately. Zero LLM cost; downstream falls back to V6.3
+         answer path. Empirical 80% accuracy on flip sample.
+      2. V6.5.3 trinity (agent_role='question-intent-analyzer') runs
+         for COMPLEX or UNCERTAIN queries. Trinity outputs structured
+         intent fields (granularity, form, applicability). V6.5.1
+         applicability gate then decides if directive emits.
 
     Returns None when:
       - llm unavailable
-      - trinity inconsistent or parse failure
-      - both calls abstain
-
-    Callers should treat None as "no intent override" — fall back to
-    pre-V6.5 behavior. Never make the answer prompt rely on a non-null
-    return.
+      - V6.5.4 pre-filter says SIMPLE
+      - trinity inconsistent or applicability < 0.6
     """
     if llm is None or not getattr(llm, "is_available", lambda: True)():
         return None
+
+    # V6.5.4: cheap pre-filter
+    prefilter = _v654_regex_prefilter(query)
+    if prefilter == "simple":
+        _logger.debug(
+            "v6.5.4 prefilter: SIMPLE — skip trinity for query=%r",
+            (query or "")[:80],
+        )
+        return None
+    # complex or uncertain → let V6.5.3 trinity decide
+
     base_sig = analyze(query)
     stances = _select_intent_stances(query, base_sig)
     if len(stances) < 2:  # defensive; literal+semantic should always trigger

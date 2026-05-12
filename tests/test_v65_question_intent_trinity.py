@@ -248,6 +248,71 @@ def test_intent_applicability_below_threshold_avg_abstains():
     assert out is None  # avg 0.55 < 0.6 threshold
 
 
+# === V6.5.4: regex pre-filter ===
+
+
+def test_v654_prefilter_simple_skips_trinity():
+    """Unambiguous SIMPLE query → skip trinity entirely (0 LLM calls)."""
+    llm = _SequenceStubLLM([_intent_response()])  # would parse but should not be called
+    out = analyze_question_intent_with_trinity(
+        "When did Gina get her tattoo?", llm=llm,
+    )
+    assert out is None  # pre-filter says simple → return None immediately
+    assert llm.calls == 0  # trinity never invoked
+
+
+def test_v654_prefilter_how_many_skips_trinity():
+    """How many X → SIMPLE."""
+    llm = _SequenceStubLLM([_intent_response()])
+    out = analyze_question_intent_with_trinity(
+        "How many of X's writings made the screen?", llm=llm,
+    )
+    assert out is None
+    assert llm.calls == 0
+
+
+def test_v654_prefilter_what_does_skips_trinity():
+    """What does X do → SIMPLE."""
+    llm = _SequenceStubLLM([_intent_response()])
+    out = analyze_question_intent_with_trinity(
+        "What does Joanna do while she writes?", llm=llm,
+    )
+    assert out is None
+    assert llm.calls == 0
+
+
+def test_v654_prefilter_complex_routes_to_trinity():
+    """COMPLEX query reaches trinity normally."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "What is X's favorite series about?", llm=llm,  # 'about' = suitable marker
+    )
+    assert out is not None
+    assert out.expected_granularity == "concept"
+    assert llm.calls == 2  # trinity ran with retry-consistency
+
+
+def test_v654_prefilter_uncertain_routes_to_trinity():
+    """Query with BOTH harmful and suitable markers → uncertain → trinity decides."""
+    llm = _SequenceStubLLM([
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+        _intent_response(granularity="concept", answer_form="topic",
+                         directive_applicability=0.85),
+    ])
+    out = analyze_question_intent_with_trinity(
+        "What does X might really be?", llm=llm,  # 'what does' + 'might'
+    )
+    # uncertain → trinity decides; here it commits complex
+    assert out is not None
+    assert llm.calls == 2
+
+
 # === format_intent_directive — prompt rendering ===
 
 
