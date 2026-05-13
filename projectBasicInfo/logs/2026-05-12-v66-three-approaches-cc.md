@@ -117,4 +117,89 @@ Dominant type = temporal_event → form = "date"
 
 ---
 
-（outcome section will be filled after both paths tested）
+## Outcome（2026-05-13 更新）
+
+### 实施 + smoke 实测
+
+按计划顺序实施 5 个变种，每个跑 LoCoMo 10-qid flip smoke：
+
+| 变种 | 实现 | 10-qid PASS |
+|---|---|---:|
+| V6.6 path 2 | retrieved memory 内容 regex 信号分布（temporal/numeric/abstract_noun/proper_noun/judgment） | **6/10** ★ 单跑最高 |
+| V6.6 path 1 | query 句法结构 regex（when_question/how_many/which_entity/introspection_about 等 11 条规则） | 5/10 |
+| V6.6 sequential combined | path 2 → path 1 → V6.5 trinity 顺序 fallback | 4/10 |
+| V6.6 multi-view (V6.6.2) | path 1 + path 2 + regex prefilter 并行三视角，渲染为多视角 prompt | 5/10 |
+
+### 关键发现 1：V6.6.p2 单跑救回 V6.5 系列救不动的 c3 Joanna while writing
+
+LoCoMo c3_94f06e1a00 "What does Joanna do while she writes?" gold = "stuffed animal Tilly"。
+
+- V6.3 PASS（无 directive，LLM 直接 retrieve 找到 Tilly）
+- V6.5 / V6.5.1 / V6.5.3 / V6.5.4 / V6.6.p1 全 FAIL（V6.5 系列 directive 推 LLM 列举活动 list，漏 Tilly）
+- **V6.6.p2 PASS**：memory 中 "Tilly" 触发 proper_noun_entity 主导信号，directive 引导 LLM 关注具体物品
+
+这是 V6.6.p2 的最大单点突破——之前 5 次独立跑无一版本救住这题。
+
+### 关键发现 2：multi-view（V6.6.2）反而退步
+
+multi-view 给 LLM 看 3 视角分析 + consensus/divergence 提示，理论上 ≥ max(p1, p2) = 6。但实测 5/10。退步原因推测：
+
+- multi-view prompt 更长（3 视角描述）→ LLM 注意力被分散
+- 三视角偶尔 form 字段 diverge → "weigh independently" 让 LLM 又开始 LLM 元判定（V6.5 不稳定的同款问题）
+
+### 关键发现 3：所有版本 4-6/10 都在 LLM 噪声范围内
+
+V6.3 + V6.5 series 4 个版本 + V6.6 4 个变种 = **11 次独立跑全部落在 4-6/10**。
+
+`c1 Gina tattoo` 在 11 个版本中 PASS/FAIL 翻 5 次牌，同样 query 同样 directive，每次 retrieved memories 微差 → LLM 答案微差 → 边界 case 跨次不同。
+
+**10 题样本 LLM 跑测噪声 ±1-2 道是常态**——任何 directive 方案的真实增益都被噪声盖过。
+
+### 与 V6.5 系列对比
+
+| 系列 | 思路 | 10-qid PASS | 稳定性 |
+|---|---|---:|---|
+| V6.5 (5 个变种) | LLM 题干 trinity 元判定 | 全 5/10 | LLM 元判定不稳，跨次 inconsistent |
+| **V6.6 (4 个变种)** | **deterministic regex/signal** | **4-6/10** | regex/信号 deterministic，但 retrieved memories 跨次不同→输出微差 |
+
+V6.6 比 V6.5 进了一步：**输出 deterministic**（同输入同输出），但答题侧 LLM 噪声仍然主导。
+
+### 三方向最终评价
+
+| 路径 | 实证表现 | 价值 |
+|---|---|---|
+| 路径 1（query 结构原子化） | 5/10 单跑 | 句法清晰题救回，但漏抽象/概念信号 |
+| **路径 2（memory atom 信号反推）** | **6/10 单跑** | ★ 唯一单跑超过 V6.3 baseline 5/10；救回 Tilly 类题 |
+| 路径 3（历史 query KNN） | 未实施 | 需要 bootstrap 标注库；现在数据规模不够 |
+| 顺序合并 | 4/10 | LLM 噪声盖过结构信号 |
+| 并行 multi-view | 5/10 | 三视角合并未带增益 |
+
+### 结论
+
+10 题样本在 LLM 答题噪声地带，**无法分辨 ±1 道的真实增益**。所有 V6.6 变种总分都在 4-6/10 区间。
+
+V6.6.p2 单跑 6/10 是最佳，且**机制最简**（5 个 regex 信号 + 投票），但**未复测**——单点+1 道很可能是 LLM 跑测噪声偶然。
+
+要看 V6.6 路径真实增益，必须升 LoCoMo n=100 大样本（噪声 ±2-3 道，相对增益 +5 道才 visible）。
+
+### Open decisions
+
+- **不合并 V6.6 到 main**：10 题增益证据不足
+- **可选**：跑 V6.6.p2 LoCoMo n=100（~3-5h），如果 ≥ 0.92 → 合并；如果 ≤ 0.90 → 放弃 V6.6 路径
+- **更深方向**：转方向 A（抽象层 ingest），把 form/granularity 信号在 ingest 时离线抽好，query 时只读不重推断——避开 LLM 答题侧噪声
+
+### Lessons learned (added to methodology mental model)
+
+1. **小样本 + LLM 答题噪声 = 增益盲区**：10 题在 LLM 噪声地带（±1-2 道），单点改进无法被验证。除非验证用 n≥50 样本。
+2. **deterministic 信号 ≠ deterministic 输出**：V6.6 path 函数本身 deterministic，但 retrieved_memories 在 bench 跨次跑里因 ingest LLM 噪声不同 → path 输出微差 → 端到端结果跨次不同。
+3. **multi-view directive 不是 silver bullet**：让 LLM 看更多 hint 反而分散注意力。诚如 V6.5.3 教训 ("简单+复杂 LLM 元判定不稳定")，在 LLM 上叠多视角不必然提升。
+4. **答题侧 LLM 噪声是 V6 系列真正天花板**：题干理解层做对了，但答题侧 LLM 仍可能在同样 directive 下输出不同 — 这是 LLM 推理本身的不确定性，非架构能解。
+5. **方向 A (ingest-time abstract layer) 是绕开 LLM 答题噪声的唯一架构层手段**：把 form/granularity 信号从 query-time 移到 ingest-time，query-time 只读，LLM 不再重新推断。
+
+### Final state
+
+- v6.6-memory-signals 分支保留 origin（包含 path 1 / path 2 / sequential / multi-view 实现 + 所有测试）
+- main 仍是 V6.3（commit 571f52a）
+- V6.5 系列分支保留作历史（v6.5-question-intent-trinity）
+- 11 次独立跑数据保存在 bench/end_to_end/validation/v6.5*+v6.6*.json
+
