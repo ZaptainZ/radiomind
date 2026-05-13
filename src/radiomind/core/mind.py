@@ -1259,35 +1259,31 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
-        # V6.6 path 1+2 COMBINED: deterministic dual-source intent inference.
-        #
-        # path 2 (memory signal) and path 1 (query structure) are
-        # complementary — they read different information sources and
-        # rescue different question types:
-        #   path 2 wins on: memory-signal-rich queries (numeric, abstract noun)
-        #   path 1 wins on: query-structure-rich (which X could be, when did)
-        #
-        # Strategy: path 2 first (closest to answer-time context). If
-        # path 2 abstains, fall to path 1 (query syntax). Last resort:
-        # V6.5 trinity (LLM, slow, noisy).
+        # V6.6.2 MULTI-VIEW: parallel decomposition by 3 deterministic
+        # views — path 1 (query syntactic structure), path 2 (memory
+        # signal distribution), regex prefilter (lexical markers). All
+        # three views run independently; their outputs are presented
+        # as enriched question context to the answerer. NO V5 trinity
+        # fallback — V6.5 series proved LLM meta-judgment unstable.
         intent_directive = ""
         try:
             from radiomind.core.attention import (
                 analyze_question_intent_from_memory_signals,
                 analyze_question_intent_from_query_structure,
-                analyze_question_intent_with_trinity,
-                format_intent_directive,
+                _v654_regex_prefilter,
+                render_multiview_decomposition,
             )
-            intent = analyze_question_intent_from_memory_signals(
+            p1_intent = analyze_question_intent_from_query_structure(query)
+            p2_intent = analyze_question_intent_from_memory_signals(
                 query, retrieved_memories,
             )
-            if intent is None:
-                intent = analyze_question_intent_from_query_structure(query)
-            if intent is None:
-                intent = analyze_question_intent_with_trinity(
-                    query, llm=self._llm,
-                )
-            intent_directive = format_intent_directive(intent)
+            prefilter = _v654_regex_prefilter(query)
+            intent_directive = render_multiview_decomposition(
+                query=query,
+                p1_intent=p1_intent,
+                p2_intent=p2_intent,
+                prefilter_verdict=prefilter,
+            )
         except Exception:
             pass
         return (

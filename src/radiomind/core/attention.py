@@ -1159,6 +1159,88 @@ def analyze_question_intent_from_query_structure(query: str) -> QuestionIntent |
     )
 
 
+# --- V6.6.2 multi-view: parallel decomposition + consensus rendering ---
+#
+# Replaces V6.6 sequential fallback (which lost path-specific signals
+# when path 2 fired first). All three deterministic sources run in
+# PARALLEL and their outputs are presented as a multi-view question
+# decomposition to the downstream answerer.
+#
+# NO V6.5 trinity fallback — V6.5 series proved trinity meta-judgment
+# is unstable (5/10 plateau, cross-call inconsistency); it adds noise
+# when used as fallback.
+
+
+def render_multiview_decomposition(
+    query: str,
+    p1_intent: "QuestionIntent | None",
+    p2_intent: "QuestionIntent | None",
+    prefilter_verdict: str | None = None,
+) -> str:
+    """V6.6.2: render multi-view question decomposition as enriched
+    context for the answerer LLM. Each view contributes independently;
+    consensus is highlighted when present; divergence is noted so the
+    answerer can weigh views itself.
+
+    Returns "" when all views abstain (no decomposition signal).
+    """
+    has_any = bool(p1_intent or p2_intent or prefilter_verdict)
+    if not has_any:
+        return ""
+
+    lines = ["QUESTION DECOMPOSITION (multi-view, deterministic analysis):"]
+
+    if p1_intent is not None:
+        lines.append(
+            f"  • Syntactic-structure view (path 1): "
+            f"form='{p1_intent.answer_form}', "
+            f"granularity='{p1_intent.expected_granularity}'  "
+            f"[rule: {p1_intent.literal_target}]"
+        )
+    if p2_intent is not None:
+        lines.append(
+            f"  • Memory-signal view (path 2): "
+            f"form='{p2_intent.answer_form}', "
+            f"granularity='{p2_intent.expected_granularity}'  "
+            f"[{p2_intent.semantic_target}]"
+        )
+    if prefilter_verdict in ("simple", "complex"):
+        lines.append(
+            f"  • Lexical-marker view (regex prefilter): "
+            f"query classified as '{prefilter_verdict}' "
+            f"({'literal answer expected' if prefilter_verdict == 'simple' else 'deep interpretation expected'})"
+        )
+
+    # Consensus / divergence check on the load-bearing fields
+    forms = set()
+    grans = set()
+    for i in (p1_intent, p2_intent):
+        if i is not None:
+            forms.add(i.answer_form)
+            grans.add(i.expected_granularity)
+
+    if len(forms) == 1 and len(grans) == 1 and (p1_intent and p2_intent):
+        f, g = forms.pop(), grans.pop()
+        lines.append(
+            f"  → STRONG CONSENSUS: both views agree on form='{f}', "
+            f"granularity='{g}'. Trust this form for the answer."
+        )
+    elif len(forms) >= 2 or len(grans) >= 2:
+        lines.append(
+            "  → Views diverge; the answer LLM should weigh evidence "
+            "and pick the form most consistent with retrieved memories."
+        )
+    elif p1_intent or p2_intent:
+        # Single view fired
+        single = p1_intent or p2_intent
+        lines.append(
+            f"  → Single-view signal: prefer form='{single.answer_form}', "
+            f"granularity='{single.expected_granularity}'."
+        )
+
+    return "\n".join(lines) + "\n\n"
+
+
 # --- V6.5 helper: format an intent into a prompt directive --------
 
 def format_intent_directive(intent: QuestionIntent | None) -> str:
