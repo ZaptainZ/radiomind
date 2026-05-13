@@ -1302,8 +1302,10 @@ class RadioMind:
     def run_evidence_candidates(
         self, query: str, retrieved_memories: list,
         top_k: int = 5,
+        with_convergence: bool = False,
     ) -> str:
-        """V7 Step 1: deterministic evidence-candidate injection.
+        """V7 Step 1 (+ optional Step 2): structured evidence-candidate
+        injection.
 
         Unlike `run_temporal_precision` / `run_open_domain_specific` which
         only fire for date/inference queries, this runs for ANY query with
@@ -1311,20 +1313,40 @@ class RadioMind:
         temporal_role, confidence} per query shape and emits a prompt
         block of candidates for the answerer to choose among.
 
-        Zero LLM cost. Returns "" when no candidates found.
+        Step 1 is zero LLM cost. Set with_convergence=True to add Step 2:
+        when len(candidates) >= 2, run trinity over the candidate set with
+        agent_role='candidate-convergence-resolver' to add a converged
+        answer hint before the candidate list.
+
+        Returns "" when no candidates found.
         """
         self._check_init()
         if not retrieved_memories:
             return ""
         try:
             from radiomind.core.evidence_candidates import (
+                converge_candidates_via_trinity,
                 extract_evidence_candidates,
                 render_evidence_candidates,
             )
             candidates = extract_evidence_candidates(
                 query, retrieved_memories, top_k=top_k,
             )
-            return render_evidence_candidates(candidates)
+            block = render_evidence_candidates(candidates)
+            if with_convergence and len(candidates) >= 2 and self._llm is not None:
+                converged = converge_candidates_via_trinity(
+                    query, candidates, self._llm, min_candidates=2,
+                )
+                if converged and converged.get("final_answer"):
+                    fa = str(converged["final_answer"]).strip()
+                    if fa and fa.lower() not in {"insufficient", "none", "unknown"}:
+                        prefix = (
+                            "CONVERGED ANSWER (three-stance candidate-convergence "
+                            "resolver picked among the candidates below):\n"
+                            f"- {fa}\n\n"
+                        )
+                        block = prefix + block
+            return block
         except Exception:
             return ""
 
