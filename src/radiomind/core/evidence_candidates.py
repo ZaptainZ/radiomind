@@ -426,3 +426,51 @@ def render_evidence_candidates(candidates: list[EvidenceCandidate]) -> str:
         "prefer a candidate with temporal_role=relative over event_date.\n",
     )
     return "\n".join(lines) + "\n"
+
+
+def converge_candidates_via_trinity(
+    query: str,
+    candidates: list[EvidenceCandidate],
+    llm,
+    min_candidates: int = 2,
+) -> Optional[dict]:
+    """V7 Step 2: trinity candidate-convergence-resolver.
+
+    Runs trinity debate over the candidate set (not raw memories). Only fires
+    when len(candidates) >= min_candidates — single-candidate trivially
+    answers itself. Three stances: conservative-evidence-only,
+    inferential-allowed, exact-quote-required.
+
+    Returns trinity result dict with {final_answer, stances, ...} or None.
+    """
+    if not candidates or len(candidates) < min_candidates:
+        return None
+    if llm is None or not getattr(llm, "is_available", lambda: True)():
+        return None
+
+    # Build evidence block from candidates (NOT raw memories)
+    evidence_lines = []
+    for i, c in enumerate(candidates, 1):
+        tr = f" [{c.temporal_role}]" if c.temporal_role else ""
+        evidence_lines.append(
+            f"Candidate {i}: {c.candidate!r} "
+            f"(relation={c.relation}, conf={c.confidence:.2f}, "
+            f"source_count={c.source_count}){tr}\n"
+            f"  Quote: {c.quote[:200]}"
+        )
+    evidence_block = "\n".join(evidence_lines)
+
+    task = f"Pick the candidate that most directly answers: {query}"
+
+    try:
+        from radiomind.refinement.trinity import debate
+        return debate(
+            task=task,
+            evidence=evidence_block,
+            llm=llm,
+            max_rounds=1,
+            agent_role="candidate-convergence-resolver",
+            n_stances=3,
+        )
+    except Exception:
+        return None

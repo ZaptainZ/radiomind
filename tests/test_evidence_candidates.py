@@ -285,3 +285,71 @@ def test_render_includes_candidate_and_quote():
     assert "Tilly" in out
     assert "companion" in out
     assert "supported_by=2" in out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 2 — trinity convergence (mocked LLM)
+# ─────────────────────────────────────────────────────────────────────────────
+class _MockLLM:
+    """Callable LLM stub matching trinity's signature: llm(prompt, system)."""
+
+    def __init__(self, response_text: str = ""):
+        self.calls = []
+        self.response = response_text
+
+    def is_available(self):
+        return True
+
+    def __call__(self, prompt: str, system: str = ""):
+        self.calls.append(prompt)
+        return self.response
+
+
+def test_converge_skipped_when_single_candidate():
+    from radiomind.core.evidence_candidates import converge_candidates_via_trinity
+
+    cs = [EvidenceCandidate(candidate="Tilly", quote="q", relation="companion")]
+    llm = _MockLLM()
+    result = converge_candidates_via_trinity("Q?", cs, llm, min_candidates=2)
+    assert result is None
+    assert llm.calls == []  # no LLM call
+
+
+def test_converge_skipped_when_no_llm():
+    from radiomind.core.evidence_candidates import converge_candidates_via_trinity
+
+    cs = [
+        EvidenceCandidate(candidate="A", quote="qa", relation="r"),
+        EvidenceCandidate(candidate="B", quote="qb", relation="r"),
+    ]
+    result = converge_candidates_via_trinity("Q?", cs, llm=None)
+    assert result is None
+
+
+def test_converge_fires_with_two_candidates():
+    """With 2+ candidates and an LLM, trinity should be called."""
+    from radiomind.core.evidence_candidates import converge_candidates_via_trinity
+
+    cs = [
+        EvidenceCandidate(candidate="Tilly", quote="always with me while I write",
+                          relation="companion-while-writing", confidence=0.9),
+        EvidenceCandidate(candidate="cork board", quote="my cork board is full of quotes",
+                          relation="writing-tool", confidence=0.5),
+    ]
+    # Mock LLM that returns a valid trinity-shaped JSON
+    canned = (
+        '{"stances": [{"position": "evidence-only", "argument": "pick Tilly", '
+        '"final": "Tilly"}, {"position": "inferential", "argument": "pick Tilly", '
+        '"final": "Tilly"}, {"position": "exact-quote", "argument": "Tilly named", '
+        '"final": "Tilly"}], "final_answer": "Tilly", "confidence": 0.9}'
+    )
+    llm = _MockLLM(canned)
+    result = converge_candidates_via_trinity(
+        "What does Joanna do while she writes?", cs, llm,
+    )
+    # At minimum: function fires; LLM called at least once
+    # (trinity may not always return a result on stub LLM — that's acceptable)
+    assert llm.calls, "trinity should have called LLM"
+    # The prompt should contain candidate phrasing
+    first_call = llm.calls[0]
+    assert "candidate" in first_call.lower() or "Candidate" in first_call
