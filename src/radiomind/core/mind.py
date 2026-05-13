@@ -1259,17 +1259,30 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
-        # V6.6 path 1: query-structure based intent inference (TEST MODE).
-        # Pure regex on QUERY text. 0 LLM cost, deterministic.
-        # Falls back to V6.5 trinity only if no structural rule matches.
+        # V6.6 path 1+2 COMBINED: deterministic dual-source intent inference.
+        #
+        # path 2 (memory signal) and path 1 (query structure) are
+        # complementary — they read different information sources and
+        # rescue different question types:
+        #   path 2 wins on: memory-signal-rich queries (numeric, abstract noun)
+        #   path 1 wins on: query-structure-rich (which X could be, when did)
+        #
+        # Strategy: path 2 first (closest to answer-time context). If
+        # path 2 abstains, fall to path 1 (query syntax). Last resort:
+        # V6.5 trinity (LLM, slow, noisy).
         intent_directive = ""
         try:
             from radiomind.core.attention import (
+                analyze_question_intent_from_memory_signals,
                 analyze_question_intent_from_query_structure,
                 analyze_question_intent_with_trinity,
                 format_intent_directive,
             )
-            intent = analyze_question_intent_from_query_structure(query)
+            intent = analyze_question_intent_from_memory_signals(
+                query, retrieved_memories,
+            )
+            if intent is None:
+                intent = analyze_question_intent_from_query_structure(query)
             if intent is None:
                 intent = analyze_question_intent_with_trinity(
                     query, llm=self._llm,
