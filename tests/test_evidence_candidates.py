@@ -326,6 +326,29 @@ def test_converge_skipped_when_no_llm():
     assert result is None
 
 
+def test_step3_ingest_tag_yields_high_confidence_relative_candidate():
+    """If memory has temporal_role:relative_marker tag + relative_phrase metadata,
+    extract_evidence_candidates should use it as a HIGH-confidence candidate
+    (skipping query-time regex)."""
+    mems = [
+        {
+            "memory": "(2023-02-08) Got the tattoo a few years ago — represents freedom.",
+            "metadata": {"relative_phrase": "a few years ago"},
+            "tags": ["date_bearing", "temporal_role:relative_marker"],
+        },
+    ]
+    candidates = extract_evidence_candidates(
+        "When did Gina get her tattoo?", mems, top_k=5,
+    )
+    # Acceptance: a candidate with temporal_role=relative AND confidence >= 0.9
+    rel_high = [c for c in candidates
+                if c.temporal_role == "relative" and c.confidence >= 0.9]
+    assert rel_high, (
+        f"no high-confidence relative candidate; got: "
+        f"{[(c.candidate, c.temporal_role, c.confidence) for c in candidates]}"
+    )
+
+
 def test_converge_fires_with_two_candidates():
     """With 2+ candidates and an LLM, trinity should be called."""
     from radiomind.core.evidence_candidates import converge_candidates_via_trinity

@@ -84,34 +84,43 @@ def classify_query(query: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Memory iteration helpers
 # ─────────────────────────────────────────────────────────────────────────────
-def _iter_memories(retrieved_memories) -> list[tuple[str, str]]:
-    """Yield (content_stripped, date_prefix) per memory. Robust to dict/object inputs.
+def _iter_memories(retrieved_memories) -> list[tuple[str, str, dict, list]]:
+    """Yield (content, date_prefix, metadata, tags) per memory.
 
-    `content_stripped` has the leading "(date)" prefix removed if present,
-    to avoid double-prefixing in quotes.
+    Content is NOT stripped of leading "(date)" prefix — extractors need to
+    see the date in content to extract it as a temporal candidate. The
+    `date` field is the canonical date for quote rendering. `metadata` and
+    `tags` carry ingest-time annotations.
     """
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, dict, list]] = []
     for r in retrieved_memories or []:
+        meta: dict = {}
+        tags: list = []
         if isinstance(r, dict):
             content = r.get("memory") or r.get("content") or ""
             date = r.get("date") or r.get("timestamp") or ""
+            meta = r.get("metadata") or {}
+            tags = r.get("tags") or []
         elif hasattr(r, "entry"):
             content = getattr(r.entry, "content", "") or ""
             date = getattr(r.entry, "timestamp", "") or ""
+            meta = getattr(r.entry, "metadata", None) or {}
+            tags = getattr(r.entry, "tags", None) or []
         elif hasattr(r, "content"):
             content = getattr(r, "content", "") or ""
             date = getattr(r, "timestamp", "") or ""
+            meta = getattr(r, "metadata", None) or {}
+            tags = getattr(r, "tags", None) or []
         else:
             continue
         if not content:
             continue
-        # Pull leading date if content starts with "(Friday, Oct 21, 2022)" or "(2022-10-21)"
-        m = re.match(r"^\(([^)]{6,30})\)\s*", content)
-        if m:
-            if not date:
+        # If date is empty, try to pull from a leading "(date)" prefix
+        if not date:
+            m = re.match(r"^\(([^)]{6,40})\)", content)
+            if m:
                 date = m.group(1)
-            content = content[m.end():]  # strip the leading "(date) " prefix
-        out.append((content, str(date)[:40]))
+        out.append((content, str(date)[:40], meta, tags))
     return out
 
 
@@ -313,8 +322,24 @@ def extract_evidence_candidates(
         else:
             bucket[key] = cand
 
-    for content, date in memories:
+    for content, date, meta, tags in memories:
+        # V7 Step 3: prefer ingest-time temporal_role tag when present
+        has_relative_tag = any(
+            t.startswith("temporal_role:relative") for t in (tags or [])
+        )
+        ingest_relative_phrase = (meta or {}).get("relative_phrase") if meta else None
         if qtype == "when":
+            # If ingest pre-annotated relative phrase, use it as a HIGH-confidence
+            # candidate (skips query-time regex re-derivation)
+            if has_relative_tag and ingest_relative_phrase:
+                add(EvidenceCandidate(
+                    candidate=ingest_relative_phrase,
+                    quote=f"({date}) {content[:200]}" if date else content[:200],
+                    relation="temporal_reference",
+                    temporal_role="relative",
+                    confidence=0.95,  # ingest-tagged → higher than query-time
+                    source_dates=[date] if date else [],
+                ))
             for phrase, quote, role in _extract_temporal(content, query):
                 # Filter: prefer event_date / relative / planned over mention_date
                 conf = {"event_date": 0.85, "relative": 0.9, "planned": 0.85,

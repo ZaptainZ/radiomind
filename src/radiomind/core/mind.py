@@ -128,6 +128,8 @@ def _derive_fact_tags(content: str, meta: dict) -> list[str]:
       - date_bearing: contains an explicit date or session_date
       - amount: mentions money
       - ownership: user-ownership verb pattern
+      - temporal_role:relative_marker: contains "a few years ago" etc.
+      - temporal_role:planned_date: contains "next month", "plan to" etc.
     Subclassers can extend. Kept cheap (regex only) — LLM-based tagging
     happens elsewhere (KG, numeric aggregator) and adds its own tags
     via metadata.
@@ -140,6 +142,20 @@ def _derive_fact_tags(content: str, meta: dict) -> list[str]:
         tags.append("amount")
     if _OWN_VERBS_RE.search(text):
         tags.append("ownership")
+    # V7 Step 3 subset: ingest-time temporal role tagging (relative + planned)
+    try:
+        from radiomind.core.temporal_provenance import (
+            detect_temporal_role, extract_relative_phrase,
+        )
+        trole = detect_temporal_role(text)
+        if trole:
+            tags.append(f"temporal_role:{trole}")
+            if trole == "relative_marker":
+                rp = extract_relative_phrase(text)
+                if rp:
+                    meta["relative_phrase"] = rp
+    except Exception:
+        pass
     return tags
 
 
