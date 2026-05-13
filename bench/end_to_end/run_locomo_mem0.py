@@ -430,6 +430,17 @@ def run(
         except Exception:
             pass
 
+        # V7 Step 1: evidence-candidate injection (deterministic, zero LLM
+        # cost, fires for ALL queries with retrieved memories). Replaces
+        # V6.6.p2 dominant-signal hint with first-class candidate evidence.
+        evidence_section = ""
+        try:
+            evidence_section = mind.run_evidence_candidates(
+                query=question, retrieved_memories=mem_results,
+            )
+        except Exception:
+            pass
+
         profile_section = ""
         try:
             profile_section = mind.profile_hint(query=question)
@@ -472,6 +483,8 @@ def run(
             ans_prompt = temporal_section + ans_prompt
         if open_domain_section:
             ans_prompt = open_domain_section + ans_prompt
+        if evidence_section:
+            ans_prompt = evidence_section + ans_prompt
         if profile_section:
             ans_prompt = profile_section + ans_prompt
         # Meta calibration directive (self-observation → answer bias correction).

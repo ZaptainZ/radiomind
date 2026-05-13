@@ -1259,36 +1259,12 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
-        # V6.6.2 MULTI-VIEW: parallel decomposition by 3 deterministic
-        # views — path 1 (query syntactic structure), path 2 (memory
-        # signal distribution), regex prefilter (lexical markers). All
-        # three views run independently; their outputs are presented
-        # as enriched question context to the answerer. NO V5 trinity
-        # fallback — V6.5 series proved LLM meta-judgment unstable.
-        intent_directive = ""
-        try:
-            from radiomind.core.attention import (
-                analyze_question_intent_from_memory_signals,
-                analyze_question_intent_from_query_structure,
-                _v654_regex_prefilter,
-                render_multiview_decomposition,
-            )
-            p1_intent = analyze_question_intent_from_query_structure(query)
-            p2_intent = analyze_question_intent_from_memory_signals(
-                query, retrieved_memories,
-            )
-            prefilter = _v654_regex_prefilter(query)
-            intent_directive = render_multiview_decomposition(
-                query=query,
-                p1_intent=p1_intent,
-                p2_intent=p2_intent,
-                prefilter_verdict=prefilter,
-            )
-        except Exception:
-            pass
+        # V7 Step 1 reset: keep answer_hint trinity-only.
+        # Evidence-candidate injection moved to `run_evidence_candidates`
+        # so it covers ALL query types (including single-hop), not just
+        # date/inference queries that gate this method.
         return (
-            intent_directive
-            + f"ATTENTION-ROUTED TRINITY VIEW "
+            f"ATTENTION-ROUTED TRINITY VIEW "
             f"(three opposing stances reconciled; trust this over hedging "
             f"unless retrieval contradicts):\n"
             f"- answer: {final}\n\n"
@@ -1322,6 +1298,35 @@ class RadioMind:
             query, retrieved_memories,
             domain=domain, user_id=user_id,
         )
+
+    def run_evidence_candidates(
+        self, query: str, retrieved_memories: list,
+        top_k: int = 5,
+    ) -> str:
+        """V7 Step 1: deterministic evidence-candidate injection.
+
+        Unlike `run_temporal_precision` / `run_open_domain_specific` which
+        only fire for date/inference queries, this runs for ANY query with
+        retrieved memories. Extracts {candidate, quote, relation,
+        temporal_role, confidence} per query shape and emits a prompt
+        block of candidates for the answerer to choose among.
+
+        Zero LLM cost. Returns "" when no candidates found.
+        """
+        self._check_init()
+        if not retrieved_memories:
+            return ""
+        try:
+            from radiomind.core.evidence_candidates import (
+                extract_evidence_candidates,
+                render_evidence_candidates,
+            )
+            candidates = extract_evidence_candidates(
+                query, retrieved_memories, top_k=top_k,
+            )
+            return render_evidence_candidates(candidates)
+        except Exception:
+            return ""
 
     # --- Preference context injector ---
 
