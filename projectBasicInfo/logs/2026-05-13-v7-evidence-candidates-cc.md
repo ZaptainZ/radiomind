@@ -202,8 +202,42 @@ V7 Step 1 evidence block 在 1 道题 (c1 Gina) 上**显式让 LLM 选 relative_
 | Step 2 trinity convergence | ✓（opt-in，未启用） | 等多候选歧义题再启用 |
 | Step 3 temporal tagging | ✓（regex-only subset） | c1 类题 ingest-time 标 relative_marker |
 
+## V7 Step 5 受阻：DashScope SSL Hang 环境性问题
+
+试过 4 次启动 full LoCoMo 1-qid smoke (`c3 Tilly`)，每次都在同样位置卡死：
+
+| 尝试 | 配置 | 卡住位置 | 等候 |
+|---|---|---|---|
+| #1 | 默认配置 | DashScope embedder SSL read | 22 min |
+| #2 | 加 `RADIOMIND_DISABLE_KG_BATCH=1` + `--no-refinement` | 同上 | 12 min |
+| #3 | + `RADIOMIND_EMBED_WORKERS=1`（串行 embed） | 同上 | 16 min |
+
+每次 sample 显示 main-thread 都在 `_buffered_readline → _ssl__SSLSocket_read → PySSL_select → poll`，TCP 与 `8.152.159.24:443` (DashScope) ESTABLISHED 但读不到任何 byte。
+
+**对比**：同样的 DashScopeEmbedder 在隔离 unit test 里调用 `encode_batch([15 texts])` 15s 就完成。**问题不在 embedder 代码本身**，而在 bench pipeline 上下文。
+
+历史 V6.6.p2 跑通过同样 pipeline (6590s 完成 10 qid)，说明环境性 + 时机性，不可重现/不可控。
+
+### 增加的容错（commit 留存）
+
+- `mind.py`: `RADIOMIND_DISABLE_KG_BATCH=1` env 跳过 KG batch LLM (regex fallback)
+- `embedding_dashscope.py`: `RADIOMIND_EMBED_WORKERS=N` env 调整 embedder 并发度
+
+## V7 真实成绩：最终诊断
+
+由于无法在当前环境跑通 full LoCoMo pipeline：
+
+| 测量 | 实测结果 |
+|---|---|
+| V7 vs baseline 在等价 prompt-only A/B 上 (10 qid strict) | **+1** (c1 Gina relative phrase)；c3 Tilly 同时 -1 但是 DashScope API error，非 V7 回退 |
+| V7 候选层 gold-token 出现率（10 qid 离线 replay） | 5/10 hit |
+| V7 在真实 V6.3 同源 pipeline 上的 strict 分 | **未实测**，DashScope SSL hang 阻塞 |
+| V7 单测覆盖 | 430 全过（含 19 fixture + Step 3 + Step 2 trinity mock） |
+
+**V7 架构层增益已确证**：c1 Gina 在 directive 层从 absolute date → relative phrase 是可重复的真实改变。但**集合层（X/10）改进未实测**，需在能跑通 full pipeline 的环境再验证。
+
 ## Next 决策点
 
-1. **retrieve 层是下一个瓶颈**：c2 financial / c4 Seattle / c5 Voyageurs 都是 retrieve 漏 gold。需排查 reranker / RRF / top-k 配置
-2. **当前 V7 在可对照样本上 +1**，应合并 main 还是继续打磨？
-3. **Step 2 trinity convergence 可启用条件**：等找到具体多候选歧义题（c3 Nate dragons 是潜在候选——候选含 dragons + Lord of Rings，LLM 选错）
+1. **retrieve 层是下一个瓶颈**：c2 financial / c4 Seattle / c5 Voyageurs 都是 retrieve 漏 gold
+2. **下次跑 full pipeline 时**：先把 DashScope 网络问题查清楚（macOS Python urllib SSL timeout bug + Aliyun 服务端 silent drop 嫌疑）
+3. **Step 2 trinity convergence 可启用条件**：c3 Nate dragons (候选含 dragons + Lord of Rings，LLM 选错) 是测试候选

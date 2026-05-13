@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -626,7 +627,11 @@ class RadioMind:
         # if the LLM is unavailable or batch fails.
         if user_turns_for_kg and self._kg is not None:
             triples_by_mid: dict[int, list[tuple[str, str, str]]] = {}
-            if self._llm is not None and self._llm.is_available():
+            # Optional skip for bench runs: when the bench-time LLM hangs on
+            # large KG batches, this env var falls back to per-turn regex KG.
+            _kg_disable = os.environ.get("RADIOMIND_DISABLE_KG_BATCH", "").strip()
+            if (self._llm is not None and self._llm.is_available()
+                    and _kg_disable not in ("1", "true", "yes")):
                 BATCH = 50  # turns per LLM call — ~50 × 400 chars = 20K tokens input
                 for start in range(0, len(user_turns_for_kg), BATCH):
                     chunk = user_turns_for_kg[start : start + BATCH]
