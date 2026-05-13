@@ -1,0 +1,303 @@
+Running A/B test on 10 qids, model=deepseek-v3.2
+
+==========================================================================================
+qid=c1_69a7c9bffe  gold='A few years ago'  candidates=2
+==========================================================================================
+  Top candidates:
+    - 'a few years ago' conf=0.90 [relative]
+    - '2023-02-08' conf=0.40 [mention_date]
+
+  [A] baseline (13.8s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read all three memories.  
+- Memory 1 (Feb 8, 2023): Gina says "Got the tattoo a few years ago..."  
+- Memory 2 (Feb 8, 2023): Gina says "Even made a tattoo to remind
+    tail: ...ND ANSWER**  
+The memories do not give an exact date or year—only that it was "a few years ago" as of February 2023.  
+
+ANSWER: A few years before February 2023 (exact year not specified in memories).
+
+  [B] V7 Step 1 (12.7s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+All three memories are about Gina getting a tattoo.  
+
+**Step 2: ENTITY VERIFICATION**  
+All memories refer to Gina, the correct person.  
+
+**Step 3: COMBINE AND CROSS-
+    tail: ...6: INCLUSION CHECK**  
+Only one candidate directly answers: "a few years ago."  
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: Gina got her tattoo a few years ago (around 2020–2021 relative to early 2023).
+
+  gold tokens: ['few years', 'years']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✓
+
+==========================================================================================
+qid=c2_29183ecb5e  gold='Middle-class or wealthy'  candidates=2
+==========================================================================================
+  Top candidates:
+    - 'broke' conf=0.70
+    - 'strain' conf=0.70
+
+  [A] baseline (18.2s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read all five memories:  
+1. (Apr 10, 2023) John’s car broke down, putting a strain on his wallet.  
+2. (Aug 5, 2023) John lost his job at a mechanical engineering co
+    tail: ...own in April 2023). He is seeking new work but has not yet reported securing a paid position.  
+
+ANSWER: John’s financial status is likely strained due to recent job loss and earlier car repair costs.
+
+  [B] V7 Step 1 (21.5s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read every memory:  
+- Apr 10, 2023: Car broke down, tough, putting a strain on his wallet.  
+- Aug 5, 2023: Lost his job at a mechanical engineering company.  
+- Aug
+    tail: ... lost his job in August and is seeking new employment, with no indication of a new job yet.
+
+ANSWER: John’s financial status is likely strained or unstable due to car repair costs and recent job loss.
+
+  gold tokens: ['class', 'middle', 'wealthy']
+  [A] contains gold token: ✗
+  [B] contains gold token: ✗
+
+==========================================================================================
+qid=c2_b4b43181aa  gold='August 4, 2023'  candidates=1
+==========================================================================================
+  Top candidates:
+    - '2023-08-04' conf=0.85 [event_date]
+
+  [A] baseline (15.4s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read all four memories:  
+1. (July 17, 2023) – Picnic with church friends.  
+2. (July 22, 2023) – Hiking with church friends last weekend.  
+3. (August 05, 2023) – “Y
+    tail: ...nfirms 2023-08-04.
+
+**Step 6: INCLUSION CHECK**  
+Only one distinct event is described.
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: Maria took up community work with her church friends on August 4, 2023.
+
+  [B] V7 Step 1 (13.5s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read all memories:  
+1. July 17, 2023 – Picnic with church friends.  
+2. July 22, 2023 – Hiking with church friends.  
+3. August 05, 2023 – Statement: "Yesterday, I t
+    tail: ...event of taking up community work with church friends is mentioned, on August 04, 2023.
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: Maria took up community work with her church friends on August 4, 2023.
+
+  gold tokens: ['2023', 'august']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✓
+
+==========================================================================================
+qid=c3_2656e2c771  gold='two'  candidates=2
+==========================================================================================
+  Top candidates:
+    - 'third' conf=0.70
+    - 'first' conf=0.70
+
+  [A] baseline (20.0s):
+    head: **Step 1: Scan All Memories**  
+- Memory 1 (June 5, 2022): "I wrote a few bits for a screenplay that appeared on the big screen yesterday!" → 1 instance.  
+- Memory 2 (October 25, 2022): "Another movi
+    tail: ...licit statement of total = 3 times. No later memory adds a new big-screen appearance for her writing (the November memory is about filming, not screening).  
+
+**Step 7: Commit and Answer**  
+ANSWER: 3
+
+  [B] V7 Step 1 (18.4s):
+    head: Let’s go step by step.  
+
+**Step 1: SCAN ALL MEMORIES**  
+- June 5, 2022: “I wrote a few bits for a screenplay that appeared on the big screen yesterday!” → 1 instance.  
+- October 25, 2022: “Another 
+    tail: ... June 5 — one more (implied by “another” and “third time”).  
+3. Oct 25, 2022 — the “another” script itself is the third.  
+Total distinct occurrences = 3.  
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: 3
+
+  gold tokens: []
+  [A] contains gold token: ✗
+  [B] contains gold token: ✗
+
+==========================================================================================
+qid=c3_94f06e1a00  gold='have a stuffed animal dog named Tilly with her'  candidates=5
+==========================================================================================
+  Top candidates:
+    - 'Image' conf=0.60
+    - 'Yeah' conf=0.60
+    - 'Here' conf=0.60
+
+  [A] baseline (16.3s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read every memory. Relevant memories for "What does Joanna do while she writes?" are those that mention writing and what accompanies it.
+
+- (Monday, January 24, 2022)
+    tail: ... No duplicates.
+
+**Step 7: COMMIT AND ANSWER**  
+Based on the memory, Joanna has Tilly (the stuffed animal dog) with her while she writes.
+
+ANSWER: She has her stuffed animal dog named Tilly with her.
+
+  [B] V7 Step 1 (64.7s):
+    head: [error: Remote end closed connection without response]
+    tail: ...[error: Remote end closed connection without response]
+
+  gold tokens: ['animal', 'named', 'stuffed', 'tilly']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✗
+
+==========================================================================================
+qid=c3_a9fddfe69b  gold='dragons'  candidates=5
+==========================================================================================
+  Top candidates:
+    - 'battles' conf=0.70
+    - 'trilogy' conf=0.70
+    - 'fantasy' conf=0.70
+
+  [A] baseline (24.1s):
+    head: Let’s go step by step.  
+
+**Step 1: SCAN ALL MEMORIES**  
+- Memory 1 (Apr 21, 2022): Nate recommends a fantasy series with dragons, adventures, magic, great characters, world-building, battles, storyt
+    tail: ...struggle to destroy a powerful ring.  
+
+ANSWER: It is about an epic fantasy quest to destroy a powerful ring, involving battles between good and evil, magic, and diverse races in a richly built world.
+
+  [B] V7 Step 1 (19.7s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+All four memories are relevant — they are all about Nate recommending or praising specific book series.
+
+**Step 2: ENTITY VERIFICATION**  
+All memories are about Nate (
+    tail: ...and world-building in a fictional realm.
+
+ANSWER: Nate's favorite book series is *Lord of the Rings*, an epic fantasy trilogy about battles, magic, adventures, and world-building in a fictional realm.
+
+  gold tokens: ['dragons']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✓
+
+==========================================================================================
+qid=c4_5cfba98ae8  gold='Seattle'  candidates=3
+==========================================================================================
+  Top candidates:
+    - 'Chicago' conf=0.75
+    - 'New York City' conf=0.75
+    - 'Barcelona' conf=0.60
+
+  [A] baseline (18.4s):
+    head: Let's go step by step.  
+
+**Step 1: SCAN ALL MEMORIES**  
+- May 21, 2023: John mentions "Minnesota Wolves" and signing with a new team, season opener next week.  
+- July 16, 2023: John talks about lov
+    tail: ...ward.  
+
+**Step 6: INCLUSION CHECK**  
+Only one city fits: Minneapolis (implied by team location and his praise).  
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: Minneapolis (home of the Minnesota Wolves).
+
+  [B] V7 Step 1 (16.7s):
+    head: Let's go step-by-step.
+
+**Step 1: Scan all memories**  
+- May 21, 2023: John mentions Minnesota Wolves, signing with a new team, season opener next week.  
+- July 16, 2023: John talks about loving the
+    tail: ...usion check**  
+Only one city is tied to having a game: Minneapolis.
+
+**Step 7: Commit and answer**  
+John is excited to have a game in Minneapolis (home of the Minnesota Wolves).
+
+ANSWER: Minneapolis
+
+  gold tokens: ['seattle']
+  [A] contains gold token: ✗
+  [B] contains gold token: ✗
+
+==========================================================================================
+qid=c5_dac00a436e  gold='Voyageurs National Park'  candidates=2
+==========================================================================================
+  Top candidates:
+    - 'Here' conf=0.75
+    - 'Last Friday' conf=0.60
+
+  [A] baseline (27.7s):
+    head: Let’s go step by step.  
+
+**Step 1: SCAN ALL MEMORIES**  
+- May 06, 2023: Audrey mentions a road trip “last Friday” to a beautiful national park with her dogs.  
+- June 02, 2023: Audrey says “We went 
+    tail: ...n, the answer must be generic:  
+
+ANSWER: A national park with a mountain peak about 3 hours from Audrey’s home, possibly in the western United States, but its name is not stated in the conversations.
+
+  [B] V7 Step 1 (18.9s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+I read all four memories.  
+- May 06, 2023: Audrey mentions a road trip to a beautiful national park last Friday.  
+- June 02, 2023: Audrey says they went to a national
+    tail: ...t give a specific national park name. They only refer to “a national park” generically.  
+
+ANSWER: The memories do not specify which national park; they only mention visiting an unnamed national park.
+
+  gold tokens: ['national', 'park', 'voyageurs']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✓
+
+==========================================================================================
+qid=c6_9da9f73c2a  gold='In September, 2022'  candidates=0
+==========================================================================================
+  Top candidates:
+
+  [A] baseline (12.7s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+- Memory 1 (Aug 21, 2022): John says he and his siblings don’t hang out much but when they do they try to plan a gaming night.  
+- Memory 2 (Aug 21, 2022): John says he
+    tail: ...
+
+**Step 6: INCLUSION CHECK**  
+Only one planned meeting date is mentioned in the memories.
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: John planned his next meeting with his siblings for September 2022.
+
+  [B] V7 Step 1 (13.8s):
+    head: **Step 1: SCAN ALL MEMORIES**  
+- Memory 1 (Aug 21, 2022): John says he and his siblings don’t hang out much but try to plan gaming nights.  
+- Memory 2 (Aug 21, 2022): John says he’s organizing one w
+    tail: ...22.
+
+**Step 6: INCLUSION CHECK**  
+Only one planned meeting is mentioned in these memories.
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: John planned his next meeting with his siblings for September 2022.
+
+  gold tokens: ['2022', 'september']
+  [A] contains gold token: ✓
+  [B] contains gold token: ✓
+
+==========================================================================================
+AGGREGATE (9 qids):
+  [A] baseline:    gold-token hit in answer = 6/9
+  [B] V7 Step 1:   gold-token hit in answer = 5/9
+
+  detail: /Users/Zaptain/Library/Mobile Documents/com~apple~CloudDocs/DarkForce/RadioMind/bench/end_to_end/validation/v7-step1-direct-ab.json

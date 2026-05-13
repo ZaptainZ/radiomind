@@ -131,3 +131,79 @@ Pipeline:
 - **如果 V7 Step 1 PASS 但其他题数下降**: 选择性 fire（仅 single-hop named-entity 类）
 - **Step 2 启用条件**: ≥1 个题在 Step 1 单候选有歧义、Step 2 trinity 收敛能裁决
 - **Step 3 排期**: 候选层稳定后开始 ingest-time temporal tagging（c1 Gina relative-only）
+
+## Outcome（A/B 直接 LLM 测试）
+
+绕开 DashScope embedder hang 的方式：从 V6.6.p2 历史 answer 文本中 parse 它见过的 memories（LLM 自己在 Step 1 列出来了），直接送 deepseek-v3.2 一次 baseline 一次 V7 evidence block 前置。无 ingest，无 retrieve，对照 prompt 层改动。
+
+`bench/end_to_end/direct_llm_ab.py` 实现。
+
+### 第一轮（5 qid，date 格式 bug 未发现）
+
+| qid | A strict | B V7 strict | Δ |
+|---|---|---|---|
+| c1 Gina | FAIL | **PASS** | +1 |
+| c2 Maria | PASS | PASS | 0 |
+| c3 Tilly | PASS | PASS | 0 |
+| c3 Nate | FAIL | FAIL | 0 |
+| c6 Sept 2022 | FAIL | FAIL | 0 |
+| **总** | **2/5** | **3/5** | **+1** |
+
+### 第二轮（10 qid，date 修复后）
+
+`_human_to_iso` 把 "Wednesday, February 08, 2023" → "2023-02-08" 之后 mem0 prompt 显示完整日期，LLM 的 temporal reasoning 上来了。
+
+| qid | A strict | B V7 strict | Δ |
+|---|---|---|---|
+| c1 Gina | FAIL | **PASS** | +1 |
+| c2 financial | FAIL | FAIL | 0 |
+| c2 Maria | PASS | PASS | 0 |
+| c3 count | FAIL | FAIL | 0 |
+| c3 Tilly | PASS | **FAIL** | **-1*** |
+| c3 Nate | FAIL | FAIL | 0 |
+| c4 Seattle | FAIL | FAIL | 0 |
+| c5 Voyageurs | FAIL | FAIL | 0 |
+| c6 Sept 2022 | **PASS** | **PASS** | 0 (both up vs original) |
+| c9 Calvin | SKIP | SKIP | n/a |
+| **总** | **3/9** | **3/9** | **0** |
+
+*c3 Tilly B FAIL 是 DashScope 返回 `Remote end closed connection without response` 错误，B 答案是空错误字符串，不是 V7 evidence block 引起的回退。排除该 API 异常后实际比分 V7 +1。
+
+### 真实增益
+
+V7 Step 1 evidence block 在 1 道题 (c1 Gina) 上**显式让 LLM 选 relative_marker 候选**，而 baseline 总是 default 到 absolute date。这是架构层的真实增益。
+
+### 未解题分析
+
+| qid | 未解原因 | 候选层修不了 |
+|---|---|---|
+| c2 financial | retrieve 漏 gold-bearing memory | ✗ retrieve 层 |
+| c3 count "two" | 需 dedup ordinal "third"→2 | ✗ 需推理 |
+| c3 Nate dragons | 候选有 dragons + Lord of Rings，LLM 倾向 named series | 候选 ranking 弱 |
+| c4 Seattle | retrieve 漏 Seattle memory | ✗ retrieve 层 |
+| c5 Voyageurs | retrieve 漏 park name | ✗ retrieve 层 |
+| c6 Sept 2022 | A/B 都 PASS（date format 修复后） | ✓ 已解决 |
+| c9 Calvin | answer 无可解析 memory，需 retrieve 改造 | ✗ retrieve/抽象层 |
+
+3/10 qid 失败原因在 **retrieve 层**（V6.6.p2 召回根本没含 gold-bearing memory）；2/10 需要**深层推理**（计数 dedup、抽象提取）；候选层做对了它该做的——把 retrieved memories 中的 gold token 抽出来给 LLM 选。
+
+## 测试覆盖
+
+- 430 单测全过（含 V7 三 Step 模块 + fixture）
+- Direct A/B JSON: `bench/end_to_end/validation/v7-step1-direct-ab.json`
+- Full output: `bench/end_to_end/validation/v7-step1-direct-ab.full-output.txt`
+
+## V7 系列总结
+
+| 步骤 | 状态 | 收益 |
+|---|---|---|
+| Step 0 strict judge | ✓ | 暴露 V6 11 次跑的 judge bias，确认 V6.3 = V6.6.p2 真实打平 4/10 |
+| Step 1 candidate injector | ✓ | c1 Gina 救回 (relative phrase) +1 |
+| Step 2 trinity convergence | ✓（opt-in，未启用） | 等多候选歧义题再启用 |
+| Step 3 temporal tagging | ✓（regex-only subset） | c1 类题 ingest-time 标 relative_marker |
+
+## Next 决策点
+
+1. **retrieve 层是下一个瓶颈**：c2 financial / c4 Seattle / c5 Voyageurs 都是 retrieve 漏 gold。需排查 reranker / RRF / top-k 配置
+2. **当前 V7 在可对照样本上 +1**，应合并 main 还是继续打磨？
+3. **Step 2 trinity convergence 可启用条件**：等找到具体多候选歧义题（c3 Nate dragons 是潜在候选——候选含 dragons + Lord of Rings，LLM 选错）
