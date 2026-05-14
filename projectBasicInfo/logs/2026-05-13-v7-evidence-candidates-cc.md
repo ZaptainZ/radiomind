@@ -254,9 +254,30 @@ DashScope SSL 短暂恢复后重试 full LoCoMo pipeline (1 qid c1 Gina 验证 �
 | V6.6.p2 | 6/10 | 4/10 |
 | **V7** | **3/10** | **6/10** ★ |
 
-V7 raw orig (3/10) 很低 = LLM judge 没认出 V7 答案里的正确信息（c2 Maria 答 "August 4, 2023" 但 judge 不知道这等价 gold；c3 Tilly 答里有 Tilly 但 judge 错配；c3 Nate 答里有 dragons 但 judge 看到 truncate 处未 commit）。
+V7 raw orig (3/10) 严重低估，**根因是 judge 基础设施失败**：
 
-V7 strict (6/10) = 应用确定性规则去除 judge bias 后的真实成绩。
+| qid | correct (raw) | judge 状态 | gold |
+|---|---|---|---|
+| c1 Gina | PASS | judged | A few years ago |
+| c2 financial | FAIL | judged | Middle-class or wealthy |
+| **c2 Maria** | FAIL | **OpenRouter SSL error** | August 4, 2023 |
+| **c3 count** | FAIL | **OpenRouter SSL error** | two |
+| **c3 Nate** | FAIL | **OpenRouter SSL error** | dragons |
+| **c3 Tilly** | FAIL | **OpenRouter SSL error** | stuffed animal Tilly |
+| c4 Seattle | FAIL | judged | Seattle |
+| **c5 Voyageurs** | FAIL | **OpenRouter SSL error** | Voyageurs |
+| c6 | PASS | judged | September 2022 |
+| c9 | PASS | judged | hard work |
+
+**5/10 qid 命中 OpenRouter→gpt-4o SSL/Connection error 导致 default FAIL**。其中 c2 Maria, c3 Tilly, c3 Nate 答案里都包含正确 gold token（strict 已验证），实际应该 PASS。
+
+V7 真实 PASS 数 = 3 真 judged PASS (c1/c6/c9) + 3 judge-error 但实际正确 (c2 Maria/c3 Tilly/c3 Nate) = **6/10**。
+
+两个独立路径都得到 V7 = 6/10：
+1. **Strict deterministic re-judge** = 6/10
+2. **Raw 3 PASS + 计入 judge-error 但答对的 3 题** = 6/10
+
+V7 strict (6/10) 不仅是"去 judge bias"，更是"恢复被 judge SSL 错误吞掉的真实分数"。
 
 ### 每题对照 (strict, v6.3 vs v7)
 
