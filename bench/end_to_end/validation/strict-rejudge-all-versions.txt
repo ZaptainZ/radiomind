@@ -1,0 +1,132 @@
+
+====================================================================================================
+PER-QID STRICT vs ORIGINAL JUDGE
+====================================================================================================
+qid                     v6.3-locomo-smoke.json  v6.6-path2-flip10-smok  v7-flip10-pipeline.jso  v7-flip10-pipeline.run
+----------------------------------------------------------------------------------------------------------------------
+c1_69a7c9bffe           orig=P strict=F*     orig=P strict=P      orig=P strict=P      orig=P strict=P      
+c2_29183ecb5e           orig=F strict=F      orig=F strict=F      orig=F strict=F      orig=F strict=F      
+c2_b4b43181aa           orig=F strict=P*     orig=P strict=P      orig=F strict=P*     orig=P strict=P      
+c3_2656e2c771           orig=P strict=F*     orig=P strict=F*     orig=F strict=F      orig=P strict=F*     
+c3_94f06e1a00           orig=P strict=P      orig=P strict=P      orig=F strict=P*     orig=P strict=P      
+c3_a9fddfe69b           orig=F strict=F      orig=F strict=F      orig=F strict=P*     orig=F strict=P*     
+c4_5cfba98ae8           orig=P strict=P      orig=F strict=F      orig=F strict=F      orig=F strict=F      
+c5_dac00a436e           orig=F strict=F      orig=F strict=F      orig=F strict=F      orig=F strict=F      
+c6_9da9f73c2a           orig=P strict=P      orig=P strict=P      orig=P strict=P      orig=P strict=P      
+c9_5ab522b5c7           orig=F strict=F      orig=P strict=F*     orig=P strict=P      orig=P strict=P      
+
+====================================================================================================
+AGGREGATE
+====================================================================================================
+  v6.3-locomo-smoke.json                    orig=5/10  strict=4/10
+  v6.6-path2-flip10-smoke.json              orig=6/10  strict=4/10
+  v7-flip10-pipeline.json                   orig=3/10  strict=6/10
+  v7-flip10-pipeline.run2.json              orig=6/10  strict=6/10
+
+====================================================================================================
+DISAGREEMENTS (orig != strict)
+====================================================================================================
+
+[v6.3-locomo-smoke.json]  c1_69a7c9bffe
+  Q:    When did Gina get her tattoo?
+  GOLD: A few years ago
+  ANS:  ...Gina got her tattoo on or around February 8, 2023
+  ORIG: PASS
+  STRICT: FAIL  reason=absolute date only, gold is relative
+
+[v6.3-locomo-smoke.json]  c2_b4b43181aa
+  Q:    When did Maria take up community work with her church friends?
+  GOLD: August 4, 2023
+  ANS:  ...ORAL GROUNDING  
+The conversation date is August 5, 2023. “Yesterday” is August 4, 2023.  
+
+Step 6: INCLUSION CHECK  
+Only one event is described.  
+
+Step 7: COMMIT AND ANSWER  
+ANSWER: August 4, 2023
+  ORIG: FAIL
+  STRICT: PASS  reason=date match
+
+[v6.3-locomo-smoke.json]  c3_2656e2c771
+  Q:    How many of Joanna's writing have made it to the big screen?
+  GOLD: two
+  ANS:  ...ECT THE BEST ANSWER**  
+The most specific and direct statement is from Oct 25, 2022: “I know this is the third time it’s happened.” That’s a clear count from Joanna herself.
+
+**Step 5: TEMPORAL GROUND
+  ORIG: PASS
+  STRICT: FAIL  reason=count mismatch (gold=2, body tail=3)
+
+[v6.6-path2-flip10-smoke.json]  c3_2656e2c771
+  Q:    How many of Joanna's writing have made it to the big screen?
+  GOLD: two
+  ANS:  ...hird time" statement (likely before June 5, 2022).  
+- Second occurrence: June 5, 2022.  
+- Third occurrence: October 25, 2022.  
+No fourth occurrence mentioned.
+
+**Step 7: Commit and answer**  
+The m
+  ORIG: PASS
+  STRICT: FAIL  reason=count mismatch (gold=2, body tail=3)
+
+[v6.6-path2-flip10-smoke.json]  c9_5ab522b5c7
+  Q:    What do Calvin and Dave use to reach their goals?
+  GOLD: Hard work and determination
+  ANS:  ...AND ANSWER**  
+Calvin uses: music performances, collaborations with other artists, networking events, touring, and drawing inspiration from music documentaries/videos.  
+Dave uses: car restoration/mod
+  ORIG: PASS
+  STRICT: FAIL  reason=missing hard work or determination in body tail
+
+[v7-flip10-pipeline.json]  c2_b4b43181aa
+  Q:    When did Maria take up community work with her church friends?
+  GOLD: August 4, 2023
+  ANS:  ...2023.
+
+**Step 6: INCLUSION CHECK**  
+Only one distinct event is described; no other dates for this specific activity with church friends appear.
+
+**Step 7: COMMIT AND ANSWER**  
+ANSWER: August 4, 2023
+  ORIG: FAIL
+  STRICT: PASS  reason=date match
+
+[v7-flip10-pipeline.json]  c3_94f06e1a00
+  Q:    What does Joanna do while she writes?
+  GOLD: have a stuffed animal dog named Tilly with her
+  ANS:  ...activity or companion. The highest-specificity answer is the stuffed animal.
+
+**Step 5: TEMPORAL GROUNDING**  
+The memory is from October 21, 2022, within the conversation timeframe. No later memory c
+  ORIG: FAIL
+  STRICT: PASS  reason=Tilly present
+
+[v7-flip10-pipeline.json]  c3_a9fddfe69b
+  Q:    What is Nate's favorite book series about?
+  GOLD: dragons
+  ANS:  ...ic: "This trilogy is one of my faves" + image query "lord of the rings trilogy" — that's a specific series.  
+Memory 1 is generic "this series" (fantasy with dragons).  
+
+## Step 4: SELECT THE BEST AN
+  ORIG: FAIL
+  STRICT: PASS  reason=dragon(s) in body tail-300
+
+[v7-flip10-pipeline.run2.json]  c3_2656e2c771
+  Q:    How many of Joanna's writing have made it to the big screen?
+  GOLD: two
+  ANS:  ...tance (first time).  
+- One other time before Oct 25, 2022 but after Jun 5, 2022? Or possibly before Jun 5?  
+
+But she says Jun 5 was “yesterday” relative to that date, so that’s one. Then another tim
+  ORIG: PASS
+  STRICT: FAIL  reason=count mismatch (gold=2, body tail=1)
+
+[v7-flip10-pipeline.run2.json]  c3_a9fddfe69b
+  Q:    What is Nate's favorite book series about?
+  GOLD: dragons
+  ANS:  ...after, he says "this trilogy is one of my faves" about Lord of the Rings (world building, battles, storytelling).  
+- On May 2, 2022, he calls Lord of the Rings "probably the greatest trilogy of all t
+  ORIG: FAIL
+  STRICT: PASS  reason=dragon(s) in body tail-300

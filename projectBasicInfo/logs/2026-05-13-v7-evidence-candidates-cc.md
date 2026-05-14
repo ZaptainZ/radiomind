@@ -279,6 +279,26 @@ V7 真实 PASS 数 = 3 真 judged PASS (c1/c6/c9) + 3 judge-error 但实际正�
 
 V7 strict (6/10) 不仅是"去 judge bias"，更是"恢复被 judge SSL 错误吞掉的真实分数"。
 
+### 重测验证（Run 2, 2026-05-14 16:xx）
+
+先测 OpenRouter 5/5 OK 后重跑同 10 qid。Judge 这次健康（0 SSL error）。
+
+| Run | raw orig | strict |
+|---|---:|---:|
+| V7 run 1 | 3/10 (5 SSL fail) | 6/10 |
+| **V7 run 2** | **6/10** | **6/10** |
+
+**raw orig 与 strict 一致 6/10** — 证明 V7 真实成绩 = 6/10。Run 1 的 3/10 raw 完全是 judge 基础设施问题。
+
+### V7 按 category 拆分（run 2 strict）
+
+- **temporal 3/3 (100%)** — V7 在时间类问题上压倒性强（c1 relative + c2 Maria date + c6 next month inference）
+- single-hop 2/4 (50%) — c3 Tilly ✓, c3 Nate dragons ✓（body 有 dragons）；c4 Seattle ✗（retrieve 漏）
+- multi-hop 0/1 — c3 count 需 dedup ordinal "third"→2（V7 候选层修不了）
+- open-domain 0/2 — c2 financial / c5 Voyageurs 都是 retrieve 层漏 gold-bearing memory
+
+evidence-candidate injector 最大增益在**temporal 类**（relative phrase / date / planned-date 候选）。这与 V7 设计 temporal_role 一阶字段的方向完全吻合。
+
 ### 每题对照 (strict, v6.3 vs v7)
 
 | qid | V6.3 strict | V7 strict | Δ |
