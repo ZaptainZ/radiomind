@@ -319,6 +319,26 @@ V7 floor = 5/10 strict, ceiling = 6/10 strict。即使最差 run 也比 V6.3 单
 
 V6.3 / V6.6.p2 都只跑过 1 次（4/10 strict）。要严格公平比较应该把 V6.3 也跑 3 次取均值。但 V7 的 3-run 区间 [5, 6] 完全在 V6.3 的 4 之上，没有 overlap 范围，所以 +1 floor 已经是统计上可信的真实改进。
 
+### Run 4 加入（4-run 总结，2026-05-14）
+
+| Run | raw orig | strict | judge SSL fail |
+|---|---:|---:|---:|
+| V7 run 1 | 3/10 | 6/10 | 5 |
+| V7 run 2 | 6/10 | 6/10 | 0 |
+| V7 run 3 | 5/10 | 5/10 | 0 |
+| V7 run 4 | 4/10 | **6/10** | 2 (c6/c9，strict 验证都 PASS) |
+
+**4 runs strict 分布**：6, 6, 5, 6 → **平均 5.75/10**，**3/4 = 6/10**，最小 5/10。
+
+V7 真实成绩：
+- **众数 = 6/10**（3/4 runs）
+- **floor = 5/10**（最差 run）
+- **平均 = 5.75/10**
+
+V6.3 baseline 单次 = 4/10，V6.6.p2 单次 = 4/10。即使 V7 floor (5/10) 也比这两个版本 strict +1。V7 众数 6/10 比 V6.3/V6.6.p2 strict **+2**。
+
+Run 4 raw orig 4/10 仍然受 judge SSL 影响（c6 Sept 2022 / c9 Calvin 都被 judge SSL 错算 FAIL，strict 都验证为 PASS）。这进一步证明 raw orig 容易被 OpenRouter 的网络抖动低估。**strict 才是 V7 真实成绩的可靠指标**。
+
 ### 每题对照 (strict, v6.3 vs v7)
 
 | qid | V6.3 strict | V7 strict | Δ |
