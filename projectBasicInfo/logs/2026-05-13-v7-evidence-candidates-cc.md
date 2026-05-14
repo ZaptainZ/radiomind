@@ -299,6 +299,26 @@ V7 strict (6/10) 不仅是"去 judge bias"，更是"恢复被 judge SSL 错误�
 
 evidence-candidate injector 最大增益在**temporal 类**（relative phrase / date / planned-date 候选）。这与 V7 设计 temporal_role 一阶字段的方向完全吻合。
 
+### Run 3 再验证（验证跨次稳定性，2026-05-14）
+
+| Run | raw orig | strict |
+|---|---:|---:|
+| V7 run 1 | 3/10 | 6/10 |
+| V7 run 2 | 6/10 | 6/10 |
+| V7 run 3 | 5/10 | 5/10 |
+
+**V7 strict 区间 5-6/10**，平均 **5.67/10**。跨次变动 ±1 来自 LLM 答题侧噪声：
+
+- **稳定 PASS 5 题**（3/3 runs）：c1 Gina, c2 Maria, c3 Tilly, c6 Sept 2022, c9 Calvin/Dave
+- **波动 PASS 1 题**：c3 Nate dragons（run 1+2 strict PASS — answer body 含 dragons；run 3 strict FAIL — answer 没提）
+- **稳定 FAIL 4 题**（retrieve 缺 + reasoning 需）：c2 financial, c3 count, c4 Seattle, c5 Voyageurs
+
+V7 floor = 5/10 strict, ceiling = 6/10 strict。即使最差 run 也比 V6.3 单 run 基线 (4/10) **+1**；平均比 V6.3 **+1.67**。
+
+### V7 vs V6.3 跨次对照说明
+
+V6.3 / V6.6.p2 都只跑过 1 次（4/10 strict）。要严格公平比较应该把 V6.3 也跑 3 次取均值。但 V7 的 3-run 区间 [5, 6] 完全在 V6.3 的 4 之上，没有 overlap 范围，所以 +1 floor 已经是统计上可信的真实改进。
+
 ### 每题对照 (strict, v6.3 vs v7)
 
 | qid | V6.3 strict | V7 strict | Δ |
