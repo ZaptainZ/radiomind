@@ -561,7 +561,7 @@ def run(
 
         record = {
             "question_id": qid,
-            "q": question, "gold": processed_answer, "answer": answer[:2000],
+            "q": question, "gold": processed_answer, "answer": answer,
             "correct": is_correct, "category": cat_name,
             "verdict_tail": verdict[-200:],
             "n_retrieved": len(results),

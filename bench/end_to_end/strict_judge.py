@@ -86,19 +86,58 @@ def extract_final_answer(text: str) -> tuple[str, bool]:
     return t, False
 
 
+def _is_truncated_no_commit(ans: str) -> bool:
+    """Detect if answer was truncated before reaching its final ANSWER: commit.
+
+    Signals:
+      - No explicit ANSWER: marker
+      - Answer ends mid-word, mid-step header, or without sentence terminator
+      - Answer length is at common bench cap (2000 chars exactly)
+    """
+    if not ans:
+        return False
+    a = ans.rstrip()
+    # Has ANSWER: marker → not truncated-no-commit
+    if re.search(r"\bANSWER\s*:\s*\S", a):
+        return False
+    # Ends with sentence terminator → likely complete
+    if a[-1] in ".!?\"'":
+        return False
+    # Ends mid step header or mid word → truncated
+    if re.search(r"(Step\s*\d+\s*:?[^\n]{0,40})$", a):
+        return True
+    # Length suspicious (close to 2000 cap)
+    if 1990 <= len(ans) <= 2010:
+        return True
+    return True  # any other open-ended end
+
+
 def _judge_with_fallback(
     ans: str,
     final_check,  # callable(final_seg) -> (bool, str)
     body_check,   # callable(full_body) -> (bool, str)
 ) -> tuple[bool, str]:
-    """Apply final-segment rule if explicit ANSWER: marker exists, else body rule."""
+    """Apply final-segment rule if explicit ANSWER: marker exists.
+    For truncated-without-commit answers, be conservative — default FAIL.
+    """
     final, has_marker = extract_final_answer(ans)
     if has_marker:
-        # Strict mode: judge only on final segment + refusal detection on final
         if has_refusal(final):
             return False, f"refusal in final | final={final[:80]!r}"
         return final_check(final)
-    # Truncated → body-match mode, refusal still applies to last paragraph
+    # No explicit ANSWER: — check if truncated
+    if _is_truncated_no_commit(ans):
+        # Conservative: try body check on LAST PARAGRAPH only, not full body
+        last_para = ans.rsplit("\n\n", 1)[-1].strip()
+        if has_refusal(last_para):
+            return False, "refusal in last paragraph (truncated)"
+        # Only PASS if gold token appears in the truncated tail's last paragraph
+        # — falling back to body_check on full content overcounts evidence-listing mentions
+        result = body_check(last_para)
+        if result[0]:
+            return True, result[1] + " (truncated, last-para match)"
+        return False, "truncated without commit, gold not in last paragraph"
+    # Complete answer but no ANSWER: marker (rare)
     last_para = ans.rsplit("\n\n", 1)[-1].strip()
     if has_refusal(last_para):
         return False, "refusal in last paragraph"
