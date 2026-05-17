@@ -1,0 +1,44 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 2,
+  "total_ingested_turns": 1197,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 2906.8,
+  "overall_accuracy": 1.0,
+  "by_type": {
+    "single-hop": {
+      "n": 2,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_94f06e1a00",
+      "q": "What does Joanna do while she writes?",
+      "gold": "have a stuffed animal dog named Tilly with her",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories are those where Joanna describes what she does while writing or shows her writing environment/activities.\n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about Joanna (the user) or conversations with Nate where Joanna describes her own actions. No misattribution.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFrom the memories, I extract specific things Joanna does while writing:\n\n1. **Keeps a stuffed animal dog named Tilly with her** – (Oct 21, 2022): \"I still have that stuffed animal dog you gave me! I named her Tilly, and she's always with me while I write.\"\n2. **Looks at a cork board with inspiring quotes and pictures** – (June 5, 2022): \"My cork board is full of inspiring quotes and pictures for motivation and creativity. It's my little corner of inspiration.\" (Context: she writes at her desk, cork board is there for inspiration while writing.)\n3. **Uses character sketches/visuals** – (Oct 25, 2022): \"They're visuals of the characters to help bring them alive in my head so I can write better.\" (She creates drawings of characters while writing.)\n4. **Writes in a notebook/journal** – Multiple memories show her writing in notebooks, but specifically while writing she uses a journal: (Aug 14, 2022) \"my journal's pretty much my rock. Writing's such a huge part of me now.\"\n5. **Works at a desk with laptop, notebook, pens** – (Nov 9, 2022): Image shows desk with laptop, notebook, pens. She says \"I feel like I just can't stop writing right now!\" implying that's her writing setup.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe question: \"What does Joanna do while she writes?\" asks for activities/habits accompanying writing.  \nMost specific and directly stated:  \n- She has Tilly (stuffed dog) with her.  \n- She has an inspiration cork board.  \n- She uses character sketches.  \n- She writes in a journal.  \n- She works at a desk with laptop/notebook.  \n\nThese are all valid; the most distinctive and explicitly mentioned companion activity is keeping Tilly with her.\n\n**Step 5: TEMPORAL GROUNDING**  \nNo temporal conflict; these are ongoing habits.\n\n**Step 6: INCLUSION CHECK**  \nAll items above are supported by direct statements. No duplicates.\n\n**Step 7: COMMIT AND ANSWER**  \nJoanna keeps a stuffed animal dog named Tilly with her while she writes, uses an inspiration cork board, creates character sketches, writes in a journal, and works at a desk with her laptop and notebook.\n\nANSWER: Joanna keeps her stuffed animal dog Tilly with her while she writes. She also uses an inspiration cork board, creates character sketches, writes in a journal, and works at a desk with her laptop and notebook.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes the correct item from the gold answer: Joanna keeps a stuffed animal dog named Tilly with her while she writes.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 208
+    },
+    {
+      "question_id": "c9_5ab522b5c7",
+      "q": "What do Calvin and Dave use to reach their goals?",
+      "gold": "Hard work and determination",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. The question asks what Calvin and Dave *use* to reach their goals. I look for tools, methods, or resources they actively employ toward their ambitions.\n\n**Step 2: ENTITY VERIFICATION**  \nThe question is about both Calvin and Dave. I need to find evidence for each separately or for both together.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFor Calvin:  \n- He is a musician. He mentions \"music gear and favorite microphone\" (May 16, 2023) — these are tools for his music goals.  \n- He uses \"electronic elements\" in his songs (July 21, 2023).  \n- He collaborates with other artists (Frank Ocean tour, August 22, 2023).  \n- He networks with other artists to build his fan base (October 29, 2023).  \n- He has a \"creative team\" for his album (June 9, 2023).  \n- He uses his car as motivation: \"Seeing it everyday keeps me motivated\" (August 3, 2023).  \n- He uses support from friends and team: \"My friends and team keep me on track\" (October 23, 2023).  \n\nFor Dave:  \n- He works on cars, uses tools in his garage (October 23, 2023 image).  \n- He uses \"knowledge\" and \"blog\" to share passion and help others (November 2, 2023).  \n- He uses photography as a creative outlet (October 29, 2023).  \n- He attends workshops/conferences to learn (San Francisco car workshop, Detroit conference).  \n- He uses \"patience\" and \"attention to detail\" (October 23, 2023).  \n- He finds working on cars therapeutic: \"Fixing cars is like therapy for me\" (August 3, 2023).  \n\nCommonalities:  \n- Both mention *support from each other* and encouragement.  \n- Both use their *passion* and *dedication* as fuel.  \n- Both use *creative expression* (music/cars) as the means to their goals.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe question is broad: \"What do Calvin and Dave use to reach their goals?\" The most consistent and explicit answer across memories is **support from each other and their passion for their crafts**. But more concretely, each uses specific tools: Calvin uses music gear and collaborations; Dave uses car tools and his blog. However, the question likely expects a shared mechanism.  \nLooking at the evidence candidates:  \n1. 'Thanks' (relation=activity_target, confidence=0.60) — generic.  \n2. 'Wow' (relation=activity_target, confidence=0.60) — generic.  \n3. 'Keep' (relation=activity_target, confidence=0.60) — \"Keep pursuing your passion and keep dreaming\" — this directly suggests they use *passion and dreaming* to reach goals.  \n4. 'Yeah' (relation=activity_target, confidence=0.60) — about attention to detail.  \n5. 'Hey Dave' (relation=activity_target, confidence=0.60) — greeting.  \n\nCandidate 3 ('Keep pursuing your passion and keep dreaming') is the most direct answer to what they use: **passion and dreams**.  \n\nBut also, in memories, they explicitly say they use each other's support and encouragement. For example, on October 25, 2023: \"Let's keep pushing for our goals\" and \"We can keep inspiring each other.\"  \n\n**Step 5: TEMPORAL GROUNDING**  \nNot needed here — the question is about a general method, not a specific time.\n\n**Step 6: INCLUSION CHECK**  \nThe pattern across memories: They rely on mutual encouragement, their passion, and their specific crafts (music for Calvin, cars for Dave). The question asks about both, so the shared element is **mutual support and passion**.\n\n**Step 7: COMMIT AND ANSWER**  \nThe best specific answer from the evidence is that they use **encouragement from each other and pursuing their passions**. Candidate 3 supports this, and multiple memories show they motivate each other and stay focused on their dreams.\n\nANSWER: They use encouragement from each other and pursuing their passions to reach their goals.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes 'pursuing their passions,' which aligns with 'determination' from the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 219
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
