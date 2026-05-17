@@ -1,0 +1,136 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 10,
+  "total_ingested_turns": 4273,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 3971.5,
+  "overall_accuracy": 0.6,
+  "by_type": {
+    "multi-hop": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "open-domain": {
+      "n": 2,
+      "accuracy": 0.0
+    },
+    "single-hop": {
+      "n": 4,
+      "accuracy": 0.75
+    },
+    "temporal": {
+      "n": 3,
+      "accuracy": 0.6667
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c1_69a7c9bffe",
+      "q": "When did Gina get her tattoo?",
+      "gold": "A few years ago",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant mentions of Gina's tattoo:  \n- (unknown date) event: got a tattoo representing freedom and following passions [date=2023-02-08]  \n- (Wednesday, February 08, 2023) Gina: Thanks! Got the tattoo a few years ago, it stands for freedom - dancing without worrying what people think.  \n- (Wednesday, February 08, 2023) Jon: Love the tattoo, did you just get it?  \n- (Wednesday, February 08, 2023) Gina: This quote kept me positive through tough times. We all need a push sometimes, right? Even made a tattoo to remind myself about it.  \n\n**Step 2: ENTITY VERIFICATION**  \nAll mentions are about Gina’s tattoo.  \n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nTwo pieces of information:  \n1. An event memory says Gina got the tattoo on 2023-02-08.  \n2. In conversation on 2023-02-08, Gina says she got it “a few years ago.”  \n\n**Step 4: SELECT THE BEST ANSWER**  \nThe question asks “When did Gina get her tattoo?”  \n- The event memory gives a specific date: 2023-02-08.  \n- Gina’s statement “a few years ago” is a relative phrase, not a specific date.  \n- The specific date is more directly responsive to “when.”  \n\n**Step 5: TEMPORAL GROUNDING**  \nThe conversation date is 2023-02-08. The event memory also says 2023-02-08. That is the date the tattoo event is recorded.  \n\n**Step 6: INCLUSION CHECK**  \nNo list or count needed.  \n\n**Step 7: COMMIT AND ANSWER**  \nThe best specific answer from the evidence is the date given in the event memory: 2023-02-08.  \n\nANSWER: 2023-02-08",
+      "correct": false,
+      "category": "temporal",
+      "verdict_tail": "\"The generated answer provides a specific date, 2023-02-08, which contradicts the gold answer 'a few years ago,' and does not include any correct items from the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c2_29183ecb5e",
+      "q": "What might John's financial status be?",
+      "gold": "Middle-class or wealthy",
+      "answer": "**Step 1: Scan all memories**  \nI read every memory. Relevant mentions of John's financial situation:  \n- April 10, 2023: John says his car broke down, it's tough to get it fixed, and it's \"putting a strain on my wallet.\"  \n- August 5, 2023: John lost his job at a mechanical engineering company.  \n- Later in August 2023: He mentions looking for opportunities in tech, possibly found a job, but no confirmation of stable income yet.  \n- Other memories mention his political campaigning, community work, and family, but not explicit wealth or stable high income.\n\n**Step 2: Entity verification**  \nAll mentions are about John (the user in the conversation with Maria).\n\n**Step 3: Combine and cross-reference**  \n- April 2023: Financial strain from car repair.  \n- August 2023: Job loss.  \n- No memories show sudden financial improvement after job loss; he is exploring new work.  \n- He continues community volunteering, not high-paying work.  \n- No mentions of savings, investments, or financial comfort after August.\n\n**Step 4: Select the best answer**  \nThe question asks \"What might John's financial status be?\" — this is inferential.  \nThe strongest evidence is recent job loss + earlier financial strain.  \nPattern: likely financially strained or unstable.\n\n**Step 5: Temporal grounding**  \nMost recent memory is August 16, 2023. Job loss was early August 2023. No later recovery mentioned.  \nAs of last memory, he is still in uncertain job transition.\n\n**Step 6: Inclusion check**  \nAll relevant points point toward financial difficulty.\n\n**Step 7: Commit and answer**  \nBased on car trouble straining wallet (April 2023) and losing his job (August 2023) without a clear new stable income by the last memory, John’s financial status is likely strained or unstable.\n\nANSWER: John's financial status is likely strained or unstable due to recent job loss and earlier car repair expenses.",
+      "correct": false,
+      "category": "open-domain",
+      "verdict_tail": "reasoning\": \"The generated answer does not include any items from the gold answer's list, as it suggests financial strain or instability rather than middle-class or wealthy.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c2_b4b43181aa",
+      "q": "When did Maria take up community work with her church friends?",
+      "gold": "August 4, 2023",
+      "answer": "## Step 1: SCAN ALL MEMORIES  \nI read every memory. Relevant memories mentioning Maria doing community work with church friends:  \n\n- (Saturday, August 05, 2023) Maria: \"Yesterday, I took up some community work with my friends from church. It was super rewarding!\"  \n- (unknown date) event: \"took up community work with friends from church [date=2023-08-04]\" (this appears to be a memory system extraction matching the August 5 conversation, with the event dated August 4, 2023)  \n\nOther memories mention church friends in other contexts (camping, picnic, hiking) but not taking up community work.  \n\n## Step 2: ENTITY VERIFICATION  \nThe memories are about Maria (the user). The question asks about Maria taking up community work with her church friends. The August 5, 2023 memory directly answers this.  \n\n## Step 3: COMBINE AND CROSS-REFERENCE  \nOnly one clear instance of \"took up community work with her church friends\" appears. The memory from August 5 says \"yesterday,\" which would be August 4, 2023. The extracted event candidate confirms date 2023-08-04.  \n\n## Step 4: SELECT THE BEST ANSWER  \nThe memory is specific and directly answers the question. No other memory contradicts it.  \n\n## Step 5: TEMPORAL GROUNDING  \nThe conversation date is August 5, 2023. \"Yesterday\" refers to August 4, 2023.  \n\n## Step 6: INCLUSION CHECK  \nOnly one event fits the question.  \n\n## Step 7: COMMIT AND ANSWER  \nANSWER: August 4, 2023",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies the date as August 4, 2023, which matches the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c3_2656e2c771",
+      "q": "How many of Joanna's writing have made it to the big screen?",
+      "gold": "two",
+      "answer": "## Step 1: SCAN ALL MEMORIES  \nI read every memory. Relevant memories about Joanna's writing making it to the big screen:  \n\n1. (Sunday, June 05, 2022) Joanna: \"I wrote a few bits for a screenplay that appeared on the big screen yesterday!\"  \n2. (Tuesday, October 25, 2022) Joanna: \"Another movie script that I contributed to was shown on the big screen last Sunday for the first time!\" and \"I know this is the third time it's happened, but its just so awesome!\"  \n3. (Friday, November 11, 2022) Joanna: \"I'm finally filming my own movie from the road-trip script!\" — this is about filming, not yet on the big screen.  \n4. Other memories mention writing scripts, submitting to festivals, meetings with producers, but not necessarily on the big screen.  \n\n## Step 2: ENTITY VERIFICATION  \nAll memories are about Joanna (the user) and her writing/screenplays.  \n\n## Step 3: COMBINE AND CROSS-REFERENCE  \nFrom memory 1 (June 5, 2022): \"a few bits for a screenplay that appeared on the big screen\" — this counts as one instance.  \nFrom memory 2 (October 25, 2022): \"Another movie script that I contributed to was shown on the big screen\" — this is a second distinct instance.  \nAlso in same memory: \"I know this is the third time it's happened\" — this directly states the total count as of October 25, 2022 is three times.  \n\nNo later memory mentions a fourth instance. The \"third time\" statement includes the two earlier instances plus this new one.  \n\n## Step 4: SELECT THE BEST ANSWER  \nThe most specific detail is from October 25, 2022: \"I know this is the third time it's happened.\" This is a direct statement of count.  \nEvidence candidates list includes 'third' (relation=count_claim, confidence=0.70) supported_by=3, which matches this memory.  \n\n## Step 5: TEMPORAL GROUNDING  \nThe question is present tense (\"have made it\"), so up to the latest memory (November 2022). No memory after October 25 mentions a fourth time.  \n\n## Step 6: INCLUSION CHECK  \nOnly three distinct instances are explicitly stated in total. The June 5 instance is one, the October 25 instance is another, and the \"third time\" indicates the current one makes three.  \n\n## Step 7: COMMIT AND ANSWER  \nThe memories directly state Joanna's writing has made it to the big screen three times.  \n\nANSWER: Three",
+      "correct": true,
+      "category": "multi-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer states three instances, which includes the two mentioned in the gold answer, thus meeting the partial credit rule.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "## Step 1: SCAN ALL MEMORIES  \nI read every memory. Relevant memories about Nate's favorite book series:  \n\n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image — query: fantasy novels dragon cover series.]  \n- (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Sharing image — query: lord of the rings trilogy dvd boxset.]  \n- (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Sharing image — query: space opera book series.]  \n- (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Sharing image — query: a court of thorns and roses book sarah j maas.]  \n\nAlso:  \n- (Monday, May 02, 2022) Joanna mentions watching \"The Lord of the Rings\" trilogy based on Nate's recommendation.  \n- (Monday, August 22, 2022) Nate says \"I'm always looking for something new to read.\"  \n\n## Step 2: ENTITY VERIFICATION  \nAll memories are about Nate (the person asked about) recommending or praising book series.  \n\n## Step 3: COMBINE AND CROSS-REFERENCE  \nThe question asks: \"What is Nate's favorite book series about?\"  \n- The first memory (April 21) says: \"adventures, magic, and great characters\" — fantasy series with dragons.  \n- The second memory (same day) says \"this trilogy is one of my faves\" about Lord of the Rings — world building, battles, storytelling.  \n- The third memory (August 22) recommends a space opera series with \"awesome battles and interesting characters.\"  \n- The fourth memory (same day) recommends \"A Court of Thorns and Roses\" (Sarah J. Maas).  \n\nBut \"favorite\" implies one top preference. The only memory where Nate explicitly calls something \"one of my faves\" is the Lord of the Rings trilogy (April 21). Also, earlier that same day he shared a fantasy series with dragons, but didn't label it \"favorite.\"  \n\n## Step 4: SELECT THE BEST ANSWER  \nThe most specific detail about what a favorite series is *about* comes from the Lord of the Rings memory: \"world building, battles, and storytelling.\" That's a direct description of its content. The dragon series memory says \"adventures, magic, and great characters\" but doesn't call it his favorite.  \n\n## Step 5: TEMPORAL GROUNDING  \nNo date conflict; all memories are from 2022. The \"favorite\" statement is from April 21, 2022.  \n\n## Step 6: INCLUSION CHECK  \nOnly one memory explicitly calls a series \"one of my faves\" and describes what it's about.  \n\n## Step 7: COMMIT AND ANSWER  \nANSWER: Nate's favorite book series (the Lord of the Rings trilogy) is about epic world-building, battles, and storytelling.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key element of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 205
+    },
+    {
+      "question_id": "c3_94f06e1a00",
+      "q": "What does Joanna do while she writes?",
+      "gold": "have a stuffed animal dog named Tilly with her",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories mention what Joanna does while writing or in the context of writing.\n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about Joanna (the user) or conversations with Nate. The question asks about Joanna, so her own statements are valid.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nMemories that describe Joanna’s writing habits or what she does while writing:\n\n1. (Friday, October 21, 2022) Joanna: \"I still have that stuffed animal dog you gave me! I named her Tilly, and she's always with me while I write.\"  \n   → She has a stuffed animal named Tilly with her while writing.\n\n2. (Thursday, October 06, 2022) Joanna: \"I just finished this cute little bookmark for one of the ladies at my writing club!\" (bookmark image) — This is related to writing but not necessarily while writing.\n\n3. (Sunday, August 14, 2022) Joanna: \"Writing's such a huge part of me now.\" [Sharing image — query: writing journal ideas notes. The image shows: a photo of a notebook with a bunch of stickers on it] — The image suggests she uses a journal/notebook while writing.\n\n4. (Wednesday, November 09, 2022) Joanna: \"I feel like I just can't stop writing right now!\" [Sharing image — query: desk laptop notebook pens. The image shows: a photo of a pen and notebook on a table] — Shows tools (pen, notebook, laptop) used while writing.\n\n5. (Tuesday, October 25, 2022) Joanna: \"They're visuals of the characters to help bring them alive in my head so I can write better.\" — She draws character sketches to help her writing process.\n\nNo other memories explicitly state an activity she does *while* writing besides having Tilly the stuffed animal with her.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe most specific and directly stated activity she does while writing is: having her stuffed animal dog Tilly with her. This is a concrete habit mentioned in one memory. Other memories show tools or related activities, but only the Tilly memory explicitly says \"always with me while I write.\"\n\n**Step 5: TEMPORAL GROUNDING**  \nNot needed — the question is about a general habit, not a time-bound event.\n\n**Step 6: INCLUSION CHECK**  \nOnly one clear habit is stated: having Tilly with her. Other items (using a notebook, pen, laptop, drawing sketches) are part of writing but not described as simultaneous activities except Tilly.\n\n**Step 7: COMMIT AND ANSWER**  \nThe evidence directly states she keeps a stuffed animal named Tilly with her while she writes.\n\nANSWER: Joanna keeps a stuffed animal dog named Tilly with her while she writes.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "on\n{\n  \"reasoning\": \"The generated answer correctly identifies that Joanna keeps a stuffed animal dog named Tilly with her while she writes, which matches the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c4_5cfba98ae8",
+      "q": "Which city is John excited to have a game at?",
+      "gold": "Seattle",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories mentioning John being excited about a game in a city:  \n\n- (Sunday, July 16, 2023) John: \"It's Seattle, I'm stoked for my game there next month!\"  \n- (Sunday, July 16, 2023) John shares an image query \"seattle basketball court bright lights\".  \n- Other memories mention games in various places (New York, general arenas), but only Seattle is explicitly named as a city where John is excited for an upcoming game.\n\n**Step 2: ENTITY VERIFICATION**  \nThe memory is about John (the user) speaking in first person: \"my game there next month\" — correct entity.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nOnly one clear instance: Seattle. No other city is mentioned with \"excited to have a game at\" in future tense.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe memory is specific: \"It's Seattle, I'm stoked for my game there next month!\" This directly answers the question with high specificity (city name).\n\n**Step 5: TEMPORAL GROUNDING**  \nThe conversation date is July 16, 2023. John says \"next month\" — so the game would be around August 2023. The question asks \"which city is John excited to have a game at?\" — present tense in the memory, so Seattle is correct.\n\n**Step 6: INCLUSION CHECK**  \nOnly one city fits; no list needed.\n\n**Step 7: COMMIT AND ANSWER**  \nANSWER: Seattle",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies Seattle as the city John is excited to have a game at, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 171
+    },
+    {
+      "question_id": "c5_dac00a436e",
+      "q": "Which national park could Audrey and Andrew be referring to in their conversations?",
+      "gold": "Voyageurs National Park",
+      "answer": "Yosemite National Park",
+      "correct": false,
+      "category": "open-domain",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention Voyageurs National Park, which is the correct national park referenced in the conversation.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 200
+    },
+    {
+      "question_id": "c6_9da9f73c2a",
+      "q": "When did John plan his next meeting with his siblings?",
+      "gold": "In September, 2022",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories about John planning meetings/activities with siblings:  \n- (Sunday, August 21, 2022) John says: \"Me and my siblings don't hang out much since we live far apart, but when we do we always try to plan a gaming night.\"  \n- (Sunday, August 21, 2022) John says: \"Yep, I'm organizing one with my siblings next month. We're stoked! Can't wait!\"  \n- (Friday, August 26, 2022) John says: \"I've been helping my younger siblings out with programming since they joined the programming course.\"  \n- (Friday, August 26, 2022) John says: \"Yeah! We're working on a cool project together that involves coding. It's a game and it's helping them learn.\"  \n- (Thursday, September 01, 2022) John says: \"I've been teaching my siblings coding.\"  \n- (Sunday, September 04, 2022) John says: \"My parents just started learning coding from me.\"  \n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about John and his siblings/parents. The question asks about John planning his next meeting with his siblings. The planning mention is in the August 21 memory.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nThe August 21 memory explicitly states John is organizing a gaming night with siblings \"next month.\" The conversation date is August 21, 2022, so \"next month\" would be September 2022.  \nOther memories after that (August 26, September 1, September 4) show he is actively helping siblings with coding, but those are ongoing activities, not the planned gaming night mentioned earlier.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe most specific and direct answer is from August 21: \"organizing one with my siblings next month.\" That is a planned meeting. No other memory gives a more specific date for a planned sibling meeting. The evidence candidates list includes '2022-08-21' (mention date) and '2022-07-22' (event date), but the July event is with sister watching sunset, not a planned future meeting. The candidate '2022-08-21' matches the memory where the plan is mentioned.\n\n**Step 5: TEMPORAL GROUNDING**  \nThe conversation date is August 21, 2022. \"Next month\" means September 2022. No exact day is given, so the answer is the month.\n\n**Step 6: INCLUSION CHECK**  \nOnly one clear planned meeting with siblings is mentioned—the gaming night planned in August for September.\n\n**Step 7: COMMIT AND ANSWER**  \nJohn planned his next meeting with his siblings for September 2022.\n\nANSWER: September 2022",
+      "correct": true,
+      "category": "temporal",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer correctly identifies the planned meeting with siblings as occurring in September 2022, matching the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 123
+    },
+    {
+      "question_id": "c9_5ab522b5c7",
+      "q": "What do Calvin and Dave use to reach their goals?",
+      "gold": "Hard work and determination",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. The question is: \"What do Calvin and Dave use to reach their goals?\" This asks for a means, tool, or method they both employ.  \n\n**Step 2: ENTITY VERIFICATION**  \nCalvin is a musician, Dave works on cars and photography. Both discuss goals and motivation.  \n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFrom multiple memories:  \n- Calvin mentions \"hard work and dedication\" (May 1, 2023: \"all your hard work and dedication paid off\" about Dave's shop; Oct 4, 2023: \"hard work and determination matter\").  \n- Dave echoes \"hard work and determination\" (Oct 4, 2023: \"Hard work really does pay off\").  \n- Both talk about \"support\" and \"encouragement\" from each other as motivation.  \n- Calvin says \"music\" is his passion and purpose (Oct 25, 2023).  \n- Dave says \"working on cars\" is fulfilling and makes him happy (Oct 4, 2023).  \n- Both mention \"pushing\" and \"keep going\" (many memories).  \n\nBut the question is *what they use* — likely a common tool or method.  \n\n**Step 4: SELECT THE BEST ANSWER**  \nThe most specific repeated theme: **hard work and determination** (explicitly stated by both). Also \"support from each other\" is a means, but less specific. The highest specificity is the phrase \"hard work and determination\" which appears in their mutual dialogue about reaching goals.  \n\n**Step 5: TEMPORAL GROUNDING**  \nNot needed — this is about a general method, not a time-bound event.  \n\n**Step 6: INCLUSION CHECK**  \nNo list needed; the question asks for what they use — a singular or small set of means. The strongest evidence is the mutual language of \"hard work and determination\" as their tool.  \n\n**Step 7: COMMIT AND ANSWER**  \nFrom memories:  \n- Calvin: \"hard work and determination matter, and it's what sets us apart\" (Oct 4, 2023).  \n- Dave: \"Hard work really does pay off\" (same date).  \n- Both encourage each other to \"keep pushing\" and \"stay focused\" (many instances).  \n\nThe consistent instrument they both use is **hard work and determination**.  \n\nANSWER: Hard work and determination.",
+      "correct": true,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer includes 'hard work and determination,' which matches the gold answer.\",\n  \"label\": \"CORRECT\"\n}\n```",
+      "n_retrieved": 214
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
