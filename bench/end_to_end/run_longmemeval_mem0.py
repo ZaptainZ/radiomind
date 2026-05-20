@@ -532,6 +532,19 @@ def run(
         except Exception:
             pass
 
+        # V8.2.2a: role/title mismatch guard. Deterministic regex check
+        # — when question asks about a leadership role (Manager/Director/
+        # VP/etc.) but retrieved memories only support an IC role (Engineer/
+        # Scientist/etc.) on the same person, inject an abstain hint.
+        # Target: LME-S 031748ae_abs (Software Engineer Manager vs Senior
+        # Software Engineer over-commit). Zero LLM cost.
+        role_guard_section = ""
+        try:
+            from radiomind.core.role_mismatch_guard import role_mismatch_guard
+            role_guard_section = role_mismatch_guard(question, mem_results)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -569,6 +582,13 @@ def run(
         ans_prompt = get_answer_generation_prompt(
             question=question, search_results=mem_results, question_date=q_date or "",
         )
+        # V8.2.2a: role guard prepended FIRST so it sits between memories
+        # block (innermost) and atomic/profile/etc. (outer). This way the
+        # abstain imperative is the LAST hint the model sees before the
+        # actual memory block — counters atomic_section's pull when atomic
+        # has 'user leads N as <other-role>' claims.
+        if role_guard_section:
+            ans_prompt = role_guard_section + ans_prompt
         if atomic_section:
             # Insert BEFORE the memory block so retrieved turns remain the
             # last and most salient context the model sees — atomic facts
@@ -593,6 +613,7 @@ def run(
             # references in the answer prompt resolve to the trinity-
             # chosen entity, not the most-recent surface mention.
             ans_prompt = entity_section + ans_prompt
+        # (role_guard already injected earlier as innermost wrapper)
         # Append Meta's calibration directive — the memory system's
         # self-observation layer gets the last word on answer style.
         # Counters systematic biases (over-abstention on inferable

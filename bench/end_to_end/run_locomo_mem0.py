@@ -447,6 +447,15 @@ def run(
         except Exception:
             pass
 
+        # V8.2.2a: role/title mismatch guard. Deterministic regex check.
+        # See run_longmemeval_mem0.py for full design rationale.
+        role_guard_section = ""
+        try:
+            from radiomind.core.role_mismatch_guard import role_mismatch_guard
+            role_guard_section = role_mismatch_guard(question, mem_results)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
         # before memories so raw turns remain the model's last-seen
@@ -475,6 +484,9 @@ def run(
             question=question, search_results=mem_results,
             reference_date=ref_human,
         )
+        # V8.2.2a: role guard innermost (between memories and other sections)
+        if role_guard_section:
+            ans_prompt = role_guard_section + ans_prompt
         if atomic_section:
             ans_prompt = atomic_section + ans_prompt
         if cardinal_section:
@@ -487,6 +499,7 @@ def run(
             ans_prompt = evidence_section + ans_prompt
         if profile_section:
             ans_prompt = profile_section + ans_prompt
+        # (role_guard already injected innermost — between memories and other sections)
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()
