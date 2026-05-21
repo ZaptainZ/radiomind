@@ -138,6 +138,113 @@ def _iter_memory_text(retrieved_memories: list[Any]) -> list[str]:
     return out
 
 
+def detect_role_mismatch(question: str, retrieved_memories: list[Any]) -> dict | None:
+    """Return mismatch detection result dict, or None if no mismatch.
+
+    Used by both the prompt-prefix `role_mismatch_guard` and the
+    post-processor `maybe_rewrite_with_guard` so both branches share
+    one source of truth for what counts as a mismatch.
+    """
+    if not question or not retrieved_memories:
+        return None
+    q_roles = extract_role_phrases(question)
+    if not q_roles:
+        return None
+    mem_texts = _iter_memory_text(retrieved_memories)
+    if not mem_texts:
+        return None
+    mem_blob = "\n".join(mem_texts)
+    m_roles = extract_role_phrases(mem_blob)
+    if not m_roles:
+        return None
+
+    for q_role in q_roles:
+        q_normalized = _normalize_role(q_role)
+        q_track = _classify_track(q_role)
+
+        supported = False
+        for m_role in m_roles:
+            if _normalize_role(m_role) == q_normalized:
+                supported = True
+                break
+        if supported:
+            continue
+
+        m_tracks = {_classify_track(r) for r in m_roles}
+        if q_track == "leadership" and m_tracks <= {"ic", "unknown"}:
+            return {"q_role": q_role, "m_roles": m_roles, "q_track": q_track}
+        if q_track == "ic" and m_tracks <= {"leadership", "unknown"}:
+            return {"q_role": q_role, "m_roles": m_roles, "q_track": q_track}
+    return None
+
+
+# Number-word pattern (one|two|three|...|twenty)
+_NUMBER_WORD = (
+    r"(?:one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|"
+    r"seventeen|eighteen|nineteen|twenty|"
+    r"a dozen|several|many|few)"
+)
+_NUM = rf"(?:\d+|{_NUMBER_WORD})"
+
+# Patterns that indicate the answer is over-committing specifics
+# (headcount / team size / dollar amount / count) when guard fired
+_OVER_COMMIT_PATTERNS = [
+    re.compile(rf"\bteam of\s+{_NUM}\b", re.IGNORECASE),
+    re.compile(rf"\blead\w*\s+(?:a team of\s+)?{_NUM}\b", re.IGNORECASE),
+    re.compile(rf"\b{_NUM}\s+(?:engineer|developer|report|direct\s+report|people|"
+               rf"team\s*member|scientist|analyst|employee)s?\b", re.IGNORECASE),
+    re.compile(r"\b(?:headcount|reports to|reporting to)\s+(?:is|of)?\s*\d+", re.IGNORECASE),
+    re.compile(r"\$\s*\d{1,3}(?:,\d{3})*(?:\.\d+)?\b"),  # dollar amount
+    re.compile(rf"\b(?:control|manag\w+|oversee\w*|supervis\w+)\s+{_NUM}\b",
+               re.IGNORECASE),
+]
+
+
+def _looks_over_committed(answer: str) -> bool:
+    if not answer:
+        return False
+    # If the answer already says "not enough" / abstain, no need to rewrite
+    low = answer.lower()
+    if any(p in low for p in ("information provided is not enough",
+                              "memories do not specify",
+                              "cannot determine",
+                              "insufficient")):
+        return False
+    return any(p.search(answer) for p in _OVER_COMMIT_PATTERNS)
+
+
+def maybe_rewrite_with_guard(
+    question: str,
+    retrieved_memories: list[Any],
+    llm_answer: str,
+) -> str:
+    """V8.2.2b: post-process the answer.
+
+    If role mismatch is detected AND the LLM still committed specifics
+    (team size, headcount, dollar amount, etc.), rewrite the answer to
+    a canonical abstain. Otherwise return llm_answer unchanged.
+
+    This closes the loop on V8.2.2a: prompt-level guard makes the LLM
+    aware of the mismatch, but it sometimes still hedges with a
+    "you-lead-N-as-other-role" commitment. Post-rewrite guarantees a
+    clean abstain when both signals fire.
+    """
+    detection = detect_role_mismatch(question, retrieved_memories)
+    if detection is None:
+        return llm_answer
+    if not _looks_over_committed(llm_answer):
+        return llm_answer
+    # Rewrite to canonical abstain
+    q_role = detection["q_role"]
+    m_roles = detection["m_roles"][:1]
+    m_role_text = m_roles[0] if m_roles else "another role"
+    return (
+        "The information provided is not enough. "
+        f"You mentioned starting the role as {m_role_text} but not {q_role}."
+    )
+
+
 def role_mismatch_guard(question: str, retrieved_memories: list[Any]) -> str:
     """Return a prompt prefix when retrieved memories suggest a role
     different from the role specified in the question.

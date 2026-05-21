@@ -530,6 +530,14 @@ def run(
         except Exception:
             pass
 
+        # V8.2.2b: role mismatch post-rewrite. When guard fired and LLM still
+        # committed numeric specifics, rewrite to canonical abstain.
+        try:
+            from radiomind.core.role_mismatch_guard import maybe_rewrite_with_guard
+            answer = maybe_rewrite_with_guard(question, mem_results, answer)
+        except Exception:
+            pass
+
         judge_prompt = get_judge_prompt(category, question, processed_answer, answer)
         is_correct = False
         verdict = ""

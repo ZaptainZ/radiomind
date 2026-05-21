@@ -1,0 +1,40 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 1,
+  "total_ingested_turns": 523,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 658.1,
+  "overall_accuracy": 1.0,
+  "model_correct": 1,
+  "judged_n": 1,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "s detail does not change the correctness of the response, as the main conclusion remains the same.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

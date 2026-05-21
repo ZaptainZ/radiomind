@@ -656,6 +656,16 @@ def run(
         except Exception:
             pass
 
+        # V8.2.2b: post-process. When the role mismatch guard fired AND the
+        # LLM still committed numeric specifics (team size, headcount, $),
+        # rewrite the answer to a canonical abstain. Closes the loop on
+        # V8.2.2a's prompt-level guard. Deterministic — pure regex check.
+        try:
+            from radiomind.core.role_mismatch_guard import maybe_rewrite_with_guard
+            answer = maybe_rewrite_with_guard(question, mem_results, answer)
+        except Exception:
+            pass
+
         judge_prompt = JUDGE_PROMPT.format(
             question=question, answer=gold_str, response=answer,
         )

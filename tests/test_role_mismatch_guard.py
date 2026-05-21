@@ -17,6 +17,8 @@ from radiomind.core.role_mismatch_guard import (
     extract_role_phrases,
     _classify_track,
     _normalize_role,
+    detect_role_mismatch,
+    maybe_rewrite_with_guard,
 )
 
 
@@ -157,3 +159,70 @@ class TestNormalizeRole:
 
     def test_case_insensitive(self):
         assert _normalize_role("SOFTWARE ENGINEER") == "software engineer"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# V8.2.2b: post-rewrite tests
+# ─────────────────────────────────────────────────────────────────────────────
+class TestPostRewriteCanonicalAbstain:
+    """Verify maybe_rewrite_with_guard converts over-committed LLM answers
+    to canonical abstain when role mismatch detected."""
+
+    def test_rewrites_when_guard_fires_and_overcommitted(self):
+        q = "How many engineers do I lead when I just started my new role as Software Engineer Manager?"
+        mems = [
+            mem("Just got the offer — Senior Software Engineer."),
+            mem("I lead a team of five engineers as Senior Software Engineer."),
+        ]
+        llm_answer = "Based on the evidence, you lead a team of five engineers in your role as Senior Software Engineer."
+        rewritten = maybe_rewrite_with_guard(q, mems, llm_answer)
+        assert "not enough" in rewritten.lower()
+        assert "Software Engineer Manager" in rewritten
+        assert "Senior Software Engineer" in rewritten
+        # Should NOT contain the team size anymore
+        assert "five" not in rewritten.lower()
+
+    def test_keeps_when_no_overcommit(self):
+        q = "How many engineers do I lead when I just started my new role as Software Engineer Manager?"
+        mems = [mem("I am a Senior Software Engineer.")]
+        llm_answer = "The information provided is not enough."
+        rewritten = maybe_rewrite_with_guard(q, mems, llm_answer)
+        # Already abstain — no change
+        assert rewritten == llm_answer
+
+    def test_keeps_when_no_mismatch(self):
+        q = "How many engineers do I lead as Senior Software Engineer?"
+        mems = [mem("I'm a Senior Software Engineer with 5 reports.")]
+        llm_answer = "You lead a team of 5 engineers."
+        rewritten = maybe_rewrite_with_guard(q, mems, llm_answer)
+        # No role mismatch — keep
+        assert rewritten == llm_answer
+
+    def test_rewrites_dollar_amount_overcommit(self):
+        q = "How much budget do I control as VP of Sales?"
+        mems = [mem("As Senior Sales Engineer I track $500,000 quarterly.")]
+        llm_answer = "Based on memories, you control $500,000."
+        rewritten = maybe_rewrite_with_guard(q, mems, llm_answer)
+        assert "not enough" in rewritten.lower() or rewritten != llm_answer
+
+    def test_no_role_in_question_no_change(self):
+        q = "What did I eat for breakfast?"
+        mems = [mem("Senior Software Engineer made pancakes.")]
+        llm_answer = "You ate 3 pancakes."
+        # No role in question → no guard → no rewrite
+        assert maybe_rewrite_with_guard(q, mems, llm_answer) == llm_answer
+
+
+class TestDetectRoleMismatch:
+    def test_returns_none_when_no_mismatch(self):
+        q = "How many engineers report to me as Senior Software Engineer?"
+        mems = [mem("Senior Software Engineer with team of 3.")]
+        assert detect_role_mismatch(q, mems) is None
+
+    def test_returns_dict_when_mismatch(self):
+        q = "What is my Software Engineer Manager team size?"
+        mems = [mem("Senior Software Engineer here.")]
+        d = detect_role_mismatch(q, mems)
+        assert d is not None
+        assert "Software Engineer Manager" in d["q_role"]
+        assert d["q_track"] == "leadership"
