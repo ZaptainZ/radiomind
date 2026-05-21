@@ -661,18 +661,40 @@ def run(
         )
         is_correct = False
         verdict = ""
-        try:
-            # 2000 tokens: 1200 truncated the verdict mid-sentence on a
-            # v2 run question (judge wrote "3. The model response
-            # directly addresses…" then ran out before producing
-            # yes/no). 2000 leaves headroom for verbose judge_thinking.
-            verdict = llm_call(
-                judge_prompt, config_path,
-                model=judge_model, max_tokens=2000, profile=judge_profile,
-            )
-            is_correct = _parse_judge_verdict(verdict)
-        except Exception as e:
-            verdict = f"[judge error: {e}]"
+        judge_failed = False
+        # V8.2.2b: retry on judge HTTP errors (403, SSL, connection reset).
+        # OpenRouter occasionally returns 403 / SSL EOF on bursts; without
+        # retry these silently flip the bench acc by ~6% (observed on
+        # V8.2.2a LME-S n=100 where 6/100 verdicts were judge HTTP error
+        # default-counted as FALSE while the model answer was clearly
+        # correct: UCLA, MusicTheory.net, $300, Emma, 10 days ago, four).
+        for judge_attempt in range(3):
+            try:
+                verdict = llm_call(
+                    judge_prompt, config_path,
+                    model=judge_model, max_tokens=2000, profile=judge_profile,
+                )
+                is_correct = _parse_judge_verdict(verdict)
+                judge_failed = False
+                break  # success
+            except Exception as e:
+                verdict = f"[judge error attempt {judge_attempt+1}: {e}]"
+                judge_failed = True
+                if judge_attempt < 2:
+                    import time as _t
+                    _t.sleep(2 ** judge_attempt)  # 1s, 2s, 4s backoff
+        # Track judge failures separately so report can distinguish
+        # model-wrong (true FAIL) from judge-infra-error (unverdicted).
+        if "judge_errors" not in overall:
+            overall["judge_errors"] = 0
+            overall["model_correct"] = 0
+            overall["judge_n"] = 0
+        if judge_failed:
+            overall["judge_errors"] += 1
+        else:
+            overall["judge_n"] += 1
+            if is_correct:
+                overall["model_correct"] += 1
 
         # Meta self-observation — feeds dynamic calibration next run
         try:
@@ -696,6 +718,7 @@ def run(
             "question_id": qid,
             "q": question, "gold": gold_str, "answer": answer[:400],
             "correct": is_correct, "qtype": qtype, "verdict_tail": verdict[-120:],
+            "judge_failed": judge_failed,
         }
         per_query_log.append(record)
         _append_checkpoint(record)
@@ -725,6 +748,23 @@ def run(
         "judge_profile": judge_profile,
         "elapsed_s": round(elapsed, 1),
         "overall_accuracy": round(overall["correct"] / max(1, overall["n"]), 4),
+        # V8.2.2b: split-out metrics to distinguish model errors from
+        # judge-infra errors. raw_accuracy treats judge errors as FAIL
+        # (legacy semantics, comparable to old reports). judged_accuracy
+        # excludes judge errors from denominator (model performance among
+        # successfully judged questions). judge_error_rate flags how
+        # polluted this run is by OpenRouter / SSL flakes.
+        "model_correct": overall.get("model_correct", overall["correct"]),
+        "judged_n": overall.get("judge_n", overall["n"]),
+        "judge_errors": overall.get("judge_errors", 0),
+        "raw_accuracy": round(overall["correct"] / max(1, overall["n"]), 4),
+        "judged_accuracy": round(
+            overall.get("model_correct", overall["correct"]) /
+            max(1, overall.get("judge_n", overall["n"])), 4
+        ),
+        "judge_error_rate": round(
+            overall.get("judge_errors", 0) / max(1, overall["n"]), 4
+        ),
         "by_type": {
             t: {"n": v["n"], "accuracy": round(v["correct"] / max(1, v["n"]), 4)}
             for t, v in sorted(per_type.items())
