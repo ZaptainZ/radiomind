@@ -456,6 +456,14 @@ def run(
         except Exception:
             pass
 
+        # V8.2.3a: cashback arithmetic hint (cross-bench consistent).
+        cashback_hint_section = ""
+        try:
+            from radiomind.core.arithmetic_hint import cashback_arithmetic_hint
+            cashback_hint_section = cashback_arithmetic_hint(question, mem_results)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition (aggregation queries only).
         # Same logic as LongMemEval-S harness. DRAFT framing + placed
         # before memories so raw turns remain the model's last-seen
@@ -487,6 +495,9 @@ def run(
         # V8.2.2a: role guard innermost (between memories and other sections)
         if role_guard_section:
             ans_prompt = role_guard_section + ans_prompt
+        # V8.2.3a: cashback arithmetic hint
+        if cashback_hint_section:
+            ans_prompt = cashback_hint_section + ans_prompt
         if atomic_section:
             ans_prompt = atomic_section + ans_prompt
         if cardinal_section:

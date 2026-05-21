@@ -545,6 +545,20 @@ def run(
         except Exception:
             pass
 
+        # V8.2.3a: cashback arithmetic hint. Deterministic helper for
+        # "how much cashback/rebate at X" queries where memories contain
+        # both a rate and an amount. Computes rate × amount and surfaces
+        # the calculation as a hint. Target: LME-S 9aaed6a3 (SaveMart $0.75
+        # = 1% × $75). Hint-only, never forces commit. Narrow trigger
+        # (cashback/rebate/reward earn patterns) — won't affect non-cashback
+        # questions.
+        cashback_hint_section = ""
+        try:
+            from radiomind.core.arithmetic_hint import cashback_arithmetic_hint
+            cashback_hint_section = cashback_arithmetic_hint(question, mem_results)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -589,6 +603,10 @@ def run(
         # has 'user leads N as <other-role>' claims.
         if role_guard_section:
             ans_prompt = role_guard_section + ans_prompt
+        # V8.2.3a: cashback arithmetic hint injected at the same level
+        # (innermost wrapper). Both are deterministic answer-side helpers.
+        if cashback_hint_section:
+            ans_prompt = cashback_hint_section + ans_prompt
         if atomic_section:
             # Insert BEFORE the memory block so retrieved turns remain the
             # last and most salient context the model sees — atomic facts
