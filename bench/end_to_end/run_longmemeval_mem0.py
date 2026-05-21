@@ -559,6 +559,19 @@ def run(
         except Exception:
             pass
 
+        # V8.3.1: typed-event arithmetic hint — person_age average.
+        # Deterministic helper for the closed kin set {self, mom, dad,
+        # grandma, grandpa} when query asks for the average age across
+        # me + parents + grandparents. Target: LME-S gpt4_d12ceb0e
+        # (mean = 59.6). Hint-only, never forces commit. Refuses when
+        # any kin role is missing or has conflicting ages.
+        person_age_hint_section = ""
+        try:
+            from radiomind.core.typed_event_hint import person_age_average_hint
+            person_age_hint_section = person_age_average_hint(question, mem_results)
+        except Exception:
+            pass
+
         # Attention-driven atomic decomposition: query-time LLM extract
         # over retrieved turns for aggregation queries not served by the
         # cardinal cache (list-enumerations, cross-session narratives).
@@ -607,6 +620,10 @@ def run(
         # (innermost wrapper). Both are deterministic answer-side helpers.
         if cashback_hint_section:
             ans_prompt = cashback_hint_section + ans_prompt
+        # V8.3.1: typed-event hint (person_age average) at the same
+        # innermost-wrapper level as the other deterministic helpers.
+        if person_age_hint_section:
+            ans_prompt = person_age_hint_section + ans_prompt
         if atomic_section:
             # Insert BEFORE the memory block so retrieved turns remain the
             # last and most salient context the model sees — atomic facts
