@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -128,6 +129,8 @@ def _derive_fact_tags(content: str, meta: dict) -> list[str]:
       - date_bearing: contains an explicit date or session_date
       - amount: mentions money
       - ownership: user-ownership verb pattern
+      - temporal_role:relative_marker: contains "a few years ago" etc.
+      - temporal_role:planned_date: contains "next month", "plan to" etc.
     Subclassers can extend. Kept cheap (regex only) — LLM-based tagging
     happens elsewhere (KG, numeric aggregator) and adds its own tags
     via metadata.
@@ -140,6 +143,20 @@ def _derive_fact_tags(content: str, meta: dict) -> list[str]:
         tags.append("amount")
     if _OWN_VERBS_RE.search(text):
         tags.append("ownership")
+    # V7 Step 3 subset: ingest-time temporal role tagging (relative + planned)
+    try:
+        from radiomind.core.temporal_provenance import (
+            detect_temporal_role, extract_relative_phrase,
+        )
+        trole = detect_temporal_role(text)
+        if trole:
+            tags.append(f"temporal_role:{trole}")
+            if trole == "relative_marker":
+                rp = extract_relative_phrase(text)
+                if rp:
+                    meta["relative_phrase"] = rp
+    except Exception:
+        pass
     return tags
 
 
@@ -610,7 +627,11 @@ class RadioMind:
         # if the LLM is unavailable or batch fails.
         if user_turns_for_kg and self._kg is not None:
             triples_by_mid: dict[int, list[tuple[str, str, str]]] = {}
-            if self._llm is not None and self._llm.is_available():
+            # Optional skip for bench runs: when the bench-time LLM hangs on
+            # large KG batches, this env var falls back to per-turn regex KG.
+            _kg_disable = os.environ.get("RADIOMIND_DISABLE_KG_BATCH", "").strip()
+            if (self._llm is not None and self._llm.is_available()
+                    and _kg_disable not in ("1", "true", "yes")):
                 BATCH = 50  # turns per LLM call — ~50 × 400 chars = 20K tokens input
                 for start in range(0, len(user_turns_for_kg), BATCH):
                     chunk = user_turns_for_kg[start : start + BATCH]
@@ -1259,6 +1280,10 @@ class RadioMind:
         final = str(result.get("final_answer") or "").strip()
         if not final or final.lower() in {"insufficient", "none", "unknown"}:
             return ""
+        # V7 Step 1 reset: keep answer_hint trinity-only.
+        # Evidence-candidate injection moved to `run_evidence_candidates`
+        # so it covers ALL query types (including single-hop), not just
+        # date/inference queries that gate this method.
         return (
             f"ATTENTION-ROUTED TRINITY VIEW "
             f"(three opposing stances reconciled; trust this over hedging "
@@ -1294,6 +1319,57 @@ class RadioMind:
             query, retrieved_memories,
             domain=domain, user_id=user_id,
         )
+
+    def run_evidence_candidates(
+        self, query: str, retrieved_memories: list,
+        top_k: int = 5,
+        with_convergence: bool = False,
+    ) -> str:
+        """V7 Step 1 (+ optional Step 2): structured evidence-candidate
+        injection.
+
+        Unlike `run_temporal_precision` / `run_open_domain_specific` which
+        only fire for date/inference queries, this runs for ANY query with
+        retrieved memories. Extracts {candidate, quote, relation,
+        temporal_role, confidence} per query shape and emits a prompt
+        block of candidates for the answerer to choose among.
+
+        Step 1 is zero LLM cost. Set with_convergence=True to add Step 2:
+        when len(candidates) >= 2, run trinity over the candidate set with
+        agent_role='candidate-convergence-resolver' to add a converged
+        answer hint before the candidate list.
+
+        Returns "" when no candidates found.
+        """
+        self._check_init()
+        if not retrieved_memories:
+            return ""
+        try:
+            from radiomind.core.evidence_candidates import (
+                converge_candidates_via_trinity,
+                extract_evidence_candidates,
+                render_evidence_candidates,
+            )
+            candidates = extract_evidence_candidates(
+                query, retrieved_memories, top_k=top_k,
+            )
+            block = render_evidence_candidates(candidates)
+            if with_convergence and len(candidates) >= 2 and self._llm is not None:
+                converged = converge_candidates_via_trinity(
+                    query, candidates, self._llm, min_candidates=2,
+                )
+                if converged and converged.get("final_answer"):
+                    fa = str(converged["final_answer"]).strip()
+                    if fa and fa.lower() not in {"insufficient", "none", "unknown"}:
+                        prefix = (
+                            "CONVERGED ANSWER (three-stance candidate-convergence "
+                            "resolver picked among the candidates below):\n"
+                            f"- {fa}\n\n"
+                        )
+                        block = prefix + block
+            return block
+        except Exception:
+            return ""
 
     # --- Preference context injector ---
 

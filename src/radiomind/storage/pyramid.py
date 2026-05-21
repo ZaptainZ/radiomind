@@ -189,10 +189,38 @@ class PyramidSearch:
                         candidates.append(vec_results)
 
         # 2. FTS5 per query variant
+        fts_total_hits = 0
         for q in queries:
             fts_results = self._store.search_fts(q, limit=max_results * 2)
             if fts_results:
                 candidates.append(fts_results)
+                fts_total_hits += len(fts_results)
+
+        # 2b. V8.2.1 (query-type-selective): OR-expansion FTS — recall path
+        # for "which X" / "where" / "what city/place" queries where the gold
+        # entity (e.g. "Seattle") doesn't appear in the query string itself.
+        # Only triggered on entity-asking query patterns to avoid adding
+        # noise to "what does X do" / "how does X feel" queries that have
+        # rich AND-FTS recall and benefit from candidate-extraction precision.
+        # V8.2 (unconditional FTS-OR) traded +c4 Seattle for -c3 Tilly because
+        # FTS-OR added competing memories that distracted the candidate layer.
+        # V8.2.1 keeps the +c4 win without the -c3 Tilly regression.
+        import re as _re
+        _OR_FTS_TRIGGER = _re.compile(
+            r"\b(which|where|what)\s+(?:\w+\s+){0,2}"
+            r"(city|place|park|location|country|state|town|venue|"
+            r"name|spot|destination|stadium|building|street|neighborhood)\b",
+            _re.IGNORECASE,
+        )
+        try:
+            if hasattr(self._store, "search_fts_or"):
+                for q in queries:
+                    if _OR_FTS_TRIGGER.search(q):
+                        or_results = self._store.search_fts_or(q, limit=max_results * 2)
+                        if or_results:
+                            candidates.append(or_results)
+        except Exception:
+            pass
 
         # 3. LIKE — always run for CJK (unicode61 FTS tokenizes CJK by
         #    punctuation, missing mid-string matches). For ASCII-only

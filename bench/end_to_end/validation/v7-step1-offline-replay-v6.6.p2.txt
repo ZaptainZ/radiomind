@@ -1,0 +1,144 @@
+==========================================================================================
+V7 STEP 1 OFFLINE VALIDATION (replaying V6.6.p2 retrieved memories)
+==========================================================================================
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c1_69a7c9bffe
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    When did Gina get her tattoo?
+GOLD: A few years ago
+  Parsed 3 memories from answer
+  V7 Step 1 candidates (3):
+    1. 'February 08, 2023'                 (temporal_reference       , conf=0.40) [mention_date] ×2
+    2. 'a few years ago'                   (temporal_reference       , conf=0.90) [relative]
+    3. '2023-02-08'                        (temporal_reference       , conf=0.40) [mention_date]
+  Gold tokens: ['ago', 'few', 'few years', 'years']
+  Gold token in candidates: ✓ YES
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c2_29183ecb5e
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    What might John's financial status be?
+GOLD: Middle-class or wealthy
+  Parsed 5 memories from answer
+  V7 Step 1 candidates (2):
+    1. 'broke'                             (state_indicator          , conf=0.70)
+    2. 'strain'                            (state_indicator          , conf=0.70)
+  Gold tokens: ['class', 'middle', 'wealthy']
+  Gold token in candidates: ✗ NO
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c2_b4b43181aa
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    When did Maria take up community work with her church friends?
+GOLD: August 4, 2023
+  Parsed 4 memories from answer
+  V7 Step 1 candidates (4):
+    1. '2023-08-04'                        (temporal_reference       , conf=0.85) [event_date]
+    2. 'August 05, 2023'                   (temporal_reference       , conf=0.85) [event_date]
+    3. 'July 22, 2023'                     (temporal_reference       , conf=0.85) [event_date]
+    4. 'July 17, 2023'                     (temporal_reference       , conf=0.40) [mention_date]
+  Gold tokens: ['2023', 'august']
+  Gold token in candidates: ✓ YES
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c3_2656e2c771
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    How many of Joanna's writing have made it to the big screen?
+GOLD: two
+  Parsed 3 memories from answer
+  V7 Step 1 candidates (2):
+    1. 'third'                             (count_claim              , conf=0.70) ×2
+    2. 'first'                             (count_claim              , conf=0.70)
+  Gold tokens: ['two']
+  Gold token in candidates: ✗ NO
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c3_a9fddfe69b
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    What is Nate's favorite book series about?
+GOLD: dragons
+  Parsed 4 memories from answer
+  V7 Step 1 candidates (8):
+    1. 'battles'                           (topic_keyword            , conf=0.70) ×2
+    2. 'trilogy'                           (topic_keyword            , conf=0.70) ×2
+    3. 'fantasy'                           (topic_keyword            , conf=0.70)
+    4. 'dragons'                           (topic_keyword            , conf=0.70)
+    5. 'adventures'                        (topic_keyword            , conf=0.70)
+    6. 'magic'                             (topic_keyword            , conf=0.70)
+    7. 'world-building'                    (topic_keyword            , conf=0.70)
+    8. 'space'                             (topic_keyword            , conf=0.70)
+  Gold tokens: ['dragons']
+  Gold token in candidates: ✓ YES
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c3_94f06e1a00
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    What does Joanna do while she writes?
+GOLD: have a stuffed animal dog named Tilly with her
+  Parsed 7 memories from answer
+  V7 Step 1 candidates (5):
+    1. 'Image'                             (activity_target          , conf=0.60) ×6
+    2. 'Yeah'                              (activity_target          , conf=0.60)
+    3. 'Here'                              (activity_target          , conf=0.60)
+    4. 'Tilly'                             (activity_target          , conf=0.60)
+    5. 'Writing'                           (activity_target          , conf=0.60)
+  Gold tokens: ['animal', 'dog', 'named', 'stuffed', 'tilly']
+  Gold token in candidates: ✓ YES
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c4_5cfba98ae8
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    Which city is John excited to have a game at?
+GOLD: Seattle
+  Parsed 7 memories from answer
+  V7 Step 1 candidates (3):
+    1. 'Chicago'                           (proper_noun_in_context   , conf=0.75)
+    2. 'New York City'                     (proper_noun_in_context   , conf=0.75)
+    3. 'Barcelona'                         (proper_noun_in_context   , conf=0.60)
+  Gold tokens: ['seattle']
+  Gold token in candidates: ✗ NO
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c5_dac00a436e
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    Which national park could Audrey and Andrew be referring to in their conversations?
+GOLD: Voyageurs National Park
+  Parsed 4 memories from answer
+  V7 Step 1 candidates (2):
+    1. 'Here'                              (proper_noun_in_context   , conf=0.75)
+    2. 'Last Friday'                       (proper_noun_in_context   , conf=0.60)
+  Gold tokens: ['national', 'park', 'voyageurs']
+  Gold token in candidates: ✗ NO
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c6_9da9f73c2a
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    When did John plan his next meeting with his siblings?
+GOLD: In September, 2022
+  Parsed 4 memories from answer
+  V7 Step 1 candidates (2):
+    1. 'August 21, 2022'                   (temporal_reference       , conf=0.85) [mention_date] ×2
+    2. 'August 26, 2022'                   (temporal_reference       , conf=0.40) [mention_date] ×2
+  Gold tokens: ['2022', 'september']
+  Gold token in candidates: ✓ YES
+
+──────────────────────────────────────────────────────────────────────────────────────────
+[V6.6.p2-replay] c9_5ab522b5c7
+──────────────────────────────────────────────────────────────────────────────────────────
+Q:    What do Calvin and Dave use to reach their goals?
+GOLD: Hard work and determination
+  Parsed 0 memories from answer
+  V7 Step 1 candidates (0):
+  Gold tokens: ['determination', 'hard', 'work']
+  Gold token in candidates: ✗ NO
+
+==========================================================================================
+AGGREGATE
+==========================================================================================
+  Gold-token hit in candidate set: 5/10
+
+Interpretation: this measures whether Step 1's deterministic
+extraction surfaces the gold answer's key token AT ALL in the
+candidate list. It does NOT measure whether the answerer LLM
+picks the right candidate — that requires live LLM eval.

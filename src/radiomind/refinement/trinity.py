@@ -52,7 +52,96 @@ import re
 from typing import Any
 
 
-_PROMPT = """You triangulate an answer by arguing from {n_stances} distinct opposing stances.
+# Agent role library. Each role is an "agent 侧写" — telling the LLM
+# WHO it is and WHAT TASK it is performing in this trinity call.
+# This is RadioMind's "agent 侧写" methodology elevated to a first-class
+# trinity parameter. Without it, trinity.debate defaults to the V5
+# "answerer" role whose prompt instructs LLM to abstain on thin evidence
+# — which silently broke V6.5 question-intent trinity (the LLM thought
+# it was answering, not decomposing).
+_AGENT_ROLES: dict[str, str] = {
+    "answerer": (
+        "You triangulate an answer by arguing from {n_stances} distinct opposing "
+        "stances. The task names a question to ANSWER; the evidence is your "
+        "source of truth. When stances partially agree, synthesize; when "
+        "evidence is thin, abstain (\"insufficient\")."
+    ),
+    "candidate-convergence-resolver": (
+        "You are a CANDIDATE CONVERGENCE RESOLVER. The task already provides "
+        "{n_stances} answer candidates extracted from memories (the 'Evidence' "
+        "block). Each candidate is a possible answer with confidence and "
+        "supporting quote.\n"
+        "\n"
+        "YOUR ROLE: Pick the single best candidate (or synthesize a final "
+        "answer that draws ONLY from listed candidates). You are NOT the "
+        "evidence retriever — do not re-derive from raw memories. The "
+        "candidates are the anchor.\n"
+        "\n"
+        "STANCE ASSIGNMENTS (use these three perspectives):\n"
+        "1. CONSERVATIVE-EVIDENCE-ONLY: pick the candidate whose quote most "
+        "directly states the answer in literal form. Reject candidates that "
+        "require inference.\n"
+        "2. INFERENTIAL-ALLOWED: pick the candidate whose quote best supports "
+        "the answer under plausible reasoning (e.g. 'next month' → planned "
+        "date). May combine 2 candidates.\n"
+        "3. EXACT-QUOTE-REQUIRED: only accept a candidate whose quote contains "
+        "the answer phrase verbatim or as a direct stated fact.\n"
+        "\n"
+        "If two of three stances agree on a candidate, that is the converged "
+        "answer. If all three diverge, pick the highest source_count candidate. "
+        "Abstain ONLY if zero candidates fit (very rare — there is always one "
+        "best-of-set choice)."
+    ),
+    "question-intent-analyzer": (
+        "You are a QUESTION INTENT ANALYZER — a LINGUIST examining the "
+        "structure and intent of a question, NOT an answerer.\n"
+        "\n"
+        "ROLE BOUNDARY (read carefully):\n"
+        "- The text under 'Question:' is the OBJECT you analyze, like a "
+        "sentence handed to a syntactician. It is NOT a question directed "
+        "at you to answer.\n"
+        "- Your output describes the SHAPE the answer should take "
+        "(granularity, form, focus_entity_type). You produce ZERO answer "
+        "content. You never name the answer, never guess at the answer, "
+        "never assess whether the answer is knowable.\n"
+        "- 'Evidence: (question-only)' is BY DESIGN. Memory/context is "
+        "IRRELEVANT to your task — you analyze the question IN ISOLATION. "
+        "If you find yourself thinking 'but I don't have enough info to "
+        "answer', STOP — that is the answerer's worry, not yours.\n"
+        "\n"
+        "HARD CONSTRAINTS (your output is REJECTED if violated):\n"
+        "1. NEVER output 'insufficient', 'unanswerable', 'cannot determine', "
+        "or similar in final_answer. Every question has a characterizable "
+        "intent. Example: even 'tell me something' has intent "
+        "(granularity=description, form=sentence).\n"
+        "2. Each stance MUST analyze a DIMENSION of question intent "
+        "(literal form / semantic intent / answer shape / temporal "
+        "precision / etc.). FORBIDDEN stance themes: 'Missing entity', "
+        "'Ambiguity Critique', 'Skeptic', 'Insufficient context', "
+        "'Cannot resolve'. These are answerer concerns. Reject them.\n"
+        "3. final_answer must be a CHARACTERIZATION of the question "
+        "(what shape of answer it expects), e.g. 'asks for an integer "
+        "count of distinct items', NOT a refusal.\n"
+        "\n"
+        "EXAMPLES OF CORRECT ROLE EXECUTION:\n"
+        "  Q: 'What is X's favorite book series about?'\n"
+        "  ✓ granularity=concept, form=topic, focus_entity_type=book_series\n"
+        "  ✓ final_answer='asks for the theme/subject matter of a series'\n"
+        "  ✗ NOT 'cannot determine without knowing who X is'\n"
+        "\n"
+        "  Q: 'How many of X's writings made the big screen?'\n"
+        "  ✓ granularity=specific_entity, form=integer, focus_entity_type=count\n"
+        "  ✓ final_answer='asks for a cardinal count of film adaptations'\n"
+        "  ✗ NOT 'insufficient — unclear which X'\n"
+        "\n"
+        "Your output is consumed by a DOWNSTREAM answerer agent that DOES "
+        "have memory. You tell that agent what shape of answer to produce; "
+        "the agent handles the rest. STAY IN YOUR LANE."
+    ),
+}
+
+
+_PROMPT = """{agent_role_preamble}
 
 Task: {task}
 
@@ -68,8 +157,7 @@ Work in three passes:
    probability that ITS conclusion is correct. Low individual confidence
    signals to upstream layers that the stance may benefit from deeper
    sub-debate.
-3. Reconcile into one final answer. When stances partially agree,
-   synthesize; when evidence is thin, abstain ("insufficient"). Always
+3. Reconcile into one final answer per your role above. Always
    include an overall `confidence` (0..1) field — your honest probability
    that the final_answer is correct.
 
@@ -83,7 +171,9 @@ Return STRICT JSON only with these keys{extra_keys_summary}:
 }}"""
 
 
-_REFINE_PROMPT = """You are in REFINEMENT ROUND {round_idx} of a multi-round trinity debate ({n_stances} stances).
+_REFINE_PROMPT = """{agent_role_preamble}
+
+You are in REFINEMENT ROUND {round_idx} of a multi-round trinity debate ({n_stances} stances).
 
 Task: {task}
 
@@ -213,6 +303,7 @@ def debate(
     n_stances: int = 3,
     sub_trinity_depth: int = 0,
     sub_trinity_threshold: float = 0.5,
+    agent_role: str = "answerer",
 ) -> dict | None:
     """Run an N-stance debate and return parsed JSON.
 
@@ -255,8 +346,19 @@ def debate(
     extra_keys_summary, extra_schema_block = _format_extra(extra_schema)
     stance_block = _stance_template_block(n_stances)
 
+    # Resolve agent_role to its preamble (agent 侧写). Unknown role
+    # values fall back to the default "answerer" role — callers can
+    # pass a literal preamble string instead of a registered role
+    # name if they need a one-off custom侧写.
+    if agent_role in _AGENT_ROLES:
+        agent_role_preamble = _AGENT_ROLES[agent_role].format(n_stances=n_stances)
+    else:
+        # Treat as literal preamble (caller-supplied custom role text).
+        agent_role_preamble = agent_role
+
     # --- Round 1 ---
     prompt_r1 = _PROMPT.format(
+        agent_role_preamble=agent_role_preamble,
         n_stances=n_stances,
         task=task,
         evidence=evidence[:max_evidence_chars],
@@ -295,6 +397,7 @@ def debate(
         except (TypeError, ValueError):
             prior_conf = 0.0
         prompt_rN = _REFINE_PROMPT.format(
+            agent_role_preamble=agent_role_preamble,
             n_stances=n_stances,
             round_idx=round_idx,
             prior_idx=round_idx - 1,

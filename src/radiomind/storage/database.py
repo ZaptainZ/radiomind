@@ -446,6 +446,55 @@ class MemoryStore:
             for r in rows
         ]
 
+    # V8.2: OR-expansion FTS for "which X" queries where the answer entity
+    # doesn't appear in the query string itself. Default search_fts is AND
+    # over all query tokens — for "Which city is John excited to have a
+    # game at?" no memory matches ALL tokens, so it returns 0. This OR
+    # variant returns memories matching ANY content word (stopwords filtered),
+    # ranked by FTS5 BM25, providing recall coverage for entity-bearing
+    # memories that semantic search may miss.
+    _STOPWORDS = frozenset({
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "to", "of", "in", "on",
+        "at", "by", "for", "with", "from", "as", "it", "its", "this", "that",
+        "these", "those", "and", "or", "but", "if", "while", "when", "where",
+        "what", "which", "who", "whom", "whose", "how", "why",
+        "can", "could", "will", "would", "should", "may", "might", "must",
+        "i", "you", "he", "she", "they", "we", "me", "him", "her", "them", "us",
+        "my", "your", "his", "their", "our",
+    })
+
+    def search_fts_or(self, query: str, limit: int = 10) -> list[SearchResult]:
+        """FTS with OR over content words (skips stopwords).
+
+        Provides recall when default AND query returns 0 (typical for
+        "which X" questions where the gold entity doesn't appear in the
+        query). Returns BM25-ranked memories matching ANY content word.
+        """
+        import re as _re
+        words = [
+            w for w in _re.findall(r"\w{3,}", query.lower())
+            if w not in self._STOPWORDS
+        ]
+        if not words:
+            return []
+        # FTS5 OR syntax: word1 OR word2 OR ...
+        fts_query = " OR ".join(f'"{w}"' for w in words)
+        try:
+            rows = self.conn.execute(
+                """SELECT m.*, rank FROM memories_fts
+                   JOIN memories m ON memories_fts.rowid = m.id
+                   WHERE memories_fts MATCH ? AND m.status = 'active'
+                   ORDER BY rank LIMIT ?""",
+                (fts_query, limit),
+            ).fetchall()
+        except Exception:
+            return []
+        return [
+            SearchResult(entry=self._row_to_entry(r), score=-r["rank"], method="fts_or")
+            for r in rows
+        ]
+
     def search_vector(
         self, query_embedding: bytes, limit: int = 10, min_score: float = 0.3
     ) -> list[SearchResult]:

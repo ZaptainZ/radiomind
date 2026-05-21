@@ -69,6 +69,12 @@ class DashScopeEmbedder:
             return None
 
     def encode_batch(self, texts: list[str], max_workers: int = 5) -> list[bytes | None]:
+        # Workaround for SSL hang seen on some macOS / Aliyun network paths:
+        # set RADIOMIND_EMBED_WORKERS=1 to serialize embeddings (slow but stable).
+        import os as _os
+        _ew = _os.environ.get("RADIOMIND_EMBED_WORKERS", "").strip()
+        if _ew.isdigit():
+            max_workers = max(1, int(_ew))
         """Batched + parallel encode — 10-50× faster than per-text loop.
 
         DashScope API limits batch size to 10 texts per request. We chunk

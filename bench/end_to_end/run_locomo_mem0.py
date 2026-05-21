@@ -138,6 +138,7 @@ def run(
     use_refinement: bool = True,
     categories: tuple[int, ...] = (1, 2, 3, 4),
     checkpoint_path: Path | None = None,
+    qids_filter: set[str] | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
@@ -188,6 +189,24 @@ def run(
         for qa in conv.get("qa", []):
             if qa.get("category") in categories and qa.get("answer") is not None:
                 flat.append((conv_idx, qa))
+
+    # V6.5.1 smoke: optional qid filter — when set, skip stratified
+    # sampling and run only the specified qids (typically the flip-up
+    # / flip-down qids from a prior run to verify a targeted fix).
+    if qids_filter:
+        import hashlib as _hashlib
+        def _qid_of(conv_idx, qa):
+            q = qa.get("question", "")
+            h = _hashlib.md5(q.encode()).hexdigest()[:10]
+            return f"c{conv_idx}_{h}"
+        before = len(flat)
+        flat = [x for x in flat if _qid_of(x[0], x[1]) in qids_filter]
+        print(
+            f"  [qids-filter] kept {len(flat)}/{before} matching "
+            f"{len(qids_filter)} requested qids",
+            flush=True,
+        )
+        n_questions = 0  # disable stratified sampling
 
     if n_questions > 0 and n_questions < len(flat):
         import random
@@ -411,9 +430,37 @@ def run(
         except Exception:
             pass
 
+        # V7 Step 1: evidence-candidate injection (deterministic, zero LLM
+        # cost, fires for ALL queries with retrieved memories). Replaces
+        # V6.6.p2 dominant-signal hint with first-class candidate evidence.
+        evidence_section = ""
+        try:
+            evidence_section = mind.run_evidence_candidates(
+                query=question, retrieved_memories=mem_results,
+            )
+        except Exception:
+            pass
+
         profile_section = ""
         try:
             profile_section = mind.profile_hint(query=question)
+        except Exception:
+            pass
+
+        # V8.2.2a: role/title mismatch guard. Deterministic regex check.
+        # See run_longmemeval_mem0.py for full design rationale.
+        role_guard_section = ""
+        try:
+            from radiomind.core.role_mismatch_guard import role_mismatch_guard
+            role_guard_section = role_mismatch_guard(question, mem_results)
+        except Exception:
+            pass
+
+        # V8.2.3a: cashback arithmetic hint (cross-bench consistent).
+        cashback_hint_section = ""
+        try:
+            from radiomind.core.arithmetic_hint import cashback_arithmetic_hint
+            cashback_hint_section = cashback_arithmetic_hint(question, mem_results)
         except Exception:
             pass
 
@@ -445,6 +492,12 @@ def run(
             question=question, search_results=mem_results,
             reference_date=ref_human,
         )
+        # V8.2.2a: role guard innermost (between memories and other sections)
+        if role_guard_section:
+            ans_prompt = role_guard_section + ans_prompt
+        # V8.2.3a: cashback arithmetic hint
+        if cashback_hint_section:
+            ans_prompt = cashback_hint_section + ans_prompt
         if atomic_section:
             ans_prompt = atomic_section + ans_prompt
         if cardinal_section:
@@ -453,8 +506,11 @@ def run(
             ans_prompt = temporal_section + ans_prompt
         if open_domain_section:
             ans_prompt = open_domain_section + ans_prompt
+        if evidence_section:
+            ans_prompt = evidence_section + ans_prompt
         if profile_section:
             ans_prompt = profile_section + ans_prompt
+        # (role_guard already injected innermost — between memories and other sections)
         # Meta calibration directive (self-observation → answer bias correction).
         # Appended after Mem0's verbatim prompt so base rules still apply.
         calibration = mind.get_meta_calibration()
@@ -482,6 +538,14 @@ def run(
                 salvage = sv.salvage(question, answer, results[:40])
                 if salvage and salvage.committed:
                     answer = salvage.answer
+        except Exception:
+            pass
+
+        # V8.2.2b: role mismatch post-rewrite. When guard fired and LLM still
+        # committed numeric specifics, rewrite to canonical abstain.
+        try:
+            from radiomind.core.role_mismatch_guard import maybe_rewrite_with_guard
+            answer = maybe_rewrite_with_guard(question, mem_results, answer)
         except Exception:
             pass
 
@@ -529,7 +593,7 @@ def run(
 
         record = {
             "question_id": qid,
-            "q": question, "gold": processed_answer, "answer": answer[:2000],
+            "q": question, "gold": processed_answer, "answer": answer,
             "correct": is_correct, "category": cat_name,
             "verdict_tail": verdict[-200:],
             "n_retrieved": len(results),
@@ -590,6 +654,8 @@ def main() -> int:
     p.add_argument("--out", default="bench/end_to_end/locomo-mem0proto.json")
     p.add_argument("--checkpoint", default="",
                    help="Checkpoint .jsonl path. Appends per-question results; resume via same path. Default <out>.checkpoint.jsonl")
+    p.add_argument("--qids", default="",
+                   help="Comma-separated qid list (LoCoMo qid format c{conv_idx}_{md5_10}). When set, runs only these qids and skips stratified sampling — for V6.5.1+ targeted smoke validation.")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -618,6 +684,10 @@ def main() -> int:
     use_agentic = args.agentic
 
     cp_path = Path(args.checkpoint) if args.checkpoint else Path(args.out + ".checkpoint.jsonl")
+    qids_set = (
+        {s.strip() for s in args.qids.split(",") if s.strip()}
+        if args.qids else None
+    )
     report = run(
         Path(args.sandbox), args.n,
         answer_model=args.answer_model, judge_model=args.judge_model,
@@ -628,6 +698,7 @@ def main() -> int:
         use_refinement=not args.no_refinement,
         categories=cats,
         checkpoint_path=cp_path,
+        qids_filter=qids_set,
     )
     report["benchmark_mode"] = mode
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
