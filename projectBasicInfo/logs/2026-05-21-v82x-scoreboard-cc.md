@@ -98,7 +98,7 @@ if merchant is None:
 
 ```
 分支: v7-evidence-candidates
-HEAD: b80c732 V8.2.3a: cashback arithmetic helper
+HEAD: 8f8ea40 V8.2.3a Codex follow-up guard + V8.2.x scoreboard log
 ```
 
 V8.2.x 系列已达到 Codex 设计原则的稳定状态：narrow helpers + zero blast + deterministic + 已 fail-classified。
