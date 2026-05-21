@@ -126,6 +126,11 @@ def _find_merchant_amount(
 
     Looks for patterns like "$75 at SaveMart" or "spent $75 ... SaveMart".
     If merchant given, prefer memories mentioning that merchant.
+
+    Safety guard (Codex follow-up): when merchant is None AND the unscoped
+    memories contain multiple distinct $ amounts, return None — we cannot
+    safely pick one without merchant anchoring, so refuse to hint rather
+    than risk a wrong product.
     """
     if merchant:
         # Filter memories containing merchant
@@ -134,6 +139,19 @@ def _find_merchant_amount(
             cand = mem_texts
     else:
         cand = mem_texts
+        # Codex guard: refuse to pick when merchant is None and memories
+        # have multiple distinct amounts ≥ $5 (likely unrelated spends).
+        all_amts: set[float] = set()
+        for t in cand:
+            for m in _AMOUNT_RE.finditer(t):
+                try:
+                    v = _parse_amount(m.group(1))
+                except ValueError:
+                    continue
+                if v >= 5:
+                    all_amts.add(round(v, 2))
+        if len(all_amts) >= 2:
+            return None  # ambiguous — refuse hint
 
     # Look for the user's spend amount — prefer "$N" near "spent" / "groceries"
     spend_kw = re.compile(

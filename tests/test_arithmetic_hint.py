@@ -205,3 +205,43 @@ class TestEdgeCases:
         assert hint
         # 5% × 123.45 = 6.1725 → rounds to $6.17
         assert "$6.17" in hint
+
+
+class TestCodexMerchantAmbiguityGuard:
+    """Codex follow-up: when no merchant + multiple amounts, refuse hint."""
+
+    def test_no_merchant_multi_amount_refuses(self):
+        """Question has no merchant + memories have multiple distinct $ amounts
+        → can't safely pick one → no hint."""
+        q = "How much cashback did I earn?"  # no merchant
+        mems = [
+            mem("I have 1% cashback membership."),
+            mem("Spent $75 on groceries."),
+            mem("Spent $30 on coffee."),
+            mem("Spent $200 on electronics."),
+        ]
+        assert cashback_arithmetic_hint(q, mems) == ""
+
+    def test_no_merchant_single_amount_still_works(self):
+        """Question has no merchant but only ONE $ amount → can safely hint."""
+        q = "How much cashback did I earn?"
+        mems = [
+            mem("I have 2% cashback."),
+            mem("Spent $50 at the store."),
+        ]
+        hint = cashback_arithmetic_hint(q, mems)
+        assert hint  # single amount, safe to compute
+        assert "$1" in hint  # 2% × $50 = $1
+
+    def test_merchant_multi_amount_still_works(self):
+        """Question has merchant; even multi-amount memories OK if merchant filters."""
+        q = "How much cashback did I earn at SaveMart?"
+        mems = [
+            mem("I have 1% cashback at SaveMart."),
+            mem("Spent $75 at SaveMart."),
+            mem("Spent $30 at Starbucks."),
+            mem("Spent $200 at Best Buy."),
+        ]
+        hint = cashback_arithmetic_hint(q, mems)
+        assert hint  # merchant filter narrows to SaveMart
+        assert "$0.75" in hint
