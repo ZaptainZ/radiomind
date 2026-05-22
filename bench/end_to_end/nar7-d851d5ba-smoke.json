@@ -1,0 +1,40 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 1,
+  "total_ingested_turns": 533,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 818.8,
+  "overall_accuracy": 1.0,
+  "model_correct": 1,
+  "judged_n": 1,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "multi-session": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "<mem_thinking>\nThe user asks: \"How much money did I raise for charity in total?\"\n\nI need to enumerate all charity fundraising events mentioned in the memories, sum the amounts, and ensure they are explicitly for charity.\n\nFirst, I'll scan all memories for mentions of raising money/donations for charity. I'll list each event with amount, date, and source.\n\nFrom the DRAFT CARDINAL VIEW provided, the",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": " concept, which is the total amount raised for charity.\n\nTherefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
