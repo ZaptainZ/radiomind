@@ -1,0 +1,664 @@
+{
+  "qid": "d851d5ba",
+  "n_runs": 5,
+  "summaries": [
+    {
+      "iteration": 1,
+      "ingest_elapsed_s": 873.142175912857,
+      "stats": {
+        "ingested": 533,
+        "kg_triples": 176,
+        "domains": [
+          "nar1"
+        ],
+        "aggregations": {
+          "nar1": 2
+        },
+        "cardinal_updates": {
+          "nar1": 9
+        },
+        "temporal_anchors": 50,
+        "profile_fragments": 274,
+        "refinement_insights": {}
+      },
+      "n_classes": 9,
+      "charity": {
+        "count": 6,
+        "total_amount": 6750.0,
+        "gold_hit": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "events": [
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm looking for some tips on how to stay motivated to exercise regularly. I've been doing pretty well so far, but I want to keep the ",
+            "turn_id": "answer_5cdf9bd2_2_t0",
+            "delta": "+$1000.00",
+            "reason": "amount",
+            "gold_idx": 1
+          },
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm thinking about fundraising strategies for my cycling event. I've had some experience with fundraising in the past, like when I he",
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "delta": "+$1000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 1
+          },
+          {
+            "amount": 250.0,
+            "phrase": "[user] I'm looking for some advice on finding volunteer opportunities in my area. I've been trying to attend at least one charity event per ",
+            "turn_id": "answer_5cdf9bd2_1_t0",
+            "delta": "+$250.00",
+            "reason": "amount",
+            "gold_idx": 2
+          },
+          {
+            "amount": 500.0,
+            "phrase": "[user] I'm planning to participate in another charity run soon, do you have any tips on how to stay motivated during training? By the way, I",
+            "turn_id": "answer_5cdf9bd2_3_t0",
+            "delta": "+$500.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 3
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm planning to participate in a charity cycling event next month and I want to make sure I'm prepared. Can you give me some tips on ",
+            "turn_id": "answer_5cdf9bd2_4_t0",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm glad you provided those tips. I've had some experience with fundraising, like I said, I helped raise over $2,000 for a local anim",
+            "turn_id": "answer_5cdf9bd2_4_t6",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          }
+        ],
+        "scoped_total_from_events": 6750.0
+      },
+      "missing_gold": [],
+      "all_classes_summary": [
+        {
+          "class": "vehicles",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "electronics",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "pets",
+          "count": 4,
+          "total_amount": null
+        },
+        {
+          "class": "charity_donations",
+          "count": 6,
+          "total_amount": 6750.0
+        },
+        {
+          "class": "books_read",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "clothing_items",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "savings_events",
+          "count": 1,
+          "total_amount": 20.0
+        },
+        {
+          "class": "musical_instruments",
+          "count": 3,
+          "total_amount": null
+        },
+        {
+          "class": "amount_events",
+          "count": 3,
+          "total_amount": 5000.0
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "ingest_elapsed_s": 810.7312970161438,
+      "stats": {
+        "ingested": 533,
+        "kg_triples": 98,
+        "domains": [
+          "nar1"
+        ],
+        "aggregations": {
+          "nar1": 2
+        },
+        "cardinal_updates": {
+          "nar1": 9
+        },
+        "temporal_anchors": 49,
+        "profile_fragments": 258,
+        "refinement_insights": {}
+      },
+      "n_classes": 9,
+      "charity": {
+        "count": 6,
+        "total_amount": 6750.0,
+        "gold_hit": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "events": [
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm looking for some tips on how to stay motivated to exercise regularly. I've been doing pretty well so far, but I want to keep the ",
+            "turn_id": "answer_5cdf9bd2_2_t0",
+            "delta": "+$1000.00",
+            "reason": "amount",
+            "gold_idx": 1
+          },
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm thinking about fundraising strategies for my cycling event. I've had some experience with fundraising in the past, like when I he",
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "delta": "+$1000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 1
+          },
+          {
+            "amount": 250.0,
+            "phrase": "[user] I'm looking for some advice on finding volunteer opportunities in my area. I've been trying to attend at least one charity event per ",
+            "turn_id": "answer_5cdf9bd2_1_t0",
+            "delta": "+$250.00",
+            "reason": "amount",
+            "gold_idx": 2
+          },
+          {
+            "amount": 500.0,
+            "phrase": "[user] I'm planning to participate in another charity run soon, do you have any tips on how to stay motivated during training? By the way, I",
+            "turn_id": "answer_5cdf9bd2_3_t0",
+            "delta": "+$500.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 3
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm planning to participate in a charity cycling event next month and I want to make sure I'm prepared. Can you give me some tips on ",
+            "turn_id": "answer_5cdf9bd2_4_t0",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm glad you provided those tips. I've had some experience with fundraising, like I said, I helped raise over $2,000 for a local anim",
+            "turn_id": "answer_5cdf9bd2_4_t6",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          }
+        ],
+        "scoped_total_from_events": 6750.0
+      },
+      "missing_gold": [],
+      "all_classes_summary": [
+        {
+          "class": "vehicles",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "electronics",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "pets",
+          "count": 4,
+          "total_amount": null
+        },
+        {
+          "class": "charity_donations",
+          "count": 6,
+          "total_amount": 6750.0
+        },
+        {
+          "class": "books_read",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "clothing_items",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "savings_events",
+          "count": 1,
+          "total_amount": 20.0
+        },
+        {
+          "class": "musical_instruments",
+          "count": 3,
+          "total_amount": null
+        },
+        {
+          "class": "amount_events",
+          "count": 3,
+          "total_amount": 5000.0
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "ingest_elapsed_s": 818.6324498653412,
+      "stats": {
+        "ingested": 533,
+        "kg_triples": 81,
+        "domains": [
+          "nar1"
+        ],
+        "aggregations": {
+          "nar1": 2
+        },
+        "cardinal_updates": {
+          "nar1": 9
+        },
+        "temporal_anchors": 52,
+        "profile_fragments": 280,
+        "refinement_insights": {}
+      },
+      "n_classes": 9,
+      "charity": {
+        "count": 6,
+        "total_amount": 6750.0,
+        "gold_hit": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "events": [
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm looking for some tips on how to stay motivated to exercise regularly. I've been doing pretty well so far, but I want to keep the ",
+            "turn_id": "answer_5cdf9bd2_2_t0",
+            "delta": "+$1000.00",
+            "reason": "amount",
+            "gold_idx": 1
+          },
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm thinking about fundraising strategies for my cycling event. I've had some experience with fundraising in the past, like when I he",
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "delta": "+$1000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 1
+          },
+          {
+            "amount": 250.0,
+            "phrase": "[user] I'm looking for some advice on finding volunteer opportunities in my area. I've been trying to attend at least one charity event per ",
+            "turn_id": "answer_5cdf9bd2_1_t0",
+            "delta": "+$250.00",
+            "reason": "amount",
+            "gold_idx": 2
+          },
+          {
+            "amount": 500.0,
+            "phrase": "[user] I'm planning to participate in another charity run soon, do you have any tips on how to stay motivated during training? By the way, I",
+            "turn_id": "answer_5cdf9bd2_3_t0",
+            "delta": "+$500.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 3
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm planning to participate in a charity cycling event next month and I want to make sure I'm prepared. Can you give me some tips on ",
+            "turn_id": "answer_5cdf9bd2_4_t0",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm glad you provided those tips. I've had some experience with fundraising, like I said, I helped raise over $2,000 for a local anim",
+            "turn_id": "answer_5cdf9bd2_4_t6",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          }
+        ],
+        "scoped_total_from_events": 6750.0
+      },
+      "missing_gold": [],
+      "all_classes_summary": [
+        {
+          "class": "vehicles",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "electronics",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "pets",
+          "count": 4,
+          "total_amount": null
+        },
+        {
+          "class": "charity_donations",
+          "count": 6,
+          "total_amount": 6750.0
+        },
+        {
+          "class": "books_read",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "clothing_items",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "savings_events",
+          "count": 1,
+          "total_amount": 20.0
+        },
+        {
+          "class": "musical_instruments",
+          "count": 3,
+          "total_amount": null
+        },
+        {
+          "class": "amount_events",
+          "count": 3,
+          "total_amount": 5000.0
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "ingest_elapsed_s": 835.9352521896362,
+      "stats": {
+        "ingested": 533,
+        "kg_triples": 261,
+        "domains": [
+          "nar1"
+        ],
+        "aggregations": {
+          "nar1": 1
+        },
+        "cardinal_updates": {
+          "nar1": 9
+        },
+        "temporal_anchors": 66,
+        "profile_fragments": 271,
+        "refinement_insights": {}
+      },
+      "n_classes": 9,
+      "charity": {
+        "count": 7,
+        "total_amount": 11750.0,
+        "gold_hit": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "events": [
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm looking for some tips on how to stay motivated to exercise regularly. I've been doing pretty well so far, but I want to keep the ",
+            "turn_id": "answer_5cdf9bd2_2_t0",
+            "delta": "+$1000.00",
+            "reason": "amount",
+            "gold_idx": 1
+          },
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm thinking about fundraising strategies for my cycling event. I've had some experience with fundraising in the past, like when I he",
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "delta": "+$1000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 1
+          },
+          {
+            "amount": 250.0,
+            "phrase": "[user] I'm looking for some advice on finding volunteer opportunities in my area. I've been trying to attend at least one charity event per ",
+            "turn_id": "answer_5cdf9bd2_1_t0",
+            "delta": "+$250.00",
+            "reason": "amount",
+            "gold_idx": 2
+          },
+          {
+            "amount": 500.0,
+            "phrase": "[user] I'm planning to participate in another charity run soon, do you have any tips on how to stay motivated during training? By the way, I",
+            "turn_id": "answer_5cdf9bd2_3_t0",
+            "delta": "+$500.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 3
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm planning to participate in a charity cycling event next month and I want to make sure I'm prepared. Can you give me some tips on ",
+            "turn_id": "answer_5cdf9bd2_4_t0",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm glad you provided those tips. I've had some experience with fundraising, like I said, I helped raise over $2,000 for a local anim",
+            "turn_id": "answer_5cdf9bd2_4_t6",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 5000.0,
+            "phrase": "[user] I actually helped organize a music benefit concert at the Independent back in April, which was a huge success and raised over $5,000 ",
+            "turn_id": "d77d4ac9_1_t6",
+            "delta": "+$5000.00",
+            "reason": "amount",
+            "gold_idx": null
+          }
+        ],
+        "scoped_total_from_events": 11750.0
+      },
+      "missing_gold": [],
+      "all_classes_summary": [
+        {
+          "class": "vehicles",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "electronics",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "pets",
+          "count": 4,
+          "total_amount": null
+        },
+        {
+          "class": "charity_donations",
+          "count": 7,
+          "total_amount": 11750.0
+        },
+        {
+          "class": "books_read",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "clothing_items",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "savings_events",
+          "count": 1,
+          "total_amount": 20.0
+        },
+        {
+          "class": "musical_instruments",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "amount_events",
+          "count": 3,
+          "total_amount": 5000.0
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "ingest_elapsed_s": 772.446268081665,
+      "stats": {
+        "ingested": 533,
+        "kg_triples": 143,
+        "domains": [
+          "nar1"
+        ],
+        "aggregations": {
+          "nar1": 2
+        },
+        "cardinal_updates": {
+          "nar1": 9
+        },
+        "temporal_anchors": 48,
+        "profile_fragments": 271,
+        "refinement_insights": {}
+      },
+      "n_classes": 9,
+      "charity": {
+        "count": 6,
+        "total_amount": 6750.0,
+        "gold_hit": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "events": [
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm looking for some tips on how to stay motivated to exercise regularly. I've been doing pretty well so far, but I want to keep the ",
+            "turn_id": "answer_5cdf9bd2_2_t0",
+            "delta": "+$1000.00",
+            "reason": "amount",
+            "gold_idx": 1
+          },
+          {
+            "amount": 1000.0,
+            "phrase": "[user] I'm thinking about fundraising strategies for my cycling event. I've had some experience with fundraising in the past, like when I he",
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "delta": "+$1000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 1
+          },
+          {
+            "amount": 250.0,
+            "phrase": "[user] I'm looking for some advice on finding volunteer opportunities in my area. I've been trying to attend at least one charity event per ",
+            "turn_id": "answer_5cdf9bd2_1_t0",
+            "delta": "+$250.00",
+            "reason": "amount",
+            "gold_idx": 2
+          },
+          {
+            "amount": 500.0,
+            "phrase": "[user] I'm planning to participate in another charity run soon, do you have any tips on how to stay motivated during training? By the way, I",
+            "turn_id": "answer_5cdf9bd2_3_t0",
+            "delta": "+$500.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 3
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm planning to participate in a charity cycling event next month and I want to make sure I'm prepared. Can you give me some tips on ",
+            "turn_id": "answer_5cdf9bd2_4_t0",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          },
+          {
+            "amount": 2000.0,
+            "phrase": "[user] I'm glad you provided those tips. I've had some experience with fundraising, like I said, I helped raise over $2,000 for a local anim",
+            "turn_id": "answer_5cdf9bd2_4_t6",
+            "delta": "+$2000.00",
+            "reason": "amount_charity_det",
+            "gold_idx": 4
+          }
+        ],
+        "scoped_total_from_events": 6750.0
+      },
+      "missing_gold": [],
+      "all_classes_summary": [
+        {
+          "class": "vehicles",
+          "count": 2,
+          "total_amount": null
+        },
+        {
+          "class": "electronics",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "pets",
+          "count": 4,
+          "total_amount": null
+        },
+        {
+          "class": "charity_donations",
+          "count": 6,
+          "total_amount": 6750.0
+        },
+        {
+          "class": "books_read",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "clothing_items",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "savings_events",
+          "count": 1,
+          "total_amount": 20.0
+        },
+        {
+          "class": "musical_instruments",
+          "count": 1,
+          "total_amount": null
+        },
+        {
+          "class": "amount_events",
+          "count": 3,
+          "total_amount": 5000.0
+        }
+      ]
+    }
+  ]
+}
