@@ -102,6 +102,194 @@ DISPOSE_PATTERNS = [
     re.compile(r"我(?:卖了|送掉了?|丢了|扔了|退了|不再使用|不再有)\s*(.{1,40}?)(?:[，。！？,\.\!\?]|$)"),
 ]
 
+# ─────────────────────────────────────────────────────────────────────────────
+# NAR-3: Deterministic charity-context recognizer
+# ─────────────────────────────────────────────────────────────────────────────
+# Self-contained regex layer that scans raw user-turn text and emits
+# charity-context amount candidates. Bypasses LLM batch extractor
+# variance + trinity refinement revoke (see NAR-1 root cause for
+# d851d5ba). One-way upgrade: never demotes; only promotes events
+# that would otherwise fall back to `amount_events`.
+
+# Generic charity receivers (used inside the "for/to/at <X>" tail
+# downstream of an amount). Includes both type-nouns (food bank,
+# foundation) and the literal word "charity"/"charities" which
+# anchors a different class of charity-context phrases.
+_CHARITY_RECEIVER_KEYWORDS = (
+    "food bank",
+    "animal shelter",
+    "homeless shelter",
+    "humane society",
+    "children's hospital",
+    "children hospital",
+    "hospital",       # generic; T1 also requires charity verb to avoid medical-bill FP
+    "hospice",
+    "nonprofit",
+    "non-profit",
+    "non profit",
+    "charity",
+    "charities",
+    "fundraiser",
+    "fundraising event",
+    "the foundation",
+    "a foundation",
+    "the society",
+)
+
+# Named charity orgs — closed list, case-insensitive. Each entry
+# is a regex pattern; we compile them once.
+_CHARITY_ORG_PATTERNS = (
+    r"red\s+cross",
+    r"unicef",
+    r"american\s+cancer\s+society",
+    r"doctors\s+without\s+borders",
+    r"salvation\s+army",
+    r"habitat\s+for\s+humanity",
+    r"st\.?\s*jude",
+    r"\bunhcr\b",
+)
+_CHARITY_ORG_RE = re.compile(
+    "|".join(_CHARITY_ORG_PATTERNS), re.IGNORECASE,
+)
+
+# Family-relation words. Presence anywhere in the local amount
+# window blocks all triggers (family transfer, not charity).
+_FAMILY_RELATION_RE = re.compile(
+    r"\bmy\s+(?:niece|nephew|sister|brother|cousin|mom|dad|mother|"
+    r"father|aunt|uncle|kid|kids|son|daughter|wife|husband|partner|"
+    r"in[\- ]law|sibling)\b",
+    re.IGNORECASE,
+)
+
+# Verb forms that signal a charity-leaning money event. The base-form
+# `raise` was the missing piece from `_AMOUNT_VERB_CLASS` that caused
+# E1 ("I helped raise over $1,000 ...") to fall back to amount_events
+# in 5/5 NAR-1 runs.
+_CHARITY_VERB_RE = re.compile(
+    r"\b(?:rais(?:ed|ing|es|e)?|donat(?:ed|ing|es|e)?|"
+    r"contribut(?:ed|ing|es|e)?|gave\s+to|gives\s+to|giving\s+to)\b",
+    re.IGNORECASE,
+)
+
+# Charity literal word for T2. Word-boundary on both sides.
+_CHARITY_LITERAL_RE = re.compile(r"\bchariti?(?:y|es|able)\b", re.IGNORECASE)
+
+# Amount-followed-by-receiver pattern. Anchored on $ so we know an
+# amount is present; captures the tail (up to 80 chars or sentence
+# end) where the receiver would appear.
+_AMOUNT_WITH_TAIL_RE = re.compile(
+    r"\$\s*(\d[\d,]*(?:\.\d+)?)"          # group 1: amount
+    r"(?:\s+(?:dollars?|usd|bucks?))?"
+    # tail: up to 120 chars, stops at sentence-end OR next $-amount
+    r"(?P<tail>(?:(?!\$\d)[^.!?\n]){0,120})",
+    re.IGNORECASE,
+)
+
+# Compile receiver keywords as a single alternation regex for speed.
+_RECEIVER_RE = re.compile(
+    r"\b(?:" + "|".join(
+        kw.replace(" ", r"\s+").replace(".", r"\.")
+        for kw in _CHARITY_RECEIVER_KEYWORDS
+    ) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _local_window(content: str, match_start: int, match_end: int,
+                  before: int = 120, after: int = 120) -> str:
+    """Slice ±N chars around the amount match for context-signal checks.
+
+    The window does NOT respect sentence boundaries — signals can land
+    in the same clause separated by commas. The amount + receiver tail
+    is already captured by _AMOUNT_WITH_TAIL_RE; the window is for
+    backward-looking checks (charity verb, charity literal, family
+    relation).
+    """
+    start = max(0, match_start - before)
+    end = min(len(content), match_end + after)
+    return content[start:end]
+
+
+def detect_charity_amounts(content: str) -> list[dict]:
+    """Deterministic charity-context money-event recognizer.
+
+    Returns a list of records, one per amount where the recognizer
+    decides "this is a charity_donations event":
+
+      [
+        {"amount": float, "phrase": str, "trigger": "T1"|"T2"|"T3"},
+        ...
+      ]
+
+    Three triggers (any can fire):
+      T1 — receiver tail (text after the amount) contains a
+           charity-context keyword (food bank / animal shelter /
+           children's hospital / nonprofit / etc.)
+      T2 — local window contains both a charity-verb (raise/donate/
+           contribute/etc.) AND the literal word 'charity'
+      T3 — local window contains a known charity organization
+           (Red Cross / UNICEF / American Cancer Society / etc.)
+
+    Guards (block all triggers):
+      - Family-relation word ("my niece"/"my brother"/...) anywhere
+        in the local window → family-transfer, not charity.
+
+    Returns empty list when no amount is present or no trigger fires.
+    """
+    if not content:
+        return []
+
+    out: list[dict] = []
+    for m in _AMOUNT_WITH_TAIL_RE.finditer(content):
+        amount_raw = m.group(1).replace(",", "")
+        try:
+            amount = float(amount_raw)
+        except ValueError:
+            continue
+        tail = m.group("tail") or ""
+        window = _local_window(content, m.start(), m.end())
+
+        # Guard: family relation blocks all triggers.
+        if _FAMILY_RELATION_RE.search(window):
+            continue
+
+        trigger: str | None = None
+        # T3 first (most specific — named org always wins).
+        if _CHARITY_ORG_RE.search(window):
+            trigger = "T3"
+        # T1: charity-receiver keyword in the tail. Also requires a
+        # charity verb (raise/donate/contribute/gave to) in the
+        # window — without this, generic "hospital" matches medical-
+        # bill spending like "I spent $200 for the hospital".
+        if (
+            trigger is None
+            and _RECEIVER_RE.search(tail)
+            and _CHARITY_VERB_RE.search(window)
+        ):
+            trigger = "T1"
+        # T2: literal 'charity' + charity-verb in window.
+        if trigger is None and (
+            _CHARITY_LITERAL_RE.search(window)
+            and _CHARITY_VERB_RE.search(window)
+        ):
+            trigger = "T2"
+
+        if trigger is None:
+            continue
+
+        # Phrase: shortened version of the surrounding clause.
+        clause_start = max(0, m.start() - 60)
+        clause_end = min(len(content), m.end() + 100)
+        phrase = content[clause_start:clause_end].strip()
+
+        out.append({
+            "amount": amount,
+            "phrase": phrase,
+            "trigger": trigger,
+        })
+    return out
+
+
 # Dollar-amount events — "how much did I donate/earn/raise/save".
 # Tolerates intervening adverbs/quantifiers ("another", "about", "around",
 # "roughly", "nearly") between the verb and the amount, which otherwise
@@ -390,10 +578,45 @@ class NumericAggregator:
                         round(float(c.get("amount") or 0.0), 2),
                         _norm_class(c),
                     ))
+            # NAR-5: precompute (turn_id, amount) → LLM candidate index
+            # so deterministic-charity regex hits can MUTATE the LLM
+            # candidate in place (upgrade class + tag recognizer) instead
+            # of adding a second-class-shadow event. Without this, the
+            # same physical $N event ends up in TWO cardinal entries
+            # (LLM's amount_events + regex's charity_donations), which
+            # inflates totals and confuses scope-filter dedup.
+            ta_index: dict[tuple[str, float], int] = {}
+            for i, c in enumerate(candidates):
+                if c.get("polarity") == "amount":
+                    ta_index[(
+                        c.get("turn_id", ""),
+                        round(float(c.get("amount") or 0.0), 2),
+                    )] = i
+
             for rc in regex_candidates:
                 if rc["polarity"] != "amount":
                     # own/dispose candidates are cheap to duplicate; LLM
                     # handles those well enough, don't flood from regex
+                    continue
+                ta_key = (
+                    rc.get("turn_id", ""),
+                    round(float(rc.get("amount") or 0.0), 2),
+                )
+                # Deterministic-charity recognizer hits: when LLM already
+                # captured this (turn_id, amount), upgrade the LLM
+                # candidate's class instead of adding a duplicate. The
+                # LLM event then carries the deterministic protection
+                # tag downstream.
+                if (
+                    rc.get("recognizer") == "deterministic-charity"
+                    and ta_key in ta_index
+                ):
+                    llm_cand = candidates[ta_index[ta_key]]
+                    if llm_cand.get("entity_class") in (
+                        "amount_events", "", None,
+                    ):
+                        llm_cand["entity_class"] = "charity_donations"
+                    llm_cand["recognizer"] = "deterministic-charity"
                     continue
                 key = (
                     rc.get("turn_id", ""), rc["polarity"],
@@ -783,7 +1006,16 @@ class NumericAggregator:
             if (c.get("turn_id", ""), amt) in already_specific:
                 continue  # regex already classified this physical event
             ambiguous.append((i, c))
-        if len(ambiguous) < 2:
+        # NAR-5: lowered from `< 2` to `< 1`. The deterministic charity
+        # recognizer can promote some events to charity_donations
+        # ahead of trinity, leaving only one truly-ambiguous event
+        # for trinity to vote on. Pre-NAR-5 the `< 2` threshold was a
+        # heuristic to avoid spending an LLM call on single-event
+        # batches; with the recognizer in place, single-event trinity
+        # votes are now load-bearing and the extra cost is small (one
+        # LLM call per batch where the recognizer already saved most
+        # of the work).
+        if not ambiguous:
             return
 
         # Build a compact evidence block (event_id → sentence).
@@ -795,7 +1027,10 @@ class NumericAggregator:
             if not text:
                 continue
             events_for_prompt.append((event_id, c, text))
-        if len(events_for_prompt) < 2:
+        # NAR-5: same threshold drop as above — allow single-event vote
+        # now that the deterministic recognizer reduces the typical
+        # ambiguous-event count.
+        if not events_for_prompt:
             return
 
         amt_str = lambda c: f"${c.get('amount')}" if c.get("amount") else ""
@@ -1015,9 +1250,16 @@ class NumericAggregator:
             entry.count += 1
             if turn_id and turn_id not in entry.evidence:
                 entry.evidence.append(turn_id)
+            # NAR-5: tag deterministic-recognizer events so trinity
+            # refinement (_refine_amount_events) skips them.
+            reason = (
+                "amount_charity_det"
+                if c.get("recognizer") == "deterministic-charity"
+                else "amount"
+            )
             entry.history.append({
                 "ts": ts, "turn_id": turn_id,
-                "delta": "+$%.2f" % delta_amount, "reason": "amount",
+                "delta": "+$%.2f" % delta_amount, "reason": reason,
                 "phrase": c.get("phrase", "")[:260],
             })
         entry.updated_at = time.time()
@@ -1174,6 +1416,32 @@ class NumericAggregator:
                     "turn_id": turn_id,
                     "ts": ts,
                 })
+
+        # NAR-5: deterministic charity recognizer — runs alongside
+        # AMOUNT_PATTERNS. Promotes events to charity_donations when
+        # the receiver / sentence context names a charity. One-way
+        # upgrade; never demotes.
+        existing_charity_amounts = {
+            round(float(c.get("amount") or 0.0), 2)
+            for c in out
+            if c.get("polarity") == "amount"
+            and c.get("cls_hint") == "charity_donations"
+        }
+        for det in detect_charity_amounts(content):
+            amt_key = round(float(det["amount"]), 2)
+            if amt_key in existing_charity_amounts:
+                # AMOUNT_PATTERNS already produced this amount with
+                # charity_donations hint — skip to avoid double-count.
+                continue
+            out.append({
+                "polarity": "amount",
+                "amount": det["amount"],
+                "phrase": det["phrase"][:260],
+                "cls_hint": "charity_donations",
+                "recognizer": "deterministic-charity",
+                "turn_id": turn_id,
+                "ts": ts,
+            })
         return out
 
     def _classify_batch(
@@ -1191,6 +1459,15 @@ class NumericAggregator:
             if c["polarity"] == "amount":
                 if not c.get("entity_class"):
                     c["entity_class"] = c.get("cls_hint") or "amount_events"
+                # NAR-5 one-way upgrade: deterministic charity recognizer
+                # rescues events whose entity_class would otherwise be
+                # the generic amount_events bucket. Never demotes; never
+                # touches events the LLM classified into another bucket.
+                if (
+                    c.get("recognizer") == "deterministic-charity"
+                    and c.get("entity_class") in ("amount_events", "", None)
+                ):
+                    c["entity_class"] = "charity_donations"
                 if "canonical_member" not in c:
                     c["canonical_member"] = ""
                 if "valid" not in c:
