@@ -214,6 +214,11 @@ def _local_window(content: str, match_start: int, match_end: int,
 def detect_charity_amounts(content: str) -> list[dict]:
     """Deterministic charity-context money-event recognizer.
 
+    LCR-3 A/B hook: set env var RADIOMIND_NAR_RECOGNIZER_ENABLED=0
+    to disable entirely. Default 1 = NAR-5 behavior. Used to test
+    whether NAR's ingest-side surface (not just the trinity
+    threshold drop) is responsible for LoCoMo regression.
+
     Returns a list of records, one per amount where the recognizer
     decides "this is a charity_donations event":
 
@@ -237,6 +242,8 @@ def detect_charity_amounts(content: str) -> list[dict]:
 
     Returns empty list when no amount is present or no trigger fires.
     """
+    if os.environ.get("RADIOMIND_NAR_RECOGNIZER_ENABLED", "1") == "0":
+        return []
     if not content:
         return []
 
