@@ -1432,13 +1432,23 @@ class NumericAggregator:
         # silently un-tagged a charity event).
         det_amounts = {round(float(d["amount"]), 2)
                        for d in detect_charity_amounts(content)}
+        # When detect_charity_amounts fires on an amount that
+        # AMOUNT_PATTERNS already extracted (regardless of the verb-
+        # derived cls_hint), the recognizer is the authority on
+        # class: promote cls_hint to charity_donations AND tag with
+        # the recognizer label. Without the cls_hint override, the
+        # candidate stays in amount_events (NAR-1 root cause: verb
+        # tense "raise" vs "raised" mismatch in _AMOUNT_VERB_CLASS),
+        # and the trinity refinement / cardinal view both lose it.
         for c in out:
             if (
                 c.get("polarity") == "amount"
-                and c.get("cls_hint") == "charity_donations"
                 and round(float(c.get("amount") or 0.0), 2) in det_amounts
             ):
-                c["recognizer"] = "deterministic-charity"
+                if c.get("cls_hint") in ("amount_events", "", None):
+                    c["cls_hint"] = "charity_donations"
+                if c.get("cls_hint") == "charity_donations":
+                    c["recognizer"] = "deterministic-charity"
 
         existing_amounts_in_out = {
             round(float(c.get("amount") or 0.0), 2)
