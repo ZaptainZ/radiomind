@@ -16,6 +16,7 @@ events to dedup and filter misclassified.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 import time
@@ -1006,16 +1007,19 @@ class NumericAggregator:
             if (c.get("turn_id", ""), amt) in already_specific:
                 continue  # regex already classified this physical event
             ambiguous.append((i, c))
-        # NAR-5: lowered from `< 2` to `< 1`. The deterministic charity
-        # recognizer can promote some events to charity_donations
-        # ahead of trinity, leaving only one truly-ambiguous event
-        # for trinity to vote on. Pre-NAR-5 the `< 2` threshold was a
-        # heuristic to avoid spending an LLM call on single-event
-        # batches; with the recognizer in place, single-event trinity
-        # votes are now load-bearing and the extra cost is small (one
-        # LLM call per batch where the recognizer already saved most
-        # of the work).
-        if not ambiguous:
+        # NAR-5: lowered from `< 2` to `< 1` (configurable via env-var
+        # RADIOMIND_TRINITY_MIN_AMBIGUOUS, default 1 = NAR-5 behavior).
+        # The deterministic charity recognizer can promote some events
+        # to charity_donations ahead of trinity, leaving only one
+        # truly-ambiguous event for trinity to vote on. Pre-NAR-5 the
+        # `< 2` threshold was a heuristic to avoid spending an LLM
+        # call on single-event batches.
+        # LCR-2 A/B test: set RADIOMIND_TRINITY_MIN_AMBIGUOUS=2 to
+        # restore pre-NAR-5 behavior for one run, comparing LoCoMo
+        # flip10 to disambiguate whether the threshold drop is
+        # responsible for non-charity LoCoMo regressions.
+        _min_amb = int(os.environ.get("RADIOMIND_TRINITY_MIN_AMBIGUOUS", "1"))
+        if len(ambiguous) < _min_amb:
             return
 
         # Build a compact evidence block (event_id → sentence).
@@ -1029,8 +1033,8 @@ class NumericAggregator:
             events_for_prompt.append((event_id, c, text))
         # NAR-5: same threshold drop as above — allow single-event vote
         # now that the deterministic recognizer reduces the typical
-        # ambiguous-event count.
-        if not events_for_prompt:
+        # ambiguous-event count. Same env-var override as above.
+        if len(events_for_prompt) < _min_amb:
             return
 
         amt_str = lambda c: f"${c.get('amount')}" if c.get("amount") else ""
