@@ -1,0 +1,22 @@
+=== 4-helper trigger-face audit on LME-S (499 qids) ===
+
+Per-helper trigger surface:
+  role_guard            :   2 qids (0.4%)
+  cashback_hint         :   1 qids (0.2%)
+  person_age_hint       :   1 qids (0.2%)
+  charity_recognizer    :  67 qids (13.4%)
+
+Pairwise overlap (qids in both):
+                      role_guard          cashback_hint       person_age_hint     charity_recognizer  
+role_guard            2                   0                   0                   0                   
+cashback_hint         0                   1                   0                   1                   
+person_age_hint       0                   0                   1                   0                   
+charity_recognizer    0                   1                   0                   67                  
+
+Multi-helper firings (≥2 helpers): 1 qids
+  9aaed6a3: ['cashback_hint', 'charity_recognizer']
+    How much cashback did I earn at SaveMart last Thursday?
+
+Risk analysis:
+  HIGH-OVERLAP qid=9aaed6a3: ['cashback_hint'] BOTH fire query-side
+    question: How much cashback did I earn at SaveMart last Thursday?
