@@ -1,0 +1,46 @@
+[
+  {
+    "run": 1,
+    "elapsed_s": 3786,
+    "per_qid": {
+      "gpt4_d12ceb0e": {
+        "correct": true,
+        "judge_failed": false
+      },
+      "d851d5ba": {
+        "correct": true,
+        "judge_failed": false
+      },
+      "9aaed6a3": {
+        "correct": true,
+        "judge_failed": false
+      },
+      "031748ae_abs": {
+        "correct": true,
+        "judge_failed": false
+      }
+    }
+  },
+  {
+    "run": 2,
+    "elapsed_s": 3287,
+    "per_qid": {
+      "gpt4_d12ceb0e": {
+        "correct": true,
+        "judge_failed": false
+      },
+      "d851d5ba": {
+        "correct": false,
+        "judge_failed": false
+      },
+      "9aaed6a3": {
+        "correct": true,
+        "judge_failed": false
+      },
+      "031748ae_abs": {
+        "correct": true,
+        "judge_failed": false
+      }
+    }
+  }
+]

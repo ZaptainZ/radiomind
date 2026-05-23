@@ -1421,17 +1421,39 @@ class NumericAggregator:
         # AMOUNT_PATTERNS. Promotes events to charity_donations when
         # the receiver / sentence context names a charity. One-way
         # upgrade; never demotes.
-        existing_charity_amounts = {
+        #
+        # Dedup policy: when AMOUNT_PATTERNS already produced the
+        # same (turn_id, amount) WITH cls_hint=charity_donations,
+        # don't duplicate the candidate — but DO promote that
+        # candidate to recognizer-protected status. Without this,
+        # the AMOUNT_PATTERNS candidate goes downstream as plain
+        # `amount` reason and gets revoked by trinity refinement
+        # (NAR run 2 d851d5ba E2 $250 bug — recognizer dedup
+        # silently un-tagged a charity event).
+        det_amounts = {round(float(d["amount"]), 2)
+                       for d in detect_charity_amounts(content)}
+        for c in out:
+            if (
+                c.get("polarity") == "amount"
+                and c.get("cls_hint") == "charity_donations"
+                and round(float(c.get("amount") or 0.0), 2) in det_amounts
+            ):
+                c["recognizer"] = "deterministic-charity"
+
+        existing_amounts_in_out = {
             round(float(c.get("amount") or 0.0), 2)
             for c in out
             if c.get("polarity") == "amount"
-            and c.get("cls_hint") == "charity_donations"
         }
         for det in detect_charity_amounts(content):
             amt_key = round(float(det["amount"]), 2)
-            if amt_key in existing_charity_amounts:
-                # AMOUNT_PATTERNS already produced this amount with
-                # charity_donations hint — skip to avoid double-count.
+            if amt_key in existing_amounts_in_out:
+                # Same amount already extracted by AMOUNT_PATTERNS (in
+                # any class). The promotion loop above already tagged
+                # charity-class hits with recognizer; for non-charity
+                # cls_hint hits (e.g. spending), don't add a duplicate
+                # candidate either — let the LLM/trinity own the class
+                # decision.
                 continue
             out.append({
                 "polarity": "amount",
