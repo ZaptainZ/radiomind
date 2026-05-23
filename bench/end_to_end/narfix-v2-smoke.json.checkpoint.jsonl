@@ -1,0 +1,1 @@
+{"question_id": "d851d5ba", "q": "How much money did I raise for charity in total?", "gold": "$3,750", "answer": "You raised $3,750 for charity in total.", "correct": true, "qtype": "multi-session", "verdict_tail": "the exact amount of money raised for charity. There is no discrepancy in the information provided.\n</judge_thinking>\nyes", "judge_failed": false}
