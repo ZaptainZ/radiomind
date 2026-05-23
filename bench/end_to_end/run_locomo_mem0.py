@@ -31,7 +31,12 @@ from pathlib import Path
 from datetime import datetime
 
 
-DATASET = Path("/tmp/locomo-data/locomo10.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LOCOMO_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/locomo10.json"),
+    )
+)
 CATEGORY_NAMES = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop", 5: "adversarial"}
 _BYPASS_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 

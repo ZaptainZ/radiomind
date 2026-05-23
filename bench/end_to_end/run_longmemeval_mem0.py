@@ -30,7 +30,12 @@ import urllib.request
 from pathlib import Path
 
 
-DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LME_S_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/longmemeval_s_cleaned.json"),
+    )
+)
 
 # Socket-level default timeout. urllib's per-call timeout=120 has been
 # observed to NOT fire on half-open TLS connections (DashScope hung

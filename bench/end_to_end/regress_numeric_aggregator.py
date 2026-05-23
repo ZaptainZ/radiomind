@@ -40,7 +40,12 @@ GOLD_EXPECTED = {
     "bb7c3b45": {"entity_class": None, "target_amount": 300.0},  # saved on heels
 }
 
-DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LME_S_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/longmemeval_s_cleaned.json"),
+    )
+)
 
 
 def _question_id(q, idx):

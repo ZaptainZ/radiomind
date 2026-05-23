@@ -32,7 +32,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LME_S_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/longmemeval_s_cleaned.json"),
+    )
+)
 TARGET_QID = "d851d5ba"
 
 GOLD_EVENTS: list[tuple[int, str]] = [

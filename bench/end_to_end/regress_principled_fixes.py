@@ -30,7 +30,12 @@ TARGET_QIDS = {
     "gpt4_1916e0ea": "54 days between",
 }
 
-DATASET = Path("/tmp/longmemeval-data/longmemeval_s_cleaned.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LME_S_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/longmemeval_s_cleaned.json"),
+    )
+)
 
 
 def main() -> int:

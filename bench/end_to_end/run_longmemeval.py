@@ -36,7 +36,12 @@ import urllib.request
 from pathlib import Path
 
 
-DATASET = Path("/tmp/longmemeval-data/oracle.json")
+DATASET = Path(
+    os.environ.get(
+        "RADIOMIND_LME_ORACLE_DATASET",
+        str(Path.home() / "Library/Caches/radiomind-data/oracle.json"),
+    )
+)
 
 
 ANSWER_PROMPT = """Current date: {now}
