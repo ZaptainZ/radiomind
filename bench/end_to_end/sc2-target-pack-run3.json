@@ -1,0 +1,74 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 4,
+  "total_ingested_turns": 2074,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 8378.0,
+  "overall_accuracy": 1.0,
+  "model_correct": 4,
+  "judged_n": 4,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "multi-session": {
+      "n": 3,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_d12ceb0e",
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The average age of you, your parents, and your grandparents is 59.6 years.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "m, which is the average age being 59.6 years. There is no discrepancy in the information provided.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    },
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "from answering due to a lack of information. Therefore, it matches the criteria for an abstention.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    },
+    {
+      "question_id": "9aaed6a3",
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "You earned $0.75 in cashback from your $75 purchase at SaveMart last Thursday.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "onal context without contradicting the core information. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    },
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "he intent and reasoning of the correct answer without omitting or contradicting any core concepts.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
