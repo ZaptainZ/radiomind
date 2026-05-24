@@ -480,6 +480,53 @@ Tier 3: 全 store 扫描 domain 内 FACT 层（O(N_facts)，保底）
 
 ---
 
+## V8.2.x / V8.3.1 / NAR deterministic floor 现状（2026-05-24）
+
+V8.2.x 起转向"窄触发 deterministic helper × 不替换 LLM 主答"路线，避免 V6/V7 时代的 prompt-side
+通胀。NAR (numeric-aggregator-recall) 是同方向但作用于 ingest 事实层，而非 answer prompt。
+
+**4 个 LME-S target qids，各自有 deterministic floor**（SC-2 + fix v2 验证过）：
+
+| qid | family | helper | smoke 验证 |
+|---|---|---|---|
+| `031748ae_abs` | role mismatch (leadership/IC) | `role_mismatch_guard` (V8.2.2) | 3/3 PASS |
+| `9aaed6a3` | cashback 算术 | `cashback_arithmetic_hint` (V8.2.3a) | 3/3 PASS |
+| `gpt4_d12ceb0e` | 亲属平均年龄 | `person_age_average_hint` (V8.3.1) | 3/3 PASS |
+| `d851d5ba` | 慈善总额 | `detect_charity_amounts` (NAR-5 fix v2) | 3/3 isolated cardinal=$3,750 + e2e PASS |
+
+**未声明的：**
+
+- 当前 main 的 LME-S n=100 总分**未实测**。已知 4 target qids 单独可信；aggregate 是推断，不是测量。
+- LoCoMo flip10 1-run strict 4/10（SC-3）触发了 LCR-1..LCR-4 调查；contemporary control 表明
+  V8.2.1 HEAD today 也是 strict 4/10 (n=1)，证据不足以判断当前 main 相对 V8.2.1 在
+  LoCoMo 上有 net regression。历史 5.80/10 已不能直接作为基准。
+  详见 `logs/2026-05-24-locomo-regression-check-cc.md`。
+
+**两个运行期诊断开关**（default 维持当前行为）：
+
+| 环境变量 | 默认 | 作用 |
+|---|---|---|
+| `RADIOMIND_TRINITY_MIN_AMBIGUOUS` | `1` | `_trinity_class_promotion` 触发阈值。设 `2` 恢复 pre-NAR-5 行为，做 A/B 排查 trinity 阈值是否影响某 query。 |
+| `RADIOMIND_NAR_RECOGNIZER_ENABLED` | `1` | NAR-5 `detect_charity_amounts` 总开关。设 `0` 完全跳过 charity recognizer，做 A/B 排查 ingest-side 干扰。 |
+
+两个开关在 `src/radiomind/refinement/numeric_aggregator.py` 顶层读取，不破坏现有
+单元测试（589 passed）。
+
+**Dataset cache 路径**（2026-05-23 改造）：
+
+bench 脚本默认从 `~/Library/Caches/radiomind-data/` 读取数据集（之前是 `/tmp`，跨天被
+launchd 清理）。可用环境变量 override：
+
+- `RADIOMIND_LME_S_DATASET` → LongMemEval-S cleaned (`longmemeval_s_cleaned.json`)
+- `RADIOMIND_LOCOMO_DATASET` → LoCoMo (`locomo10.json`)
+- `RADIOMIND_LME_ORACLE_DATASET` → 早期 oracle 子集 (`oracle.json`)
+
+详见 `logs/2026-05-23-score-consolidation-cc.md` (scoreboard) +
+`logs/2026-05-24-locomo-regression-check-cc.md` (LCR investigation) +
+`logs/2026-05-22-numeric-aggregator-recall-cc.md` (NAR close-out)。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位

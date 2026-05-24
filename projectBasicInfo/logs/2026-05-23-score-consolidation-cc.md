@@ -81,22 +81,45 @@ deterministic.
 
 V8.2.1 historical strict mean was 5.80/10 across 11 runs
 (range 5-7). 4/10 is 1.80 points below mean and one point below
-the lowest historical run. With n=1, this is **inconclusive** —
-it could be:
+the lowest historical run.
 
-- (A) single-run noise (LoCoMo per-qid LLM seed variance is real;
-  V8.2.1's own 11 runs ranged 5-7),
-- (B) genuine regression from NAR-5 (trinity threshold drop from
-  ≥2 to ≥1 ambiguous events may fire trinity more often on
-  LoCoMo haystacks unrelated to charity),
-- (C) genuine regression from broader V8.2.3a / V8.3.1 / NAR
-  prompt stacking.
+**UPDATE (2026-05-24 via LCR-1 / LCR-4)**: a 4-step follow-up
+investigation produced contemporary control data showing the
+5.80 baseline is no longer reachable on today's deepseek-v3.2
+even with V8.2.1 code itself:
 
-The Seattle decisive case (`c4_5cfba98ae8`) is still PASS, so the
-core V8.2.1 floor is intact on the strongest known indicator.
-**Recommendation**: re-run SC-3 twice more (≈5h additional spend)
-when LME-S work doesn't need the dashscope quota; n=3 will
-distinguish noise from regression.
+| condition | n | strict /10 |
+|---|---:|---:|
+| V8.2.1 historical (mean of 11 runs) | 11 | 5.80 |
+| V8.2.1 HEAD today (LCR-4) | 1 | 4 |
+| current main NAR ON (LCR-1 mean) | 3 | 4.00 |
+| current main, trinity threshold revert (LCR-2) | 1 | 4 |
+| current main, NAR recognizer OFF (LCR-3') | 1 | 5 |
+
+Interpretation (sample-strength-honest):
+
+- The 5.80 historical number cannot be used as the
+  contemporary baseline. External model/runtime drift since
+  it was measured is the largest single factor we have
+  evidence for.
+- Current main with NAR ON is not visibly worse than V8.2.1
+  HEAD today on this set (4 vs 4 strict), so there is no
+  clear LoCoMo regression that warrants rolling NAR back.
+- Recognizer OFF at strict 5 is +1 vs main with NAR ON, but
+  n=1 sits inside the V8.2.1 historical 5-7 band — too small
+  to call decisively.
+- The Seattle decisive case (`c4_5cfba98ae8`) PASSes in
+  every condition tested.
+
+Per-qid stability (across LCR runs, strict judge):
+
+| status | qids |
+|---|---|
+| stable PASS | `c2_b4b43181aa` (Maria), `c3_94f06e1a00` (Tilly), `c4_5cfba98ae8` (Seattle) |
+| rotating | `c1_69a7c9bffe` (Gina), `c6_9da9f73c2a` (date) |
+| stable FAIL | `c2_29183ecb5e` (financial), `c3_2656e2c771` (count), `c3_a9fddfe69b` (Nate), `c5_dac00a436e` (Voyageurs), `c9_5ab522b5c7` (Calvin) |
+
+Full LCR write-up: `2026-05-24-locomo-regression-check-cc.md`.
 
 ## n=100 Decision (SC-4)
 
@@ -146,9 +169,13 @@ Better staged plan:
 - Does not claim a measured LME-S n=100 overall accuracy on
   current `main`. The 4 target qids' improvements are
   individually verified; aggregate is inferred, not measured.
-- Does not claim LoCoMo regression-free. 4/10 single-run is
-  below the V8.2.1 11-run mean of 5.80 and warrants more samples
-  before drawing conclusions.
+- Does not claim LoCoMo regression-free in the strong sense.
+  LCR-1..LCR-4 produced contemporary evidence that the 5.80
+  historical baseline is no longer reachable today (V8.2.1
+  HEAD today also strict 4/10, n=1), so a definitive
+  regression cannot be claimed. With n=1 controls, we can
+  only say: no LoCoMo signal strong enough to justify rolling
+  back NAR/V8.x has been found.
 - Does not promise that fix v2 cleans the cache layer (t0/t6
   dup, music-benefit false positive). Cardinal view downstream
   filtering neutralizes these at prompt time, but cache rows

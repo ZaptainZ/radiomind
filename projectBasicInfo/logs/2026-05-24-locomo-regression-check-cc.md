@@ -2,9 +2,17 @@
 
 **Date**: 2026-05-24
 **Author**: Claude Code
-**Status**: Closed. **Verdict: "regression" is deepseek-v3.2 model
-drift, NOT NAR/V8.x stacking.** No code changes needed; NAR/V8.x
-deterministic floor remains intact.
+**Status**: Closed. **Verdict (sample-strength-honest)**: the
+5.80 historical baseline is no longer reachable on today's
+deepseek-v3.2 even with V8.2.1 code, so external model/runtime
+drift is confirmed as an important factor. Current main with
+NAR ON has not been shown to be worse than V8.2.1 HEAD today
+on the same set (4 vs 4 strict, n=1 each), so there is no
+LoCoMo signal strong enough to justify rolling back NAR/V8.x.
+This does NOT prove drift is the sole factor or that NAR's
+LoCoMo effect is exactly zero — n=1 controls cannot support
+that strong claim. LME-S deterministic-floor wins remain
+intact.
 
 ---
 
@@ -74,9 +82,13 @@ deepseek-v3.2 / gpt-4o / flip10 today:
   orig 6, **strict 4**.
 
 **Same strict as LCR-1 NAR-on mean.** V8.2.1 HEAD itself drops
-from historical 5.80 to today's 4. **Hypothesis E confirmed**:
-deepseek-v3.2 model drift over the past weeks is the dominant
-factor.
+from historical 5.80 to today's 4. **Hypothesis E is now
+supported (not strictly confirmed at n=1)**: external
+deepseek-v3.2 / runtime drift is a confirmed important factor.
+That a second factor (e.g., NAR ingest-side change in LCR-3'
+direction) ALSO contributes cannot be ruled out at n=1, but
+the recognizer-off +1 strict point sits inside the V8.2.1
+historical 5-7 range — too small to act on without more samples.
 
 ## Decision Matrix
 
@@ -84,20 +96,28 @@ factor.
 |---|---|---|---|---|
 | strict /10 | 5.80 | 4 | 4.00 mean | 5 (n=1) |
 
-- Today's V8.2.1 baseline (4) = current main with NAR (4.00 mean):
-  NAR has **no measurable net regression** on LoCoMo flip10.
-- NAR recognizer-off (5) is +1 strict point vs both V8.2.1 today
-  and NAR-on, but n=1 sample is inside the V8.2.1 historical
-  range 5-7 — could be noise.
+- Today's V8.2.1 baseline (4, n=1) vs current main with NAR
+  (4.00, n=3 mean): no LoCoMo signal in our data justifies
+  rolling NAR back. We are NOT claiming NAR's net effect on
+  LoCoMo is exactly zero — only that the available evidence
+  doesn't support a rollback.
+- NAR recognizer-off (5) is +1 strict point vs both V8.2.1
+  today and NAR-on, but n=1 sample sits inside the V8.2.1
+  historical 5-7 range — too small to act on.
 - Historical V8.2.1 5.80 is no longer reachable on today's
-  deepseek-v3.2 even with V8.2.1 code, so the "regression"
-  framing is misleading.
+  deepseek-v3.2 with V8.2.1 code itself, so framing the gap as
+  a current-main "regression" overstates what we have evidence
+  for.
 
 ## Decision
 
-**No code rollback.** NAR/V8.x deterministic-floor wins on the
-LME-S target qids (`031748ae_abs`, `9aaed6a3`, `gpt4_d12ceb0e`,
-`d851d5ba`) remain valid and worth keeping.
+**No code rollback.** The available evidence does not justify
+unwinding NAR/V8.x. The LME-S deterministic-floor wins on the
+target qids (`031748ae_abs`, `9aaed6a3`, `gpt4_d12ceb0e`,
+`d851d5ba`) remain valid and worth keeping. We explicitly
+acknowledge that we have not proven NAR's LoCoMo effect is
+zero; only that the cost (if any) is small enough to be
+indistinguishable from sample noise at the n we ran.
 
 The two env-var hooks added during the investigation
 (`RADIOMIND_TRINITY_MIN_AMBIGUOUS`, `RADIOMIND_NAR_RECOGNIZER_ENABLED`)
@@ -105,8 +125,11 @@ are kept in place as load-bearing diagnostic switches. Default
 values preserve current behavior; future A/Bs can flip them
 without code changes.
 
-**Future LoCoMo baseline reference: strict 4-5/10 on today's
-deepseek-v3.2**, not the stale 5.80 historical number.
+**Future LoCoMo baseline reference**: V8.2.1 historical 5.80
+remains a historical reference, not a current target. Until a
+new high-n contemporary baseline is measured, treat strict 4-5
+as the band consistent with available data; mark 5.80 as
+"historical, not directly comparable" when citing.
 
 ## Risks Acknowledged
 
