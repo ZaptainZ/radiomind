@@ -2,8 +2,15 @@
 
 **Date**: 2026-05-25
 **Author**: Claude Code
-**Status**: Closed. **Audit gate FAILED before reaching the e2e
-gate.** No implementation. Read-only audit + design doc retained.
+**Status**: CQ-3 v1 rule will NOT be implemented (it suppresses
+3 stable-PASS qids and does not catch Nate). The broader
+"candidate-side change is dead" framing in earlier drafts of
+this log was over-strong; revised below per user audit.
+
+The only e2e-grounded action ahead is a focused A/B/C control
+on Nate that varies the candidate-block content while keeping
+the same retrieved memories. That control has NOT been run as
+of this writing.
 
 ---
 
@@ -62,70 +69,83 @@ reason than "risks stable-PASS regression": **even if we
 relaxed the rule, suppress cannot improve e2e on any flip10
 qid under the current pipeline.**
 
-## Why Suppress Cannot Win
+## Why CQ-3 v1 Specifically Won't Be Implemented
 
-Stable-PASS qids (c2_Maria, c3_Tilly, c4_Seattle) pass in e2e
-because the raw retrieve already surfaces the gold-bearing
-turn into the LLM's prompt; the candidate injection is
-supplementary. Therefore suppressing them does NOT regress
-e2e — but does NOT help anything either.
+The v1 rule fails BOTH halves of its intended job:
 
-Stable-FAIL qids that v1 would suppress (c2_financial,
-c9_Calvin):
+- **Doesn't fire where it should.** The only qid we can
+  identify as candidate-polluted (c3_Nate) is NOT suppressed
+  by v1, because its set contains `fantasy` (topic_keyword
+  conf=0.7, source_count=2) which clears the "high floor"
+  predicate.
+- **Fires where it might help nothing or hurt.** v1 suppresses
+  three stable-PASS qids (c2_Maria, c3_Tilly-question,
+  c4_Seattle).
 
-- `c2_financial`: gold lives in D5:5 which is NOT in top-K
-  retrieve at all (CQ-1 confirmed). Suppress doesn't bring
-  D5:5 in; raw retrieve still feeds negative-financial
-  context to the LLM. Answer stays "financial difficulties".
-- `c9_Calvin`: D21:15 ("hard work and determination") is in
-  store but NOT in top-30 retrieve. Suppress doesn't add it;
-  raw retrieve still feeds Calvin/Dave music turns. Answer
-  stays "music".
+That alone is enough to drop v1 as written.
 
-In BOTH cases the e2e failure is upstream of candidate
-injection (retrieval recall miss), and suppress simply
-removes a hint that wasn't useful anyway. **Zero net e2e
-movement** under any honest accounting.
+### What we DON'T know yet (revised from earlier draft)
 
-The qid that genuinely IS polluted by noisy candidates,
-`c3_a9fddfe69b` (Nate dragons), is NOT caught by v1 because
-its candidate set contains `fantasy` (topic_keyword conf=0.7,
-source_count=2) which clears the "high floor" predicate. v1
-correctly identifies Nate's candidates as
-having a high-floor signal and stays out of the way.
+The earlier version of this log made two stronger claims that
+the user audit correctly rejected:
 
-Even if a v2 suppress rule were tuned tighter so it WOULD
-fire on Nate, the e2e outcome wouldn't improve: the literal
-"dragon" token only enters the system via image-query
-metadata attached to D9:14. Suppressing the candidate block
-removes the only path that surfaces "dragon" to the LLM at
-all. So the suppress direction is strictly worse than
-inject-with-noise for Nate.
+1. _"Stable-PASS will be no-op under suppress."_ This is
+   plausible from CQ-1 (these qids appear to pass via raw
+   retrieve, not candidate hints), but it's a hypothesis
+   not an e2e measurement. The right gate for suppress
+   touching a stable-PASS qid is "include it in an e2e
+   control", not "auto-STOP".
 
-## Implication
+2. _"Suppressing Nate's candidate block is strictly worse
+   because the candidate extractor is the only path that
+   surfaces 'dragon' to the LLM."_ This contradicts the
+   actual runner data flow: image-query metadata is
+   concatenated into the retrieved memory content
+   (`run_locomo_mem0.py` ~line 114), and the same
+   `mem_results` is sent both to the raw answer prompt and
+   to the candidate extractor. If `_extract_topics` can
+   pick `dragon` out of D9:14's text, the raw answer prompt
+   also has that text. Whether suppressing the noisy
+   candidate block helps, hurts, or is neutral for Nate is
+   an open empirical question, not a derivation.
 
-The "suppress when candidate set is structurally weak"
-hypothesis is sound in principle but the current `flip10` /
-LoCoMo pipeline doesn't have a qid where it can produce an
-e2e win:
+   The genuine concern is narrower: in CQ-1 the LLM
+   answer template ("If multiple candidates fit, prefer
+   higher confidence and higher source_count") biases the
+   model toward whatever IS in the candidate block. A
+   noisy block of conversational openers may steer the
+   model AWAY from the underlying D9:14 evidence. The
+   directional sign is not clear without measurement.
 
-- Stable-PASS doesn't need the candidate block → suppress is
-  no-op.
-- Stable-FAIL polluted by candidates (only Nate) needs the
-  candidate block (image-metadata is the answer source) →
-  suppress hurts.
-- Stable-FAIL with retrieval recall miss (c2, c9) needs a
-  retrieval-side fix, not a candidate-side fix.
+## Implication (revised)
 
-**Gate (a) cannot be met by any suppress rule on this set.**
+CQ-3 v1 is unsalvageable, but the broader claim "no
+candidate-side change can produce an e2e win on this set"
+is NOT established by what we've measured. To convert from
+"v1 fails" to "candidate direction is closed", we need a
+focused e2e A/B/C on the qid most likely to benefit
+(c3_Nate), holding retrieved memories fixed and varying
+only the candidate-block content.
+
+The A/B/C is the minimum experiment to either:
+
+- Find a controlled e2e win (which would re-open
+  candidate-rendering as a workstream — though probably as
+  conditional rendering rather than blanket suppress), OR
+- Provide actual e2e evidence that no candidate-block
+  variation moves Nate, at which point closing the
+  candidate-side direction is justified.
 
 ## Decision
 
-**No implementation.** CQ-3 design doc + audit + this close-
-out retained as the architectural record. The reusable
-`cq1_candidate_quality_audit.py` framework keeps the M4
-column; can be re-run on any future change to
-`evidence_candidates.py` to monitor suppress behavior.
+- **CQ-3 v1 suppress rule: NOT implemented** (fails to fire
+  on the polluted case, fires on stable-PASS cases without
+  any e2e justification).
+- **Candidate-side direction: NOT closed.** Pending the
+  CQ-4 Nate A/B/C control described below.
+- **CQ-3 audit framework retained.** The M4 column in
+  `cq1_candidate_quality_audit.py` is reusable for any
+  future change to `evidence_candidates.py`.
 
 ## What This Does NOT Conclude
 
@@ -146,16 +166,34 @@ column; can be re-run on any future change to
 - LME-S NumericAggregator other-class work.
 - Retrieval-bridging methodology.
 - Any new LoCoMo helper or skill.
-- Any candidate-side change.
+- Any candidate-side IMPLEMENTATION change.
 
-The current state is "no LCO-driven RadioMind change is
-on the table". If continuing optimization, the architectural
-choice is between:
+## Next Step (CQ-4): Nate candidate A/B/C control
 
-  - A `retrieval-recall-bridging` workstream targeting the
-    c2/c9 pattern (gold-in-store but not in top-K). Read-only
-    audit first.
-  - Pausing LCO entirely and returning to a different
-    component of RadioMind.
+Read-only experimental design (no source change for the
+production renderer until results come back):
 
-Neither is auto-started.
+- Hold retrieved memories fixed (single sandbox, single
+  retrieve run for the Nate question).
+- Three answer-prompt variants:
+  - **A** (current): candidate block as `evidence_candidates`
+    produces today.
+  - **B** (suppress): no candidate block at all.
+  - **C** (topic-only): render only candidates with
+    `relation == "topic_keyword"`. This is structural — no
+    new extractor, no hardcoded `dragon`.
+- Run each variant on Nate multiple times (≥3 to control
+  for LLM seed noise).
+- Decision rule:
+  - If `B` or `C` shows ≥ 2 of 3 PASS on Nate while A is
+    consistently FAIL → re-audit with c2_Maria /
+    c3_Tilly-question / c4_Seattle / c1_Gina as regression
+    controls before doing anything else.
+  - If all variants stay 0/3 on Nate → candidate-side
+    direction is closed for this set, and the next
+    architectural choice is between retrieval-recall-
+    bridging and pausing LCO entirely.
+
+The A/B/C experiment is gated separately and not auto-
+started here; it is the right next step but warrants its
+own go-ahead.

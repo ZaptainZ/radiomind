@@ -104,12 +104,18 @@ Rationale:
    Tilly question / etc., where the LLM is being misled by
    noisy candidates)?
 
-2. **Audit gate**:
-   - If suppress fires on ANY stable-PASS qid → STOP. The
-     rule as written would regress e2e. Either revise or
-     close CQ-3 without implementation.
+2. **Audit gate** (revised 2026-05-25 post-close-out user audit):
+   - If suppress fires on any stable-PASS qid, the stable-
+     PASS qid MUST be added as an e2e regression control —
+     not auto-STOPped. CQ-1 evidence suggested stable-PASS
+     might be no-op under suppress (raw retrieve carries
+     the answer), but that is a hypothesis, not a
+     measurement. The earlier draft of this gate ("STOP on
+     any stable-PASS hit") was too strong.
    - If suppress fires only on stable-FAIL and/or polluted
-     qids → continue.
+     qids → continue directly to e2e.
+   - In both branches, e2e measurement is required before
+     accepting OR rejecting the rule.
 
 3. **e2e gate**: spawn focused e2e smoke on the suppress-
    candidate qids + the 3 stable controls (c2_Maria,
