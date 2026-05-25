@@ -16,11 +16,14 @@ JSON record with:
   evidence_session_ids / qtype /
   preliminary 4-class label
 
-Labels (Codex schema):
-  - retrieve_missing
-  - evidence_present_computation_missing
-  - commit_variance
-  - gold_or_input_limitation
+Labels (Codex schema, refined 2026-05-25 after audit):
+  - retrieve_missing                       — gold confirmed absent from top-K (probed)
+  - needs_retrieve_probe                   — abstain answer; cannot decide retrieve vs commit from artifact alone
+  - evidence_present_computation_missing   — gold in top-K, deterministic operator missing
+  - computation_high_risk                  — operator exists in principle but requires
+                                             entity-normalization / dedup / open-vocabulary inference
+  - commit_variance                        — gold in top-K AND operator available; LLM mis-commits
+  - gold_or_input_limitation               — benchmark spec / preference advice / non-text-groundable
 
 Categorization is heuristic based on visible artifacts;
 deeper retrieve probes can refine. This is the read-only
@@ -48,8 +51,16 @@ EXCLUDED = {
 V83_AUDIT_LABELS = {
     "d6233ab6":      ("gold_or_input_limitation",
                        "preference advice; not extractable as typed event"),
-    "gpt4_ab202e7f": ("gold_or_input_limitation",
-                       "kitchen count — entity normalization required, LLM-shaped"),
+    # gpt4_ab202e7f: V8.3 audit classified as YELLOW-RED computation-risk —
+    # evidence is largely PRESENT; the difficulty is entity-normalization
+    # and dedup, which are open-vocabulary / LLM-shaped. Defer reason is
+    # high implementation risk, NOT gold/input limitation.
+    "gpt4_ab202e7f": ("computation_high_risk",
+                       "kitchen count — evidence present, but entity "
+                       "normalization (faucet/kitchen faucet/Moen faucet) "
+                       "+ replace-vs-acquire verb classification is "
+                       "open-vocabulary; defer on cost/benefit, NOT on "
+                       "gold/input limit"),
     "gpt4_d6585ce8": ("evidence_present_computation_missing",
                        "concert ordering — typed event family deferred to V8.3.2"),
     "9a707b82":      ("evidence_present_computation_missing",
@@ -106,14 +117,18 @@ def _classify_heuristic(qa: dict, v822_rec: dict) -> tuple[str, str]:
                 "gold itself is abstain; LLM committed a specific answer it "
                 "shouldn't have — calibration / over-commit failure")
 
-    # Refusal / abstain pattern in answer
+    # Refusal / abstain pattern in answer. We cannot decide
+    # retrieve_missing vs commit_over_cautious without probing
+    # top-K. Mark for follow-up audit (LSA-3) — do NOT pre-close
+    # the deterministic-skill regression path.
     if any(kw in ans_low for kw in (
         "not enough", "information provided is not",
         "do not specify", "memories do not", "cannot determine",
         "i don't have", "no specific information",
     )):
-        return ("retrieve_missing",
-                "answer refuses; either retrieve missing or commit over-cautious")
+        return ("needs_retrieve_probe",
+                "answer abstains; cannot decide retrieve vs commit-over-cautious "
+                "from artifact alone — requires LSA-3 existing-path regression audit")
 
     # Judge explicitly cited a number that doesn't match
     if ("count" in q_low or "how many" in q_low) and re.search(

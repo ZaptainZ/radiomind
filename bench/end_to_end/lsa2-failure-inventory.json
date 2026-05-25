@@ -4,9 +4,10 @@
     "baseline_overall_accuracy": 0.92,
     "n_in_scope": 8,
     "label_distribution": {
-      "gold_or_input_limitation": 4,
-      "retrieve_missing": 2,
+      "gold_or_input_limitation": 3,
+      "needs_retrieve_probe": 2,
       "commit_variance": 1,
+      "computation_high_risk": 1,
       "evidence_present_computation_missing": 1
     },
     "EXCLUDED_targets": [
@@ -61,9 +62,9 @@
       ],
       "v822a_answer_preview": "The information provided is not enough.",
       "v822a_verdict_tail": "specific claim.\n\nBased on this analysis, the model response does not align with the correct answer.\n</judge_thinking>\nno",
-      "label": "retrieve_missing",
+      "label": "needs_retrieve_probe",
       "label_source": "heuristic",
-      "reason": "answer refuses; either retrieve missing or commit over-cautious"
+      "reason": "answer abstains; cannot decide retrieve vs commit-over-cautious from artifact alone — requires LSA-3 existing-path regression audit"
     },
     {
       "qid": "b6025781",
@@ -96,9 +97,9 @@
       ],
       "v822a_answer_preview": "The information provided is not enough to determine how many years older you are now compared to when you graduated from college.",
       "v822a_verdict_tail": " the correct answer.\n\nBased on this analysis, the model response does not match the correct answer.\n</judge_thinking>\nno",
-      "label": "retrieve_missing",
+      "label": "needs_retrieve_probe",
       "label_source": "heuristic",
-      "reason": "answer refuses; either retrieve missing or commit over-cautious"
+      "reason": "answer abstains; cannot decide retrieve vs commit-over-cautious from artifact alone — requires LSA-3 existing-path regression audit"
     },
     {
       "qid": "d6233ab6",
@@ -154,9 +155,9 @@
       ],
       "v822a_answer_preview": "You replaced or fixed 4 kitchen items: a kitchen mat, a kitchen faucet, kitchen shelves, and a toaster oven.",
       "v822a_verdict_tail": "d.\n\nBased on this analysis, the model response does not fully capture the correct answer's meaning.\n</judge_thinking>\nno",
-      "label": "gold_or_input_limitation",
+      "label": "computation_high_risk",
       "label_source": "v8.3-audit",
-      "reason": "kitchen count — entity normalization required, LLM-shaped"
+      "reason": "kitchen count — evidence present, but entity normalization (faucet/kitchen faucet/Moen faucet) + replace-vs-acquire verb classification is open-vocabulary; defer on cost/benefit, NOT on gold/input limit"
     },
     {
       "qid": "gpt4_d6585ce8",
