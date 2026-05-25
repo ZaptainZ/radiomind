@@ -2,10 +2,11 @@
   "summary": {
     "n_qids": 10,
     "injected_top": 5,
-    "default_answer_token_in_top": "2/10",
-    "simulated_fix_answer_token_in_top": "3/10",
-    "total_noise_slots_default": 16,
-    "noise_slot_fraction_default": "16/50"
+    "M1_gold_in_top_default": "1/10",
+    "M1_gold_in_top_simulated": "1/10",
+    "M2_known_junk_default_slots": "17/50",
+    "M3_generic_framing_default": "1/50",
+    "M3_generic_framing_simulated": "6/50"
   },
   "per_qid": [
     {
@@ -44,7 +45,8 @@
             "confidence": 0.4
           }
         ],
-        "noise_in_injected_top": 0,
+        "known_noise_in_injected_top": 0,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": true
       },
@@ -72,6 +74,8 @@
             "confidence": 0.4
           }
         ],
+        "known_noise_removed_top": 0,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": true
       }
     },
@@ -90,12 +94,15 @@
       ],
       "default": {
         "top_dump": [],
-        "noise_in_injected_top": 0,
+        "known_noise_in_injected_top": 0,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
       "simulated_fix": {
         "top_dump": [],
+        "known_noise_removed_top": 0,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     },
@@ -128,7 +135,8 @@
             "confidence": 0.85
           }
         ],
-        "noise_in_injected_top": 0,
+        "known_noise_in_injected_top": 0,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -149,6 +157,8 @@
             "confidence": 0.4
           }
         ],
+        "known_noise_removed_top": 0,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     },
@@ -196,7 +206,8 @@
             "confidence": 0.7
           }
         ],
-        "noise_in_injected_top": 0,
+        "known_noise_in_injected_top": 0,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -231,6 +242,8 @@
             "confidence": 0.7
           }
         ],
+        "known_noise_removed_top": 0,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     },
@@ -355,7 +368,8 @@
             "confidence": 0.6
           }
         ],
-        "noise_in_injected_top": 4,
+        "known_noise_in_injected_top": 4,
+        "generic_framing_in_injected_top": 1,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -467,7 +481,9 @@
             "confidence": 0.6
           }
         ],
-        "answer_token_in_injected_top": true
+        "known_noise_removed_top": 4,
+        "generic_framing_in_injected_top": 5,
+        "answer_token_in_injected_top": false
       }
     },
     {
@@ -591,7 +607,8 @@
             "confidence": 0.7
           }
         ],
-        "noise_in_injected_top": 4,
+        "known_noise_in_injected_top": 4,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -703,6 +720,8 @@
             "confidence": 0.5
           }
         ],
+        "known_noise_removed_top": 4,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     },
@@ -812,7 +831,8 @@
             "confidence": 0.6
           }
         ],
-        "noise_in_injected_top": 2,
+        "known_noise_in_injected_top": 2,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -868,6 +888,8 @@
             "confidence": 0.6
           }
         ],
+        "known_noise_removed_top": 2,
+        "generic_framing_in_injected_top": 1,
         "answer_token_in_injected_top": false
       }
     },
@@ -889,7 +911,7 @@
             "rank": 1,
             "candidate": "Sharing",
             "relation": "proper_noun_in_context",
-            "source_count": 8,
+            "source_count": 10,
             "confidence": 0.75
           },
           {
@@ -901,14 +923,14 @@
           },
           {
             "rank": 3,
-            "candidate": "Yeah",
+            "candidate": "Sounds",
             "relation": "proper_noun_in_context",
             "source_count": 4,
             "confidence": 0.75
           },
           {
             "rank": 4,
-            "candidate": "Do",
+            "candidate": "Yeah",
             "relation": "proper_noun_in_context",
             "source_count": 3,
             "confidence": 0.75
@@ -922,76 +944,77 @@
           },
           {
             "rank": 6,
-            "candidate": "What",
+            "candidate": "Do",
             "relation": "proper_noun_in_context",
             "source_count": 3,
             "confidence": 0.75
           },
           {
             "rank": 7,
-            "candidate": "Sounds",
-            "relation": "proper_noun_in_context",
-            "source_count": 3,
-            "confidence": 0.75
-          },
-          {
-            "rank": 8,
-            "candidate": "Toby",
-            "relation": "proper_noun_in_context",
-            "source_count": 3,
-            "confidence": 0.6
-          },
-          {
-            "rank": 9,
             "candidate": "Hi Audrey",
             "relation": "proper_noun_in_context",
             "source_count": 2,
             "confidence": 0.75
           },
           {
-            "rank": 10,
+            "rank": 8,
+            "candidate": "What",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 9,
             "candidate": "Being",
             "relation": "proper_noun_in_context",
             "source_count": 2,
             "confidence": 0.75
           },
           {
-            "rank": 11,
+            "rank": 10,
             "candidate": "Nature",
             "relation": "proper_noun_in_context",
             "source_count": 2,
             "confidence": 0.75
           },
           {
-            "rank": 12,
+            "rank": 11,
             "candidate": "Scout",
             "relation": "proper_noun_in_context",
             "source_count": 2,
             "confidence": 0.6
           },
           {
-            "rank": 13,
+            "rank": 12,
             "candidate": "Aww",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
+            "rank": 13,
+            "candidate": "Been",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
             "rank": 14,
-            "candidate": "Thanks Audrey",
+            "candidate": "Sames",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 15,
-            "candidate": "Been",
+            "candidate": "There",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           }
         ],
-        "noise_in_injected_top": 3,
+        "known_noise_in_injected_top": 4,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -999,14 +1022,14 @@
         "top_dump": [
           {
             "rank": 1,
-            "candidate": "Do",
+            "candidate": "How",
             "relation": "proper_noun_in_context",
             "source_count": 3,
             "confidence": 0.75
           },
           {
             "rank": 2,
-            "candidate": "How",
+            "candidate": "Do",
             "relation": "proper_noun_in_context",
             "source_count": 3,
             "confidence": 0.75
@@ -1015,7 +1038,7 @@
             "rank": 3,
             "candidate": "What",
             "relation": "proper_noun_in_context",
-            "source_count": 3,
+            "source_count": 2,
             "confidence": 0.75
           },
           {
@@ -1048,61 +1071,63 @@
           },
           {
             "rank": 8,
-            "candidate": "German Shephard",
-            "relation": "proper_noun_in_context",
-            "source_count": 1,
-            "confidence": 0.75
-          },
-          {
-            "rank": 9,
             "candidate": "Sames",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
+            "rank": 9,
+            "candidate": "There",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
             "rank": 10,
-            "candidate": "Let",
+            "candidate": "Make",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 11,
-            "candidate": "So",
+            "candidate": "Get",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 12,
-            "candidate": "Glad",
+            "candidate": "Here",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 13,
-            "candidate": "Remember",
+            "candidate": "Glad",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 14,
-            "candidate": "Missed",
+            "candidate": "Remember",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           },
           {
             "rank": 15,
-            "candidate": "Check",
+            "candidate": "Missed",
             "relation": "proper_noun_in_context",
             "source_count": 1,
             "confidence": 0.75
           }
         ],
+        "known_noise_removed_top": 4,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     },
@@ -1129,9 +1154,10 @@
             "confidence": 0.85
           }
         ],
-        "noise_in_injected_top": 0,
+        "known_noise_in_injected_top": 0,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
-        "answer_token_in_injected_top": true
+        "answer_token_in_injected_top": false
       },
       "simulated_fix": {
         "top_dump": [
@@ -1143,7 +1169,9 @@
             "confidence": 0.85
           }
         ],
-        "answer_token_in_injected_top": true
+        "known_noise_removed_top": 0,
+        "generic_framing_in_injected_top": 0,
+        "answer_token_in_injected_top": false
       }
     },
     {
@@ -1267,7 +1295,8 @@
             "confidence": 0.6
           }
         ],
-        "noise_in_injected_top": 3,
+        "known_noise_in_injected_top": 3,
+        "generic_framing_in_injected_top": 0,
         "injected_top": 5,
         "answer_token_in_injected_top": false
       },
@@ -1379,6 +1408,8 @@
             "confidence": 0.6
           }
         ],
+        "known_noise_removed_top": 3,
+        "generic_framing_in_injected_top": 0,
         "answer_token_in_injected_top": false
       }
     }
