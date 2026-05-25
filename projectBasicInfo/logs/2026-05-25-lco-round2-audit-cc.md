@@ -142,14 +142,27 @@ Artifact: `bench/end_to_end/lco-audit-c9-Calvin.json`.
 | qid | error layer | gold-quality concern? | narrow deterministic fix? | verdict |
 |---|---|---|---|---|
 | c3_2656e2c771 (count) | n/a (dataset gold says "two", text says "third") | **YES** — gold-spec inconsistency | n/a | defer; errata candidate |
-| c3_a9fddfe69b (Nate dragons) | existing candidate-layer ranking | no | **possibly YES** | **candidate-quality investigation candidate** (audit before implement) |
+| c3_a9fddfe69b (Nate dragons) | existing candidate-layer ranking | partial (gold relies on image-query metadata over in-dialogue LOTR claim) | NO — CQ-1/CQ-3/CQ-4 ran the audit & e2e gates; none of three candidate-rendering strategies improved Nate. Reclassified as **rotating** (CQ-4 v2: A=1/3 PASS, B/C=0/3) | no further LCO work |
 | c9_5ab522b5c7 (Calvin goals) | retrieval recall | no | NO (same family as c2) | defer |
 
 Combined with Round-1 (c2_financial defer, c5_Voyageurs defer):
 
-**1 of 5 stable-FAIL LoCoMo flip10 qids points at an
-existing-layer improvement worth auditing** (c3_Nate →
-candidate hygiene). 4 of 5 still defer.
+**Original Round-2 finding was 1 of 5 stable-FAIL qids
+pointing at an existing-layer (candidate-quality)
+improvement worth auditing** (c3_Nate). After CQ-1 / CQ-3 /
+CQ-4 / CQ-4 v2 fully exercised that audit + e2e gate:
+
+- None of three candidate-rendering interventions (default
+  re-rank, structural suppress, all-topic-keyword render)
+  produced an e2e win on Nate.
+- A=1/3 PASS revealed Nate is **rotating**, not stable FAIL.
+- c3_Nate now classified as rotating; the original
+  Round-2 "1/5 narrow fix" lead is withdrawn.
+
+**Final stable-FAIL count after CQ-4 v2: 4 of 5** (`c2_financial`,
+`c3_2656_count`, `c5_Voyageurs`, `c9_Calvin`). All defer per
+the same reasons documented above; none has a narrow
+deterministic fix path in current architecture.
 
 Breakdown by layer:
 

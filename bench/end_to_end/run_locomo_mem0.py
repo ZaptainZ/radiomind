@@ -646,7 +646,13 @@ def run(
             "correct": is_correct, "category": cat_name,
             "verdict_tail": verdict[-200:],
             "n_retrieved": len(results),
-            "evidence_section": evidence_section[:2000],
+            # Full evidence_section preserved for audit reproducibility.
+            # Earlier [:2000] truncation hid the critical candidate
+            # (e.g., CQ-4 v2 audit metric falsely showed "dragon not
+            # in block" because rank 12 of 15 fell beyond the 2000-
+            # char cap). Records are still bounded by per-qid block
+            # size (~3-5K chars at most given top_k=200 candidates).
+            "evidence_section": evidence_section,
         }
         per_query_log.append(record)
         _append_checkpoint(record)

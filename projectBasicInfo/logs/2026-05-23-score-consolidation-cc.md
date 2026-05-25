@@ -113,13 +113,14 @@ Interpretation (sample-strength-honest):
 - The Seattle decisive case (`c4_5cfba98ae8`) PASSes in
   every condition tested.
 
-Per-qid stability (across LCR runs, strict judge):
+Per-qid stability (across LCR runs, strict judge; **updated
+2026-05-25 after CQ-4 v2 — Nate moved to rotating**):
 
 | status | qids |
 |---|---|
 | stable PASS | `c2_b4b43181aa` (Maria), `c3_94f06e1a00` (Tilly), `c4_5cfba98ae8` (Seattle) |
-| rotating | `c1_69a7c9bffe` (Gina), `c6_9da9f73c2a` (date) |
-| stable FAIL | `c2_29183ecb5e` (financial), `c3_2656e2c771` (count), `c3_a9fddfe69b` (Nate), `c5_dac00a436e` (Voyageurs), `c9_5ab522b5c7` (Calvin) |
+| rotating | `c1_69a7c9bffe` (Gina), `c6_9da9f73c2a` (date), `c3_a9fddfe69b` (Nate — moved from stable FAIL after CQ-4 v2 showed 1/3 PASS) |
+| stable FAIL | `c2_29183ecb5e` (financial), `c3_2656e2c771` (count, gold-quality), `c5_dac00a436e` (Voyageurs), `c9_5ab522b5c7` (Calvin) |
 
 Full LCR write-up: `2026-05-24-locomo-regression-check-cc.md`.
 

@@ -2,10 +2,18 @@
 
 **Date**: 2026-05-25
 **Author**: Claude Code
-**Status**: CQ-4 v2 closed. Candidate-rendering direction
-**not** salvageable for Nate, but the right reason is not the
-v1 close-out's reason; LLM has informed semantic preference for
-the LOTR signal over the dragon-metadata signal.
+**Status**: CQ-4 v2 closed. The three candidate-rendering
+strategies tested (A current block / B no block / C all-topic-
+keyword render) did not improve Nate's e2e correctness. This
+does NOT establish that NO candidate-rendering scheme could
+ever help Nate — it establishes that none of the three
+deterministic interventions we ran does, and the LLM
+exhibited informed semantic preference for the LOTR
+in-dialogue signal over the dragon-metadata signal when
+both were visible. We are NOT pursuing further Nate-
+specific candidate work; the architectural claim "candidate-
+rendering is mechanically unsalvageable" would require a
+broader sweep we have not done.
 
 ---
 
@@ -99,14 +107,16 @@ multiple signals in the retrieved set.
 
 Three things follow:
 
-1. **CQ-4 candidate-rendering direction is closed for Nate**,
-   but for a different reason than v1 claimed: it's not
-   "LLM ignores candidates", it's "LLM's semantic weighting
-   correctly prefers the LOTR signal that's also in the
-   retrieved memories". A stronger inject (e.g., "ANSWER MUST
-   be dragons") would override the LLM judgment, but that's
-   hard-pinning the gold token — explicitly disallowed by
-   the project's narrow-helper rules.
+1. **No further Nate-specific candidate work.** The three
+   tested interventions (A/B/C) did not move e2e, and the
+   v2 evidence shows the LLM is doing informed semantic
+   weighting, not blindly ignoring candidates. Stronger
+   inject ("ANSWER MUST be dragons") would override LLM
+   judgment but require hard-pinning the gold token, which
+   the project's narrow-helper rules disallow. This is
+   weaker than "candidate-rendering is mechanically
+   unsalvageable" — that broader claim would need a
+   broader sweep we have not done.
 2. **A 1/3 PASS** confirms Nate is **stochastic ~30-40%**, not
    stable FAIL. The earlier "stable FAIL" classification was
    based on too-small samples (1-2 runs per condition
@@ -123,8 +133,11 @@ Three things follow:
 
 ## Decision
 
-- **CQ-4 v2 closed. Candidate-block direction NOT salvageable
-  for Nate** (under deterministic, non-gold-pinning rules).
+- **CQ-4 v2 closed. The three tested candidate-rendering
+  strategies (A/B/C) did not improve Nate.** No deterministic
+  non-gold-pinning rule on the tested surface helped. Broader
+  candidate-rendering schemes remain untested; closing the
+  entire direction is NOT in scope of this audit.
 - **Reclassify c3_Nate** from "stable FAIL" to "rotating".
   Update the score-consolidation log + LCO Round-2 stability
   table.
