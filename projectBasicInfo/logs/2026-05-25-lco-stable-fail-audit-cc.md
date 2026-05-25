@@ -104,6 +104,37 @@ We are NOT proposing to enable `--benchmark-mode max` as the
 new default based on a single-qid result; the experiment is
 diagnostic only.
 
+### Bounds experiment outcome (2026-05-25)
+
+Ran `--benchmark-mode max` (activates `agentic_search`) on
+c2_29183ecb5e alone. Sandbox `/tmp/rm-lco-c2-agentic/`,
+`bench/end_to_end/lco-c2-agentic.json`, 1267s.
+
+  - Decomposition produced 4 sub-queries, all in the financial
+    semantic field: "John's financial situation",
+    "John's income or salary", "John's debt or expenses",
+    "John's savings or investments".
+  - D5:5 ("my kids have so much") is **NOT** in agentic top-27
+    either. Closest related rank-12 turn (D31:17, "family is
+    awesome... times are hard...") still doesn't carry the
+    positive-lifestyle inference the gold relies on.
+  - LLM answer still commits to "financial difficulties":
+    correct=false. Same failure mode as default a2a-practice.
+
+**Verdict**: the existing generic LLM-heavy retrieval path
+ALSO cannot reach D5:5. c2_financial is **genuinely beyond
+both narrow deterministic helpers AND the existing generic
+agentic path** — the bridge "kids have so much" → "wealthy"
+needs query-side semantic understanding that decomposes into
+positive-lifestyle indicators, which neither default
+retrieval nor financial-decomposition can produce.
+
+**Deferred.** No further work on c2_financial in this round.
+A future workstream could explore alternative decomposition
+strategies (e.g., "explicit financial signals OR implicit
+lifestyle indicators") but the bar is high and the win is
+single-qid.
+
 ---
 
 ## c5_dac00a436e — "Which national park (Voyageurs)"
