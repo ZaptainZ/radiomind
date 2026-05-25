@@ -177,6 +177,33 @@ def _count_known_junk_removed(default_cands: list, fixed_cands: list,
     return n
 
 
+def _suppress_decision(candidates: list) -> tuple[bool, dict]:
+    """CQ-3 v1 structural suppress rule.
+
+    Suppress (return True) when BOTH:
+      - top1.confidence <= 0.6
+      - no candidate (anywhere in full list) has
+        confidence >= 0.7 AND source_count >= 2
+
+    Returns (suppress, signals_dict) for diagnostic display.
+    """
+    if not candidates:
+        return True, {"reason": "empty_candidate_set",
+                      "top1_conf": None, "high_floor_count": 0}
+    top1_conf = candidates[0].confidence
+    high_floor = [c for c in candidates
+                  if c.confidence >= 0.7 and c.source_count >= 2]
+    suppress = (top1_conf <= 0.6) and (len(high_floor) == 0)
+    return suppress, {
+        "top1_conf": top1_conf,
+        "high_floor_count": len(high_floor),
+        "high_floor_examples": [
+            f"{c.candidate}[{c.relation}]={c.confidence:.2f}/{c.source_count}"
+            for c in high_floor[:3]
+        ],
+    }
+
+
 def _simulate_fix(candidates: list, conv_speakers: set[str]) -> list:
     """Hypothesis: drop noise candidates + sort by (confidence, source_count)."""
     cleaned = [c for c in candidates if _is_noise(c.candidate, conv_speakers) is None]
@@ -234,6 +261,8 @@ def main() -> int:
             if _is_noise(c.candidate, speakers) is not None
         )
 
+        suppress, suppress_signals = _suppress_decision(cands_default)
+
         rec = {
             "qid": qid,
             "question": question,
@@ -251,6 +280,10 @@ def main() -> int:
                 "answer_token_in_injected_top": _has_answer_token_in_topk(
                     cands_default, answer_tokens, args.injected_top,
                 ),
+            },
+            "cq3_suppress": {
+                "would_suppress": suppress,
+                "signals": suppress_signals,
             },
             "simulated_fix": {
                 "top_dump": [_candidate_record(i + 1, c)
@@ -305,20 +338,26 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out_payload, indent=2, ensure_ascii=False))
 
+    # Aggregate CQ-3 stats
+    suppress_n = sum(1 for r in per_qid if r["cq3_suppress"]["would_suppress"])
+    summary["M4_cq3_suppress_count"] = f"{suppress_n}/{n_total}"
+
     # Console summary
-    print("=" * 78)
+    print("=" * 90)
     print(f"CQ-1 CANDIDATE QUALITY AUDIT (top-{args.injected_top} injected)")
-    print("=" * 78)
+    print("=" * 90)
     print(f"{'qid':<22}{'M1_def':<8}{'M1_sim':<8}{'M2_junk':<10}"
-          f"{'M3_gen_def':<12}{'M3_gen_sim':<12}")
+          f"{'M3_gen_def':<12}{'M3_gen_sim':<12}{'M4_suppress':<14}")
     for r in per_qid:
         d = "Y" if r["default"]["answer_token_in_injected_top"] else "."
         s = "Y" if r["simulated_fix"]["answer_token_in_injected_top"] else "."
         j = r["default"]["known_noise_in_injected_top"]
         g_d = r["default"]["generic_framing_in_injected_top"]
         g_s = r["simulated_fix"]["generic_framing_in_injected_top"]
+        sup = "SUPPRESS" if r["cq3_suppress"]["would_suppress"] else "inject"
         print(f"{r['qid']:<22}{d:<8}{s:<8}{j}/{args.injected_top}      "
-              f"{g_d}/{args.injected_top}        {g_s}/{args.injected_top}")
+              f"{g_d}/{args.injected_top}        {g_s}/{args.injected_top}         "
+              f"{sup}")
     print()
     for k, v in summary.items():
         print(f"  {k}: {v}")
