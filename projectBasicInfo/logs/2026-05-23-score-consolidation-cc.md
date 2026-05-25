@@ -84,9 +84,11 @@ V8.2.1 historical strict mean was 5.80/10 across 11 runs
 the lowest historical run.
 
 **UPDATE (2026-05-24 via LCR-1 / LCR-4)**: a 4-step follow-up
-investigation produced contemporary control data showing the
-5.80 baseline is no longer reachable on today's deepseek-v3.2
-even with V8.2.1 code itself:
+investigation produced contemporary control data. The one
+V8.2.1-HEAD-today control (n=1) did not reproduce the 5.80
+historical mean — too small to claim "unreachable", enough to
+say the historical mean cannot be used as a direct contemporary
+regression baseline:
 
 | condition | n | strict /10 |
 |---|---:|---:|
@@ -170,12 +172,14 @@ Better staged plan:
   current `main`. The 4 target qids' improvements are
   individually verified; aggregate is inferred, not measured.
 - Does not claim LoCoMo regression-free in the strong sense.
-  LCR-1..LCR-4 produced contemporary evidence that the 5.80
-  historical baseline is no longer reachable today (V8.2.1
-  HEAD today also strict 4/10, n=1), so a definitive
-  regression cannot be claimed. With n=1 controls, we can
-  only say: no LoCoMo signal strong enough to justify rolling
-  back NAR/V8.x has been found.
+  LCR-1..LCR-4 produced contemporary evidence that the
+  contemporary single V8.2.1-HEAD control (n=1) did not
+  reproduce the 5.80 historical mean — so the historical mean
+  is not a valid direct contemporary baseline, and a
+  definitive regression cannot be claimed in either direction
+  from this evidence. With n=1 controls, we can only say:
+  no LoCoMo signal strong enough to justify rolling back
+  NAR/V8.x has been found.
 - Does not promise that fix v2 cleans the cache layer (t0/t6
   dup, music-benefit false positive). Cardinal view downstream
   filtering neutralizes these at prompt time, but cache rows

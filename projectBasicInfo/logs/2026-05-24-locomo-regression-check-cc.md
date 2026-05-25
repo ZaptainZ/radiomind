@@ -2,17 +2,17 @@
 
 **Date**: 2026-05-24
 **Author**: Claude Code
-**Status**: Closed. **Verdict (sample-strength-honest)**: the
-5.80 historical baseline is no longer reachable on today's
-deepseek-v3.2 even with V8.2.1 code, so external model/runtime
-drift is confirmed as an important factor. Current main with
-NAR ON has not been shown to be worse than V8.2.1 HEAD today
-on the same set (4 vs 4 strict, n=1 each), so there is no
-LoCoMo signal strong enough to justify rolling back NAR/V8.x.
-This does NOT prove drift is the sole factor or that NAR's
-LoCoMo effect is exactly zero — n=1 controls cannot support
-that strong claim. LME-S deterministic-floor wins remain
-intact.
+**Status**: Closed. **Verdict (sample-strength-honest)**: a
+single contemporary V8.2.1-HEAD control (n=1) did not reproduce
+the 5.80 historical mean, which is enough to say the historical
+mean cannot be used as a direct contemporary regression baseline
+— but NOT enough to claim it is "unreachable". External
+model/runtime drift is supported as an important factor;
+whether it is the sole factor is not provable at this n.
+Current main with NAR ON has not been shown to be worse than
+V8.2.1 HEAD today on the same set (4 vs 4 strict, n=1 each),
+so there is no LoCoMo signal strong enough to justify rolling
+back NAR/V8.x. LME-S deterministic-floor wins remain intact.
 
 ---
 
@@ -104,10 +104,12 @@ historical 5-7 range — too small to act on without more samples.
 - NAR recognizer-off (5) is +1 strict point vs both V8.2.1
   today and NAR-on, but n=1 sample sits inside the V8.2.1
   historical 5-7 range — too small to act on.
-- Historical V8.2.1 5.80 is no longer reachable on today's
-  deepseek-v3.2 with V8.2.1 code itself, so framing the gap as
-  a current-main "regression" overstates what we have evidence
-  for.
+- Historical V8.2.1 5.80 was not reproduced by a single
+  contemporary V8.2.1-HEAD control (n=1); insufficient to
+  claim "no longer reachable", but sufficient to say it
+  cannot be used as a direct comparator. Framing the gap as
+  a current-main "regression" overstates what one control
+  run can support.
 
 ## Decision
 
@@ -126,10 +128,13 @@ values preserve current behavior; future A/Bs can flip them
 without code changes.
 
 **Future LoCoMo baseline reference**: V8.2.1 historical 5.80
-remains a historical reference, not a current target. Until a
-new high-n contemporary baseline is measured, treat strict 4-5
-as the band consistent with available data; mark 5.80 as
-"historical, not directly comparable" when citing.
+stays as a historical reference, not a current performance
+target. The 4-5 strict band observed in LCR is an
+**observed contemporary band under limited samples** (n=1 per
+condition for most rows, n=3 for one), not a new statistical
+baseline. Treat it as "this is what we saw in 4 single-run
+experiments", and require fresh measurement before using any
+specific number as the comparator for a future change.
 
 ## Risks Acknowledged
 
@@ -176,6 +181,12 @@ Pending in LCR-5 step:
 ## Updated Score Consolidation
 
 Append to `2026-05-23-score-consolidation-cc.md` under "LoCoMo
-flip10 Sanity": the SC-3 4/10 result is **expected** on today's
-deepseek-v3.2; it is not a regression introduced by current main.
-Use strict 4-5/10 as the new baseline reference, not 5.80.
+flip10 Sanity": the SC-3 4/10 result does not match the V8.2.1
+historical 5.80 mean, but neither does the single
+V8.2.1-HEAD-today control — so it is not a regression that
+can be attributed to current main from this evidence. Cite
+the 4-5 strict range as "observed contemporary band under
+limited samples" (n=1 each for most conditions); explicitly
+mark V8.2.1 historical 5.80 as "historical, not directly
+comparable" rather than promoting any new number as the
+performance baseline.
