@@ -80,11 +80,29 @@ have so much" implies the family is not struggling.
 
 ### Verdict
 
-**Out of scope for a narrow ingest- or output-side helper.** The
-right intervention is at the retrieval layer (query rewrite /
-expansion / multi-aspect decomposition) and that is LLM-heavy,
-not deterministic. Defer; do not open a workstream for this qid
-alone.
+**No narrow deterministic fix.** The right intervention is at
+the retrieval layer (query expansion / multi-aspect
+decomposition); that direction is LLM-heavy, not narrow.
+
+But: the repo already has a generic LLM-heavy retrieval path
+(`agentic_search` in `src/radiomind/storage/agentic.py`,
+exposed by `run_locomo_mem0.py --benchmark-mode max`). Before
+fully deferring this qid, a single-qid bounds experiment is
+worth running: does the existing `--benchmark-mode max` path
+pull D5:5 into top-K and shift the answer toward "middle-class
+or wealthy"? Two outcomes:
+
+  - YES on both → c2 is a "default path doesn't activate an
+    already-available capability" issue, not a missing
+    capability. The decision about whether to change the
+    default activation is a separate (and load-bearing)
+    question; this audit does not pre-commit to it.
+  - NO → c2 stays as "no narrow fix, and the existing generic
+    path also can't reach it", and we genuinely defer.
+
+We are NOT proposing to enable `--benchmark-mode max` as the
+new default based on a single-qid result; the experiment is
+diagnostic only.
 
 ---
 
@@ -120,32 +138,35 @@ trail-map image pixels in D11:9.
    not specify the name of the national park") is
    architecturally correct given text-only ingestion.
 
-3. **Error layer**: **OUT OF SCOPE** for current RadioMind
-   text-only ingestion. The gold requires visual understanding
-   of the trail-map image. RadioMind does not ingest image
-   pixels. Strict-judge marks this FAIL because the LLM didn't
-   emit "Voyageurs", but the LLM has no way to obtain that
-   token from its inputs.
+3. **Error layer**: **non-text-groundable under current ingestion**.
+   The "Voyageurs" token is absent from all text-channel content
+   RadioMind currently ingests. The LLM's actual answer
+   ("the memories do not specify the name of the national park")
+   is faithful to the inputs it has. Where the gold token
+   actually lives — on D11:9's trail-map image pixels, in
+   external world knowledge, or in some other modality the
+   benchmark expects — is a separate question we cannot
+   conclude from this audit alone.
 
 4. **Narrow deterministic fix path?** NO.
-   - Adding a vision model to ingest img_url + extract text from
-     trail-map images would close it, but that's a major
-     multimodal extension, not a narrow helper.
-   - There is no deterministic ingest- or retrieval-side trick
-     that produces a place-name absent from all text.
+   - If the gold relies on image content, extracting it would
+     require multimodal ingestion. That is a major extension,
+     not a narrow helper.
+   - If the gold relies on external world knowledge (geographic
+     inference, etc.), it is also out of scope for a memory-
+     system intervention.
+   - Either way, no text-side deterministic trick can
+     synthesize a place name that doesn't appear in the text.
 
 ### Verdict
 
-**Architectural ceiling, not a fixable failure.** This qid is
-effectively in the same category as the dataset-errata qids we
-filter at run-time. Recommend:
-
-- Treat as a known architectural-ceiling miss; do not chase.
-- If wanting to remove from future strict-mean noise, add
-  `c5_dac00a436e` to a "vision-required" exclusion list (parallel
-  to the existing `370a8ff4` LME-S errata mechanism), but only
-  after confirming on at least one more qid that vision is the
-  identifier (avoid one-off exclusion).
+**Non-text-groundable under current text-only ingestion.** Do
+NOT add to an errata-exclusion list yet — first clarify whether
+the LoCoMo benchmark's evaluation protocol actually requires
+multimodal ingestion, or whether the gold relies on something
+else (world knowledge, external context). Until that's resolved,
+treat `c5_dac00a436e` as a known unscoreable-under-current-
+inputs case but don't actively filter it.
 
 ---
 
@@ -153,8 +174,8 @@ filter at run-time. Recommend:
 
 | qid | layer | actionable now? |
 |---|---|---|
-| `c2_29183ecb5e` financial | retrieval recall gap | **no** — would need query expansion / decomposition (LLM-heavy, not narrow) |
-| `c5_dac00a436e` Voyageurs | vision-required (text doesn't contain answer) | **no** — architectural ceiling |
+| `c2_29183ecb5e` financial | retrieval recall gap under default a2a-practice path | **no narrow fix**; existing `agentic_search` / `--benchmark-mode max` is the generic LLM-heavy path and warrants a single-qid bounds experiment before fully deferring |
+| `c5_dac00a436e` Voyageurs | non-text-groundable under current ingestion | **no** — no text-side fix can synthesize a name absent from all text; whether it's vision/world-knowledge/other is unresolved |
 
 Neither qid is a good NAR-shape target. The stable-FAIL set
 under our current text-only + narrow-deterministic constraints
