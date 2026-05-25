@@ -1,0 +1,35 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 0,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 32.8,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI read all memories. Relevant ones for \"Nate's favorite book series\" are those where Nate mentions or recommends a book series.\n\nRelevant memories:  \n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image — query: fantasy novels dragon cover series.]  \n- (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Sharing image — query: lord of the rings trilogy dvd boxset.]  \n- (Monday, May 02, 2022) Nate: \"Glad to hear you enjoyed it! It's probably the greatest trilogy of all time!\" (This is in response to Joanna saying she watched \"The Lord of the Rings\" trilogy, so Nate is praising that trilogy.)  \n- (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Sharing image — query: space opera book series.]  \n- (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Sharing image — query: a court of thorns and roses book sarah j maas.]  \n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are Nate speaking about his own preferences, so correct entity.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFrom the memories:  \n1. A fantasy series with adventures, magic, great characters, dragon cover — not named explicitly.  \n2. Lord of the Rings trilogy — he calls it \"one of my faves\" and \"greatest trilogy of all time.\"  \n3. A space opera book series with awesome battles and interesting characters — not named.  \n4. \"A Court of Thorns and Roses\" series by Sarah J. Maas — he suggests it as a recommendation.  \n\nThe question: \"What is Nate's favorite book series about?\"  \nIt asks about the **subject/content** of his favorite book series, not the title.  \nWe need to determine which is his favorite.  \n\nThe strongest evidence:  \n- On April 21, 2022, he says \"This trilogy is one of my faves\" about Lord of the Rings.  \n- On May 2, 2022, he says \"It's probably the greatest trilogy of all time!\" about Lord of the Rings.  \n- No other series gets such superlative praise in the memories.  \n- The fantasy series with dragons is recommended but not called \"favorite\" explicitly.  \n- The space opera is recommended but not called \"favorite.\"  \n- \"A Court of Thorns and Roses\" is just a suggestion.  \n\nSo his favorite appears to be Lord of the Rings.  \n\n**Step 4: SELECT THE BEST ANSWER**  \nLord of the Rings is a fantasy trilogy about world-building, battles, and storytelling (per his description). More specifically, it's about a quest to destroy a powerful ring, involving hobbits, elves, dwarves, wizards, and battles against dark forces. But the question asks \"What is Nate's favorite book series about?\" — we can summarize from his own description: world-building, battles, and storytelling in a fantasy setting.  \n\n**Step 5: TEMPORAL GROUNDING**  \nNo temporal issue here — his praise for Lord of the Rings is consistent and not contradicted later.\n\n**Step 6: INCLUSION CHECK**  \nOnly one series is explicitly called his favorite (implied by \"greatest trilogy of all time\").\n\n**Step 7: COMMIT AND ANSWER**  \nFrom Nate's own words: Lord of the Rings is about epic fantasy world-building, battles, and storytelling.\n\nANSWER: Nate's favorite book series is about epic fantasy world-building, battles, and storytelling (the Lord of the Rings trilogy).",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key element of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 213,
+      "evidence_section": "EVIDENCE CANDIDATES (deterministic extraction from retrieved memories):\n1. 'fantasy' (relation=topic_keyword, confidence=0.70) [supported_by=3]\n   quote: Nate: Yep! I'm currently playing this awesome fantasy RPG called \"Xeonoblade Chronicles\" and it's been a blast! I highly reccomend it if you've never pla\n2. 'trilogy' (relation=topic_keyword, confidence=0.70) [supported_by=3]\n   quote: Nate: Glad to hear you enjoyed it! It's probably the greatest trilogy of all time! As for me, life's been ok, just taking care of this.\n3. 'battles' (relation=topic_keyword, confidence=0.70) [supported_by=2]\n   quote: It's got awesome battles and interesting characters. [Sharing image — query: space opera book series.\n4. 'cover' (relation=topic_keyword, confidence=0.70) [supported_by=2]\n   quote: [Sharing image — query: eternal kingdom game cover art. The image shows: a photo of two nintendo game covers with a picture of a group of people]\n5. 'sci-fi' (relation=topic_keyword, confidence=0.70) [supported_by=2]\n   quote: Nate: I love action and sci-fi movies, the effects are so cool! What about you, what's your favorite genre?\n6. 'space' (relation=topic_keyword, confidence=0.70)\n   quote: It's got awesome battles and interesting characters. [Sharing image — query: space opera book series. The image shows: a photo of a poster of a man falling off a cliff]\n7. 'opera' (relation=topic_keyword, confidence=0.70)\n   quote: It's got awesome battles and interesting characters. [Sharing image — query: space opera book series. The image shows: a photo of a poster of a man falling off a cliff]\n8. 'kingdom' (relation=topic_keyword, confidence=0.70)\n   quote: [Sharing image — query: eternal kingdom game cover art. The image shows: a photo of two nintendo game covers with a picture of a group of p\n9. 'genre' (relation=topic_keyword, confidence=0.70)\n   quote: ate: I love action and sci-fi movies, the effects are so cool! What about you, what's your favorite genre?\n10. 'adventures' (relation=topic_key"
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

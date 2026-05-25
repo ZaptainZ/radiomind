@@ -1,0 +1,92 @@
+[
+  {
+    "variant": "A",
+    "run": 1,
+    "elapsed_s": 1550,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 1434,
+    "dragon_in_evidence": false,
+    "answer_preview": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories about Nate's favorite book series:  \n\n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image \u2014 query: fantasy novels dragon cover series.]  \n- (T"
+  },
+  {
+    "variant": "A",
+    "run": 2,
+    "elapsed_s": 28,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 1434,
+    "dragon_in_evidence": false,
+    "answer_preview": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories about Nate's favorite book series:  \n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image \u2014 query: fantasy novels dragon cover series.]  \n- (Th"
+  },
+  {
+    "variant": "A",
+    "run": 3,
+    "elapsed_s": 36,
+    "correct": true,
+    "judge_failed": false,
+    "evidence_section_len": 1434,
+    "dragon_in_evidence": false,
+    "answer_preview": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI read all memories. Relevant ones for \"Nate's favorite book series\" would be where Nate talks about books or series he loves.\n\n- (Thursday, April 21, 2022): Nate says \"I love this series. It has adventures, magic, and great characters - it's a"
+  },
+  {
+    "variant": "B",
+    "run": 1,
+    "elapsed_s": 42,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 0,
+    "dragon_in_evidence": false,
+    "answer_preview": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories for \"Nate's favorite book series\" are those where Nate mentions or recommends a book series he loves.\n\nRelevant memories:  \n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - "
+  },
+  {
+    "variant": "B",
+    "run": 2,
+    "elapsed_s": 38,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 0,
+    "dragon_in_evidence": false,
+    "answer_preview": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories for \"Nate's favorite book series\" are those where Nate mentions or recommends a book series.\n\nRelevant memories:  \n1. (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a m"
+  },
+  {
+    "variant": "B",
+    "run": 3,
+    "elapsed_s": 32,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 0,
+    "dragon_in_evidence": false,
+    "answer_preview": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI'll read every memory and note any that mention Nate's favorite book series.\n\n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image \u2014 query: fantasy novels dr"
+  },
+  {
+    "variant": "C",
+    "run": 1,
+    "elapsed_s": 33,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 2000,
+    "dragon_in_evidence": false,
+    "answer_preview": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI read all memories. Relevant ones for \"Nate's favorite book series\" are those where Nate mentions or recommends a book series.\n\nRelevant memories:  \n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great ch"
+  },
+  {
+    "variant": "C",
+    "run": 2,
+    "elapsed_s": 32,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 2000,
+    "dragon_in_evidence": false,
+    "answer_preview": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI'll read through all memories looking for mentions of Nate's favorite book series.\n\n- Jan 21, 2022: No book mentions.  \n- Jan 23, 2022: No book mentions.  \n- Feb 7\u2013Feb 25, 2022: No book mentions.  \n- Mar 18\u2013Mar 24, 2022: No book mentions.  \n- "
+  },
+  {
+    "variant": "C",
+    "run": 3,
+    "elapsed_s": 43,
+    "correct": false,
+    "judge_failed": false,
+    "evidence_section_len": 2000,
+    "dragon_in_evidence": false,
+    "answer_preview": "Let's go step by step.\n\n**Step 1: SCAN ALL MEMORIES**  \nI'll read all memories looking for mentions of Nate's favorite book series.\n\n- Jan 21, 2022: No book mentions.  \n- Jan 23, 2022: No book mentions.  \n- Feb 7, 2022: No book mentions.  \n- Feb 25, 2022: No book mentions.  \n- Mar 18, 2022: No book "
+  }
+]

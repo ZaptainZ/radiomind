@@ -1,0 +1,35 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 629,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1550.0,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories about Nate's favorite book series:  \n\n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image — query: fantasy novels dragon cover series.]  \n- (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Sharing image — query: lord of the rings trilogy dvd boxset.]  \n- (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Sharing image — query: space opera book series.]  \n- (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Sharing image — query: a court of thorns and roses book sarah j maas.]  \n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are Nate speaking about his own preferences.  \n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFrom the memories:  \n1. \"I love this series\" (fantasy novels dragon cover series) — genre: fantasy, mentions adventures, magic, great characters.  \n2. \"This trilogy is one of my faves\" (Lord of the Rings trilogy) — explicitly named via image query, described as favorite.  \n3. \"I'd really recommend this series\" (space opera book series) — genre: space opera, battles, interesting characters.  \n4. \"How about this series?\" (A Court of Thorns and Roses) — another recommendation.  \n\nThe question asks: \"What is Nate's favorite book series about?\"  \nThe most specific and directly stated favorite is the Lord of the Rings trilogy (from memory 2). The image query explicitly names it, and Nate calls it \"one of my faves\" with strong praise.  \n\n**Step 4: SELECT THE BEST ANSWER**  \nThe Lord of the Rings trilogy is the only series Nate explicitly calls a favorite. The other series are recommendations, but not labeled \"favorite.\"  \n\n**Step 5: TEMPORAL GROUNDING**  \nNo conflicting temporal info — the favorite mention is from April 21, 2022, and no later memory contradicts it.  \n\n**Step 6: INCLUSION CHECK**  \nOnly one series is explicitly called a favorite.  \n\n**Step 7: COMMIT AND ANSWER**  \nNate's favorite book series is about epic fantasy with world-building, battles, and storytelling — specifically, *The Lord of the Rings* trilogy.  \n\nANSWER: Nate's favorite book series is *The Lord of the Rings* trilogy, an epic fantasy about world-building, battles, and storytelling.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key element of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 213,
+      "evidence_section": "EVIDENCE CANDIDATES (deterministic extraction from retrieved memories):\n1. 'Joanna' (relation=series_or_entity_name, confidence=0.50) [supported_by=47]\n   quote: Nate: Dang, your full of great ideas Joanna! I really should start doing that as well, or at least write down the things my animals like a lot!\n2. 'Sharing' (relation=series_or_entity_name, confidence=0.50) [supported_by=38]\n   quote: It's got awesome battles and interesting characters. [Sharing image — query: space opera book series. The image shows: a photo of a poster of a man falling off a\n3. 'Thanks' (relation=series_or_entity_name, confidence=0.50) [supported_by=17]\n   quote: Nate: Thanks, Joanna! I really appreciate it. It's a big decision, but I'm excited for what the future holds.\n4. 'Hey Joanna' (relation=series_or_entity_name, confidence=0.50) [supported_by=15]\n   quote: Nate: Hey Joanna, I'm a big fan of them and thought it would be a fun idea to start making them myself.\n5. 'Yeah' (relation=series_or_entity_name, confidence=0.50) [supported_by=13]\n   quote: Nate: Yeah, balance is key! It's so cool how taking care of ourselves helps us be more creative and happier.\nPick the candidate that most directly answers the question. If multiple candidates fit, prefer higher confidence and higher source_count. If gold answer requires a relative-temporal phrase (e.g. 'a few years ago'), prefer a candidate with temporal_role=relative over event_date.\n\n"
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
