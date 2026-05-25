@@ -144,10 +144,15 @@ def run(
     categories: tuple[int, ...] = (1, 2, 3, 4),
     checkpoint_path: Path | None = None,
     qids_filter: set[str] | None = None,
+    reuse_sandbox: bool = False,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     if (sandbox / "data").exists():
-        shutil.rmtree(sandbox / "data")
+        if reuse_sandbox:
+            print(f"  reuse-sandbox: preserving existing {sandbox / 'data'}",
+                  flush=True)
+        else:
+            shutil.rmtree(sandbox / "data")
     sandbox.mkdir(parents=True, exist_ok=True)
 
     cfg_src = Path.home() / ".radiomind" / "config.toml"
@@ -242,6 +247,31 @@ def run(
 
     # Ingest each conversation ONCE, reused across its QAs
     ingested: set[int] = set()
+    if reuse_sandbox:
+        # Pre-populate from sqlite domain list so we skip re-ingest
+        # for any conv whose memories are already in store. Required
+        # for honest A/B/C candidate-block controls — otherwise the
+        # ingest LLM would re-stochastically rebuild memories between
+        # runs.
+        try:
+            import sqlite3 as _sql
+            _db = sandbox / "data" / "radiomind.db"
+            if _db.exists():
+                _c = _sql.connect(str(_db))
+                rows = _c.execute(
+                    "SELECT DISTINCT domain FROM memories WHERE domain LIKE 'locomo_%'"
+                ).fetchall()
+                _c.close()
+                for (d,) in rows:
+                    try:
+                        ingested.add(int(d.split("_", 1)[1]))
+                    except Exception:
+                        pass
+                if ingested:
+                    print(f"  reuse-sandbox: skip re-ingest for {len(ingested)} domains "
+                          f"({sorted(ingested)})", flush=True)
+        except Exception as e:
+            print(f"  reuse-sandbox preload warn: {e}", flush=True)
     per_type: dict[str, dict] = {}
     overall = {"n": 0, "correct": 0, "total_ingested_turns": 0}
     per_query_log: list[dict] = []
@@ -616,6 +646,7 @@ def run(
             "correct": is_correct, "category": cat_name,
             "verdict_tail": verdict[-200:],
             "n_retrieved": len(results),
+            "evidence_section": evidence_section[:2000],
         }
         per_query_log.append(record)
         _append_checkpoint(record)
@@ -675,6 +706,11 @@ def main() -> int:
                    help="Checkpoint .jsonl path. Appends per-question results; resume via same path. Default <out>.checkpoint.jsonl")
     p.add_argument("--qids", default="",
                    help="Comma-separated qid list (LoCoMo qid format c{conv_idx}_{md5_10}). When set, runs only these qids and skips stratified sampling — for V6.5.1+ targeted smoke validation.")
+    p.add_argument("--reuse-sandbox", action="store_true",
+                   help="Preserve existing sandbox/data + skip re-ingest for "
+                        "domains already present in store. Required for honest "
+                        "A/B/C candidate-block controls (CQ-4) where ingestion "
+                        "must stay fixed across runs.")
     args = p.parse_args()
 
     if not DATASET.exists():
@@ -718,6 +754,7 @@ def main() -> int:
         categories=cats,
         checkpoint_path=cp_path,
         qids_filter=qids_set,
+        reuse_sandbox=args.reuse_sandbox,
     )
     report["benchmark_mode"] = mode
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

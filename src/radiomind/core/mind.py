@@ -1360,12 +1360,23 @@ class RadioMind:
                 extract_evidence_candidates,
                 render_evidence_candidates,
             )
-            candidates = extract_evidence_candidates(
-                query, retrieved_memories, top_k=top_k,
-            )
             if _cq4_variant == "C":
-                candidates = [c for c in candidates
-                              if c.relation == "topic_keyword"]
+                # CRITICAL: filter FIRST on the full ranked list, and
+                # do NOT truncate. Otherwise a topic-keyword candidate
+                # that ranks below the default top_k cap (e.g., Nate's
+                # "dragon" tied at conf=0.7/src=1 with 5 other topic
+                # words) is silently dropped. Topic candidates are
+                # typically few (~5-15) so inject the whole filtered
+                # set so any specific topic answer-token is exposed
+                # to the LLM.
+                full = extract_evidence_candidates(
+                    query, retrieved_memories, top_k=200,
+                )
+                candidates = [c for c in full if c.relation == "topic_keyword"]
+            else:
+                candidates = extract_evidence_candidates(
+                    query, retrieved_memories, top_k=top_k,
+                )
             block = render_evidence_candidates(candidates)
             if with_convergence and len(candidates) >= 2 and self._llm is not None:
                 converged = converge_candidates_via_trinity(
