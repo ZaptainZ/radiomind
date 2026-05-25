@@ -121,19 +121,23 @@ c2_29183ecb5e alone. Sandbox `/tmp/rm-lco-c2-agentic/`,
   - LLM answer still commits to "financial difficulties":
     correct=false. Same failure mode as default a2a-practice.
 
-**Verdict**: the existing generic LLM-heavy retrieval path
-ALSO cannot reach D5:5. c2_financial is **genuinely beyond
-both narrow deterministic helpers AND the existing generic
-agentic path** — the bridge "kids have so much" → "wealthy"
-needs query-side semantic understanding that decomposes into
-positive-lifestyle indicators, which neither default
-retrieval nor financial-decomposition can produce.
+**Verdict**: in the one max-path run observed today, the
+agentic decomposition produced 4 financial-keyword sub-queries
+and D5:5 did NOT surface in agentic top-27. Because the LLM-
+driven decomposition is stochastic, this single run is NOT a
+capability theorem about agentic_search; it is one observation
+showing that, on today's deepseek-v3.2 decomposition, the
+"kids have so much" → "wealthy" inference path was not
+explored. This is enough to drop implementation work on
+c2_financial in this round.
+
+The architectural gap this exposes (decomposition expands
+within the query's topical field but not toward reverse-
+inference evidence categories) is genuine and worth a
+separate methodology workstream — but should not be chased
+single-qid, and not within LCO.
 
 **Deferred.** No further work on c2_financial in this round.
-A future workstream could explore alternative decomposition
-strategies (e.g., "explicit financial signals OR implicit
-lifestyle indicators") but the bar is high and the win is
-single-qid.
 
 ---
 
@@ -205,8 +209,8 @@ inputs case but don't actively filter it.
 
 | qid | layer | actionable now? |
 |---|---|---|
-| `c2_29183ecb5e` financial | retrieval recall gap under default a2a-practice path | **no narrow fix**; existing `agentic_search` / `--benchmark-mode max` is the generic LLM-heavy path and warrants a single-qid bounds experiment before fully deferring |
-| `c5_dac00a436e` Voyageurs | non-text-groundable under current ingestion | **no** — no text-side fix can synthesize a name absent from all text; whether it's vision/world-knowledge/other is unresolved |
+| `c2_29183ecb5e` financial | retrieval recall gap under default a2a-practice path; also missed in one max-path run | **defer**: no narrow deterministic fix; one observed `--benchmark-mode max` run also did not surface D5:5 — agentic decomposition is stochastic so this is not a capability theorem, but it is enough to drop implementation for this round. |
+| `c5_dac00a436e` Voyageurs | answer absent from ingested text | **defer**: outside the current text-only scoreable surface; root cause (vision/world-knowledge/other) is unresolved and not relevant to deferral. |
 
 Neither qid is a good NAR-shape target. The stable-FAIL set
 under our current text-only + narrow-deterministic constraints

@@ -1,0 +1,260 @@
+{
+  "qid": "c9_5ab522b5c7",
+  "question": "What do Calvin and Dave use to reach their goals?",
+  "gold_answer": "Hard work and determination",
+  "gold_evidence_ids": [
+    "D21:15"
+  ],
+  "category": 4,
+  "domain": "locomo_9",
+  "default_search": {
+    "top_k": 30,
+    "hits": [
+      {
+        "rank": 1,
+        "turn_id": "D26:15",
+        "session_date": "2023-10-25T20:25:00",
+        "score": 0.01639344262295082,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! I appreciate your support. Let's keep pushing for our goals. Catch you later, see ya!"
+      },
+      {
+        "rank": 2,
+        "turn_id": "D30:21",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.01639344262295082,
+        "method": "rrf",
+        "content_preview": "Dave: Wow, Calvin! That's amazing news! Congratulations on both the gala attendance and the upcoming performance. I can't wait to hear all about it and maybe ev"
+      },
+      {
+        "rank": 3,
+        "turn_id": "D25:24",
+        "session_date": "2023-10-23T14:17:00",
+        "score": 0.016129032258064516,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks Dave! Appreciate your support!"
+      },
+      {
+        "rank": 4,
+        "turn_id": "D30:17",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.016129032258064516,
+        "method": "rrf",
+        "content_preview": "Dave: Cool, Calvin! Found an even better spot, with a bench under a tree with pink flowers - so peaceful. A perfect spot to relax and take in the beauty."
+      },
+      {
+        "rank": 5,
+        "turn_id": "D11:12",
+        "session_date": "2023-07-21T18:38:00",
+        "score": 0.015873015873015872,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! Your support means a lot to me. I'm gonna keep pushing myself and striving for my goals, so let's chat again soon."
+      },
+      {
+        "rank": 6,
+        "turn_id": "D30:15",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.015873015873015872,
+        "method": "rrf",
+        "content_preview": "Dave: Thanks, Calvin! I found this serene spot in a nearby park and took this pic."
+      },
+      {
+        "rank": 7,
+        "turn_id": "D12:17",
+        "session_date": "2023-08-03T13:12:00",
+        "score": 0.015625,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! I'll stay focused and keep going. Appreciate your belief!"
+      },
+      {
+        "rank": 8,
+        "turn_id": "D30:13",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.015625,
+        "method": "rrf",
+        "content_preview": "Dave: I totally agree, nature really can boost our spirits in tough times. Also, here's a picture I snapped last week! It's a peaceful scene with rocks and a wa"
+      },
+      {
+        "rank": 9,
+        "turn_id": "D2:21",
+        "session_date": "2023-03-26T16:45:00",
+        "score": 0.015384615384615385,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! Gonna have fun and stay safe with it. Bye!"
+      },
+      {
+        "rank": 10,
+        "turn_id": "D30:9",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.015384615384615385,
+        "method": "rrf",
+        "content_preview": "Dave: Yeah, being able to take good pics is key. I love capturing the beauty of nature - sunsets, beaches, waves. Just got this one recently, check this out! [S"
+      },
+      {
+        "rank": 11,
+        "turn_id": "D4:20",
+        "session_date": "2023-05-01T18:24:00",
+        "score": 0.015151515151515152,
+        "method": "rrf",
+        "content_preview": "Calvin: Wow Dave, working on cars must be really rewarding."
+      },
+      {
+        "rank": 12,
+        "turn_id": "D30:7",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.015151515151515152,
+        "method": "rrf",
+        "content_preview": "Dave: Yes, Calvin, this camera is very good, it helps me capture those special moments really clearly."
+      },
+      {
+        "rank": 13,
+        "turn_id": "D12:10",
+        "session_date": "2023-08-03T13:12:00",
+        "score": 0.014925373134328358,
+        "method": "rrf",
+        "content_preview": "Dave: Sounds like you're really motivated, Calvin. What's the biggest goal you're working towards, music-wise or something else?"
+      },
+      {
+        "rank": 14,
+        "turn_id": "D30:5",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.014925373134328358,
+        "method": "rrf",
+        "content_preview": "Dave: That's amazing, Calvin! Music really does bring people together and foster creativity. Glad to hear you had such an inspiring conversation! Take a look at"
+      },
+      {
+        "rank": 15,
+        "turn_id": "D28:15",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.014705882352941176,
+        "method": "rrf",
+        "content_preview": "Calvin: Wow Dave, those headlights look great! What did you do to get them looking so good?"
+      },
+      {
+        "rank": 16,
+        "turn_id": "D30:1",
+        "session_date": "2023-11-17T10:54:00",
+        "score": 0.014705882352941176,
+        "method": "rrf",
+        "content_preview": "Dave: Hey Calvin, long time no talk! A lot has happened. I've taken up photography and it's been great - been taking pics of the scenery around here which is re"
+      },
+      {
+        "rank": 17,
+        "turn_id": "D12:9",
+        "session_date": "2023-08-03T13:12:00",
+        "score": 0.014492753623188406,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! Seeing it everyday keeps me motivated and reminds me to keep pushing."
+      },
+      {
+        "rank": 18,
+        "turn_id": "D28:40",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.014492753623188406,
+        "method": "rrf",
+        "content_preview": "Dave: Lately, I've been getting into classic rock. The music from that era is timeless."
+      },
+      {
+        "rank": 19,
+        "turn_id": "D2:7",
+        "session_date": "2023-03-26T16:45:00",
+        "score": 0.014285714285714285,
+        "method": "rrf",
+        "content_preview": "Calvin: Woah, I'm on cloud nine! Hard work pays off. What's up with you, Dave?"
+      },
+      {
+        "rank": 20,
+        "turn_id": "D28:38",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.014285714285714285,
+        "method": "rrf",
+        "content_preview": "Dave: Thanks, Calvin! Music really helps with car work. Keeps me focused and makes it feel great. Even though this player is a bit old, he still gets the job do"
+      },
+      {
+        "rank": 21,
+        "turn_id": "D12:15",
+        "session_date": "2023-08-03T13:12:00",
+        "score": 0.014084507042253521,
+        "method": "rrf",
+        "content_preview": "Calvin: Thanks, Dave! I appreciate your support, it means a lot to me. I'll keep going for my dreams."
+      },
+      {
+        "rank": 22,
+        "turn_id": "D28:36",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.014084507042253521,
+        "method": "rrf",
+        "content_preview": "Dave: Cool, Calvin! Music really helps me focus and be productive. When I'm doing my car stuff, I listen to vinyl to relax and stay on track."
+      },
+      {
+        "rank": 23,
+        "turn_id": "D4:8",
+        "session_date": "2023-05-01T18:24:00",
+        "score": 0.013888888888888888,
+        "method": "rrf",
+        "content_preview": "Calvin: Wow, Dave! That looks awesome!"
+      },
+      {
+        "rank": 24,
+        "turn_id": "D28:34",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.013888888888888888,
+        "method": "rrf",
+        "content_preview": "Dave: Yes, Calvin, writing lyrics and notes - that's awesome! It will boost my motivation! Writing lyrics boosts my motivation to grow! [Sharing image that show"
+      },
+      {
+        "rank": 25,
+        "turn_id": "D28:39",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.0136986301369863,
+        "method": "rrf",
+        "content_preview": "Calvin: Cool, Dave! What tunes are you listening to these days?"
+      },
+      {
+        "rank": 26,
+        "turn_id": "D28:24",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.0136986301369863,
+        "method": "rrf",
+        "content_preview": "Dave: Cool! It's the logo for my rock band. I've been a fan for ages and have had the opportunity to join them."
+      },
+      {
+        "rank": 27,
+        "turn_id": "D22:14",
+        "session_date": "2023-10-08T15:13:00",
+        "score": 0.013513513513513514,
+        "method": "rrf",
+        "content_preview": "Calvin: No worries, Dave. Keep going for it. You got this!"
+      },
+      {
+        "rank": 28,
+        "turn_id": "D28:22",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.013513513513513514,
+        "method": "rrf",
+        "content_preview": "Dave: Thanks Calvin! It took some work, but I'm happy with the result. Take a look at the logo we created for our rock band! [Sharing image — query: fully resto"
+      },
+      {
+        "rank": 29,
+        "turn_id": "D18:9",
+        "session_date": "2023-09-13T10:56:00",
+        "score": 0.013333333333333334,
+        "method": "rrf",
+        "content_preview": "Calvin: Yay! Dave! We're hitting some awesome spots - it's gonna be epic!"
+      },
+      {
+        "rank": 30,
+        "turn_id": "D28:20",
+        "session_date": "2023-11-02T17:46:00",
+        "score": 0.013333333333333334,
+        "method": "rrf",
+        "content_preview": "Dave: I found it last week, and it was in bad shape, but I saw the potential. I spent ages restoring it."
+      }
+    ],
+    "gold_ranks": {
+      "D21:15": null
+    },
+    "gold_in_top_k_count": 0,
+    "gold_in_top_k_total": 1
+  }
+}
