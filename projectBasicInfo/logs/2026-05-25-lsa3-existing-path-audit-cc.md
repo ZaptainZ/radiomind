@@ -67,28 +67,54 @@ STRUCTURED SKILL (age_interval, conf=0.90):
 Computed answer: 1
 ```
 
-**Failure layer**: anchor selection. The skill grabs the
-first "graduation" event in retrieve — top-1..13 hits are
-KG events about **family members' graduations** (niece's
-2023-05-22, colleague's son's 2023-05-10, etc.). The user's
-own college-graduation evidence (`answer_2e2085fa_1_t6`)
-is at rank 14.
+**Failure layer (revised TWICE — final form per AAS-1 live probe)**:
 
-**Historical context**: `age_interval.py` line 191 documents
-"c18a7dc8 had ~60-80% V6.1 PASS" — explicitly stochastic.
-Line 346 documents "delta=0 vs gold=7 come from round 1".
-The V8.2.1 single-run PASS was at the lucky end of that
-distribution, not a deterministic fix.
+The first revision (Codex 2026-05-25) proposed
+`skill_anchor_subject_disambiguation`: skill receives both
+user-owned and family-owned graduation candidates, picks
+wrong one. AAS-1 live probe falsifies the premise:
 
-**Recommended workstream label**: `anchor_disambiguation`
-(retrieval-side; the relevant evidence is in store but
-out-ranked by topically-adjacent third-party events). NOT a
-narrow skill-side fix.
+- `_find_event_mentions("graduated from college", retrieved)`
+  on the audit sandbox returns **only 2 candidates**, BOTH
+  family-graduations (niece x2, same event in event + dialog
+  form). User-owned graduation NOT present.
+- Searching the entire c18a7dc8 haystack for first-person
+  graduation markers ("i graduated", "my college", "my
+  degree", "when i was", "years old", "my graduation", etc.)
+  returns **0 user-owned graduation mentions**.
+- Gold-marked user session (`answer_2e2085fa_1/_2`) contains
+  age ("32-year-old Digital Marketing Specialist") and
+  "in the industry for a while", but NO explicit
+  "I graduated from college on [date]" statement.
+- Gold=7 appears to depend on assuming standard US
+  graduation age 25 and computing 32 − 25 = 7. This is
+  knowledge external to the haystack text.
+
+**Final label**: `gold_or_input_limitation`. The text does
+not contain the data required to compute gold=7
+deterministically; the gold relies on an implicit
+common-knowledge assumption about graduation age.
+
+**Subject-ownership filter** would NOT have saved this qid,
+because there is no user-owned graduation event to filter
+TO. The filter is still a sound idea for age_interval
+robustness in general (would prevent picking niece's
+graduation as an anchor when there's no better candidate),
+but it cannot be justified on c18a7dc8 alone — needs
+broader LME-S survey for qids where user-owned and
+family-owned graduations coexist before pursuing.
+
+**Historical context**: `age_interval.py:191` documents
+"c18a7dc8 had ~60-80% V6.1 PASS" — under text-only inputs,
+this is the LLM probability of guessing the standard
+graduation age correctly. V8.2.1 single-run PASS was at the
+lucky end of that LLM-guess distribution. There is no
+text-grounded path to a deterministic answer.
 
 ### b46e15ed — "How many months have passed since I participated in two charity events in a row, on consecutive days?" (gold=2)
 
-**Skill firing**: NO numeric / age / event-interval skill
-fires. Falls through to trinity (3-round, wants=date):
+**Skill firing**: trinity fallback (no skill produced a
+structured answer):
 
 ```
 ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled;
@@ -97,16 +123,37 @@ trust this over hedging unless retrieval contradicts):
   participating in two ...
 ```
 
-**Failure layer**: skill-match gap. `event_interval` skill
-(`src/radiomind/skills/event_interval.py`) is designed for
-"how many X since event-A and event-B"; its `match()`
-predicate should plausibly catch this shape but didn't.
-Could be a narrow regex / shape regression.
+**Failure layer (revised per Codex 2026-05-25)**: NOT a
+simple `match()` miss. `EventIntervalSkill.match()`
+currently returns `True` unconditionally
+(`event_interval.py:299`). The real limit is in
+`resolve()`: the operator it implements is "interval between
+event A and event B" — a delta between two distinct events.
 
-**Recommended workstream label**: `skill_match_gap` (audit
-`event_interval.match()` against b46e15ed's question shape;
-either widen the predicate or document why this shape is
-out of scope). Read-only audit first, no implementation.
+b46e15ed asks "how many months have passed since [a streak
+of two consecutive-day charity events]". That's
+**reference_date − event_cluster**, not event_A − event_B.
+Treating the streak as two separate events and computing
+A−B would yield "1 day" (consecutive days), not "2 months
+since the streak ended". The shape itself is
+out-of-scope for the current operator, not a regex gap.
+
+**Recommended workstream label**: `event_cluster_interval_shape_gap`.
+Decision is operator-level, not regex-level:
+
+- Option A: add a new operator
+  `elapsed_since(consecutive_event_cluster)` that takes a
+  cluster identifier and computes
+  `reference_date − cluster.last_event_date`.
+- Option B: document this shape as out-of-scope and
+  rely on the LLM/trinity path.
+
+Option A is only justified if a broader set of qids shares
+the "elapsed-since-cluster" shape. **Pre-audit needed**
+before any impl: scan LME-S + LoCoMo for other "since [a
+streak of N events]"-shaped queries. If b46e15ed is a
+one-off, defer. If it's a recurring pattern, design the
+operator. Read-only audit first.
 
 ### gpt4_93159ced_abs — "How long have I been working before I started my current job at Google?" (gold = "not enough information")
 
@@ -118,38 +165,38 @@ ATTENTION-ROUTED TRINITY VIEW:
 - answer: 4 years and 3 months of work experience before starting at Google
 ```
 
-**Failure layer**: **classification regression**.
-`mind.py:1267-1271` docstring explicitly documents this qid:
+**Failure layer (revised per Codex 2026-05-25)**: NOT a
+classification regression. `analyze_with_trinity` calls
+`analyze()` first, which deterministically routes "how long"
+to `wants='date'` via `_TEMPORAL_RE` (`attention.py:73`). For
+queries the regex doesn't classify as `lookup`, the trinity
+short-circuits without re-classifying
+(`attention.py:461`). So `wants='date'` is the *intended*
+classification — and it's correct in the general case (most
+"how long have I been Xing before Y" queries are legitimate
+date-arithmetic when Y actually happened).
 
-> "Multi-round trinity ONLY for the `date` wants. Originally
-> also wired for `inference`, but n=100 v4 showed multi-round
-> on open-ended inference questions causes over-commitment:
-> round 1 says 'info not enough', round 2 sees the prior
-> stances and 'tries harder', producing a confident but
-> wrong answer (gpt4_93159ced_abs). Inference is a divergent
-> task — no single right answer to converge to — so
-> single-round is correct."
+The real gap is at **commit time**: the date-arithmetic
+trinity does not verify that Y (the second temporal
+endpoint) has actually occurred. For gpt4_93159ced_abs the
+user has NOT started at Google yet, so the duration is
+literally undefined — but multi-round trinity over-commits
+to "4 years 3 months" anyway.
 
-The historical fix was: **inference qtype → single-round
-(abstains), date qtype → multi-round (commits)**. Today
-`analyze_with_trinity(query, llm=mind._llm).wants` returns
-`'date'` for this query, so multi-round fires → over-commit.
+**Recommended workstream label**: `temporal_endpoint_support_gap`.
+Add a support-aware commit gate, mirroring V8.2.2a's
+role-mismatch guard: before emitting a date-arithmetic
+answer, verify that BOTH endpoints have evidentiary support
+(a memory says event happened, or memory + reference_date
+implies it). When the second endpoint is presupposed but
+unevidenced (or contradicted by "haven't started yet"),
+emit an abstain / informed-refusal. This keeps the date
+skill firing for legitimate duration questions and only
+blocks the over-commit case.
 
-If classification ever returned `'inference'` for this
-question (it asks "how long have I been working before X",
-which is an inference about working duration), single-round
-trinity would have abstained correctly.
-
-This is a **likely classification regression in attention**:
-either V8.x stacking changed the trinity prompt, or the
-LLM's behavior shifted. The fix-side machinery is in place;
-only the upstream classifier flipped.
-
-**Recommended workstream label**: `attention_classification_regression`
-(read-only diagnose: under what condition does
-`analyze_with_trinity` classify this question as `date` vs
-`inference`? If reliably classifiable as inference by a
-deterministic regex / shape rule, that's the narrow fix).
+NOT to be done: re-routing "how long ... before Y" to
+inference. That breaks valid duration questions where Y did
+happen.
 
 ## Implications for LSA Roll-up
 
@@ -165,14 +212,13 @@ baseline" with caveats. The audit reveals:
   these are **integration / wiring** problems on existing
   skills, not new skill design.
 
-Updated taxonomy (post-LSA-3):
+Updated taxonomy (post-LSA-3 + AAS-1 live probe):
 
 | label | count | qids |
 |---|---|---|
-| gold_or_input_limitation | 3 | 1c0ddc50, b6025781, d6233ab6 |
-| anchor_disambiguation | 1 | c18a7dc8 |
-| skill_match_gap | 1 | b46e15ed |
-| attention_classification_regression | 1 | gpt4_93159ced_abs |
+| gold_or_input_limitation | 4 | 1c0ddc50, b6025781, d6233ab6, **c18a7dc8 (moved after AAS-1)** |
+| event_cluster_interval_shape_gap | 1 | b46e15ed |
+| temporal_endpoint_support_gap | 1 | gpt4_93159ced_abs |
 | computation_high_risk | 1 | gpt4_ab202e7f |
 | evidence_present_computation_missing | 1 | gpt4_d6585ce8 |
 
@@ -191,20 +237,27 @@ non-LSA-shaped) audit/fix workstreams. None auto-started.
   template; they need wiring / classification audits.
 - **No code change in this log**. Each existing-path issue
   needs its own scoped audit before any commit.
-- **Three follow-up workstream proposals** (not auto-opened):
-  1. `c18a7dc8 / age_interval anchor_disambiguation` —
-     read-only audit on how `age_interval` picks the
-     graduation anchor; is rank-1 preference correct?
-  2. `b46e15ed / event_interval match-gap` — read-only
-     audit on `event_interval.match()` predicate; if
-     widening the regex catches this shape without
-     mis-firing on non-event-delta questions, consider
-     impl.
-  3. `gpt4_93159ced_abs / attention classification` —
-     read-only diagnose: deterministic regex / shape rule
-     to route "how long have I been Xing before Y"-shaped
-     questions to `inference` (single-round trinity) rather
-     than `date` (multi-round trinity).
+- **Two follow-up workstream proposals (revised after AAS-1)**:
+  1. **PRIORITY 1**: `temporal endpoint support gate` —
+     read-only design + small-scale validation. For
+     `gpt4_93159ced_abs`: before emitting a date-arithmetic
+     answer, verify both temporal endpoints are
+     evidentiarily supported. Same core idea as V8.2.2a
+     role-mismatch support-aware guard, applied to temporal
+     commit. Now the highest-priority concrete fix:
+     existing skill machinery + narrow deterministic
+     guard + clear positive case (gold=abstain text exists).
+  2. **DEFER**: `b46e15ed event_cluster_interval`. Pre-audit
+     needed to determine if "elapsed-since-cluster" shape
+     recurs in more than one qid; if one-off, don't extend.
+  3. **DROPPED (per AAS-1 live probe)**: `age_interval
+     subject-owned anchor` for c18a7dc8. The probe showed
+     `_find_event_mentions` returns only family-graduation
+     candidates because the haystack has no user-owned
+     graduation event. A subject-ownership filter has
+     nothing to filter TO on this qid. Filter may still
+     be useful on other qids; needs broader LME-S survey
+     before justified.
 
 Each warrants its own go-ahead. None auto-started.
 
