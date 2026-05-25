@@ -1,0 +1,1386 @@
+{
+  "summary": {
+    "n_qids": 10,
+    "injected_top": 5,
+    "default_answer_token_in_top": "2/10",
+    "simulated_fix_answer_token_in_top": "3/10",
+    "total_noise_slots_default": 16,
+    "noise_slot_fraction_default": "16/50"
+  },
+  "per_qid": [
+    {
+      "qid": "c1_69a7c9bffe",
+      "question": "When did Gina get her tattoo?",
+      "qtype": "when",
+      "domain": "locomo_1",
+      "speakers": [
+        "Gina",
+        "Jon"
+      ],
+      "answer_tokens": [
+        "years"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "a few years ago",
+            "relation": "temporal_reference",
+            "source_count": 2,
+            "confidence": 0.95
+          },
+          {
+            "rank": 2,
+            "candidate": "2023-02-08",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          },
+          {
+            "rank": 3,
+            "candidate": "2023-04-25",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.4
+          }
+        ],
+        "noise_in_injected_top": 0,
+        "injected_top": 5,
+        "answer_token_in_injected_top": true
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "a few years ago",
+            "relation": "temporal_reference",
+            "source_count": 2,
+            "confidence": 0.95
+          },
+          {
+            "rank": 2,
+            "candidate": "2023-02-08",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          },
+          {
+            "rank": 3,
+            "candidate": "2023-04-25",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.4
+          }
+        ],
+        "answer_token_in_injected_top": true
+      }
+    },
+    {
+      "qid": "c2_29183ecb5e",
+      "question": "What might John's financial status be?",
+      "qtype": "might_be",
+      "domain": "locomo_2",
+      "speakers": [
+        "John",
+        "Maria"
+      ],
+      "answer_tokens": [
+        "wealthy",
+        "middle-class"
+      ],
+      "default": {
+        "top_dump": [],
+        "noise_in_injected_top": 0,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c2_b4b43181aa",
+      "question": "When did Maria take up community work with her church friends?",
+      "qtype": "when",
+      "domain": "locomo_2",
+      "speakers": [
+        "John",
+        "Maria"
+      ],
+      "answer_tokens": [
+        "august"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "2023-02-03",
+            "relation": "temporal_reference",
+            "source_count": 3,
+            "confidence": 0.4
+          },
+          {
+            "rank": 2,
+            "candidate": "2023-08-04",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          }
+        ],
+        "noise_in_injected_top": 0,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "2023-08-04",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          },
+          {
+            "rank": 2,
+            "candidate": "2023-02-03",
+            "relation": "temporal_reference",
+            "source_count": 3,
+            "confidence": 0.4
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c3_2656e2c771",
+      "question": "How many of Joanna's writing have made it to the big screen?",
+      "qtype": "how_many",
+      "domain": "locomo_3",
+      "speakers": [
+        "Joanna",
+        "Nate"
+      ],
+      "answer_tokens": [
+        "two",
+        "three"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "one",
+            "relation": "count_claim",
+            "source_count": 4,
+            "confidence": 0.7
+          },
+          {
+            "rank": 2,
+            "candidate": "first",
+            "relation": "count_claim",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 3,
+            "candidate": "third",
+            "relation": "count_claim",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 4,
+            "candidate": "second",
+            "relation": "count_claim",
+            "source_count": 1,
+            "confidence": 0.7
+          }
+        ],
+        "noise_in_injected_top": 0,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "one",
+            "relation": "count_claim",
+            "source_count": 4,
+            "confidence": 0.7
+          },
+          {
+            "rank": 2,
+            "candidate": "first",
+            "relation": "count_claim",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 3,
+            "candidate": "third",
+            "relation": "count_claim",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 4,
+            "candidate": "second",
+            "relation": "count_claim",
+            "source_count": 1,
+            "confidence": 0.7
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c3_94f06e1a00",
+      "question": "What does Joanna do while she writes?",
+      "qtype": "what_doing",
+      "domain": "locomo_3",
+      "speakers": [
+        "Joanna",
+        "Nate"
+      ],
+      "answer_tokens": [
+        "tilly",
+        "dog"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Nate",
+            "relation": "activity_target",
+            "source_count": 10,
+            "confidence": 0.6
+          },
+          {
+            "rank": 2,
+            "candidate": "Sharing",
+            "relation": "activity_target",
+            "source_count": 6,
+            "confidence": 0.6
+          },
+          {
+            "rank": 3,
+            "candidate": "Writing",
+            "relation": "activity_target",
+            "source_count": 5,
+            "confidence": 0.6
+          },
+          {
+            "rank": 4,
+            "candidate": "Thanks",
+            "relation": "activity_target",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 5,
+            "candidate": "Hey Nate",
+            "relation": "activity_target",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 6,
+            "candidate": "Thanks Nate",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 7,
+            "candidate": "Do",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 8,
+            "candidate": "How",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Yeah",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 10,
+            "candidate": "Bye Nate",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 11,
+            "candidate": "Last",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 12,
+            "candidate": "Creating",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "Have",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 14,
+            "candidate": "Midwestern",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 15,
+            "candidate": "One",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "noise_in_injected_top": 4,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Writing",
+            "relation": "activity_target",
+            "source_count": 5,
+            "confidence": 0.6
+          },
+          {
+            "rank": 2,
+            "candidate": "Do",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 3,
+            "candidate": "How",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 4,
+            "candidate": "Last",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 5,
+            "candidate": "Creating",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 6,
+            "candidate": "Have",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 7,
+            "candidate": "Midwestern",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 8,
+            "candidate": "One",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Woohoo",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 10,
+            "candidate": "Every",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 11,
+            "candidate": "Besides",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 12,
+            "candidate": "Anything",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "Awesome",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 14,
+            "candidate": "Enjoy",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 15,
+            "candidate": "Fort Wayne",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "answer_token_in_injected_top": true
+      }
+    },
+    {
+      "qid": "c3_a9fddfe69b",
+      "question": "What is Nate's favorite book series about?",
+      "qtype": "what_about",
+      "domain": "locomo_3",
+      "speakers": [
+        "Joanna",
+        "Nate"
+      ],
+      "answer_tokens": [
+        "dragon",
+        "dragons"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Sharing",
+            "relation": "series_or_entity_name",
+            "source_count": 12,
+            "confidence": 0.5
+          },
+          {
+            "rank": 2,
+            "candidate": "Yeah",
+            "relation": "series_or_entity_name",
+            "source_count": 3,
+            "confidence": 0.5
+          },
+          {
+            "rank": 3,
+            "candidate": "Joanna",
+            "relation": "series_or_entity_name",
+            "source_count": 3,
+            "confidence": 0.5
+          },
+          {
+            "rank": 4,
+            "candidate": "Hey Joanna",
+            "relation": "series_or_entity_name",
+            "source_count": 3,
+            "confidence": 0.5
+          },
+          {
+            "rank": 5,
+            "candidate": "fantasy",
+            "relation": "topic_keyword",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 6,
+            "candidate": "cover",
+            "relation": "topic_keyword",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 7,
+            "candidate": "And",
+            "relation": "series_or_entity_name",
+            "source_count": 2,
+            "confidence": 0.5
+          },
+          {
+            "rank": 8,
+            "candidate": "Playing",
+            "relation": "series_or_entity_name",
+            "source_count": 2,
+            "confidence": 0.5
+          },
+          {
+            "rank": 9,
+            "candidate": "Not",
+            "relation": "series_or_entity_name",
+            "source_count": 2,
+            "confidence": 0.5
+          },
+          {
+            "rank": 10,
+            "candidate": "Sounds",
+            "relation": "series_or_entity_name",
+            "source_count": 2,
+            "confidence": 0.5
+          },
+          {
+            "rank": 11,
+            "candidate": "Wow",
+            "relation": "series_or_entity_name",
+            "source_count": 2,
+            "confidence": 0.5
+          },
+          {
+            "rank": 12,
+            "candidate": "kingdom",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 13,
+            "candidate": "adventures",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 14,
+            "candidate": "magic",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 15,
+            "candidate": "dragon",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          }
+        ],
+        "noise_in_injected_top": 4,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "fantasy",
+            "relation": "topic_keyword",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 2,
+            "candidate": "cover",
+            "relation": "topic_keyword",
+            "source_count": 2,
+            "confidence": 0.7
+          },
+          {
+            "rank": 3,
+            "candidate": "kingdom",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 4,
+            "candidate": "adventures",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 5,
+            "candidate": "magic",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 6,
+            "candidate": "dragon",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 7,
+            "candidate": "battles",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 8,
+            "candidate": "space",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 9,
+            "candidate": "opera",
+            "relation": "topic_keyword",
+            "source_count": 1,
+            "confidence": 0.7
+          },
+          {
+            "rank": 10,
+            "candidate": "Xeonoblade Chronicles",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          },
+          {
+            "rank": 11,
+            "candidate": "Wanna",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          },
+          {
+            "rank": 12,
+            "candidate": "Here",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          },
+          {
+            "rank": 13,
+            "candidate": "Plus",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          },
+          {
+            "rank": 14,
+            "candidate": "Mostly",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          },
+          {
+            "rank": 15,
+            "candidate": "Anyway",
+            "relation": "series_or_entity_name",
+            "source_count": 1,
+            "confidence": 0.5
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c4_5cfba98ae8",
+      "question": "Which city is John excited to have a game at?",
+      "qtype": "where",
+      "domain": "locomo_4",
+      "speakers": [
+        "John",
+        "Tim"
+      ],
+      "answer_tokens": [
+        "seattle"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Sharing",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 2,
+            "candidate": "Yeah",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 3,
+            "candidate": "There",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 4,
+            "candidate": "Everyone",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 5,
+            "candidate": "Trying",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 6,
+            "candidate": "Plus",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 7,
+            "candidate": "Tim",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 8,
+            "candidate": "Congrats",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Can",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 10,
+            "candidate": "Seattle",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 11,
+            "candidate": "Hey Tim",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 12,
+            "candidate": "Nice",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "Thanks",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "noise_in_injected_top": 2,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "There",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 2,
+            "candidate": "Everyone",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 3,
+            "candidate": "Trying",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 4,
+            "candidate": "Plus",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 5,
+            "candidate": "Congrats",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 6,
+            "candidate": "Can",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 7,
+            "candidate": "Seattle",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c5_dac00a436e",
+      "question": "Which national park could Audrey and Andrew be referring to in their conversations?",
+      "qtype": "where",
+      "domain": "locomo_5",
+      "speakers": [
+        "Andrew",
+        "Audrey"
+      ],
+      "answer_tokens": [
+        "voyageurs"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Sharing",
+            "relation": "proper_noun_in_context",
+            "source_count": 8,
+            "confidence": 0.75
+          },
+          {
+            "rank": 2,
+            "candidate": "Hey Audrey",
+            "relation": "proper_noun_in_context",
+            "source_count": 5,
+            "confidence": 0.75
+          },
+          {
+            "rank": 3,
+            "candidate": "Yeah",
+            "relation": "proper_noun_in_context",
+            "source_count": 4,
+            "confidence": 0.75
+          },
+          {
+            "rank": 4,
+            "candidate": "Do",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 5,
+            "candidate": "How",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 6,
+            "candidate": "What",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 7,
+            "candidate": "Sounds",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 8,
+            "candidate": "Toby",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Hi Audrey",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 10,
+            "candidate": "Being",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 11,
+            "candidate": "Nature",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 12,
+            "candidate": "Scout",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "Aww",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 14,
+            "candidate": "Thanks Audrey",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 15,
+            "candidate": "Been",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          }
+        ],
+        "noise_in_injected_top": 3,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Do",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 2,
+            "candidate": "How",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 3,
+            "candidate": "What",
+            "relation": "proper_noun_in_context",
+            "source_count": 3,
+            "confidence": 0.75
+          },
+          {
+            "rank": 4,
+            "candidate": "Being",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 5,
+            "candidate": "Nature",
+            "relation": "proper_noun_in_context",
+            "source_count": 2,
+            "confidence": 0.75
+          },
+          {
+            "rank": 6,
+            "candidate": "Aww",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 7,
+            "candidate": "Been",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 8,
+            "candidate": "German Shephard",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 9,
+            "candidate": "Sames",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 10,
+            "candidate": "Let",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 11,
+            "candidate": "So",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 12,
+            "candidate": "Glad",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 13,
+            "candidate": "Remember",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 14,
+            "candidate": "Missed",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          },
+          {
+            "rank": 15,
+            "candidate": "Check",
+            "relation": "proper_noun_in_context",
+            "source_count": 1,
+            "confidence": 0.75
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    },
+    {
+      "qid": "c6_9da9f73c2a",
+      "question": "When did John plan his next meeting with his siblings?",
+      "qtype": "when",
+      "domain": "locomo_6",
+      "speakers": [
+        "James",
+        "John"
+      ],
+      "answer_tokens": [
+        "september",
+        "2022"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "2022-08-21",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          }
+        ],
+        "noise_in_injected_top": 0,
+        "injected_top": 5,
+        "answer_token_in_injected_top": true
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "2022-08-21",
+            "relation": "temporal_reference",
+            "source_count": 1,
+            "confidence": 0.85
+          }
+        ],
+        "answer_token_in_injected_top": true
+      }
+    },
+    {
+      "qid": "c9_5ab522b5c7",
+      "question": "What do Calvin and Dave use to reach their goals?",
+      "qtype": "what_doing",
+      "domain": "locomo_9",
+      "speakers": [
+        "Calvin",
+        "Dave"
+      ],
+      "answer_tokens": [
+        "hard",
+        "determination"
+      ],
+      "default": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Thanks",
+            "relation": "activity_target",
+            "source_count": 10,
+            "confidence": 0.6
+          },
+          {
+            "rank": 2,
+            "candidate": "Sharing",
+            "relation": "activity_target",
+            "source_count": 4,
+            "confidence": 0.6
+          },
+          {
+            "rank": 3,
+            "candidate": "Hey Dave",
+            "relation": "activity_target",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 4,
+            "candidate": "Boston",
+            "relation": "activity_target",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 5,
+            "candidate": "Gonna",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 6,
+            "candidate": "Appreciate",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 7,
+            "candidate": "Wow",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 8,
+            "candidate": "Can",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Yeah",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 10,
+            "candidate": "Having",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 11,
+            "candidate": "Wow Dave",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 12,
+            "candidate": "Since",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "So",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 14,
+            "candidate": "Never",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 15,
+            "candidate": "Let",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "noise_in_injected_top": 3,
+        "injected_top": 5,
+        "answer_token_in_injected_top": false
+      },
+      "simulated_fix": {
+        "top_dump": [
+          {
+            "rank": 1,
+            "candidate": "Boston",
+            "relation": "activity_target",
+            "source_count": 3,
+            "confidence": 0.6
+          },
+          {
+            "rank": 2,
+            "candidate": "Gonna",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 3,
+            "candidate": "Appreciate",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 4,
+            "candidate": "Can",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 5,
+            "candidate": "Having",
+            "relation": "activity_target",
+            "source_count": 2,
+            "confidence": 0.6
+          },
+          {
+            "rank": 6,
+            "candidate": "Since",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 7,
+            "candidate": "So",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 8,
+            "candidate": "Never",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 9,
+            "candidate": "Let",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 10,
+            "candidate": "Catch",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 11,
+            "candidate": "Check",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 12,
+            "candidate": "Its",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 13,
+            "candidate": "Like",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 14,
+            "candidate": "Bye",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          },
+          {
+            "rank": 15,
+            "candidate": "Had",
+            "relation": "activity_target",
+            "source_count": 1,
+            "confidence": 0.6
+          }
+        ],
+        "answer_token_in_injected_top": false
+      }
+    }
+  ]
+}
