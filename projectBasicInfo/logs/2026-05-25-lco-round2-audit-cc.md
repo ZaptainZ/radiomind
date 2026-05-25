@@ -43,28 +43,65 @@ Artifact: `bench/end_to_end/lco-audit-c3-count.json`.
 **Gold**: "dragons".
 **Evidence**: D9:14.
 **Default retrieval (top-30)**: 1/1 — D9:14 at rank 4.
-**Layer**: **commit / inference**.
+**Layer**: **existing candidate-layer ranking quality issue**.
 
-D9:14 text: _"I love this series. It has adventures, magic, and
-great characters - it's a must-read!"_ — **no "dragon" token in
-human dialogue**.
+**REVISED FINDING (2026-05-25 user re-audit)**: the first read of
+this qid placed the failure at commit layer because "dragon"
+isn't in the human-dialogue portion of D9:14. That's accurate
+about the text channel, but the runner intentionally
+concatenates image-query metadata into the ingested turn text
+(`run_locomo_mem0.py` line ~117), so "dragon" IS present in
+D9:14 as ingested.
 
-The token "dragon" appears only in the ingested image-query
-metadata appended to D9:14: `[Sharing image — query: fantasy
-novels dragon cover series.]`. LLM in all 3 SC-3 runs reads this
-hint but answers in terms of the dialogue's literal content
-("adventures, magic, great characters") and does not commit to
-"dragons" as the central concept.
+`evidence_candidates.py::_extract_topics` does recognize
+`dragons?` as a `topic_keyword`. Replaying the extract on the
+top-30 retrieve for this question shows the candidate IS
+generated — it just lands at **rank 15**:
 
-**Verdict**: defer. A narrow rule that "prefers image-query
-metadata tokens when answering 'about'-style questions" is too
-niche and brittle — it would over-fire on irrelevant
-attachments. Same gold-quality concern as c3_count: the
-dataset's stated gold relies on image-query metadata, not the
-text, which sits between architectural ceiling and dataset
-quirk.
+```
+qtype: what_about
+[ 1] 'Sharing'       rel=series_or_entity_name  src_count=12 conf=0.5
+[ 2] 'Yeah'          rel=series_or_entity_name  src_count= 3 conf=0.5
+[ 3] 'Joanna'        rel=series_or_entity_name  src_count= 3 conf=0.5
+[ 4] 'Hey Joanna'    rel=series_or_entity_name  src_count= 3 conf=0.5
+[ 5] 'fantasy'       rel=topic_keyword          src_count= 2 conf=0.7
+[ 6] 'cover'         rel=topic_keyword          src_count= 2 conf=0.7
+...
+[15] 'dragon'        rel=topic_keyword          src_count= 1 conf=0.7   ← GOLD
+```
 
-Artifact: `bench/end_to_end/lco-audit-c3-Nate.json`.
+The render injects only top-5 into the prompt, so the LLM never
+sees "dragon" as a candidate. The 4 displaced slots are all
+generic conversational openers / speaker names — `"Sharing"`
+comes from the `[Sharing image — ...]` metadata prefix that
+shows up in 12 different turns, dominating `source_count`. The
+sort key is `(source_count desc, confidence desc)`
+(`evidence_candidates.py:421`), so high-frequency artifact
+tokens systematically displace low-frequency-but-direct
+answer tokens.
+
+**This is a deterministic existing-layer ranking/hygiene
+problem**, not a per-qid commit miss or a dataset quirk. It
+generalizes: every "what is X about" question whose answer is a
+rare topic word is at risk of being displaced by artifact
+proper nouns from image-share metadata, conversational
+openers, and the other speaker's name.
+
+**Verdict**: do NOT defer. This is a candidate-quality
+investigation candidate. Next step is a read-only audit of
+the top-5 candidate injection across all flip10 qids
+(stable-PASS + stable-FAIL): which qids are dominated by
+artifact tokens? Would a deterministic fix (stopword
+expansion + topic_keyword priority + image-metadata prefix
+filter) lift c3_Nate without unseating the stable-PASS cases
+(c2_Maria, c3_Tilly, c4_Seattle)?
+
+Only if that audit shows generalizable noise reduction with
+no collateral damage does this turn into a code change.
+
+Artifact: `bench/end_to_end/lco-audit-c3-Nate.json` (still
+records D9:14 rank=4 retrieve, which is correct; the
+candidate-layer detail is the new finding).
 
 ### c9_5ab522b5c7 — "What do Calvin and Dave use to reach their goals?"
 
@@ -105,13 +142,14 @@ Artifact: `bench/end_to_end/lco-audit-c9-Calvin.json`.
 | qid | error layer | gold-quality concern? | narrow deterministic fix? | verdict |
 |---|---|---|---|---|
 | c3_2656e2c771 (count) | n/a (dataset gold says "two", text says "third") | **YES** — gold-spec inconsistency | n/a | defer; errata candidate |
-| c3_a9fddfe69b (Nate dragons) | commit | partial — gold relies on image-query metadata, not dialogue text | NO | defer |
+| c3_a9fddfe69b (Nate dragons) | existing candidate-layer ranking | no | **possibly YES** | **candidate-quality investigation candidate** (audit before implement) |
 | c9_5ab522b5c7 (Calvin goals) | retrieval recall | no | NO (same family as c2) | defer |
 
 Combined with Round-1 (c2_financial defer, c5_Voyageurs defer):
 
-**0 of 5 stable-FAIL LoCoMo flip10 qids have a narrow
-deterministic fix path within current architecture.**
+**1 of 5 stable-FAIL LoCoMo flip10 qids points at an
+existing-layer improvement worth auditing** (c3_Nate →
+candidate hygiene). 4 of 5 still defer.
 
 Breakdown by layer:
 
@@ -160,18 +198,29 @@ turn_id, score, method, content_preview), `default_search.gold_ranks{}`.
 
 ## Recommendation
 
-Close LCO. The combined Round-1+Round-2 verdict is "current
-stable-FAIL set is genuinely beyond narrow deterministic
-intervention". If continuing optimization, either:
+Open one narrow follow-up audit (read-only) for the c3_Nate
+finding before any code change:
 
-  a) Pause LoCoMo-side work, return to LME-S where deterministic
-     wins remain available (next layer would be NumericAggregator
-     recall on classes other than charity_donations — e.g.,
-     kitchen_items recall has known gaps from earlier audits).
-  b) Open a `retrieval-bridging-recall` methodology workstream
-     specifically to address the c2/c9 family. Acknowledge up
-     front that the fix is LLM-heavy (query expansion /
-     decomposition tuning), not narrow.
+1. Replay `extract_evidence_candidates` for every flip10 qid
+   on the existing sc3 sandbox. Dump top-5 candidate
+   composition per qid.
+2. Count noise occurrences: how many of the 50 total top-5
+   slots are conversational openers, image-share metadata
+   prefixes, or the other speaker's name (i.e., what is the
+   broader prevalence of the artifact pattern c3_Nate
+   exposed)?
+3. Simulate a stopword-expanded + topic-first re-rank.
+   Verify (a) c3_Nate "dragon" enters top-5, (b)
+   stable-PASS qids (c2_Maria date, c3_Tilly stuffed animal,
+   c4_Seattle location) keep the candidates they currently
+   rely on.
 
-Neither is a follow-up to this audit; both are separate
-workstreams that should not be auto-started.
+Only if step 3 shows positive net effect do we implement
+candidate hygiene in `evidence_candidates.py`. The change
+would be small and deterministic (stopword set + sort key
+tweak) and matches the workstream norms — but it must clear
+the audit gate first.
+
+c2_financial + c9_Calvin retrieval-methodology work and
+LME-S NumericAggregator other-class work remain paused
+until the candidate-quality audit completes.

@@ -146,6 +146,11 @@ def main() -> int:
         from radiomind.storage.agentic import (  # noqa: WPS433
             agentic_search, decompose_question,
         )
+        # Decompose ONCE, then pass the same sub_queries into
+        # agentic_search via its `subs` parameter — otherwise
+        # agentic_search would re-decompose stochastically and
+        # the recorded sub_queries would not match the queries
+        # that actually produced hits/gold_ranks.
         sub_queries = decompose_question(question, _llm)
 
         def _search(q, domain=None, max_results=10):
@@ -154,6 +159,7 @@ def main() -> int:
         agentic_results = agentic_search(
             question, _search, _llm, domain=domain,
             per_subquery_k=10, final_k=args.top_k,
+            subs=sub_queries,
         )
         agentic_hits = [_entry_record(i + 1, r) for i, r in enumerate(agentic_results)]
         agentic_gold_ranks = _gold_ranks(agentic_hits, gold_ids)

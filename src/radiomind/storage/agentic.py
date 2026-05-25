@@ -97,12 +97,20 @@ def agentic_search(
     domain: str | None = None,
     per_subquery_k: int = 5,
     final_k: int = 10,
+    subs: list[str] | None = None,
 ) -> list[SearchResult]:
     """Decompose → search per sub-query → merge with dedup+score-boost.
 
     search_fn signature: (query: str, domain: str|None, max_results: int) -> list[SearchResult]
+
+    Caller can supply pre-computed `subs` to skip the decomposition
+    LLM call entirely — used by diagnostic audit code that needs
+    the exact same sub-queries it just decomposed itself (otherwise
+    the in-function decompose call would generate a stochastically
+    different sub-query set).
     """
-    subs = decompose_question(question, llm_fn) if llm_fn else [question]
+    if subs is None:
+        subs = decompose_question(question, llm_fn) if llm_fn else [question]
     if len(subs) == 1:
         # No decomposition — single pass, full breadth
         return search_fn(subs[0], domain=domain, max_results=final_k)
