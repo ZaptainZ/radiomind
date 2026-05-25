@@ -1344,6 +1344,16 @@ class RadioMind:
         self._check_init()
         if not retrieved_memories:
             return ""
+        # CQ-4 diagnostic env-var hook (default unchanged):
+        #   RADIOMIND_CQ4_VARIANT=A → current behavior (or unset)
+        #   RADIOMIND_CQ4_VARIANT=B → return "" (suppress block entirely)
+        #   RADIOMIND_CQ4_VARIANT=C → render only topic_keyword candidates
+        import os as _cq4_os
+        _cq4_variant = (
+            _cq4_os.environ.get("RADIOMIND_CQ4_VARIANT", "A") or "A"
+        ).upper().strip()
+        if _cq4_variant == "B":
+            return ""
         try:
             from radiomind.core.evidence_candidates import (
                 converge_candidates_via_trinity,
@@ -1353,6 +1363,9 @@ class RadioMind:
             candidates = extract_evidence_candidates(
                 query, retrieved_memories, top_k=top_k,
             )
+            if _cq4_variant == "C":
+                candidates = [c for c in candidates
+                              if c.relation == "topic_keyword"]
             block = render_evidence_candidates(candidates)
             if with_convergence and len(candidates) >= 2 and self._llm is not None:
                 converged = converge_candidates_via_trinity(
