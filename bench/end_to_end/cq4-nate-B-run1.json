@@ -1,0 +1,34 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 629,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1363.0,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories for \"Nate's favorite book series\" or \"book series Nate likes/recommends\":  \n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Image shows fantasy novels dragon cover series]  \n- (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Image shows Lord of the Rings trilogy DVD boxset]  \n- (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Image shows space opera book series]  \n- (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Image shows A Court of Thorns and Roses book by Sarah J. Maas]  \n- (Monday, August 22, 2022) Nate: \"You really should! The action scenes are awesome and the plot rocks. Definitely one of my favorites!\" (Referring to the series he just recommended)  \n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about Nate (the user) recommending or praising book series.  \n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \nFrom the memories:  \n1. A fantasy series with adventures, magic, great characters — not named explicitly but image shows \"fantasy novels dragon cover series.\"  \n2. \"This trilogy is one of my faves\" — referring to Lord of the Rings (image shows Lord of the Rings trilogy DVD boxset).  \n3. A space opera book series (image shows space opera book series poster).  \n4. \"A Court of Thorns and Roses\" by Sarah J. Maas (image shows that book series).  \n\nThe question asks: \"What is Nate's favorite book series about?\" — not \"list all series he likes,\" but the one he calls his *favorite*.  \n\n**Step 4: SELECT THE BEST ANSWER**  \nThe most specific and strong statement of favoritism:  \n- \"This trilogy is one of my faves\" (Lord of the Rings) — explicit \"faves\" and described with high praise.  \n- The fantasy series with dragons is described as \"I love this series\" and \"must-read,\" but not explicitly \"favorite.\"  \n- The others are recommendations, not necessarily labeled as his personal favorite.  \n\nThe memory about Lord of the Rings is the only one where he says \"one of my faves\" directly in relation to a specific trilogy.  \n\n**Step 5: TEMPORAL GROUNDING**  \nNo conflicting temporal info — all mentions are from 2022.  \n\n**Step 6: INCLUSION CHECK**  \nThe question asks for *what* the favorite book series is about, not just the title. The memory about Lord of the Rings gives description: \"world building, battles, and storytelling\" and earlier context suggests adventures, magic, great characters.  \n\n**Step 7: COMMIT AND ANSWER**  \nNate's favorite book series (the one he calls one of his favorites) is *The Lord of the Rings* trilogy, which is about epic fantasy adventures with world-building, battles, magic, and great characters.  \n\nANSWER: Nate's favorite book series is *The Lord of the Rings* trilogy, an epic fantasy series about adventures, magic, great characters, world-building, and battles.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key concept of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 213
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

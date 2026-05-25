@@ -1,0 +1,34 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 629,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1442.2,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "[answer error: The read operation timed out]",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not provide any information about the book series, thus it contains zero correct items from the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 212
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

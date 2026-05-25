@@ -1,0 +1,34 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 629,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1408.0,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories for \"Nate's favorite book series\" are those where Nate mentions or recommends a book series.\n\nRelevant memories:  \n1. (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Image shows fantasy novels dragon cover series.]  \n2. (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Image shows Lord of the Rings trilogy DVD boxset.]  \n3. (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Image shows space opera book series.]  \n4. (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Image shows \"A Court of Thorns and Roses\" book by Sarah J. Maas.]  \n5. (Monday, May 02, 2022) Nate: \"Glad to hear you enjoyed it! It's probably the greatest trilogy of all time!\" (Referring to \"The Lord of the Rings\" trilogy after Joanna watched it.)\n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about Nate (the user in the conversation) recommending or praising book series.\n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \n- Memory 2 and 5 both refer to \"The Lord of the Rings\" trilogy as a favorite (\"one of my faves,\" \"greatest trilogy of all time\").  \n- Memory 1 mentions a fantasy series with dragons, adventures, magic — could be a different series.  \n- Memory 3 recommends a space opera series.  \n- Memory 4 recommends \"A Court of Thorns and Roses.\"  \nThe question asks: \"What is Nate's favorite book series about?\" — meaning the subject/genre/theme of his favorite series.  \nThe strongest evidence is for \"The Lord of the Rings\" trilogy: he calls it \"one of my faves\" and \"the greatest trilogy of all time.\" The description in memory 2: \"world building, battles, and storytelling\" and it's a fantasy trilogy.  \nMemory 1 also describes a fantasy series with \"adventures, magic, and great characters,\" which matches the same genre but is less specifically identified.  \nGiven the question asks for \"favorite book series about,\" the most specific and repeated favorite is The Lord of the Rings, which is about epic fantasy, battles, and world-building.\n\n**Step 4: SELECT THE BEST ANSWER**  \nThe highest specificity is for The Lord of the Rings (named trilogy, called \"greatest\"). The question doesn't ask for the title, but what it's about. From memory 2: \"world building, battles, and storytelling\" — epic fantasy.  \nMemory 1 also supports fantasy with adventures and magic.  \nSo the answer should describe the content: epic fantasy with battles, world-building, and adventure.\n\n**Step 5: TEMPORAL GROUNDING**  \nNo conflicting temporal info; the praise for Lord of the Rings is consistent.\n\n**Step 6: INCLUSION CHECK**  \nOnly one \"favorite\" is explicitly stated with strong praise — Lord of the Rings. Others are recommendations but not labeled as his favorite.\n\n**Step 7: COMMIT AND ANSWER**  \nANSWER: Nate's favorite book series is about epic fantasy with world-building, battles, and adventure (specifically, The Lord of the Rings trilogy).",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key element of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 214
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

@@ -1,0 +1,34 @@
+{
+  "benchmark": "LoCoMo — Mem0 protocol",
+  "protocol": "mem0 prompts; cats 1-4; one ingest per conversation",
+  "n_questions": 1,
+  "total_ingested_turns": 629,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1393.1,
+  "overall_accuracy": 0.0,
+  "by_type": {
+    "single-hop": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "c3_a9fddfe69b",
+      "q": "What is Nate's favorite book series about?",
+      "gold": "dragons",
+      "answer": "**Step 1: SCAN ALL MEMORIES**  \nI read every memory. Relevant memories about Nate's favorite book series:  \n\n- (Thursday, April 21, 2022) Nate: \"I love this series. It has adventures, magic, and great characters - it's a must-read!\" [Sharing image — query: fantasy novels dragon cover series.]  \n- (Thursday, April 21, 2022) Nate: \"Yeah, for sure! This trilogy is one of my faves. The world building, battles, and storytelling always blow me away!\" [Sharing image — query: lord of the rings trilogy dvd boxset.]  \n- (Monday, August 22, 2022) Nate: \"I'd really recommend this series. It's got awesome battles and interesting characters.\" [Sharing image — query: space opera book series.]  \n- (Monday, August 22, 2022) Nate: \"Good idea! How about this series?\" [Sharing image — query: a court of thorns and roses book sarah j maas.]  \n\n**Step 2: ENTITY VERIFICATION**  \nAll memories are about Nate recommending or praising book series.  \n\n**Step 3: COMBINE AND CROSS-REFERENCE**  \n- The first memory (April 21) describes a series with \"adventures, magic, and great characters\" — fantasy with dragons.  \n- The second memory (same day) mentions \"this trilogy is one of my faves\" with world-building, battles, storytelling — linked to Lord of the Rings (image query confirms).  \n- The third memory (Aug 22) recommends a \"space opera\" series (sci-fi).  \n- The fourth memory (same day) recommends \"A Court of Thorns and Roses\" (fantasy romance).  \n\nThe question asks: **\"What is Nate's favorite book series about?\"** — not just a recommendation, but his *favorite*.  \nThe strongest evidence is from April 21: \"This trilogy is one of my faves\" referring to Lord of the Rings, and earlier that day he said \"I love this series\" about a fantasy series with dragons (could be same or different).  \nBut the *most specific* favorite mention is \"Lord of the Rings\" trilogy — image query explicitly says \"lord of the rings trilogy dvd boxset\" and he calls it \"one of my faves.\"  \n\n**Step 4: SELECT THE BEST ANSWER**  \nThe highest specificity is the Lord of the Rings trilogy — a proper name, not just a genre description.  \nOther series are recommended but not labeled \"favorite\" explicitly.  \n\n**Step 5: TEMPORAL GROUNDING**  \nNo conflicting dates; the favorite mention is from April 21, 2022.  \n\n**Step 6: INCLUSION CHECK**  \nThe question asks for what it's *about*. From the memory: \"world building, battles, and storytelling\" — but more concretely, the series is a fantasy epic with adventures, magic, battles.  \n\n**Step 7: COMMIT AND ANSWER**  \nANSWER: Nate's favorite book series is *The Lord of the Rings* trilogy, which is a fantasy epic about adventures, magic, battles, and world-building.",
+      "correct": false,
+      "category": "single-hop",
+      "verdict_tail": "```json\n{\n  \"reasoning\": \"The generated answer does not mention dragons, which is the key element of the gold answer.\",\n  \"label\": \"WRONG\"\n}\n```",
+      "n_retrieved": 214
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
