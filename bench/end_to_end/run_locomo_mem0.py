@@ -716,7 +716,10 @@ def main() -> int:
                    help="Preserve existing sandbox/data + skip re-ingest for "
                         "domains already present in store. Required for honest "
                         "A/B/C candidate-block controls (CQ-4) where ingestion "
-                        "must stay fixed across runs.")
+                        "must stay fixed across runs. "
+                        "Note: long-term diagnostic flag; runner-level test "
+                        "coverage TODO if this flag becomes load-bearing in "
+                        "any production code path.")
     args = p.parse_args()
 
     if not DATASET.exists():

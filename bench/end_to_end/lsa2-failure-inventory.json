@@ -1,0 +1,184 @@
+{
+  "summary": {
+    "baseline_file": "bench/end_to_end/lme-s-v822a-n100.judge-fixed.json",
+    "baseline_overall_accuracy": 0.92,
+    "n_in_scope": 8,
+    "label_distribution": {
+      "gold_or_input_limitation": 4,
+      "retrieve_missing": 2,
+      "commit_variance": 1,
+      "evidence_present_computation_missing": 1
+    },
+    "EXCLUDED_targets": [
+      "031748ae_abs",
+      "370a8ff4",
+      "9aaed6a3",
+      "d851d5ba",
+      "gpt4_d12ceb0e"
+    ],
+    "in_scope_qids": [
+      "1c0ddc50",
+      "b46e15ed",
+      "b6025781",
+      "c18a7dc8",
+      "d6233ab6",
+      "gpt4_93159ced_abs",
+      "gpt4_ab202e7f",
+      "gpt4_d6585ce8"
+    ]
+  },
+  "records": [
+    {
+      "qid": "1c0ddc50",
+      "question_type": "single-session-preference",
+      "question": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "evidence_session_ids": [
+        "answer_8da8c7e0"
+      ],
+      "fail_in_baselines": [
+        "v822a"
+      ],
+      "v822a_answer_preview": "Since you already listen to podcasts like \"How I Built This\" and enjoy true crime, self-improvement, and history genres, use your 40-minute commute to dive deeper into those. You could also use the Headspace guided recordings you mentioned to help manage anxiety during the trip.",
+      "v822a_verdict_tail": ", the model response does not fully meet the user's preferences as outlined in the correct answer.\n\n</judge_thinking>\nno",
+      "label": "gold_or_input_limitation",
+      "label_source": "heuristic",
+      "reason": "single-session-preference qtype — preference / advice, not extractable as typed event"
+    },
+    {
+      "qid": "b46e15ed",
+      "question_type": "temporal-reasoning",
+      "question": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "evidence_session_ids": [
+        "answer_4bfcc250_4",
+        "answer_4bfcc250_3",
+        "answer_4bfcc250_2",
+        "answer_4bfcc250_1"
+      ],
+      "fail_in_baselines": [
+        "v822a"
+      ],
+      "v822a_answer_preview": "The information provided is not enough.",
+      "v822a_verdict_tail": "specific claim.\n\nBased on this analysis, the model response does not align with the correct answer.\n</judge_thinking>\nno",
+      "label": "retrieve_missing",
+      "label_source": "heuristic",
+      "reason": "answer refuses; either retrieve missing or commit over-cautious"
+    },
+    {
+      "qid": "b6025781",
+      "question_type": "single-session-preference",
+      "question": "I'm planning my meal prep next week, any suggestions for new recipes?",
+      "gold": "The user would prefer responses that suggest healthy meal prep recipes, especially those that incorporate quinoa and roasted vegetables, and offer variations in protein sources. They might appreciate suggestions that build upon their existing preferences, such as new twists on chicken Caesar salads or turkey and avocado wraps. The user may not prefer responses that suggest unhealthy or high-calorie meal prep options, or those that deviate significantly from their established healthy eating habits.",
+      "evidence_session_ids": [
+        "answer_8414cc57"
+      ],
+      "fail_in_baselines": [
+        "v822a"
+      ],
+      "v822a_answer_preview": "Since you're interested in **Mexican-inspired dishes** and have **fresh rosemary** on hand, try the **Vegan Black Bean and Sweet Potato Enchiladas** suggested previously for a main, and prep a batch of **Roasted Sweet Potatoes with Fresh Rosemary** as a side—both hold up well for meal prep.",
+      "v822a_verdict_tail": "Given this analysis, the model response does not fully meet the criteria set by the correct answer.\n</judge_thinking>\nno",
+      "label": "gold_or_input_limitation",
+      "label_source": "heuristic",
+      "reason": "single-session-preference qtype — preference / advice, not extractable as typed event"
+    },
+    {
+      "qid": "c18a7dc8",
+      "question_type": "multi-session",
+      "question": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "evidence_session_ids": [
+        "answer_2e2085fa_2",
+        "answer_2e2085fa_1"
+      ],
+      "fail_in_baselines": [
+        "v822a"
+      ],
+      "v822a_answer_preview": "The information provided is not enough to determine how many years older you are now compared to when you graduated from college.",
+      "v822a_verdict_tail": " the correct answer.\n\nBased on this analysis, the model response does not match the correct answer.\n</judge_thinking>\nno",
+      "label": "retrieve_missing",
+      "label_source": "heuristic",
+      "reason": "answer refuses; either retrieve missing or commit over-cautious"
+    },
+    {
+      "qid": "d6233ab6",
+      "question_type": "single-session-preference",
+      "question": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+      "evidence_session_ids": [
+        "answer_b0fac439"
+      ],
+      "fail_in_baselines": [
+        "v822a",
+        "v821"
+      ],
+      "v822a_answer_preview": "I don't have enough information about your high school experiences or how you typically feel about nostalgia to give you personalized advice on this.",
+      "v822a_verdict_tail": "ts of attending the reunion. Therefore, the model response is not equivalent to the correct answer.\n</judge_thinking>\nno",
+      "label": "gold_or_input_limitation",
+      "label_source": "v8.3-audit",
+      "reason": "preference advice; not extractable as typed event"
+    },
+    {
+      "qid": "gpt4_93159ced_abs",
+      "question_type": "temporal-reasoning",
+      "question": "How long have I been working before I started my current job at Google?",
+      "gold": "The information provided is not enough. From the information provided, You haven't started working at Google yet.",
+      "evidence_session_ids": [
+        "answer_e5131a1b_abs_1",
+        "answer_e5131a1b_abs_2"
+      ],
+      "fail_in_baselines": [
+        "v822a"
+      ],
+      "v822a_answer_preview": "Based on the information provided, I can infer you worked for about 4 years and 3 months before starting at Google, but I cannot confirm the exact duration or if there were other roles in between.",
+      "v822a_verdict_tail": " the correct answer. The core concept of the user not having started at Google yet is contradicted.\n</judge_thinking>\nno",
+      "label": "commit_variance",
+      "label_source": "heuristic",
+      "reason": "gold itself is abstain; LLM committed a specific answer it shouldn't have — calibration / over-commit failure"
+    },
+    {
+      "qid": "gpt4_ab202e7f",
+      "question_type": "multi-session",
+      "question": "How many kitchen items did I replace or fix?",
+      "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shelves.",
+      "evidence_session_ids": [
+        "answer_728deb4d_5",
+        "answer_728deb4d_2",
+        "answer_728deb4d_3",
+        "answer_728deb4d_1",
+        "answer_728deb4d_4"
+      ],
+      "fail_in_baselines": [
+        "v822a",
+        "v821"
+      ],
+      "v822a_answer_preview": "You replaced or fixed 4 kitchen items: a kitchen mat, a kitchen faucet, kitchen shelves, and a toaster oven.",
+      "v822a_verdict_tail": "d.\n\nBased on this analysis, the model response does not fully capture the correct answer's meaning.\n</judge_thinking>\nno",
+      "label": "gold_or_input_limitation",
+      "label_source": "v8.3-audit",
+      "reason": "kitchen count — entity normalization required, LLM-shaped"
+    },
+    {
+      "qid": "gpt4_d6585ce8",
+      "question_type": "temporal-reasoning",
+      "question": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "gold": "The order of the concerts I attended is: 1. Billie Eilish concert at the Wells Fargo Center in Philly, 2. Free outdoor concert series in the park, 3. Music festival in Brooklyn, 4. Jazz night at a local bar, 5. Queen + Adam Lambert concert at the Prudential Center in Newark, NJ.",
+      "evidence_session_ids": [
+        "answer_f999b05b_1",
+        "answer_f999b05b_4",
+        "answer_f999b05b_2",
+        "answer_f999b05b_5",
+        "answer_f999b05b_3"
+      ],
+      "fail_in_baselines": [
+        "v822a",
+        "v821"
+      ],
+      "v822a_answer_preview": "In the past two months, you attended:\n1. Free outdoor concert series in the park (March 25)\n2. Music festival in Brooklyn (April 1)\n3. Billie Eilish show in Philly (April 8)\n4. Jazz night at a local bar (April 8)\n5. Music festival in Brooklyn (April 15)",
+      "v822a_verdict_tail": "dress the core factual claim correctly because it omits a concert and changes the order of events.\n</judge_thinking>\n\nno",
+      "label": "evidence_present_computation_missing",
+      "label_source": "v8.3-audit",
+      "reason": "concert ordering — typed event family deferred to V8.3.2"
+    }
+  ]
+}

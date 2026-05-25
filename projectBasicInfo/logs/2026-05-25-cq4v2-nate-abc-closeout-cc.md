@@ -117,12 +117,11 @@ Three things follow:
    weaker than "candidate-rendering is mechanically
    unsalvageable" — that broader claim would need a
    broader sweep we have not done.
-2. **A 1/3 PASS** confirms Nate is **stochastic ~30-40%**, not
-   stable FAIL. The earlier "stable FAIL" classification was
-   based on too-small samples (1-2 runs per condition
-   throughout LCR-1 and LCR-3). c3_Nate should be
-   re-classified as "rotating" — the same bucket as
-   c1_Gina, c6_date.
+2. **A 1/3 PASS** combined with historical V7-era PASS records
+   shows Nate has produced both PASS and FAIL outcomes across
+   contemporary and prior runs. Classify as **rotating** (same
+   bucket as c1_Gina, c6_date). The pass rate is NOT estimated
+   from n=3; we only assert "not a deterministic FAIL".
 3. **Gold-quality concern**: gold "dragons" relies on
    privileging image-query metadata over the strongest
    in-dialogue signal (LOTR being called "greatest trilogy
@@ -182,10 +181,10 @@ stable FAIL:  c2_29 (financial),   c3_2656 (count gold quirk),
 
 ## Caveats
 
-- 3 runs per variant remain low. The 1/3 PASS for A could be
-  closer to 2/9 or 3/9 with a larger sample. The
-  classification "rotating" is the most-honest reading at n=3
-  per condition.
+- 3 runs per variant remain low. A 1/3 PASS at n=3 does not
+  identify a pass rate; combined with historical V7-era PASS
+  records the most-honest reading is "rotating, pass rate not
+  estimated".
 - `--reuse-sandbox` was used for runs 2-9; A run 1 was the
   only ingest. If ingest had been particularly favorable or
   unfavorable on this single seed, all 9 results inherit
