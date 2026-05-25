@@ -1,0 +1,752 @@
+{
+  "records": [
+    {
+      "qid": "c18a7dc8",
+      "lsa2_label": "needs_retrieve_probe / age_delta — historical PASS via age_interval/anchor",
+      "question": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "gold_session_ids": [
+        "answer_2e2085fa_2",
+        "answer_2e2085fa_1"
+      ],
+      "domain": "lsa3_c18a7dc8",
+      "ingested_turns": 509,
+      "retrieve": {
+        "top_k": 200,
+        "total_returned": 27,
+        "gold_session_ids": [
+          "answer_2e2085fa_2",
+          "answer_2e2085fa_1"
+        ],
+        "gold_hits_in_top_k": 5,
+        "gold_ranks_first_5": [
+          14,
+          16,
+          23,
+          24,
+          27
+        ],
+        "top_10_hits": [
+          {
+            "rank": 1,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.03278688524590164,
+            "content_preview": "event: completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley "
+          },
+          {
+            "rank": 2,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.03149801587301587,
+            "content_preview": "event: attended colleague's son's middle school graduation ceremony [date=2023-05-10]"
+          },
+          {
+            "rank": 3,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.031009615384615385,
+            "content_preview": "event: niece graduated from high school [date=2023-05-22]"
+          },
+          {
+            "rank": 4,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.030536130536130537,
+            "content_preview": "event: colleague's daughter's middle school graduation ceremony [date=2023-05-29]"
+          },
+          {
+            "rank": 5,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.029211087420042643,
+            "content_preview": "event: saw niece walk across stage at graduation ceremony [date=2023-04-22]"
+          },
+          {
+            "rank": 6,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.028594771241830064,
+            "content_preview": "event: niece's graduation ceremony was held at convention center [date=2023-04-22]"
+          },
+          {
+            "rank": 7,
+            "turn_id": "f716720c_3_t6",
+            "is_gold_session": false,
+            "score": 0.03225806451612903,
+            "content_preview": "[user] I think I'll go with patio seating, I want to people-watch and enjoy the downtown atmosphere. Do you think I could find a spot that's"
+          },
+          {
+            "rank": 8,
+            "turn_id": "f716720c_3_t0",
+            "is_gold_session": false,
+            "score": 0.029857397504456328,
+            "content_preview": "[user] I need help finding a good restaurant for brunch this weekend. You know, I was just thinking about my cousin's graduation ceremony la"
+          },
+          {
+            "rank": 9,
+            "turn_id": "f716720c_3_t1",
+            "is_gold_session": false,
+            "score": 0.015873015873015872,
+            "content_preview": "[assistant] I'd be happy to help you find a great brunch spot near your office! However, I have to say, you've got a lot of graduation cerem"
+          },
+          {
+            "rank": 10,
+            "turn_id": "9d5a389d_t11",
+            "is_gold_session": false,
+            "score": 0.014925373134328358,
+            "content_preview": "[assistant] It's completely understandable to reminisce about the ceremony! It's a special moment to cherish, and I'm sure you're excited to"
+          }
+        ],
+        "sample_hits_11_to_30": [
+          {
+            "rank": 11,
+            "turn_id": "9d5a389d_t1",
+            "is_gold_session": false,
+            "score": 0.014492753623188406,
+            "content_preview": "[assistant] Congratulations to your colleague's daughter on her graduation!\n\nCalculating the number of guests to invite based on the number "
+          },
+          {
+            "rank": 12,
+            "turn_id": "9d5a389d_t9",
+            "is_gold_session": false,
+            "score": 0.014084507042253521,
+            "content_preview": "[assistant] I think there might be some confusion! You mentioned earlier that your niece's graduation ceremony was last month, but you're pl"
+          },
+          {
+            "rank": 13,
+            "turn_id": "9d5a389d_t0",
+            "is_gold_session": false,
+            "score": 0.0136986301369863,
+            "content_preview": "[user] I'm trying to get a headcount for my colleague's daughter's middle school graduation ceremony next week. Can you remind me how to cal"
+          },
+          {
+            "rank": 14,
+            "turn_id": "answer_2e2085fa_1_t6",
+            "is_gold_session": true,
+            "score": 0.013513513513513514,
+            "content_preview": "[user] That's really helpful, thank you! I'm glad to hear that these courses can help me transition into a more specialized role. I've been "
+          },
+          {
+            "rank": 15,
+            "turn_id": "9d5a389d_t4",
+            "is_gold_session": false,
+            "score": 0.013333333333333334,
+            "content_preview": "[user] I was actually thinking of a restaurant near the city's convention center, since that's where my niece's graduation ceremony was held"
+          },
+          {
+            "rank": 16,
+            "turn_id": "answer_2e2085fa_1_t0",
+            "is_gold_session": true,
+            "score": 0.013157894736842105,
+            "content_preview": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been w"
+          },
+          {
+            "rank": 17,
+            "turn_id": "9d5a389d_t2",
+            "is_gold_session": false,
+            "score": 0.012987012987012988,
+            "content_preview": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaur"
+          },
+          {
+            "rank": 18,
+            "turn_id": "f716720c_3_t5",
+            "is_gold_session": false,
+            "score": 0.02258064516129032,
+            "content_preview": "[assistant] Outdoor seating is a great idea! Enjoying the downtown atmosphere while catching up with your colleagues will make the experienc"
+          },
+          {
+            "rank": 19,
+            "turn_id": "f716720c_3_t7",
+            "is_gold_session": false,
+            "score": 0.02258064516129032,
+            "content_preview": "[assistant] Patio seating it is! You'll get to enjoy the downtown atmosphere and people-watching, which is always entertaining.\n\nFinding a s"
+          },
+          {
+            "rank": 20,
+            "turn_id": "f716720c_3_t2",
+            "is_gold_session": false,
+            "score": 0.01111111111111111,
+            "content_preview": "[user] I'm thinking of somewhere casual, not too pricey, with a relaxed atmosphere. Nothing too fancy, just a spot to catch up with my colle"
+          },
+          {
+            "rank": 21,
+            "turn_id": "9d5a389d_t10",
+            "is_gold_session": false,
+            "score": 0.01044776119402985,
+            "content_preview": "[user] Yeah, I guess I was just reminiscing about the ceremony. Anyway, I'll go search for those restaurants near the convention center now."
+          },
+          {
+            "rank": 22,
+            "turn_id": "9d5a389d_t8",
+            "is_gold_session": false,
+            "score": 0.009859154929577464,
+            "content_preview": "[user] I'll search for these options near the convention center and see what's available. By the way, speaking of the convention center, I s"
+          },
+          {
+            "rank": 23,
+            "turn_id": "answer_2e2085fa_1_t5",
+            "is_gold_session": true,
+            "score": 0.00945945945945946,
+            "content_preview": "[assistant] The HubSpot Content Marketing Certification is a great starting point, and it's excellent that you're thinking ahead about your "
+          },
+          {
+            "rank": 24,
+            "turn_id": "answer_2e2085fa_1_t7",
+            "is_gold_session": true,
+            "score": 0.00945945945945946,
+            "content_preview": "[assistant] Pursuing an MBA is a significant decision, and it's great that you're thinking about your long-term career goals.\n\nAn MBA can be"
+          },
+          {
+            "rank": 25,
+            "turn_id": "9d5a389d_t3",
+            "is_gold_session": false,
+            "score": 0.009333333333333334,
+            "content_preview": "[assistant] Congratulations to your niece on her high school graduation!\n\nI'd be happy to help you with recommendations, but I'm a large lan"
+          },
+          {
+            "rank": 26,
+            "turn_id": "9d5a389d_t5",
+            "is_gold_session": false,
+            "score": 0.009333333333333334,
+            "content_preview": "[assistant] Unfortunately, I'm a large language model, I don't have access to your location or the specific city you're referring to. I can'"
+          },
+          {
+            "rank": 27,
+            "turn_id": "answer_2e2085fa_1_t1",
+            "is_gold_session": true,
+            "score": 0.009210526315789473,
+            "content_preview": "[assistant] A Berkeley grad! That's impressive! With your background and experience, you're wise to stay updated on the latest marketing tre"
+          }
+        ]
+      },
+      "skills": {
+        "role_mismatch_guard": false,
+        "role_mismatch_guard_block": "",
+        "cashback_hint": false,
+        "person_age_hint": false,
+        "numeric_cardinal_fires": false,
+        "numeric_cardinal_preview": "",
+        "evidence_candidates_fires": true,
+        "evidence_candidates_preview": "EVIDENCE CANDIDATES (deterministic extraction from retrieved memories):\n1. '2023-04-22' (relation=temporal_reference, confidence=0.85) [temporal_role=mention_date] [supported_by=2]\n   quote: event: saw niece walk across stage at graduation ceremony [date=2023-04-22]\n2. '2023-05-26' (relation=temporal_reference, confidence=0.40) [temporal_role=mention_date]\n   quote: ation with a concentration in M",
+        "run_temporal_precision_fires": true,
+        "run_temporal_precision_preview": "STRUCTURED SKILL (age_interval, conf=0.90): trust this unless retrieval explicitly contradicts.\n- graduated from college → 2023-05-26\n- today / ref date → 2025-01-01\nComputed answer: 1\n\n",
+        "run_open_domain_specific_err": "RadioMind.run_open_domain_specific() got an unexpected keyword argument 'reference_date'"
+      }
+    },
+    {
+      "qid": "b46e15ed",
+      "lsa2_label": "needs_retrieve_probe / months-since-charity — historical PASS via infra fix",
+      "question": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "gold_session_ids": [
+        "answer_4bfcc250_4",
+        "answer_4bfcc250_3",
+        "answer_4bfcc250_2",
+        "answer_4bfcc250_1"
+      ],
+      "domain": "lsa3_b46e15ed",
+      "ingested_turns": 478,
+      "retrieve": {
+        "top_k": 200,
+        "total_returned": 158,
+        "gold_session_ids": [
+          "answer_4bfcc250_4",
+          "answer_4bfcc250_3",
+          "answer_4bfcc250_2",
+          "answer_4bfcc250_1"
+        ],
+        "gold_hits_in_top_k": 25,
+        "gold_ranks_first_5": [
+          30,
+          33,
+          40,
+          42,
+          44
+        ],
+        "top_10_hits": [
+          {
+            "rank": 1,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.03200204813108039,
+            "content_preview": "event: participated in 'Ride to Cure Cancer' charity bike ride and rode 40 miles on road bike [date=2023-02-15]"
+          },
+          {
+            "rank": 2,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.030536130536130537,
+            "content_preview": "event: attended charity gala organized by Cancer Research Foundation [date=2023-01-30]"
+          },
+          {
+            "rank": 3,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.029631255487269532,
+            "content_preview": "event: had outreach event at church to help people dealing with grief [date=2023-02-08]"
+          },
+          {
+            "rank": 4,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.026356857985087564,
+            "content_preview": "event: attended great aunt's funeral at church [date=2023-02-08]"
+          },
+          {
+            "rank": 5,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.026013513513513515,
+            "content_preview": "event: decided to be more mindful of clothing choices and start using Guppyfriend bag when washing clothes [date=2023-02-10]"
+          },
+          {
+            "rank": 6,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.025206087507926443,
+            "content_preview": "event: had Monday's dinner with leftover quinoa [date=2023-02-13]"
+          },
+          {
+            "rank": 7,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.024891774891774892,
+            "content_preview": "event: earned over 500 points in Target rewards program in past month [date=2023-01-22]"
+          },
+          {
+            "rank": 8,
+            "turn_id": "sharegpt_KCGdZJP_0_t2",
+            "is_gold_session": false,
+            "score": 0.027071520029266508,
+            "content_preview": "[user] You've started the training plan in January, but today is February 15. Can you revise the training plan, keeping it in line with my p"
+          },
+          {
+            "rank": 9,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.023037203760095326,
+            "content_preview": "event: had dinner party [date=2023-02-11]"
+          },
+          {
+            "rank": 10,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.022774327122153208,
+            "content_preview": "event: took photos on last hike [date=2023-02-15]"
+          }
+        ],
+        "sample_hits_11_to_30": [
+          {
+            "rank": 11,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.022517394054395953,
+            "content_preview": "event: requested list of concepts for activities [date=2023-01-30]"
+          },
+          {
+            "rank": 12,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.022266204849084613,
+            "content_preview": "event: bought black boots [date=2023-02-10]"
+          },
+          {
+            "rank": 13,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.0220205686630369,
+            "content_preview": "event: taking weekly classes at Sculpture Haven [date=2023-02-14]"
+          },
+          {
+            "rank": 14,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.021780303030303032,
+            "content_preview": "event: earned over 500 points in Target rewards program [date=2023-01-22]"
+          },
+          {
+            "rank": 15,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.021545233406695237,
+            "content_preview": "event: has been feeding fish frozen brine shrimp every Friday evening [date=2023-02-03]"
+          },
+          {
+            "rank": 16,
+            "turn_id": "aeab3296_t10",
+            "is_gold_session": false,
+            "score": 0.023431077007399288,
+            "content_preview": "[user] I'll add my existing shoe wear data. I'll start with my black boots, which I've worn 5 times since I bought them on February 10th."
+          },
+          {
+            "rank": 17,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.02065367827105291,
+            "content_preview": "event: took bird photos in backyard last month [date=2023-01-29]"
+          },
+          {
+            "rank": 18,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.020347035736418093,
+            "content_preview": "event: ran out of product brochures by lunchtime on the second day of TechXpo [date=2023-02-14]"
+          },
+          {
+            "rank": 19,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.019743240614666407,
+            "content_preview": "event: started working on quilt for brother's wedding present [date=2023-02-15]"
+          },
+          {
+            "rank": 20,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.01919191919191919,
+            "content_preview": "event: requested marathon training plan revision [date=2023-02-05]"
+          },
+          {
+            "rank": 21,
+            "turn_id": "sharegpt_KCGdZJP_0_t0",
+            "is_gold_session": false,
+            "score": 0.020141700404858298,
+            "content_preview": "[user] I have a marathon on April 17, 2023. Can you provide a detailed training plan starting from the next Monday until the marathon, writt"
+          },
+          {
+            "rank": 22,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.017998385794995964,
+            "content_preview": "event: requested to make it short [date=2023-02-03]"
+          },
+          {
+            "rank": 23,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.017679127725856697,
+            "content_preview": "event: purchased 2TB external hard drive [date=2023-01-29]"
+          },
+          {
+            "rank": 24,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.017523722069176614,
+            "content_preview": "event: decided to check out JouleBug app to reduce carbon footprint [date=2023-02-10]"
+          },
+          {
+            "rank": 25,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.01709090909090909,
+            "content_preview": "event: planned trip to The Hive boutique [date=2023-01-22]"
+          },
+          {
+            "rank": 26,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.016945516945516943,
+            "content_preview": "event: set timer on phone to limit social media usage to 30 minutes [date=2023-02-15]"
+          },
+          {
+            "rank": 27,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.016405517610820944,
+            "content_preview": "event: wireless charging pad got a lot of attention at the TechXpo [date=2023-02-14]"
+          },
+          {
+            "rank": 28,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.01582751744765703,
+            "content_preview": "event: had a breakthrough on product development [date=2023-05-15]"
+          },
+          {
+            "rank": 29,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.015288919893035694,
+            "content_preview": "event: requested training plan revision with 85-mile maximum weekly mileage [date=2023-02-05]"
+          },
+          {
+            "rank": 30,
+            "turn_id": "answer_4bfcc250_1_t11",
+            "is_gold_session": true,
+            "score": 0.01639344262295082,
+            "content_preview": "[assistant] I'm glad you asked! Staying organized and managing your time effectively is crucial when volunteering for multiple charity event"
+          }
+        ]
+      },
+      "skills": {
+        "role_mismatch_guard": false,
+        "role_mismatch_guard_block": "",
+        "cashback_hint": false,
+        "person_age_hint": false,
+        "numeric_cardinal_fires": false,
+        "numeric_cardinal_preview": "",
+        "evidence_candidates_fires": true,
+        "evidence_candidates_preview": "EVIDENCE CANDIDATES (deterministic extraction from retrieved memories):\n1. '5 times' (relation=count_claim, confidence=0.70) [supported_by=2]\n   quote: [user] I'll add my existing shoe wear data. I'll start with my black boots, which I've worn 5 times since I bought them on February 10th.\nPick the candidate that most directly answers the question. If multiple candidates fit, prefer higher confiden",
+        "run_temporal_precision_fires": true,
+        "run_temporal_precision_preview": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: Insufficient evidence to determine months since participating in two ",
+        "run_open_domain_specific_err": "RadioMind.run_open_domain_specific() got an unexpected keyword argument 'reference_date'"
+      }
+    },
+    {
+      "qid": "gpt4_93159ced_abs",
+      "lsa2_label": "commit_variance / Google presupposition — gold=abstain, LLM committed",
+      "question": "How long have I been working before I started my current job at Google?",
+      "gold": "The information provided is not enough. From the information provided, You haven't started working at Google yet.",
+      "gold_session_ids": [
+        "answer_e5131a1b_abs_1",
+        "answer_e5131a1b_abs_2"
+      ],
+      "domain": "lsa3_gpt4_93159ced_abs",
+      "ingested_turns": 608,
+      "retrieve": {
+        "top_k": 200,
+        "total_returned": 66,
+        "gold_session_ids": [
+          "answer_e5131a1b_abs_1",
+          "answer_e5131a1b_abs_2"
+        ],
+        "gold_hits_in_top_k": 9,
+        "gold_ranks_first_5": [
+          2,
+          5,
+          18,
+          22,
+          28
+        ],
+        "top_10_hits": [
+          {
+            "rank": 1,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.5286571979522705,
+            "content_preview": "event: started working at NovaTech [date=2019-02-01]"
+          },
+          {
+            "rank": 2,
+            "turn_id": "answer_e5131a1b_abs_2_t10",
+            "is_gold_session": true,
+            "score": 0.5387222766876221,
+            "content_preview": "[user] I'll start by saying that I'm a software engineer, specifically a backend developer, and I've been in this field since I graduated wi"
+          },
+          {
+            "rank": 3,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3924556374549866,
+            "content_preview": "event: graduated with degree in Computer Science from University of California, Berkeley [date=2019-02-01]"
+          },
+          {
+            "rank": 4,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3701625466346741,
+            "content_preview": "event: noticed getting around 7-8 hours of sleep each night [date=2023-05-30]"
+          },
+          {
+            "rank": 5,
+            "turn_id": "answer_e5131a1b_abs_1_t2",
+            "is_gold_session": true,
+            "score": 0.48738908767700195,
+            "content_preview": "[user] I'll definitely try to implement these tips. One thing I'm struggling with is keeping track of my tasks and projects. I've been worki"
+          },
+          {
+            "rank": 6,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3528086543083191,
+            "content_preview": "event: incorporated jogging and HIIT workouts into routine [date=2023-05-30]"
+          },
+          {
+            "rank": 7,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3512888252735138,
+            "content_preview": "event: managed to wake up at 6:30 AM from Monday to Friday [date=2023-05-30]"
+          },
+          {
+            "rank": 8,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3314400017261505,
+            "content_preview": "event: started sculpting [date=2023-05-01]"
+          },
+          {
+            "rank": 9,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3261276185512543,
+            "content_preview": "event: started educating self more about microbiology field and sharing learnings with others [date=2023-05-30]"
+          },
+          {
+            "rank": 10,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.32369399070739746,
+            "content_preview": "event: got involved in supporting empowerment programs in community [date=2023-05-30]"
+          }
+        ],
+        "sample_hits_11_to_30": [
+          {
+            "rank": 11,
+            "turn_id": "2f097fba_1_t4",
+            "is_gold_session": false,
+            "score": 0.42347702383995056,
+            "content_preview": "[user] I'm considering using Google Drive since I already use Google Photos and it integrates well with it. But I'm not sure if I should upg"
+          },
+          {
+            "rank": 12,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.3163774609565735,
+            "content_preview": "event: turned 30 [date=2023-05-30]"
+          },
+          {
+            "rank": 13,
+            "turn_id": "2f097fba_1_t11",
+            "is_gold_session": false,
+            "score": 0.41539162397384644,
+            "content_preview": "[assistant] I'm glad you asked! I think we've covered a good amount of ground on cloud storage and Google Drive. If you're ready to move on,"
+          },
+          {
+            "rank": 14,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.30975449085235596,
+            "content_preview": "event: noticed increase in strength and can now lift 10-pound dumbbells easily [date=2023-05-30]"
+          },
+          {
+            "rank": 15,
+            "turn_id": "",
+            "is_gold_session": false,
+            "score": 0.303997278213501,
+            "content_preview": "event: started incorporating lower body exercises into weightlifting routine [date=2023-05-30]"
+          },
+          {
+            "rank": 16,
+            "turn_id": "2f097fba_1_t5",
+            "is_gold_session": false,
+            "score": 0.3955925703048706,
+            "content_preview": "[assistant] Google Drive is an excellent choice, especially since you're already invested in the Google ecosystem with Google Photos.\n\nWhen "
+          },
+          {
+            "rank": 17,
+            "turn_id": "ultrachat_105960_t10",
+            "is_gold_session": false,
+            "score": 0.38465502858161926,
+            "content_preview": "[user] I'm curious, how long does it usually take for these strategies to take effect? Should I expect to see improvements right away or wil"
+          },
+          {
+            "rank": 18,
+            "turn_id": "answer_e5131a1b_abs_1_t0",
+            "is_gold_session": true,
+            "score": 0.38361191749572754,
+            "content_preview": "[user] I'm looking to get some advice on managing my time more efficiently. Lately, I've been working long hours on a high-priority project "
+          },
+          {
+            "rank": 19,
+            "turn_id": "f5eb52d6_t4",
+            "is_gold_session": false,
+            "score": 0.3663012981414795,
+            "content_preview": "[user] I was thinking about how my life has changed since I turned 30. Do you have any tips on how to stay motivated and focused on my goals"
+          },
+          {
+            "rank": 20,
+            "turn_id": "0a957f16_t4",
+            "is_gold_session": false,
+            "score": 0.36150985956192017,
+            "content_preview": "[user] I think I'll definitely schedule my morning routine in Todoist. That should help me stay on track. By the way, I've been trying to es"
+          },
+          {
+            "rank": 21,
+            "turn_id": "2f097fba_1_t7",
+            "is_gold_session": false,
+            "score": 0.35897916555404663,
+            "content_preview": "[assistant] The 100GB plan is a great starting point, and you can always adjust as needed.\n\nWow, that's great to hear about your phone's cam"
+          },
+          {
+            "rank": 22,
+            "turn_id": "answer_e5131a1b_abs_1_t1",
+            "is_gold_session": true,
+            "score": 0.3568042516708374,
+            "content_preview": "[assistant] The classic conundrum of work-life balance! I'm happy to help you with some tips on managing your time more efficiently.\n\nFirst,"
+          },
+          {
+            "rank": 23,
+            "turn_id": "168feef7_2_t8",
+            "is_gold_session": false,
+            "score": 0.3533080220222473,
+            "content_preview": "[user] I'll definitely try out these stretches after my jogging sessions. I'm excited to see how they'll help with my recovery and flexibili"
+          },
+          {
+            "rank": 24,
+            "turn_id": "2f097fba_1_t9",
+            "is_gold_session": false,
+            "score": 0.3480607867240906,
+            "content_preview": "[assistant] That's completely understandable! Organizing photos can be a daunting task, but it's worth it in the end.\n\nUsing auto mode is a "
+          },
+          {
+            "rank": 25,
+            "turn_id": "f5eb52d6_t6",
+            "is_gold_session": false,
+            "score": 0.3472987115383148,
+            "content_preview": "[user] I think celebrating my progress is something I need to work on. I tend to focus on what I still need to do instead of acknowledging w"
+          },
+          {
+            "rank": 26,
+            "turn_id": "sharegpt_2yaKUmC_0_t14",
+            "is_gold_session": false,
+            "score": 0.33605173230171204,
+            "content_preview": "[user] what times should i post these?"
+          },
+          {
+            "rank": 27,
+            "turn_id": "168feef7_2_t2",
+            "is_gold_session": false,
+            "score": 0.33482110500335693,
+            "content_preview": "[user] I'm thinking of incorporating jogging and HIIT workouts into my routine, maybe 2-3 times a week. My goal is to increase my endurance "
+          },
+          {
+            "rank": 28,
+            "turn_id": "answer_e5131a1b_abs_2_t11",
+            "is_gold_session": true,
+            "score": 0.3315839171409607,
+            "content_preview": "[assistant] A Cal Bear, nice! As a backend developer with 4+ years of experience, you've got a solid foundation in software development. You"
+          },
+          {
+            "rank": 29,
+            "turn_id": "2f097fba_1_t6",
+            "is_gold_session": false,
+            "score": 0.3255636394023895,
+            "content_preview": "[user] I think I'll start with the 100GB plan for now, and then upgrade if needed. Speaking of photos, I took a lot of them at the music fes"
+          },
+          {
+            "rank": 30,
+            "turn_id": "76385c25_t8",
+            "is_gold_session": false,
+            "score": 0.3185270428657532,
+            "content_preview": "[user] What are some effective strategies for building and maintaining a strong professional network, especially in the tech industry, and h"
+          }
+        ]
+      },
+      "skills": {
+        "role_mismatch_guard": false,
+        "role_mismatch_guard_block": "",
+        "cashback_hint": false,
+        "person_age_hint": false,
+        "numeric_cardinal_fires": false,
+        "numeric_cardinal_preview": "",
+        "evidence_candidates_fires": false,
+        "evidence_candidates_preview": "",
+        "run_temporal_precision_fires": true,
+        "run_temporal_precision_preview": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: 4 years and 3 months of work experience before starting at Google\n\n",
+        "run_open_domain_specific_err": "RadioMind.run_open_domain_specific() got an unexpected keyword argument 'reference_date'"
+      }
+    }
+  ]
+}
