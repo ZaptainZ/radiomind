@@ -1,0 +1,122 @@
+[
+  {
+    "qid": "1c0ddc50",
+    "lsa2_label": "preference advice",
+    "question": "Can you suggest some activities I can do during my commute to work?",
+    "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+    "artifact_final_answer": "Since you already listen to podcasts like \"How I Built This\" and enjoy true crime, self-improvement, and history genres, use your 40-minute commute to dive deeper into those. You could also use the Headspace guided recordings you mentioned to help manage anxiety during the trip.",
+    "artifact_correct": false,
+    "screen_triggers": [],
+    "in_sandbox": false,
+    "trust_gap_likely": null
+  },
+  {
+    "qid": "b6025781",
+    "lsa2_label": "preference advice",
+    "question": "I'm planning my meal prep next week, any suggestions for new recipes?",
+    "gold": "The user would prefer responses that suggest healthy meal prep recipes, especially those that incorporate quinoa and roasted vegetables, and offer variations in protein sources. They might appreciate suggestions that build upon their existing preferences, such as new twists on chicken Caesar salads or turkey and avocado wraps. The user may not prefer responses that suggest unhealthy or high-calorie meal prep options, or those that deviate significantly from their established healthy eating habits.",
+    "artifact_final_answer": "Since you're interested in **Mexican-inspired dishes** and have **fresh rosemary** on hand, try the **Vegan Black Bean and Sweet Potato Enchiladas** suggested previously for a main, and prep a batch of **Roasted Sweet Potatoes with Fresh Rosemary** as a side—both hold up well for meal prep.",
+    "artifact_correct": false,
+    "screen_triggers": [],
+    "in_sandbox": false,
+    "trust_gap_likely": null
+  },
+  {
+    "qid": "d6233ab6",
+    "lsa2_label": "preference advice",
+    "question": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+    "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+    "artifact_final_answer": "I don't have enough information about your high school experiences or how you typically feel about nostalgia to give you personalized advice on this.",
+    "artifact_correct": false,
+    "screen_triggers": [],
+    "in_sandbox": false,
+    "trust_gap_likely": null
+  },
+  {
+    "qid": "c18a7dc8",
+    "lsa2_label": "age delta — LSA-3 already audited (in sandbox)",
+    "question": "How many years older am I than when I graduated from college?",
+    "gold": "7",
+    "artifact_final_answer": "The information provided is not enough to determine how many years older you are now compared to when you graduated from college.",
+    "artifact_correct": false,
+    "screen_triggers": [
+      "age_interval",
+      "temporal"
+    ],
+    "in_sandbox": true,
+    "probe": {
+      "qid": "c18a7dc8",
+      "domain": "lsa3_c18a7dc8",
+      "temporal_section": "STRUCTURED SKILL (age_interval, conf=0.90): trust this unless retrieval explicitly contradicts.\n- graduated from college → 2023-05-26\n- current age (store self-ID) → 32\nComputed answer: 7\n\n",
+      "skill_fired": true,
+      "skill_name": "age_interval",
+      "skill_conf": 0.9,
+      "skill_answer": "7"
+    },
+    "trust_gap_likely": true
+  },
+  {
+    "qid": "b46e15ed",
+    "lsa2_label": "event-cluster interval — in sandbox",
+    "question": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+    "gold": "2",
+    "artifact_final_answer": "The information provided is not enough.",
+    "artifact_correct": false,
+    "screen_triggers": [
+      "temporal"
+    ],
+    "in_sandbox": true,
+    "probe": {
+      "qid": "b46e15ed",
+      "domain": "lsa3_b46e15ed",
+      "temporal_section": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: Insufficient evidence to determine months passed since participating in two charity events on consecutive days.\n\n",
+      "skill_fired": false
+    },
+    "trust_gap_likely": false
+  },
+  {
+    "qid": "gpt4_93159ced_abs",
+    "lsa2_label": "temporal endpoint — TESG-1 just fixed",
+    "question": "How long have I been working before I started my current job at Google?",
+    "gold": "The information provided is not enough. From the information provided, You haven't started working at Google yet.",
+    "artifact_final_answer": "Based on the information provided, I can infer you worked for about 4 years and 3 months before starting at Google, but I cannot confirm the exact duration or if there were other roles in between.",
+    "artifact_correct": false,
+    "screen_triggers": [
+      "temporal"
+    ],
+    "in_sandbox": true,
+    "probe": {
+      "qid": "gpt4_93159ced_abs",
+      "domain": "lsa3_gpt4_93159ced_abs",
+      "temporal_section": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: Insufficient evidence to determine a relative offset. The evidence contains a dated start for the job immediately preceding Google (NovaTech) and a claim of 9 years total experience, but no event or date to anchor the start of that 9-year period. Therefore, the duration of work before starting at Google cannot be reliably calculated.\n\n",
+      "skill_fired": false
+    },
+    "trust_gap_likely": false
+  },
+  {
+    "qid": "gpt4_ab202e7f",
+    "lsa2_label": "kitchen count — entity normalization",
+    "question": "How many kitchen items did I replace or fix?",
+    "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shelves.",
+    "artifact_final_answer": "You replaced or fixed 4 kitchen items: a kitchen mat, a kitchen faucet, kitchen shelves, and a toaster oven.",
+    "artifact_correct": false,
+    "screen_triggers": [
+      "cardinality"
+    ],
+    "in_sandbox": false,
+    "trust_gap_likely": null
+  },
+  {
+    "qid": "gpt4_d6585ce8",
+    "lsa2_label": "concert ordering",
+    "question": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+    "gold": "The order of the concerts I attended is: 1. Billie Eilish concert at the Wells Fargo Center in Philly, 2. Free outdoor concert series in the park, 3. Music festival in Brooklyn, 4. Jazz night at a local bar, 5. Queen + Adam Lambert concert at the Prudential Center in Newark, NJ.",
+    "artifact_final_answer": "In the past two months, you attended:\n1. Free outdoor concert series in the park (March 25)\n2. Music festival in Brooklyn (April 1)\n3. Billie Eilish show in Philly (April 8)\n4. Jazz night at a local bar (April 8)\n5. Music festival in Brooklyn (April 15)",
+    "artifact_correct": false,
+    "screen_triggers": [
+      "list_ordering"
+    ],
+    "in_sandbox": false,
+    "trust_gap_likely": null
+  }
+]
