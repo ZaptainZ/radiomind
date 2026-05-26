@@ -19,9 +19,14 @@ complete. **Headlines (revised after e2e)**:
 3. TESG-1 design proven feasible against 3 "before Y"
    qids; still the cleanest narrow workstream candidate.
 4. Baseline integrity caveat: `judge_abstain_acceptance_
-   for_concrete_gold` inflates LME-S PASS counts;
-   strict-judge re-runs needed before any "X passes
-   already" conclusion.
+   for_concrete_gold` is **proven on the new c18a7dc8
+   smoke** (gold=`7`, response=abstain, judge=PASS),
+   but **NOT YET PROVEN to inflate historical V8.2.2a
+   0.92** — the same qid is already marked `correct=
+   false` in the v822a artifact. Section 6 plans the
+   offline JAB-1a scan to settle this question. Until
+   then no claim about historical baseline inflation
+   is supportable.
 
 ---
 
@@ -234,8 +239,20 @@ emitting a date-arithmetic answer, check for first-person
 work/event-occurrence evidence of Y in the retrieved
 memories. If none, route to canonical-abstain.
 
-This is the **only** narrow-deterministic fix candidate
-remaining after AAS-2 closes c18a7dc8 as already-fixed.
+**Scope clarification (Codex review 2026-05-26 P2)**:
+TESG-1 first impl will cover the **employer endpoint
+sub-shape only** ("How long ... before I started my
+current job at Y"). The event-endpoint sub-shape
+(e.g. `gpt4_cd90e484` "before I saw the American
+goldfinches") needs a separate event-occurrence detector
+and is **explicitly scope-deferred**. Conflating the two
+in one PR would inflate trigger surface and complicate
+positive/negative test design.
+
+For c18a7dc8: the skill itself is fixed (AAS-2 deterministic
+3/3 produces correct `7`), but the **commit path is not
+fixed** — answer-LLM ignores the prefix. See `structured_
+skill_trust_gap` (TSI-1) below for the remaining gap.
 
 ## 3. Revised Taxonomy (post 2026-05-26 AAS-2 e2e + judge-bug finding)
 
@@ -247,7 +264,7 @@ remaining after AAS-2 closes c18a7dc8 as already-fixed.
 | computation_high_risk | gpt4_ab202e7f | defer |
 | evidence_present_computation_missing | gpt4_d6585ce8 | defer |
 | gold_or_input_limitation | 1c0ddc50, b6025781, d6233ab6 | defer |
-| **judge_abstain_acceptance_for_concrete_gold** (NEW) | benchmark-wide | flag upstream; affects baseline integrity |
+| **judge_abstain_acceptance_for_concrete_gold** (NEW) | benchmark-wide | **JAB-1a runner veto implemented**; historical V8.2.2a 0.92 confirmed NOT inflated (0 fp); affects future-run integrity only |
 
 ## 4. Outstanding Tasks
 
@@ -265,16 +282,125 @@ remaining after AAS-2 closes c18a7dc8 as already-fixed.
 - [user-go-ahead-required] Re-measure contemporary LME-S
   n=100 on main with **strict-judge** (re-judge runs
   ignoring the abstain-acceptance loophole) before any
-  baseline conclusions. Current V8.2.2a "0.92" includes
-  judge-passed abstains.
+  baseline conclusions. Whether V8.2.2a "0.92" is actually
+  inflated by judge-accepted abstains is **NOT YET
+  ESTABLISHED** — the existing artifact already marks
+  c18a7dc8 as `correct=false`, so the n=1 smoke is NOT
+  proof of historical inflation. JAB-1a offline scan
+  (Section 6) measures this directly before any baseline
+  conclusion.
 - [pending] Cohort-audit for `event_cluster_interval`
   shape (per LSA-3 recommendation).
 
-## 5. Files
+## 6. Codex Review Response (2026-05-26)
+
+Five P1/P2 points raised after the AAS-2 e2e commit. All
+accepted. Resulting plan:
+
+- **P1.1 (log overstatement)**: "V8.2.2a 0.92 includes
+  judge-passed abstains" softened to "needs JAB-1a
+  offline scan" (sections 1 + 4 + 5 updated).
+- **P1.2 (JAB-1 is bench-side, not pure upstream)**:
+  add `JAB-1a` runner-side deterministic veto in
+  `run_longmemeval_mem0.py` judge path. Concrete-gold +
+  canonical-abstain response → force `correct=false`.
+  Independent of LLM judge.
+- **P1.3 (TSI-1 should not be "conf>=0.85 override")**:
+  TSI-1 demoted to **read-only cohort audit only**. No
+  global commit-side override impl. After audit, if only
+  age_interval shows the pattern, design a narrow
+  age_interval-specific commit contract; if multiple
+  skills show it, design an `authoritative_result`
+  contract requiring backing evidence + deterministic
+  computation proof.
+- **P2.4 (TESG-1 scope)**: first impl covers
+  **employer endpoint sub-shape only**; event endpoint
+  scope-deferred (see Section 2 clarification).
+- **P2.5 (log self-contradiction)**: c18a7dc8 status =
+  "skill fixed, commit path not fixed", NOT
+  "already-fixed" (Section 2 wording corrected).
+
+**Codex-prescribed execution order**:
+
+1. JAB-1a — runner veto + offline scan of historical
+   artifacts. Without trustworthy evaluator, single-qid
+   smokes and aggregate scores can't be interpreted.
+2. TESG-1 employer-only impl.
+3. TSI-1 read-only cohort audit.
+4. b46e15ed + event-endpoint deferred.
+
+## 6.5 JAB-1a Implementation + Historical Scan
+
+Implemented runner-side veto per Codex P1.2:
+- `bench/end_to_end/jab1_abstain_veto.py`: shared core
+  (`is_abstain_gold`, `is_abstain_response`, `should_veto`).
+  High-precision detector — false negatives acceptable,
+  false positives not.
+- `bench/end_to_end/run_longmemeval_mem0.py`: post-judge
+  veto. When LLM judge returns `correct=true` AND
+  `should_veto(gold, answer)`, force `correct=false` and
+  append `[JAB-1a VETO]` to verdict.
+
+Smoke tests (9/9 pass):
+- gold=`7` + abstain answer → veto (matches c18a7dc8 today)
+- gold=`2` + abstain answer → veto (matches b46e15ed in v82-1)
+- gold=`59.6` + abstain answer → veto (matches d12ceb0e v6.1.1)
+- gold=`"You did not mention..."` + abstain → NO veto (gold itself abstain)
+- gold=`"You haven't..."` + abstain → NO veto (gold itself abstain)
+- normal PASS cases unaffected
+
+### Historical scan (script: `jab1_concrete_gold_abstain_scan.py`)
+
+Scanned 30 LME-S artifacts for `concrete_gold + canonical_
+abstain + correct=true` records. Per-file count (only
+shown ≥1):
+
+| artifact | n | reported acc | false-pass after refined detector |
+|---|---|---|---|
+| `lme-s-v822a-n100.json` | 100 | 0.92 | **0** |
+| `lme-s-v822a-n100.judge-fixed.json` | 100 | 0.92 | **0** |
+| `lme-s-v82-1-n100.json` | 100 | — | 2 (b46e15ed=2, bb7c3b45=$300) |
+| `lme-s-n100-v6.2.2-…` | 100 | — | 1 (ec81a493=500) |
+| `lme-s-n100-v6.1.1-…` | 100 | — | 2 (d12ceb0e=59.6, bb7c3b45=$300) |
+| `lme-s-n100-v5-…` | 100 | — | 1 (d12ceb0e=59.6) |
+| `lme-s-n100-v4-…` | 100 | — | **5** (incl. b46e15ed=2, 89941a93=4, d12ceb0e=59.6, 6aeb4375=four) |
+| `lme-s-n100-v3-…` | 100 | — | 1 (86f00804) |
+| `lme-s-n100-post-refactor` | 100 | — | 1 (86f00804) |
+
+### Conclusion on Codex P1.1
+
+**The Codex review point is fully validated**:
+
+- V8.2.2a baseline `0.92` is **NOT inflated** by abstain
+  false-passes (0 false-passes after refined detector).
+  My earlier claim "0.92 includes judge-passed abstains"
+  was wrong and is RETRACTED.
+- Historical earlier baselines (v3-v6.2.2) WERE inflated
+  (1-5 false-passes per 100 q). V4 = +5% effective.
+- JAB-1a is still warranted because **new runs are
+  unprotected** (today's c18a7dc8 smoke proved this);
+  the contemporary baseline happens to be clean only
+  because the four shipped fixed-target helpers
+  (d12ceb0e, 9aaed6a3, 031748ae_abs, d851d5ba) closed
+  the qids that would have abstain-false-passed today.
+  Without JAB-1a, the NEXT regression would silently
+  pass.
+
+### Live veto validation
+
+Re-ran c18a7dc8 e2e through the patched runner. Result:
+[in progress — appended on completion to
+`bench/end_to_end/aas2-c18a7dc8-e2e-jab1a.json`].
+
+## 7. Files
 
 - AAS-2 probe script: `bench/end_to_end/aas2_age_interval_priority.py`
 - AAS-2 probe data: `bench/end_to_end/aas2-age-interval-probe.json`
-- AAS-2 e2e checkpoint: `bench/end_to_end/aas2-c18a7dc8-e2e.checkpoint.jsonl`
+- AAS-2 e2e (pre-JAB-1a): `bench/end_to_end/aas2-c18a7dc8-e2e.json`
+- AAS-2 e2e (post-JAB-1a): `bench/end_to_end/aas2-c18a7dc8-e2e-jab1a.json`
+- JAB-1a veto core: `bench/end_to_end/jab1_abstain_veto.py`
+- JAB-1a historical scan: `bench/end_to_end/jab1_concrete_gold_abstain_scan.py`
+- JAB-1a scan output: `bench/end_to_end/jab1-false-pass-scan.json`
 - TESG-1 trigger scan: `bench/end_to_end/tesg1-trigger-scan.json`
 - LSA-3 audit (revised v4 — AAS-1 retraction): `projectBasicInfo/logs/2026-05-25-lsa3-existing-path-audit-cc.md`
 - This log: `projectBasicInfo/logs/2026-05-26-aas1-retraction-aas2-tesg1-cc.md`

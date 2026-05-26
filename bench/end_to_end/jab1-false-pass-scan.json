@@ -1,0 +1,593 @@
+[
+  {
+    "file": "lme-s-FINAL-gpt4o-n100.json",
+    "n_total": 100,
+    "n_correct": 83,
+    "acc_reported": 0.83,
+    "n_false_pass_candidates": 3,
+    "false_passes": [
+      {
+        "qid": "86f00804",
+        "gold": "The Seven Husbands of Evelyn Hugo",
+        "answer": "The information provided is not enough to determine what book you are currently reading.",
+        "qtype": "single-session-user",
+        "verdict_tail": "bstains from answering due to insufficient information, which aligns with the abstention criteria.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "b46e15ed",
+        "gold": "2",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "sponse is correct in the context of abstention, as it effectively declines to answer the question.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "c18a7dc8",
+        "gold": "7",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " response is acceptable as it effectively abstains from answering due to insufficient information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-deepseek-judge4o-n100-v2.json",
+    "n_total": 100,
+    "n_correct": 79,
+    "acc_reported": 0.79,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "gpt4_d12ceb0e",
+        "gold": "59.6",
+        "answer": "The information provided is not enough. I know you are 32, and your grandparents are 75 and 78, but I don't have your parents' ages.",
+        "qtype": "multi-session",
+        "verdict_tail": "roviding a numerical answer due to missing information, which aligns with the abstention criteria.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-deepseek-judge4o-n100.json",
+    "n_total": 100,
+    "n_correct": 79,
+    "acc_reported": 0.79,
+    "n_false_pass_candidates": 4,
+    "false_passes": [
+      {
+        "qid": "gpt4_d12ceb0e",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "tent with an abstention. Therefore, the model response is correct in the context of an abstention.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "eaca4986",
+        "gold": "C D E F G A B A G F E D C",
+        "answer": "The information provided is not enough. I only have the melodic notes for the chorus, not the chord progression.",
+        "qtype": "single-session-assistant",
+        "verdict_tail": "wer's sequence of notes if interpreted as melodic notes. Therefore, the model response is correct.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "gpt4_fa19884d",
+        "gold": "a bluegrass band that features a banjo player",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "abstention ground truth. Therefore, the model response is correct in the context of an abstention.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "bb7c3b45",
+        "gold": "$300",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "is correct because it effectively declines to answer the question due to insufficient information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-deepseek32-n30.json",
+    "n_total": 30,
+    "n_correct": 27,
+    "acc_reported": 0.9,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "the question, it matches the criteria for an abstention. Therefore, the model response is correct.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "is not enough information, this matches the criteria for an acceptable abstention.\n\nFinal Verdict: yes\n</judge_thinking>"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-gpt4o-n30.json",
+    "n_total": 30,
+    "n_correct": 25,
+    "acc_reported": 0.8333,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "answer is specific and the model does not have enough information to provide that specific answer.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough to calculate the average age of you, your parents, and your grandparents.",
+        "qtype": "multi-session",
+        "verdict_tail": "el response is correct in abstaining from providing a numerical answer due to lack of information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen-fullarch-n30.json",
+    "n_total": 30,
+    "n_correct": 23,
+    "acc_reported": 0.7667,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "at the model does not have the necessary information to provide a specific answer.\n\nFinal verdict: yes\n</judge_thinking>"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "icient to answer the question. In this case, the model response does exactly that.\n\nFinal Verdict: yes\n</judge_thinking>"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen-metacal-n30.json",
+    "n_total": 30,
+    "n_correct": 25,
+    "acc_reported": 0.8333,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "cates that there is not enough information, it is considered a correct abstention.\n\nFinal verdict: yes\n</judge_thinking>"
+      },
+      {
+        "qid": "?",
+        "gold": "500",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": "nformation,\" it is considered a correct abstention.\n\nFinal verdict: The model response is correct.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen-n30.json",
+    "n_total": 30,
+    "n_correct": 25,
+    "acc_reported": 0.8333,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "enough information, it matches the criteria for an abstention. Therefore, the response is correct.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " but the model response indicates that the necessary information is not available.\n\nFinal verdict: yes\n</judge_thinking>"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen-v2-n30.json",
+    "n_total": 30,
+    "n_correct": 24,
+    "acc_reported": 0.8,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "odel response clearly indicates that it cannot provide this value due to insufficient information.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "500",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": "mation to provide the specific number. Therefore, the model response is correct in its abstention.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen-v3-n30.json",
+    "n_total": 30,
+    "n_correct": 26,
+    "acc_reported": 0.8667,
+    "n_false_pass_candidates": 3,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "t: The model response correctly abstains from providing an answer due to insufficient information.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " correctly identifies that it cannot provide this number without more information.\n\nFinal Verdict: yes\n</judge_thinking>"
+      },
+      {
+        "qid": "?",
+        "gold": "500",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": "fies that there is not enough information, this matches the criteria for an acceptable abstention.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-qwen3max-n30.json",
+    "n_total": 30,
+    "n_correct": 25,
+    "acc_reported": 0.8333,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "abstention and correctly conveys that there is not enough information to determine the life event.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "answer due to insufficient information, which aligns with the abstention rule.\n\nFinal Verdict: Yes\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-v4-deepseek-n30.json",
+    "n_total": 30,
+    "n_correct": 25,
+    "acc_reported": 0.8333,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "t there is not enough information to determine the life event. Therefore, the response is correct.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " is correct as it appropriately abstains from providing an answer due to insufficient information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-v5-deepseek-n30.json",
+    "n_total": 30,
+    "n_correct": 27,
+    "acc_reported": 0.9,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "fies that it does not have the necessary information to provide a specific answer.\n\nFinal verdict: yes\n</judge_thinking>"
+      },
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "I don't have enough information to answer that.",
+        "qtype": "multi-session",
+        "verdict_tail": "tention. The response refuses to answer the question due to a lack of information.\n\nFinal verdict:\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-v5-qwen-n30.json",
+    "n_total": 30,
+    "n_correct": 21,
+    "acc_reported": 0.7,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " response indicates that there is not enough information, this is considered a correct abstention.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-v6-qwen-n30.json",
+    "n_total": 30,
+    "n_correct": 23,
+    "acc_reported": 0.7667,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "my cousin's wedding",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "because it correctly identifies that there is not enough information to provide a specific answer.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-mem0proto-v7d-deepseek-n30.json",
+    "n_total": 30,
+    "n_correct": 29,
+    "acc_reported": 0.9667,
+    "n_false_pass_candidates": 4,
+    "false_passes": [
+      {
+        "qid": "?",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "el response indicates that there is not enough information, it is considered a correct abstention.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "The Seven Husbands of Evelyn Hugo",
+        "answer": "I don't have information on what book you're currently reading.",
+        "qtype": "single-session-user",
+        "verdict_tail": "the correct answer, it matches the criteria for an abstention. Therefore, the response is correct.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "500",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": "t enough information.\n\nGiven these considerations, the model response is an acceptable abstention.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "?",
+        "gold": "$0.75",
+        "answer": "The information provided is not enough to determine how much cashback you earned at SaveMart last Thursday.",
+        "qtype": "multi-session",
+        "verdict_tail": "enough information, it matches the criteria for an abstention. Therefore, the response is correct.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-post-refactor.json",
+    "n_total": 100,
+    "n_correct": 82,
+    "acc_reported": 0.82,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "86f00804",
+        "gold": "The Seven Husbands of Evelyn Hugo",
+        "answer": "The information provided is not enough to determine what book you are currently reading.",
+        "qtype": "single-session-user",
+        "verdict_tail": "e, it aligns with the correct answer in terms of not providing an incorrect or speculative answer.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-v3-deepseek-judge4o.json",
+    "n_total": 100,
+    "n_correct": 86,
+    "acc_reported": 0.86,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "86f00804",
+        "gold": "The Seven Husbands of Evelyn Hugo",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": " the question, which matches an abstention ground truth. Therefore, the model response is correct.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-v4-deepseek-judge4o.json",
+    "n_total": 100,
+    "n_correct": 82,
+    "acc_reported": 0.82,
+    "n_false_pass_candidates": 5,
+    "false_passes": [
+      {
+        "qid": "gpt4_194be4b3",
+        "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 ac",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "use it effectively declines to answer the question, which aligns with the abstention ground truth.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "b46e15ed",
+        "gold": "2",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "tention, as it does not attempt to provide a potentially incorrect number without sufficient data.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "gpt4_d12ceb0e",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "del response is correct in abstaining from providing a specific answer due to lack of information.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "89941a93",
+        "gold": "4",
+        "answer": "The information provided is not enough.",
+        "qtype": "knowledge-update",
+        "verdict_tail": " question due to lack of information. Therefore, it aligns with the rules for abstention matching.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "6aeb4375",
+        "gold": "four",
+        "answer": "The information provided is not enough.",
+        "qtype": "knowledge-update",
+        "verdict_tail": " to answer the question due to insufficient information. Therefore, the model response is correct.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-v5-deepseek-judge4o.json",
+    "n_total": 100,
+    "n_correct": 92,
+    "acc_reported": 0.92,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "gpt4_d12ceb0e",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "nformation. Therefore, the model response aligns with the abstention criteria.\n\nFinal verdict: yes\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-v6.1.1-deepseek-judge4o.json",
+    "n_total": 100,
+    "n_correct": 93,
+    "acc_reported": 0.93,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "gpt4_d12ceb0e",
+        "gold": "59.6",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " correct in abstaining from providing a specific numerical answer due to insufficient information.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "bb7c3b45",
+        "gold": "$300",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": "is correct because it effectively declines to answer the question due to insufficient information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-n100-v6.2.2-deepseek-judge4o.json",
+    "n_total": 100,
+    "n_correct": 89,
+    "acc_reported": 0.89,
+    "n_false_pass_candidates": 1,
+    "false_passes": [
+      {
+        "qid": "ec81a493",
+        "gold": "500",
+        "answer": "The information provided is not enough.",
+        "qtype": "single-session-user",
+        "verdict_tail": "l response is correct in abstaining from providing a specific number due to a lack of information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-v82-1-n100.json",
+    "n_total": 100,
+    "n_correct": 92,
+    "acc_reported": 0.92,
+    "n_false_pass_candidates": 2,
+    "false_passes": [
+      {
+        "qid": "b46e15ed",
+        "gold": "2",
+        "answer": "The information provided is not enough.",
+        "qtype": "temporal-reasoning",
+        "verdict_tail": "el response is an abstention, the model response is correct in the context of abstention matching.\n</judge_thinking>\nyes"
+      },
+      {
+        "qid": "bb7c3b45",
+        "gold": "$300",
+        "answer": "The information provided is not enough.",
+        "qtype": "multi-session",
+        "verdict_tail": " of abstention, as it effectively declines to answer the question due to insufficient information.\n</judge_thinking>\nyes"
+      }
+    ]
+  },
+  {
+    "file": "lme-s-v822a-n100.json",
+    "n_total": 100,
+    "n_correct": 86,
+    "acc_reported": 0.86,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  },
+  {
+    "file": "lme-s-v822a-n100.judge-fixed.json",
+    "n_total": 100,
+    "n_correct": 92,
+    "acc_reported": 0.92,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  },
+  {
+    "file": "lme-s-v822a-smoke-target.json",
+    "n_total": 1,
+    "n_correct": 1,
+    "acc_reported": 1.0,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  },
+  {
+    "file": "lme-s-v822b-smoke-target.json",
+    "n_total": 1,
+    "n_correct": 1,
+    "acc_reported": 1.0,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  },
+  {
+    "file": "lme-s-v823a-smoke-target.json",
+    "n_total": 1,
+    "n_correct": 1,
+    "acc_reported": 1.0,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  },
+  {
+    "file": "lme-s-v831-smoke-d12ceb0e.json",
+    "n_total": 1,
+    "n_correct": 1,
+    "acc_reported": 1.0,
+    "n_false_pass_candidates": 0,
+    "false_passes": []
+  }
+]

@@ -733,6 +733,20 @@ def run(
                 if judge_attempt < 2:
                     import time as _t
                     _t.sleep(2 ** judge_attempt)  # 1s, 2s, 4s backoff
+        # JAB-1a: deterministic veto when LLM judge passes a canonical
+        # abstain response against a concrete gold. The judge prompt
+        # specifies the abstain-GOLD rule but does not forbid passing
+        # abstain RESPONSES against concrete golds; this veto closes
+        # that hole. Reason logged in verdict so per-query records
+        # show the override.
+        if is_correct and not judge_failed:
+            from jab1_abstain_veto import should_veto
+            if should_veto(gold_str, answer):
+                is_correct = False
+                verdict = (verdict or "") + (
+                    "\n[JAB-1a VETO: concrete gold + canonical "
+                    "abstain response → FAIL]"
+                )
         # Track judge failures separately so report can distinguish
         # model-wrong (true FAIL) from judge-infra-error (unverdicted).
         if "judge_errors" not in overall:
