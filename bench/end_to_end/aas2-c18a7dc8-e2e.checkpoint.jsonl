@@ -1,0 +1,1 @@
+{"question_id": "c18a7dc8", "q": "How many years older am I than when I graduated from college?", "gold": "7", "answer": "The information provided is not enough.", "correct": true, "qtype": "multi-session", "verdict_tail": "ng from answering due to lack of information, which aligns with the rules for abstention matching.\n</judge_thinking>\nyes", "judge_failed": false}

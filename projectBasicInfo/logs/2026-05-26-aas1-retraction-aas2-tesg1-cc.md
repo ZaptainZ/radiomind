@@ -3,10 +3,25 @@
 **Date**: 2026-05-26
 **Author**: Claude Code
 **Status**: Read-only. No code change. Two parallel audits
-complete. **Headline: c18a7dc8 already PASSes on current
-main; the V8.2.2a baseline that flagged it as a fail is
-stale.** TESG-1 design proven feasible against 3 "before
-Y" qids.
+complete. **Headlines (revised after e2e)**:
+
+1. AAS-1 retracted — c18a7dc8 haystack DOES contain the
+   user-owned `age of 25` evidence (AAS-1 keyword-search
+   bug missed it).
+2. AAS-2 reveals a NEW failure layer:
+   `structured_skill_trust_gap` — the `age_interval`
+   skill computes `7` correctly and the prefix gets
+   injected with "trust this" instruction, but the
+   answer-LLM (deepseek-v3.2) ignores it and abstains.
+   The judge wrongly marks the abstain answer PASS for
+   gold=`7`, so the V8.2.2a baseline `correct=True`
+   masks the real failure.
+3. TESG-1 design proven feasible against 3 "before Y"
+   qids; still the cleanest narrow workstream candidate.
+4. Baseline integrity caveat: `judge_abstain_acceptance_
+   for_concrete_gold` inflates LME-S PASS counts;
+   strict-judge re-runs needed before any "X passes
+   already" conclusion.
 
 ---
 
@@ -75,33 +90,84 @@ deterministic SUCCESS** returning `answer='7', confidence=0.9,
 anchors=[('graduated from college', '2023-05-26'),
 ('current age (store self-ID)', '32')]`.
 
-### Single-qid e2e validation
+### Single-qid e2e validation — RESULT
 
-[in progress — running
-`run_longmemeval_mem0.py --qids c18a7dc8 --benchmark-mode
-a2a-practice`. Result will be appended here.]
+Ran `run_longmemeval_mem0.py --qids c18a7dc8
+--benchmark-mode a2a-practice --answer-model deepseek-v3.2
+--judge-model gpt-4o`.
 
-### Conclusion
+- Final answer: **"The information provided is not enough."**
+  (abstain).
+- Gold: **"7"**.
+- Judge verdict: **`correct=True`** with reasoning
+  "refraining from answering due to lack of information,
+  which aligns with the rules for abstention matching."
 
-On current main (`e4c9afd`), the age_interval skill
-produces the deterministic correct answer for c18a7dc8.
-The V8.2.2a-judge-fixed baseline (2026-05-20) flagged
-c18a7dc8 as FAIL, but main has since accumulated NAR + V8.3
-+ subject-neutral anchor + trinity-routed attention fixes
-that appear to have closed this gap.
+The skill PRODUCED the correct answer, the prefix was
+INJECTED ("trust this unless retrieval explicitly
+contradicts. Computed answer: 7"), but **the answer-LLM
+ignored the prefix and abstained anyway**. The judge then
+gave PASS for an abstain answer against a concrete gold,
+which is wrong per LME-S rules.
 
-**Recommendation**: do NOT open an `age_interval evidence
-priority gap` implementation workstream until a fresh
-contemporary LME-S n=100 baseline confirms c18a7dc8 is
-still FAILing. The narrow-deterministic helper layer
-already handles this qid; no priority-reordering is needed
-in the absence of a regression.
+This means there are **two real defects** here, neither
+labeled `age_interval_evidence_priority_gap`:
 
-If the e2e run flips negative, the actual fix candidate
-would be a 2-line reorder at `age_interval.py:592-599`:
-run `_find_age_at_event_in_store` BEFORE
-`_find_event_via_trinity` (step 4 is deterministic;
-step 3 has trinity-noise risk).
+1. **`structured_skill_trust_gap`**: deepseek-v3.2 (and
+   possibly other answer-LLMs) ignore the
+   `STRUCTURED SKILL ... trust this` prefix on this qid
+   shape ("how many years older am I"). The prefix
+   instruction is not strong enough OR the LLM
+   over-weights "no evidence in raw memories of
+   graduation date" over "structured skill says 7". The
+   skill output is computed but **not committed** by the
+   final answer-LLM.
+2. **`judge_abstain_acceptance_for_concrete_gold`**: the
+   gpt-4o judge accepted an abstain answer when gold was
+   "7". This is a benchmark artifact (judge prompt rule),
+   not a RadioMind code defect, but it inflates baseline
+   PASS counts and masks `structured_skill_trust_gap`
+   regressions.
+
+Reproduction:
+
+```
+mind.run_temporal_precision("How many years older am I
+than when I graduated from college?", retrieved, q_date,
+"lsa3_c18a7dc8")  # 3/3 deterministic returns
+"STRUCTURED SKILL (age_interval, conf=0.90): trust this...
+- graduated from college → 2023-05-26
+- current age (store self-ID) → 32
+Computed answer: 7"
+```
+
+But the final answer (after the prompt template inserts
+this prefix + retrieved memories) is "not enough" abstain.
+
+### Revised recommendation
+
+The `age_interval_evidence_priority_gap` label was
+**partially wrong**: the skill ITSELF works. The actual
+gap is downstream commit. Two new candidate workstreams
+(both narrow, both deterministic):
+
+- **TSI-1 (`trust_structured_skill_in_answer_LLM`)**:
+  audit how the answer-LLM uses the `STRUCTURED SKILL`
+  prefix. If the prefix is being silently ignored on
+  >X% of qids where skill conf >= 0.85, change tactics:
+  (a) post-LLM check — if skill produced a high-conf
+  answer and LLM abstained, override; OR (b) stronger
+  prefix wording with concrete examples of when to trust.
+  Read-only first: probe what fraction of skill-firing
+  qids end in LLM-abstain.
+- **JAB-1 (`judge_abstain_acceptance`)**: not a code
+  workstream — flag to upstream LongMemEval repo / pin
+  judge prompt revision. Out of RadioMind scope but
+  affects baseline measurement integrity.
+
+The TESG-1 endpoint-support-gate work below remains
+unrelated to this finding and still stands as the
+primary in-scope narrow-deterministic workstream.
 
 ## 2. TESG-1 — Temporal Endpoint Support Gate Audit
 
@@ -171,30 +237,38 @@ memories. If none, route to canonical-abstain.
 This is the **only** narrow-deterministic fix candidate
 remaining after AAS-2 closes c18a7dc8 as already-fixed.
 
-## 3. Revised Taxonomy (post 2026-05-26)
+## 3. Revised Taxonomy (post 2026-05-26 AAS-2 e2e + judge-bug finding)
 
 | label | qid | status |
 |---|---|---|
-| **already_fixed (was age_interval_evidence_priority_gap)** | **c18a7dc8** | **AAS-2 deterministic PASS on main; e2e pending** |
+| **structured_skill_trust_gap** (NEW) | **c18a7dc8** | **skill correctly outputs `7`; answer-LLM ignores STRUCTURED SKILL prefix and abstains; judge wrongly accepts abstain as PASS for gold=`7`** |
 | temporal_endpoint_support_gap | gpt4_93159ced_abs | **TESG-1 design proven feasible; ready to open impl** |
 | event_cluster_interval_shape_gap | b46e15ed | defer pending cohort audit |
 | computation_high_risk | gpt4_ab202e7f | defer |
 | evidence_present_computation_missing | gpt4_d6585ce8 | defer |
 | gold_or_input_limitation | 1c0ddc50, b6025781, d6233ab6 | defer |
+| **judge_abstain_acceptance_for_concrete_gold** (NEW) | benchmark-wide | flag upstream; affects baseline integrity |
 
 ## 4. Outstanding Tasks
 
-- [pending] Wait for `c18a7dc8` single-qid e2e result.
-  If PASS, confirm "already-fixed" status. If FAIL, this
-  log appends the failure trace + revised
-  `age_interval evidence priority` workstream.
-- [pending] Re-measure contemporary LME-S n=100 on main
-  before any new helper work. The V8.2.2a baseline is now
-  ≥6 days stale.
+- [done] `c18a7dc8` single-qid e2e: marked PASS by judge
+  but answer was abstain — see Section 1 for the
+  `structured_skill_trust_gap` finding.
+- [user-go-ahead-required] Open TSI-1 read-only audit:
+  audit how often answer-LLM ignores a high-conf
+  STRUCTURED SKILL prefix. If the rate is meaningful,
+  this is a bigger lever than TESG-1 (which only affects
+  abstain-shape questions, while TSI-1 affects ANY skill
+  computing a high-conf answer).
+- [user-go-ahead-required] Open TESG-1 implementation
+  workstream (still valid and independent).
+- [user-go-ahead-required] Re-measure contemporary LME-S
+  n=100 on main with **strict-judge** (re-judge runs
+  ignoring the abstain-acceptance loophole) before any
+  baseline conclusions. Current V8.2.2a "0.92" includes
+  judge-passed abstains.
 - [pending] Cohort-audit for `event_cluster_interval`
   shape (per LSA-3 recommendation).
-- [user-go-ahead-required] Open TESG-1 implementation
-  workstream.
 
 ## 5. Files
 
