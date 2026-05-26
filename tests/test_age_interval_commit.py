@@ -144,21 +144,54 @@ class TestRewriteFires:
         assert "years" in out
 
     def test_unit_extracted_from_question(self):
-        # "how many months" → unit "months"
+        # "how many years older" → unit "years"; recompute 32-25=7
+        # matches skill value 7 → rewrite contains "7 years"
         section = (
             "STRUCTURED SKILL (age_interval, conf=0.95): ...\n"
-            "Computed answer: 6\n"
+            "Computed answer: 7\n"
         )
         out = maybe_age_interval_commit_closure(
-            "How many months since I started college?",
+            C18_QUESTION,
+            GOOD_MEMORIES,
+            "The information provided is not enough.",
+            section,
+        )
+        assert "7 years" in out
+
+    def test_rewrite_contains_source_proof(self):
+        """TSI-1d: rewrite output must quote the matched anchor
+        evidence so reviewers can verify the arithmetic."""
+        out = maybe_age_interval_commit_closure(
+            C18_QUESTION,
+            GOOD_MEMORIES,
+            ABSTAIN_ANSWER,
+            TEMPORAL_SECTION_GOOD,
+        )
+        assert out != ABSTAIN_ANSWER
+        # Source quotes for both anchors must appear in the rewrite
+        assert "32" in out  # current age
+        assert "25" in out  # past-event age
+        assert "Verified" in out
+        # Source memory snippets quoted
+        assert "Bachelor" in out or "at the age of 25" in out
+
+    def test_younger_mode_works(self):
+        """`younger` mode: PAST_AGE - CURRENT_AGE."""
+        section = (
+            "STRUCTURED SKILL (age_interval, conf=0.90): ...\n"
+            "Computed answer: 3\n"
+        )
+        out = maybe_age_interval_commit_closure(
+            "How many years younger am I now than when I started "
+            "my company?",
             [
-                {"memory": "[user] I started college at the age of 19."},
-                {"memory": "[user] I'm 19 now."},
+                {"memory": "[user] I started my company at the age of 35."},
+                {"memory": "[user] I'm 32 years old now."},
             ],
             "The information provided is not enough.",
             section,
         )
-        assert "6 months" in out
+        assert "3 years" in out
 
 
 # ---------- rewrite SKIPS (gates fail) ----------
@@ -253,5 +286,79 @@ class TestRewriteSkips:
     def test_skip_when_empty_memories(self):
         out = maybe_age_interval_commit_closure(
             C18_QUESTION, [], ABSTAIN_ANSWER, TEMPORAL_SECTION_GOOD,
+        )
+        assert out == ABSTAIN_ANSWER
+
+    # ---- TSI-1d new gates ----
+
+    def test_skip_when_recompute_does_not_match_skill(self):
+        """TSI-1d P1: skill says one value but matched anchors
+        produce a different value → rewrite must not fire. This
+        is the safety against picking unrelated age evidence."""
+        # Skill claims "7" but the only retrievable anchors give
+        # 32 - 20 = 12, not 7. Reject the skill value.
+        memories_inconsistent = [
+            # An unrelated past event: childhood age, not the
+            # graduation. Skill said 7 but recompute → 12 (32-20).
+            {"memory": "[user] I had a serious illness at the age of 20."},
+            {"memory": "[user] As a 32-year-old marketer ..."},
+        ]
+        out = maybe_age_interval_commit_closure(
+            C18_QUESTION,
+            memories_inconsistent,
+            ABSTAIN_ANSWER,
+            TEMPORAL_SECTION_GOOD,  # skill answer = 7
+        )
+        assert out == ABSTAIN_ANSWER
+
+    def test_skip_when_since_mode(self):
+        """TSI-1d: `since` mode uses date arithmetic, outside
+        recompute scope → rewrite skipped even with all backing
+        evidence."""
+        section = (
+            "STRUCTURED SKILL (age_interval, conf=0.90): ...\n"
+            "Computed answer: 5\n"
+        )
+        out = maybe_age_interval_commit_closure(
+            "How many years since I graduated?",
+            GOOD_MEMORIES,
+            ABSTAIN_ANSWER,
+            section,
+        )
+        assert out == ABSTAIN_ANSWER
+
+    def test_skip_when_before_mode(self):
+        section = (
+            "STRUCTURED SKILL (age_interval, conf=0.90): ...\n"
+            "Computed answer: 2\n"
+        )
+        out = maybe_age_interval_commit_closure(
+            "How many months before my anniversary did Rachel get "
+            "engaged?",
+            GOOD_MEMORIES,
+            ABSTAIN_ANSWER,
+            section,
+        )
+        assert out == ABSTAIN_ANSWER
+
+    def test_skip_when_non_integer_skill_answer(self):
+        """`7.5 years` is not a valid integer for age delta. Skip."""
+        section = (
+            "STRUCTURED SKILL (age_interval, conf=0.90): ...\n"
+            "Computed answer: 7.5\n"
+        )
+        out = maybe_age_interval_commit_closure(
+            C18_QUESTION, GOOD_MEMORIES, ABSTAIN_ANSWER, section,
+        )
+        assert out == ABSTAIN_ANSWER
+
+    def test_skip_when_negative_skill_answer(self):
+        """Negative ages don't make sense — reject."""
+        section = (
+            "STRUCTURED SKILL (age_interval, conf=0.90): ...\n"
+            "Computed answer: -3\n"
+        )
+        out = maybe_age_interval_commit_closure(
+            C18_QUESTION, GOOD_MEMORIES, ABSTAIN_ANSWER, section,
         )
         assert out == ABSTAIN_ANSWER

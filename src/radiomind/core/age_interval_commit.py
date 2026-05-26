@@ -117,23 +117,78 @@ def _iter_memory_text(memories: list[Any]) -> list[str]:
     return out
 
 
-def _has_age_at_event_evidence(memories: list[Any]) -> bool:
+def _find_age_at_event(
+    memories: list[Any],
+) -> tuple[int, str] | None:
+    """Return (N, source_snippet) for the first explicit
+    'at the age of N' / 'when I was N' / 'aged N' match across
+    retrieved memories, or None.
+
+    The source snippet is a short window around the match so
+    the rewrite can quote it as backing proof.
+    """
     for text in _iter_memory_text(memories):
-        if _AGE_AT_EVENT_RE.search(text):
-            return True
-    return False
+        m = _AGE_AT_EVENT_RE.search(text)
+        if not m:
+            continue
+        try:
+            n = int(m.group(1))
+        except (TypeError, ValueError):
+            continue
+        if not (1 <= n <= 120):
+            continue
+        start = max(0, m.start() - 60)
+        end = min(len(text), m.end() + 80)
+        snippet = text[start:end].strip()
+        return n, snippet
+    return None
+
+
+def _find_current_age(
+    memories: list[Any],
+) -> tuple[int, str] | None:
+    """Return (N, source_snippet) for the first first-person
+    current-age self-id match, or None."""
+    for text in _iter_memory_text(memories):
+        for pat in _CURRENT_AGE_PATTERNS:
+            m = pat.search(text)
+            if not m:
+                continue
+            try:
+                n = int(m.group(1))
+            except (TypeError, ValueError):
+                continue
+            if not (10 <= n <= 110):
+                continue
+            start = max(0, m.start() - 60)
+            end = min(len(text), m.end() + 80)
+            snippet = text[start:end].strip()
+            return n, snippet
+    return None
+
+
+# Retained for backward-compat (used by older audits/tests).
+def _has_age_at_event_evidence(memories: list[Any]) -> bool:
+    return _find_age_at_event(memories) is not None
 
 
 def _has_current_age_evidence(memories: list[Any]) -> bool:
-    for text in _iter_memory_text(memories):
-        for pat in _CURRENT_AGE_PATTERNS:
-            if pat.search(text):
-                return True
-    return False
+    return _find_current_age(memories) is not None
 
 
 # Parses the STRUCTURED SKILL block emitted by the registry's
 # soft-routing layer. Format documented at SkillResult.prefix().
+#
+# Architectural note (Codex 2026-05-26 P3): reverse-parsing the
+# rendered prompt text is fragile — any wording change to
+# SkillResult.prefix() would silently disable this gate. The
+# production fix is to thread the typed SkillResult object through
+# `run_temporal_precision` / the runner so the answer-side gate
+# consumes structured data (skill_name, confidence, computed,
+# anchor list, source proofs) rather than a string. We accept the
+# parse-from-text wiring here as a benchmark-side fix only and
+# document it as scope-deferred to a future architectural pass on
+# the skill-result return contract.
 _STRUCTURED_SKILL_HEADER = re.compile(
     r"STRUCTURED SKILL \((\w+), conf=([\d.]+)\)",
 )
@@ -176,47 +231,110 @@ def _question_unit(question: str) -> str:
     return f"{raw}s"
 
 
+def _question_mode(question: str) -> str | None:
+    """Extract the age_interval mode token from the question.
+    Mirror age_interval._TRIGGER_RE — returns one of
+    older/younger/since/between/after/before/apart, or None.
+    """
+    m = re.search(
+        r"how\s+many\s+(?:years?|months?)\s+"
+        r"(older|younger|since|between|after|before|apart)",
+        question or "", re.IGNORECASE,
+    )
+    return m.group(1).lower() if m else None
+
+
 def maybe_age_interval_commit_closure(
     question: str,
     retrieved_memories: list[Any],
     llm_answer: str,
     temporal_section: str,
 ) -> str:
-    """If TSI-1c gates hold, replace the LLM's pure abstain with a
-    commit to the skill's numeric answer.
+    """If TSI-1d gates hold, replace the LLM's pure abstain with a
+    commit to the skill's numeric answer — but ONLY after
+    independently recomputing the value from matched anchor
+    evidence and verifying it equals the skill's answer.
 
-    Gates (ALL must hold):
+    Gates (ALL must hold) — TSI-1d (2026-05-26 Codex P1):
       1. temporal_section contains STRUCTURED SKILL for age_interval
       2. confidence >= 0.85
-      3. computed answer parses to a numeric token
-      4. retrieved memories contain an explicit `at the age of N` /
-         `when I was N` / `aged N` mention
-      5. retrieved memories contain a first-person current-age
-         self-id mention
-      6. LLM final answer is a pure canonical-abstain (no concrete
+      3. computed answer parses to a non-negative integer
+      4. question mode is `older` or `younger` (other modes use
+         date arithmetic, outside this gate's recompute scope)
+      5. retrieved memories contain an explicit `at the age of N` /
+         `when I was N` / `aged N` mention (yields PAST_AGE)
+      6. retrieved memories contain a first-person current-age
+         self-id mention (yields CURRENT_AGE)
+      7. independent recompute matches skill answer EXACTLY:
+           older  → CURRENT_AGE - PAST_AGE == skill_value
+           younger → PAST_AGE - CURRENT_AGE == skill_value
+      8. LLM final answer is a pure canonical-abstain (no concrete
          commitment elsewhere — uses JAB-1b semantics)
 
     Returns:
-      - rewritten answer (commit to skill number) when ALL gates hold
+      - rewritten answer with source quotes proving the
+        arithmetic, when ALL gates hold
       - llm_answer unchanged when any gate fails
+
+    Notes:
+      - Gate 7 is the proof linkage Codex P1 required. The
+        rewrite cannot fire on memories that merely contain SOME
+        age-at-event and SOME current-age — they must combine
+        arithmetically to the skill's claimed answer. An
+        unrelated past age (e.g. a niece's age-at-event) won't
+        satisfy this gate unless that arithmetic happens to be
+        consistent with current-age - X.
+      - For age_interval modes other than older/younger (since,
+        before, after, etc.), date arithmetic is outside this
+        gate's scope. The rewrite stays dormant for those.
     """
     skill_name, conf, computed = parse_temporal_section(temporal_section)
     if skill_name != "age_interval":
         return llm_answer
     if conf is None or conf < 0.85:
         return llm_answer
-    if not computed or not re.search(r"\d", computed):
+    if not computed:
         return llm_answer
+    try:
+        skill_value = int(computed.strip())
+    except (TypeError, ValueError):
+        return llm_answer
+    if skill_value < 0:
+        return llm_answer
+
+    mode = _question_mode(question)
+    if mode not in ("older", "younger"):
+        # Other modes need date arithmetic — outside our recompute
+        # scope. Don't trust the skill answer in this gate.
+        return llm_answer
+
     if not _is_pure_abstain(llm_answer):
         return llm_answer
-    if not _has_age_at_event_evidence(retrieved_memories):
+
+    past = _find_age_at_event(retrieved_memories)
+    if past is None:
         return llm_answer
-    if not _has_current_age_evidence(retrieved_memories):
+    past_age, past_evidence = past
+
+    current = _find_current_age(retrieved_memories)
+    if current is None:
+        return llm_answer
+    current_age, current_evidence = current
+
+    # Gate 7: independent recompute must match skill value
+    if mode == "older":
+        recomputed = current_age - past_age
+    else:  # younger
+        recomputed = past_age - current_age
+    if recomputed != skill_value:
         return llm_answer
 
     unit = _question_unit(question)
     return (
-        f"{computed} {unit}. (Computed from explicit "
-        f"`at the age of N` evidence in your memories combined "
-        f"with your stated current age.)"
+        f"{skill_value} {unit}. (Verified: current age "
+        f"{current_age} {'minus' if mode == 'older' else 'subtracted from'} "
+        f"past-event age {past_age} = {skill_value}, "
+        f"matching the skill computation. "
+        f"Past-age source: {past_evidence!r}. "
+        f"Current-age source: {current_evidence!r}.)"
     )
