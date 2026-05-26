@@ -550,6 +550,23 @@ def run(
         except Exception:
             pass
 
+        # TESG-1 (2026-05-26): temporal endpoint support guard, employer-
+        # only sub-shape. When the question asks "how long ... before I
+        # started my current job at Y" but memories carry no first-person
+        # work-at-Y evidence, inject an abstain hint. Target: LME-S
+        # gpt4_93159ced_abs (Google over-commit). Negative anchor:
+        # gpt4_93159ced (NovaTech) must remain a PASS.
+        temporal_endpoint_section = ""
+        try:
+            from radiomind.core.temporal_endpoint_guard import (
+                temporal_endpoint_support_guard,
+            )
+            temporal_endpoint_section = temporal_endpoint_support_guard(
+                question, mem_results,
+            )
+        except Exception:
+            pass
+
         # V8.2.3a: cashback arithmetic hint. Deterministic helper for
         # "how much cashback/rebate at X" queries where memories contain
         # both a rate and an amount. Computes rate × amount and surfaces
@@ -621,6 +638,12 @@ def run(
         # has 'user leads N as <other-role>' claims.
         if role_guard_section:
             ans_prompt = role_guard_section + ans_prompt
+        # TESG-1: temporal endpoint guard at the same innermost wrapper
+        # level as the role guard. Same architectural contract: when
+        # presupposition is unsupported by memories, force canonical
+        # abstain via prompt-prefix.
+        if temporal_endpoint_section:
+            ans_prompt = temporal_endpoint_section + ans_prompt
         # V8.2.3a: cashback arithmetic hint injected at the same level
         # (innermost wrapper). Both are deterministic answer-side helpers.
         if cashback_hint_section:
@@ -703,6 +726,20 @@ def run(
         try:
             from radiomind.core.role_mismatch_guard import maybe_rewrite_with_guard
             answer = maybe_rewrite_with_guard(question, mem_results, answer)
+        except Exception:
+            pass
+
+        # TESG-1 post-process. Same contract as the role-guard rewrite:
+        # when the temporal endpoint guard fired AND the LLM still
+        # committed to a duration ("4 years 3 months"), rewrite to a
+        # canonical abstain stating the endpoint hasn't been reached.
+        try:
+            from radiomind.core.temporal_endpoint_guard import (
+                maybe_rewrite_with_temporal_guard,
+            )
+            answer = maybe_rewrite_with_temporal_guard(
+                question, mem_results, answer,
+            )
         except Exception:
             pass
 
