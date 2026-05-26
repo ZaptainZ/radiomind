@@ -2,9 +2,20 @@
 
 **Date**: 2026-05-26
 **Author**: Claude Code
-**Status**: Read-only audit complete. **Decision branch:
-"only age_interval shows trust gap" — narrow fix applies.
-NO broad authoritative-result commit contract needed.**
+**Status**: Read-only audit complete. **Decision branch
+(scope-bounded)**: in the **3 of 8** in-scope FAILS that
+were live-probed, only `c18a7dc8` shows the trust gap. **No
+second confirmed trust gap in the audited cohort**, BUT
+this does NOT prove `age_interval` rewrite is zero-risk
+across all LME-S — 2 of 8 in-scope FAILS (`gpt4_ab202e7f`,
+`gpt4_d6585ce8`) were NOT live-probed; their LLM-committed
+answers make trust-gap shape unlikely but unverified.
+
+Revision (Codex 2026-05-26 P2.3): wording softened — earlier
+draft said "only age_interval shows the trust gap" which
+overstated the audit's scope. The honest claim is "within
+the audited cohort". Pre-implementation work (TSI-1b)
+should probe the remaining qids before any rewrite ships.
 
 ---
 
@@ -91,35 +102,45 @@ wrong content — that's a different fix shape.
 > 若不止 `age_interval` 出现同类问题，再设计 proof-bearing
 > commit contract；否则只为确定性 age arithmetic 做窄闭环。
 
-**Outcome: only `age_interval` shows the trust gap**.
+**Outcome (audit-scope-bounded)**: in the live-probed
+subset (3/8 in-scope FAILS), only `c18a7dc8` exhibits the
+trust-gap signature. **This is consistent with the
+"only age_interval" branch but is NOT a complete proof of
+it**. The 2 unprobed cardinality / list_ordering qids show
+committed-LLM answers (not abstains), which makes the
+trust-gap shape unlikely there, but unverified.
 
-Recommendation: **narrow age_interval commit contract**
-(NOT broader authoritative-result contract). Specifically:
+Recommendation (Codex 2026-05-26 P2.3, revised): pursue
+the narrow age_interval direction, **but with TSI-1b
+pre-implementation audit gating the impl**:
 
-- Post-process branch (after the LLM answer): if
-  `age_interval` skill fired with `conf >= 0.85` AND
-  produced a numeric `answer`, AND the LLM final answer
-  is canonical-abstain (uses `is_abstain_response` from
-  JAB-1b), rewrite the answer to commit to the skill's
-  number. Same architectural pattern as
-  `maybe_rewrite_with_guard` (role mismatch) and
-  `maybe_rewrite_with_temporal_guard` (TESG-1) — both
-  shipped, both work.
+- **TSI-1b pre-impl audit**: full-cohort live probe across
+  ALL LME-S qids where `age_interval` could fire (any
+  `how many years|months (older|younger|since|between|
+  ...)` shape — pre-screen with the same regex as TSI-1).
+  For each: skill output, backing evidence type, final
+  answer, abstain/commit, judge verdict. Goal: prove
+  rewrite trigger surface has no false-positive
+  (skill-wrong + abstain-was-correct) cases.
 
-- Scope strictly to **age_interval only** for now. If a
-  future audit finds more skills with the same trust
-  gap, escalate to a broader contract.
+- **TSI-1c age-only commit closure (only if TSI-1b
+  passes)**: trigger requires ALL of:
+  - `skill_name == "age_interval"`
+  - skill `answer` is numeric
+  - `_age_at_event` regex matched a memory with explicit
+    `"at the age of N" / "when I was N" / "aged N"`
+    (backing evidence)
+  - current-age backing evidence present (self-id scan
+    succeeded)
+  - LLM final answer is **pure** canonical-abstain
+    (use `is_abstain_response` from JAB-1b)
 
-- Pre-impl audit: confirm the `age_at_event`
-  deterministic store-scan provides the *backing
-  evidence* required for the commit contract; the post-
-  rewrite should only fire when both (a) trinity
-  escalation picked an anchor AND (b) the
-  `_age_at_event` value is grounded in an actual
-  `"at the age of N"` mention.
+  Confidence threshold alone is NOT sufficient — concrete
+  backing evidence on both anchors is the gate.
 
-This workstream requires **separate user go-ahead** —
-TSI-1 audit closes here without implementing the contract.
+Both TSI-1b and TSI-1c require **separate user
+go-ahead** — TSI-1 audit closes here without implementing
+the contract.
 
 ## Files
 

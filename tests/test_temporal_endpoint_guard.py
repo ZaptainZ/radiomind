@@ -83,8 +83,44 @@ class TestExtractEmployerEndpoint:
         ) is None
 
     def test_unrelated_question_returns_none(self):
-        assert _extract_employer_endpoke if False else _extract_employer_endpoint(
+        assert _extract_employer_endpoint(
             "How many years older am I than when I graduated from college?"
+        ) is None
+
+    # ---- TESG-1b: lowercase / generic noun negative tests ----
+
+    def test_lowercase_generic_somewhere(self):
+        # Codex P1.1: pre-fix, `... at somewhere` triggered. Must NOT.
+        assert _extract_employer_endpoint(
+            "How long have I been working before I started my current "
+            "job at somewhere?"
+        ) is None
+
+    def test_lowercase_generic_the_company(self):
+        # Codex P1.1 second example.
+        assert _extract_employer_endpoint(
+            "How long have I been working before I started my current "
+            "job at the company?"
+        ) is None
+
+    def test_lowercase_brand(self):
+        # `acme corp` (lowercase) MUST NOT trigger — only Title-Cased
+        # brand names.
+        assert _extract_employer_endpoint(
+            "How long have I been working before I joined my new job "
+            "at acme corp?"
+        ) is None
+
+    def test_lowercase_a_friend(self):
+        assert _extract_employer_endpoint(
+            "How long have I been working before I started my new job "
+            "at a friend?"
+        ) is None
+
+    def test_lowercase_my_friend(self):
+        assert _extract_employer_endpoint(
+            "How long have I been working before I started my new job "
+            "at my friend?"
         ) is None
 
 
@@ -115,12 +151,16 @@ class TestCountEmployerEvidence:
 
 class TestGuardFires:
     def test_google_no_evidence_fires(self):
+        # Retrieved-only mode: guard fires but uses softer wording.
+        # TESG-1b P1.2: only the store-scanned scope can assert
+        # "haven't started"; retrieved-only mode must NOT.
         guard = temporal_endpoint_support_guard(
             GOOGLE_Q, GOOGLE_USER_MEMS_NO_EVIDENCE,
         )
         assert guard != ""
         assert "Google" in guard
-        assert "haven't started" in guard
+        assert "retrieved" in guard.lower()
+        assert "haven't started" not in guard.lower()
 
     def test_google_no_evidence_detection(self):
         d = detect_temporal_endpoint_mismatch(
@@ -186,6 +226,90 @@ class TestGuardSkips:
             [{"memory": "[assistant] You should consider Google Cloud."}],
         ) == ""
 
+    # ---- TESG-1b: store-scan fallback negative tests ----
+
+    def test_store_supports_endpoint_does_not_fire(self):
+        """Codex P1.2: retrieval miss must NOT be treated as negative
+        evidence. When the full domain store carries first-person
+        work-at-Y, the guard must NOT fire even if retrieved memories
+        miss it."""
+
+        # Fake `mind` with a populated store; retrieved is empty of
+        # the relevant turn (e.g. ranked out of top-K) but the store
+        # has the actual user statement.
+        class _FakeEntry:
+            def __init__(self, content):
+                self.content = content
+                self.metadata = {}
+
+        class _FakeStore:
+            def list_by_domain(self, domain, level=None, limit=None):
+                return [
+                    _FakeEntry("[user] I've been working at NovaTech "
+                               "for about 4 years and 3 months."),
+                    _FakeEntry("[user] Random unrelated turn."),
+                ]
+
+        class _FakeMind:
+            _store = _FakeStore()
+
+        # Retrieved memories miss the NovaTech evidence (e.g. all
+        # ranked turns are unrelated chatter):
+        retrieved_missing = [
+            {"memory": "[user] Looking for marketing course advice."},
+            {"memory": "[user] Could you recommend a book?"},
+        ]
+        # Without mind: retrieved-only mode would FIRE (no employer
+        # evidence in retrieved) — confirms current behavior is the
+        # weaker version.
+        retrieved_only_guard = temporal_endpoint_support_guard(
+            NOVATECH_Q, retrieved_missing,
+        )
+        assert retrieved_only_guard != ""
+        assert "retrieved-only" in retrieved_only_guard.lower()
+
+        # With mind+domain: store-scan finds the evidence → no fire.
+        store_guard = temporal_endpoint_support_guard(
+            NOVATECH_Q, retrieved_missing,
+            mind=_FakeMind(), domain="lme_novatech",
+        )
+        assert store_guard == ""
+
+    def test_store_misses_endpoint_full_scope_fires(self):
+        """When the full domain store ALSO has no employer evidence,
+        the guard fires with the assertive 'full-domain-scanned'
+        wording."""
+
+        class _FakeStore:
+            def list_by_domain(self, domain, level=None, limit=None):
+                return []  # empty store
+
+        class _FakeMind:
+            _store = _FakeStore()
+
+        # GOOGLE_USER_MEMS_NO_EVIDENCE — retrieved also empty of
+        # Google work-at evidence.
+        guard = temporal_endpoint_support_guard(
+            GOOGLE_Q, GOOGLE_USER_MEMS_NO_EVIDENCE,
+            mind=_FakeMind(), domain="lme_google",
+        )
+        assert guard != ""
+        # The assertive "NEVER" / "full domain scan" wording is used
+        # only when we have completed the scan.
+        assert "full-domain-scanned" in guard.lower()
+        assert "never said" in guard.lower()
+
+    def test_retrieved_only_mode_uses_softer_wording(self):
+        """Without mind+domain, the guard explicitly flags the
+        retrieved-only scope so callers know the assertion is weaker."""
+        guard = temporal_endpoint_support_guard(
+            GOOGLE_Q, GOOGLE_USER_MEMS_NO_EVIDENCE,
+        )
+        assert guard != ""
+        # Softer wording: should not claim NEVER said outright
+        assert "never said" not in guard.lower()
+        assert "retrieved" in guard.lower()
+
 
 # ---------- post-rewrite ----------
 
@@ -225,3 +349,32 @@ class TestMaybeRewriteWithTemporalGuard:
             "The information provided is not enough.",
         )
         assert out == "The information provided is not enough."
+
+    def test_rewrite_wording_reflects_scope_store(self):
+        """When mind+domain confirm store-wide absence, rewrite uses
+        the assertive 'haven't started' wording."""
+
+        class _FakeStore:
+            def list_by_domain(self, domain, level=None, limit=None):
+                return []
+
+        class _FakeMind:
+            _store = _FakeStore()
+
+        out = maybe_rewrite_with_temporal_guard(
+            GOOGLE_Q, GOOGLE_USER_MEMS_NO_EVIDENCE,
+            "You worked 4 years before starting at Google.",
+            mind=_FakeMind(), domain="lme_google",
+        )
+        assert "haven't started working at Google" in out
+
+    def test_rewrite_wording_reflects_scope_retrieved_only(self):
+        """Without mind+domain, rewrite uses softer 'retrieved
+        context does not establish' wording — does not assert the
+        user hasn't started."""
+        out = maybe_rewrite_with_temporal_guard(
+            GOOGLE_Q, GOOGLE_USER_MEMS_NO_EVIDENCE,
+            "You worked 4 years before starting at Google.",
+        )
+        assert "retrieved context" in out.lower()
+        assert "haven't started" not in out.lower()

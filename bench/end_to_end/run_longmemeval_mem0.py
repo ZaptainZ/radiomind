@@ -552,17 +552,21 @@ def run(
 
         # TESG-1 (2026-05-26): temporal endpoint support guard, employer-
         # only sub-shape. When the question asks "how long ... before I
-        # started my current job at Y" but memories carry no first-person
-        # work-at-Y evidence, inject an abstain hint. Target: LME-S
-        # gpt4_93159ced_abs (Google over-commit). Negative anchor:
-        # gpt4_93159ced (NovaTech) must remain a PASS.
+        # started my current job at Y" AND neither retrieved memories
+        # nor the full domain store carry first-person work-at-Y
+        # evidence, inject a canonical-abstain prefix. TESG-1b: mind +
+        # domain are passed so the detector can fall back to the full
+        # store before asserting "user hasn't started" (otherwise a
+        # retrieval miss would be wrongly treated as negative evidence).
+        # Target: gpt4_93159ced_abs. Negative anchor: gpt4_93159ced
+        # (NovaTech) must remain a PASS.
         temporal_endpoint_section = ""
         try:
             from radiomind.core.temporal_endpoint_guard import (
                 temporal_endpoint_support_guard,
             )
             temporal_endpoint_section = temporal_endpoint_support_guard(
-                question, mem_results,
+                question, mem_results, mind=mind, domain=domain,
             )
         except Exception:
             pass
@@ -733,12 +737,14 @@ def run(
         # when the temporal endpoint guard fired AND the LLM still
         # committed to a duration ("4 years 3 months"), rewrite to a
         # canonical abstain stating the endpoint hasn't been reached.
+        # mind+domain passed so the detector uses the same store-scan
+        # fallback as the prompt-prefix guard (TESG-1b).
         try:
             from radiomind.core.temporal_endpoint_guard import (
                 maybe_rewrite_with_temporal_guard,
             )
             answer = maybe_rewrite_with_temporal_guard(
-                question, mem_results, answer,
+                question, mem_results, answer, mind=mind, domain=domain,
             )
         except Exception:
             pass
