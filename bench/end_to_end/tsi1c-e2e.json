@@ -1,0 +1,64 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 3,
+  "total_ingested_turns": 1464,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 2552.8,
+  "overall_accuracy": 0.6667,
+  "model_correct": 2,
+  "judged_n": 3,
+  "judge_errors": 0,
+  "raw_accuracy": 0.6667,
+  "judged_accuracy": 0.6667,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "multi-session": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "temporal-reasoning": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "157a136e",
+      "q": "How many years older is my grandma than me?",
+      "gold": "43",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": " age difference of 43 years. Therefore, the model response is not equivalent to the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "You are 7 years older.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "he correct answer, which is the number of years older the person is since graduating from college.\n</judge_thinking>\nyes",
+      "judge_failed": false
+    },
+    {
+      "question_id": "6613b389",
+      "q": "How many months before my anniversary did Rachel get engaged?",
+      "gold": "2",
+      "answer": "Rachel got engaged 2 months and 7 days before your anniversary.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "additional detail without contradicting the core claim. Therefore, the model response is correct.\n</judge_thinking>\n\nyes",
+      "judge_failed": false
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
