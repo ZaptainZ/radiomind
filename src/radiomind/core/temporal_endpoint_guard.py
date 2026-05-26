@@ -65,6 +65,41 @@ _EMPLOYER_RE = re.compile(
 )
 
 
+# TESG-1c (Codex 2026-05-26 third review): explicit-negative or
+# future/planning evidence about the employer. ONLY when at least
+# one of these patterns is found in retrieved+store text are we
+# allowed to assert "user hasn't started" — that claim then has
+# actual textual support. Absence of positive evidence is NOT
+# negative evidence (FACT extraction can miss raw turns, store
+# scan caps at 500, etc.).
+_NEGATIVE_FUTURE_PATTERN_TEMPLATES = (
+    # Explicit "haven't started at X" / "have not joined X yet"
+    r"\bi\s+(?:haven'?t|have\s+not|did\s+not|didn'?t)\s+"
+    r"(?:yet\s+)?(?:start|join|begin|begun)\w*\s+"
+    r"(?:at|with|working\s+at|working\s+for)\s+{Y}\b",
+    r"\bhave\s+not\s+(?:yet\s+)?started\s+(?:working\s+)?"
+    r"(?:at|for|with)\s+{Y}\b",
+    # Planning / intending / hoping to join Y (with optional
+    # "at/for/with/to/in" preposition before Y, since "join Y"
+    # also valid English).
+    r"\bi(?:'m|\s+am)?\s+(?:plan|planning|hope|hoping|"
+    r"intend|intending|going)\s+to\s+(?:join|work|start|"
+    r"move\s+to)\s+(?:at|for|with|to|in\s+)?{Y}\b",
+    # Interview / interviewing at/with Y — strong job-context signal
+    r"\b(?:interview|interviewing|interviews?)\s+(?:at|with|for)\s+{Y}\b",
+    # Applied / received offer / accepted offer at/with/from Y
+    r"\bi(?:'ve|\s+have|\s+had)?\s+(?:applied|received|"
+    r"accepted|got)\s+(?:an?\s+)?(?:job\s+|offer\s+|position\s+|"
+    r"role\s+)?(?:at|for|from|with)\s+{Y}\b",
+    # "An upcoming interview at Y" / "the interview at Y" — common
+    # phrasings for job-search context
+    r"\b(?:an?|the)\s+(?:upcoming\s+)?interview\s+(?:at|with)\s+{Y}\b",
+    # Starting at Y next [time period] — explicit future start
+    r"\b(?:start|starting|join|joining|begin|beginning)\s+"
+    r"(?:at|with|for)\s+{Y}\s+(?:next|on|in|starting|this)\s+\w+",
+)
+
+
 # First-person employment evidence patterns. Each is a template
 # where {Y} is interpolated with the escaped employer name.
 _EVIDENCE_PATTERN_TEMPLATES = (
@@ -158,6 +193,30 @@ def _count_employer_evidence(employer: str, memory_texts: list[str]) -> int:
     return total
 
 
+def _has_explicit_negative_or_future(
+    employer: str, memory_texts: list[str],
+) -> bool:
+    """True iff explicit negative-presence or future/planning
+    evidence about the employer is found in the texts.
+
+    TESG-1c: only when this returns True can the guard/rewrite
+    assert "user haven't started at Y" — otherwise it must stay at
+    "available evidence does not establish the endpoint".
+    """
+    if not employer or not memory_texts:
+        return False
+    y_escaped = re.escape(employer)
+    patterns = [
+        re.compile(tpl.format(Y=y_escaped), re.IGNORECASE)
+        for tpl in _NEGATIVE_FUTURE_PATTERN_TEMPLATES
+    ]
+    for text in memory_texts:
+        for pat in patterns:
+            if pat.search(text):
+                return True
+    return False
+
+
 def _iter_user_store_text(mind: Any, domain: str | None) -> list[str]:
     """List user-turn content strings from the full domain FACT store.
 
@@ -195,27 +254,35 @@ def detect_temporal_endpoint_mismatch(
 ) -> dict | None:
     """Return mismatch detection result dict, or None.
 
-    TESG-1b (Codex 2026-05-26 P1.2): a missing retrieved hit is NOT
-    sufficient negative evidence on its own — retrieval may simply
-    have ranked the relevant turn out of the top-K. Before asserting
-    the user has never said they work at Y, also scan the full
-    domain FACT store.
+    TESG-1c (Codex 2026-05-26 third review): the contract distinguishes
+    TWO things that earlier versions conflated:
+
+    - **support absence** (no positive employer evidence found in
+      retrieved+store). Justifies emitting
+      "available evidence does not establish the endpoint" — a
+      claim about THIS PIPELINE'S evidence, not about reality.
+    - **explicit negative or future-plan evidence** (e.g. "I plan
+      to join Y", "I haven't started at Y yet", "interviewing at
+      Y"). Justifies the stronger
+      "user haven't started yet" rewrite — that claim now has
+      direct textual support.
+
+    Store scan (FACT layer, capped at 500) is NOT exhaustive proof
+    of absence — raw turns can miss promotion to FACT, and the cap
+    is not enforced as proof. The store check only SUPPRESSES the
+    guard when it finds positive evidence; it does NOT upgrade
+    absence to assertion.
 
     Detection conditions (in order):
       1. Question matches Title-Cased employer-endpoint trigger
       2. 0 first-person work-at-Y statements in retrieved memories
-      3. (when mind+domain available) 0 such statements in the full
-         FACT store of `domain` either
-      4. ≥1 retrieved memory was passed in (defensive: empty input
-         is ambiguous, don't false-fire)
+      3. (when mind+domain) 0 such statements in domain FACT store
+      4. ≥1 retrieved memory was passed in (defensive)
 
     Returns:
       None when any of (1)-(4) fail.
-      {employer, evidence_hits=0, support_scope='store' | 'retrieved_only'}
-      otherwise. `support_scope='store'` indicates we have confirmed
-      ABSENCE across the full domain; `'retrieved_only'` indicates we
-      only have a retrieval miss (callers should soften the
-      assertion wording accordingly).
+      {employer, evidence_hits=0, has_explicit_negative: bool}
+      otherwise.
     """
     employer = _extract_employer_endpoint(question)
     if not employer:
@@ -226,22 +293,27 @@ def detect_temporal_endpoint_mismatch(
     if _count_employer_evidence(employer, mem_texts) > 0:
         return None  # supported by retrieved memories
 
-    # Store-scan fallback: retrieval may have missed; consult full
-    # domain FACT store before concluding endpoint is unsupported.
+    store_texts: list[str] = []
     if mind is not None and domain:
         store_texts = _iter_user_store_text(mind, domain)
         if store_texts and _count_employer_evidence(
             employer, store_texts,
         ) > 0:
             return None  # supported by store
-        support_scope = "store"  # exhaustive scan completed
-    else:
-        support_scope = "retrieved_only"  # weaker assertion mode
+
+    # No positive support found in retrieved or store. Decide whether
+    # we ALSO have explicit-negative/future-plan evidence — that's
+    # what unlocks the stronger "haven't started" rewrite. Absence
+    # of FACT alone does NOT.
+    all_texts = mem_texts + store_texts
+    has_explicit_negative = _has_explicit_negative_or_future(
+        employer, all_texts,
+    )
 
     return {
         "employer": employer,
         "evidence_hits": 0,
-        "support_scope": support_scope,
+        "has_explicit_negative": has_explicit_negative,
     }
 
 
@@ -267,7 +339,8 @@ def temporal_endpoint_support_guard(
     if detection is None:
         return ""
     return _format_guard(
-        detection["employer"], detection.get("support_scope"),
+        detection["employer"],
+        detection.get("has_explicit_negative", False),
     )
 
 
@@ -300,14 +373,14 @@ def maybe_rewrite_with_temporal_guard(
 ) -> str:
     """Post-process: when the temporal endpoint guard fired AND the
     LLM still committed to a duration (e.g. "4 years 3 months"),
-    rewrite to a canonical abstain. Mirrors the role-mismatch
-    post-rewrite contract.
+    rewrite to canonical abstain.
 
-    The rewrite wording reflects the support_scope: when we have
-    confirmed ABSENCE across the full domain store, we can assert
-    the user hasn't started; when we only have a retrieval miss
-    (no mind/domain passed), we soften to "retrieved evidence
-    doesn't establish".
+    TESG-1c: rewrite wording reflects what evidence we ACTUALLY have:
+      - explicit negative/future-plan evidence → "you haven't
+        started at Y" (textual support exists).
+      - no positive evidence found anywhere → "available evidence
+        does not establish that you have started at Y" (claim is
+        about the pipeline's evidence, not about reality).
     """
     detection = detect_temporal_endpoint_mismatch(
         question, retrieved_memories, mind=mind, domain=domain,
@@ -317,32 +390,39 @@ def maybe_rewrite_with_temporal_guard(
     if not _looks_over_committed(llm_answer):
         return llm_answer
     employer = detection["employer"]
-    scope = detection.get("support_scope")
-    if scope == "store":
+    if detection.get("has_explicit_negative"):
         return (
             "The information provided is not enough. "
             f"You haven't started working at {employer} yet, "
             f"so the duration before starting at {employer} is undefined."
         )
-    # retrieved_only scope — softer wording
     return (
-        "The information provided is not enough. The retrieved "
-        f"context does not establish that you have started working "
+        "The information provided is not enough. The available "
+        f"evidence does not establish that you have started working "
         f"at {employer}, so a duration before that endpoint cannot "
         f"be determined."
     )
 
 
-def _format_guard(employer: str, support_scope: str | None) -> str:
-    """Render the prompt-prefix guard. The assertive wording
-    ('NEVER said' / 'haven\\'t started') is used only when we have
-    completed a full-store scan (support_scope=='store'); when only
-    the retrieved memories were inspected, the wording is softened
-    to 'not established by retrieved context'."""
-    if support_scope == "store":
+def _format_guard(
+    employer: str, has_explicit_negative: bool,
+) -> str:
+    """Render the prompt-prefix guard.
+
+    TESG-1c contract: the assertive wording ("haven't started") is
+    used ONLY when explicit-negative/future-plan textual evidence
+    has been detected. Default is evidence-insufficient wording
+    that claims only about the pipeline's evidence, not about
+    reality. Absence of FACT matches is NOT proof of absence in
+    the underlying conversation — FACT extraction can miss raw
+    turns and the store scan caps at 500.
+    """
+    if has_explicit_negative:
         absence_line = (
-            f"  - The user has NEVER said they work at "
-            f"'{employer}' (full domain scan)."
+            f"  - The user has explicitly indicated NOT-YET / "
+            f"planning / interviewing status\n"
+            f"    for '{employer}' — direct textual evidence "
+            f"supports 'haven\\'t started'."
         )
         no_start_line = (
             f"  - The duration 'before starting at {employer}' is\n"
@@ -352,21 +432,23 @@ def _format_guard(employer: str, support_scope: str | None) -> str:
             f"  Answer: 'The information provided is not enough. "
             f"You\n  haven't started working at {employer} yet.'"
         )
-        header_note = "full-domain-scanned"
+        header_note = "explicit-negative-evidence detected"
     else:
         absence_line = (
-            f"  - Retrieved context does not establish that the\n"
-            f"    user has started at '{employer}' — note: full-\n"
-            f"    domain scan was not performed (retrieved-only)."
+            f"  - Available evidence does not establish that the\n"
+            f"    user has started at '{employer}' — but absence\n"
+            f"    of evidence is not proof of absence (FACT\n"
+            f"    extraction may miss raw turns; store scan is\n"
+            f"    capped). Do NOT make positive factual claims."
         )
         no_start_line = (
             f"  - The duration 'before starting at {employer}'\n"
-            f"    cannot be determined from the retrieved context."
+            f"    cannot be computed from the available evidence."
         )
         required_response = (
             f"  Answer: 'The information provided is not enough.'"
         )
-        header_note = "retrieved-only — caller should pass mind+domain for stronger guarantee"
+        header_note = "evidence-insufficient (default)"
     return (
         "═══════════════════════════════════════════════════════════════\n"
         f"⚠️  TEMPORAL ENDPOINT SUPPORT CHECK ({header_note}):\n"
