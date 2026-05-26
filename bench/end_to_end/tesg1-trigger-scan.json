@@ -1,0 +1,142 @@
+[
+  {
+    "qid": "94f70d80",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long did it take me to assemble the IKEA bookshelf?"
+  },
+  {
+    "qid": "caf9ead2",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long did it take to move to the new apartment?"
+  },
+  {
+    "qid": "15745da0",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been collecting vintage cameras?"
+  },
+  {
+    "qid": "001be529",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long did I wait for the decision on my asylum application?"
+  },
+  {
+    "qid": "19b5f2b3",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long was I in Japan for?"
+  },
+  {
+    "qid": "faba32e5",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long did Alex marinate the BBQ ribs in special sauce?"
+  },
+  {
+    "qid": "15745da0_abs",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been collecting vintage films?"
+  },
+  {
+    "qid": "19b5f2b3_abs",
+    "qtype": "single-session-user",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long was I in Korea for?"
+  },
+  {
+    "qid": "92a0aa75",
+    "qtype": "multi-session",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been working in my current role?"
+  },
+  {
+    "qid": "gpt4_93159ced",
+    "qtype": "temporal-reasoning",
+    "label": "before_Y",
+    "endpoint": "endpoint_occurred",
+    "q": "How long have I been working before I started my current job at NovaTech?"
+  },
+  {
+    "qid": "b9cfe692",
+    "qtype": "temporal-reasoning",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long did I take to finish 'The Seven Husbands of Evelyn Hugo' and 'The Nightingale' combined?"
+  },
+  {
+    "qid": "gpt4_cd90e484",
+    "qtype": "temporal-reasoning",
+    "label": "before_Y",
+    "endpoint": "endpoint_occurred",
+    "q": "How long did I use my new binoculars before I saw the American goldfinches returning to the area?"
+  },
+  {
+    "qid": "gpt4_93159ced_abs",
+    "qtype": "temporal-reasoning",
+    "label": "before_Y",
+    "endpoint": "endpoint_occurred",
+    "q": "How long have I been working before I started my current job at Google?"
+  },
+  {
+    "qid": "08e075c7",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been using my Fitbit Charge 3?"
+  },
+  {
+    "qid": "2133c1b5",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been living in my current apartment in Harajuku?"
+  },
+  {
+    "qid": "db467c8c",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have my parents been staying with me in the US?"
+  },
+  {
+    "qid": "7a87bd0c",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been sticking to my daily tidying routine?"
+  },
+  {
+    "qid": "e61a7584",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I had my cat, Luna?"
+  },
+  {
+    "qid": "2133c1b5_abs",
+    "qtype": "knowledge-update",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "How long have I been living in my current apartment in Shinjuku?"
+  },
+  {
+    "qid": "3e321797",
+    "qtype": "single-session-assistant",
+    "label": "duration_other",
+    "endpoint": "unclear",
+    "q": "I wanted to follow up on our previous conversation about natural remedies for dark circles under the eyes. You mentioned applying tomato juice mixed with lemon juice, how long did you say I should lea"
+  }
+]

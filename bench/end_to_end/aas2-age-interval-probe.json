@@ -1,0 +1,225 @@
+{
+  "qid": "c18a7dc8",
+  "question": "How many years older am I than when I graduated from college?",
+  "gold": "7",
+  "extracted_phrase": "graduated from college",
+  "retrieved_top_30": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley at age 25 [date=2023",
+      "_full": "event: completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley at age 25 [date=2023-05-26]"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: attended colleague's son's middle school graduation ceremony [date=2023-05-10]",
+      "_full": "event: attended colleague's son's middle school graduation ceremony [date=2023-05-10]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: niece graduated from high school [date=2023-05-22]",
+      "_full": "event: niece graduated from high school [date=2023-05-22]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: colleague's daughter's middle school graduation ceremony [date=2023-05-29]",
+      "_full": "event: colleague's daughter's middle school graduation ceremony [date=2023-05-29]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: saw niece walk across stage at graduation ceremony [date=2023-04-22]",
+      "_full": "event: saw niece walk across stage at graduation ceremony [date=2023-04-22]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "",
+      "session_date": "",
+      "preview": "event: niece's graduation ceremony was held at convention center [date=2023-04-22]",
+      "_full": "event: niece's graduation ceremony was held at convention center [date=2023-04-22]"
+    },
+    {
+      "rank": 7,
+      "turn_id": "f716720c_3_t6",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[user] I think I'll go with patio seating, I want to people-watch and enjoy the downtown atmosphere. Do you think I could find a spot that's within a 10-15 minu",
+      "_full": "[user] I think I'll go with patio seating, I want to people-watch and enjoy the downtown atmosphere. Do you think I could find a spot that's within a 10-15 minute walk from my office? And, by the way, I recall attending my colleague's son's middle school graduation ceremony on May 10th, and I was thinking, time really flies, my niece is graduating from preschool next week!"
+    },
+    {
+      "rank": 8,
+      "turn_id": "f716720c_3_t0",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[user] I need help finding a good restaurant for brunch this weekend. You know, I was just thinking about my cousin's graduation ceremony last month and how we ",
+      "_full": "[user] I need help finding a good restaurant for brunch this weekend. You know, I was just thinking about my cousin's graduation ceremony last month and how we took her to her favorite restaurant to celebrate. Speaking of which, I recall attending my colleague's son's middle school graduation ceremony on May 10th, and I was thinking of grabbing brunch with some colleagues afterwards. Do you have any recommendations for a good spot near my office?"
+    },
+    {
+      "rank": 9,
+      "turn_id": "f716720c_3_t1",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[assistant] I'd be happy to help you find a great brunch spot near your office! However, I have to say, you've got a lot of graduation ceremonies on your mind! ",
+      "_full": "[assistant] I'd be happy to help you find a great brunch spot near your office! However, I have to say, you've got a lot of graduation ceremonies on your mind! Congrats to your cousin and your colleague's son on their achievements!\n\nNow, let's focus on brunch. Can you please tell me a bit more about what you're in the mood for? Are you looking for something fancy, casual, or somewhere in between? Do you have any dietary restrictions or preferences (e.g. vegetarian, gluten-free, etc.)?\n\nAlso, what's the general area around your office like? Is it in a busy city center, a quiet neighborhood, or somewhere with a lot of foot traffic? Knowing this will help me give you more tailored recommendations."
+    },
+    {
+      "rank": 10,
+      "turn_id": "9d5a389d_t11",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[assistant] It's completely understandable to reminisce about the ceremony! It's a special moment to cherish, and I'm sure you're excited to celebrate with your",
+      "_full": "[assistant] It's completely understandable to reminisce about the ceremony! It's a special moment to cherish, and I'm sure you're excited to celebrate with your niece and the rest of the family.\n\nGood luck with your search for a restaurant! I hope you find a great spot that everyone will enjoy. Don't hesitate to reach out if you need any more help or have any other questions.\n\nRemember to relax, have fun, and make some wonderful memories with your family. Congratulations again to your niece on her graduation!"
+    },
+    {
+      "rank": 11,
+      "turn_id": "9d5a389d_t1",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[assistant] Congratulations to your colleague's daughter on her graduation!  Calculating the number of guests to invite based on the number of tickets you have ",
+      "_full": "[assistant] Congratulations to your colleague's daughter on her graduation!\n\nCalculating the number of guests to invite based on the number of tickets you have is a simple process. Here's the step-by-step guide:\n\n1. **Count the number of tickets you have**: Check how many tickets you've been allocated for the graduation ceremony.\n2. **Identify the number of people you want to invite**: Think about how many family members, friends, or other guests your colleague's daughter would like to attend the ceremony.\n3. **Match the number of tickets to the number of guests**: Assign one ticket to each guest you want to invite. Make sure you don't exceed the total number of tickets you have.\n\nFor example, let's say you have:\n\n* 4 tickets\n* You want to invite your colleague's daughter's parents, 2 grandparents, and 1 sibling (5 people)\n\nIn this case, you can invite all 5 guests, as you have enough tickets to cover each of them.\n\nIf you have fewer tickets than guests, you'll need to prioritize who to invite or consider alternative arrangements, such as watching a live stream of the ceremony or celebrating separately.\n\nRemember to also consider any specific instructions or restrictions provided by the school or ceremony organizers regarding ticket usage and guest attendance.\n\nI hope this helps!"
+    },
+    {
+      "rank": 12,
+      "turn_id": "9d5a389d_t9",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[assistant] I think there might be some confusion! You mentioned earlier that your niece's graduation ceremony was last month, but you're planning a family gath",
+      "_full": "[assistant] I think there might be some confusion! You mentioned earlier that your niece's graduation ceremony was last month, but you're planning a family gathering to celebrate her graduation now. If the ceremony was already held last month, that means you've already seen her walk across the stage and receive her diploma!\n\nIn any case, I'm sure you're still beaming with pride thinking about that moment. It's a significant milestone in her life, and I'm sure she's grateful for your love and support.\n\nNow, let's focus on finding a great spot to celebrate her achievement with the family! I hope you find a wonderful restaurant near the convention center that fits your needs. If you need any more assistance or have any other questions, feel free to ask!"
+    },
+    {
+      "rank": 13,
+      "turn_id": "9d5a389d_t0",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] I'm trying to get a headcount for my colleague's daughter's middle school graduation ceremony next week. Can you remind me how to calculate the number of",
+      "_full": "[user] I'm trying to get a headcount for my colleague's daughter's middle school graduation ceremony next week. Can you remind me how to calculate the number of guests I should invite based on the number of tickets I have?"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_2e2085fa_1_t6",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[user] That's really helpful, thank you! I'm glad to hear that these courses can help me transition into a more specialized role. I've been thinking about my lo",
+      "_full": "[user] That's really helpful, thank you! I'm glad to hear that these courses can help me transition into a more specialized role. I've been thinking about my long-term career goals, and I think pursuing an MBA in the near future could also help me advance my career and increase my earning potential. Do you think that's a good idea, or are there other ways I could achieve my career goals?"
+    },
+    {
+      "rank": 15,
+      "turn_id": "9d5a389d_t4",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] I was actually thinking of a restaurant near the city's convention center, since that's where my niece's graduation ceremony was held last month.",
+      "_full": "[user] I was actually thinking of a restaurant near the city's convention center, since that's where my niece's graduation ceremony was held last month."
+    },
+    {
+      "rank": 16,
+      "turn_id": "answer_2e2085fa_1_t0",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been working in digital ma",
+      "_full": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been working in digital marketing for a while now, and I think it's essential to stay updated on the latest trends. By the way, I have a Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley, which I completed at the age of 25. Do you have any course recommendations that would be suitable for someone with my background and experience?"
+    },
+    {
+      "rank": 17,
+      "turn_id": "9d5a389d_t2",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaurant. Do you have any",
+      "_full": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaurant. Do you have any recommendations for good family-friendly restaurants in the city?"
+    },
+    {
+      "rank": 18,
+      "turn_id": "f716720c_3_t5",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[assistant] Outdoor seating is a great idea! Enjoying the downtown atmosphere while catching up with your colleagues will make the experience even more pleasant",
+      "_full": "[assistant] Outdoor seating is a great idea! Enjoying the downtown atmosphere while catching up with your colleagues will make the experience even more pleasant.\n\nWhen it comes to outdoor seating, both patio and rooftop options can be fantastic, but they offer slightly different vibes. Here's a brief pros and cons of each to consider:\n\n**Patio Seating:**\n\nPros:\n\n* Often more accessible and easier to find a table\n* Can be more shaded, which is great on sunny days\n* Usually more pedestrian-friendly, with people-watching opportunities\n\nCons:\n\n* Might be more noisy due to street traffic and pedestrians\n* Can feel more cramped or tight if the patio is small\n\n**Rooftop Seating:**\n\nPros:\n\n* Typically offers a great view of the surrounding area\n* Can be less noisy than patio seating, with a more elevated atmosphere\n* Often has a more trendy, upscale feel\n\nCons:\n\n* Might be more difficult to find a table, especially on weekends or peak hours\n* Can be more exposed to the elements (sun, wind, or rain)\n* May have a more limited menu or higher prices due to the premium location\n\nConsider the following questions to help you decide between patio and rooftop seating:\n\n* Are you looking for a more lively, people-watching experience? Patio might be the way to go.\n* Do you want a more elevated, trendy atmosphere with a great view? Rooftop seating might be the better choice.\n* Is shade a priority for your group? Patio seating might provide more shade options.\n* Are you willing to potentially wait for a table or deal with more limited menu options? Rooftop seating might require more flexibility.\n\nUltimately, prioritize what matters most to you and your colleagues. If you're still unsure, you could always call ahead or check the restaurant's website to get a better sense of their outdoor seating options and atmosphere."
+    },
+    {
+      "rank": 19,
+      "turn_id": "f716720c_3_t7",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[assistant] Patio seating it is! You'll get to enjoy the downtown atmosphere and people-watching, which is always entertaining.  Finding a spot within a 10-15 m",
+      "_full": "[assistant] Patio seating it is! You'll get to enjoy the downtown atmosphere and people-watching, which is always entertaining.\n\nFinding a spot within a 10-15 minute walk from your office should be doable. Most downtown areas have a high concentration of restaurants, so you should be able to find a great option. Here's a suggestion:\n\n1. **Use online maps**: Open Google Maps or a similar service on your phone or computer and search for restaurants near your office location. You can filter the results by rating, price, and cuisine to narrow down the options.\n2. **Check review sites**: Websites like Yelp or TripAdvisor can give you an idea of the restaurant's atmosphere, menu, and service. Look for spots with a high rating (4-5 stars) and read reviews that mention patio seating.\n3. **Ask colleagues or friends**: Ask your coworkers or friends who work in the area for recommendations. They might have some insider knowledge on the best patio spots.\n\nAs for your niece's preschool graduation, congratulations to her! It's amazing how fast time flies, isn't it? It seems like just yesterday you were attending your cousin's graduation ceremony, and now your niece is moving on to the next stage. Enjoy the celebration and cherish the moment!\n\nNow, back to brunch plans... Once you find a few potential spots, you can check their websites or call them to confirm their patio seating availability and make a reservation if possible. Don't forget to ask about their brunch menu and hours of operation to ensure they fit your plans."
+    },
+    {
+      "rank": 20,
+      "turn_id": "f716720c_3_t2",
+      "session_date": "2023/05/24 (Wed) 06:29",
+      "preview": "[user] I'm thinking of somewhere casual, not too pricey, with a relaxed atmosphere. Nothing too fancy, just a spot to catch up with my colleagues. My office is ",
+      "_full": "[user] I'm thinking of somewhere casual, not too pricey, with a relaxed atmosphere. Nothing too fancy, just a spot to catch up with my colleagues. My office is in a pretty busy downtown area, with a lot of office buildings and restaurants around."
+    },
+    {
+      "rank": 21,
+      "turn_id": "9d5a389d_t10",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] Yeah, I guess I was just reminiscing about the ceremony. Anyway, I'll go search for those restaurants near the convention center now.",
+      "_full": "[user] Yeah, I guess I was just reminiscing about the ceremony. Anyway, I'll go search for those restaurants near the convention center now."
+    },
+    {
+      "rank": 22,
+      "turn_id": "9d5a389d_t8",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] I'll search for these options near the convention center and see what's available. By the way, speaking of the convention center, I still remember how pr",
+      "_full": "[user] I'll search for these options near the convention center and see what's available. By the way, speaking of the convention center, I still remember how proud I was to see my niece walk across that stage last month."
+    },
+    {
+      "rank": 23,
+      "turn_id": "answer_2e2085fa_1_t5",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[assistant] The HubSpot Content Marketing Certification is a great starting point, and it's excellent that you're thinking ahead about your career goals.  Both ",
+      "_full": "[assistant] The HubSpot Content Marketing Certification is a great starting point, and it's excellent that you're thinking ahead about your career goals.\n\nBoth the HubSpot Content Marketing Certification and Coursera's Digital Marketing Specialization can definitely help you transition into a more specialized role like a Content Marketing Strategist or a Digital Marketing Consultant. Here's how:\n\n**HubSpot Content Marketing Certification:**\n\n* Demonstrates your expertise in content marketing, which is a valuable skillset for a Content Marketing Strategist role.\n* Shows your ability to create effective content marketing campaigns, which is crucial for a Digital Marketing Consultant.\n* Enhances your understanding of content marketing metrics, which is essential for measuring campaign success and making data-driven decisions.\n\n**Coursera's Digital Marketing Specialization:**\n\n* Provides a comprehensive understanding of digital marketing, including content marketing, SEO, social media, and analytics.\n* Develops your skills in creating a digital marketing strategy, which is a key responsibility for a Digital Marketing Consultant.\n* Covers advanced topics like marketing automation, email marketing, and conversion optimization, which are valuable skills for a Content Marketing Strategist.\n\nTo increase your chances of transitioning into a more specialized role, consider the following:\n\n1. **Build a portfolio**: Create a portfolio that showcases your content marketing skills, including campaigns you've worked on, content you've created, and results you've achieved.\n2. **Gain practical experience**: Volunteer to take on more content marketing responsibilities in your current role or freelance on the side to gain hands-on experience.\n3. **Network**: Attend industry events, join online communities (e.g., LinkedIn groups, Reddit forums), and connect with professionals in your desired field to build relationships and learn about new opportunities.\n4. **Tailor your resume and online profiles**: Ensure your resume, LinkedIn profile, and other online presence accurately reflect your new skills and certifications.\n5. **Be prepared to talk about your skills**: Be ready to discuss your certifications, experience, and skills in content marketing and digital marketing strategy during interviews or networking conversations.\n\nBy completing these courses, building your portfolio, and gaining practical experience, you'll be well on your way to transitioning into a more specialized role like a Content Marketing Strategist or Digital Marketing Consultant."
+    },
+    {
+      "rank": 24,
+      "turn_id": "answer_2e2085fa_1_t7",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[assistant] Pursuing an MBA is a significant decision, and it's great that you're thinking about your long-term career goals.  An MBA can be beneficial for adva",
+      "_full": "[assistant] Pursuing an MBA is a significant decision, and it's great that you're thinking about your long-term career goals.\n\nAn MBA can be beneficial for advancing your career and increasing your earning potential, but it's essential to consider your goals, current situation, and alternative options before making a decision. Here are some points to ponder:\n\n**Pros of pursuing an MBA:**\n\n1. **Enhanced career prospects**: An MBA can open doors to senior leadership roles, and many top companies require or prefer MBA graduates for certain positions.\n2. **Networking opportunities**: MBA programs offer a chance to connect with professionals from diverse backgrounds, industries, and countries, expanding your network and potential job opportunities.\n3. **Developing skills and knowledge**: An MBA can help you develop advanced skills in areas like strategy, finance, marketing, and leadership, which can be valuable in a digital marketing career.\n4. **Personal growth and development**: Pursuing an MBA can be a transformative experience that helps you develop soft skills, confidence, and a growth mindset.\n\n**Cons of pursuing an MBA:**\n\n1. **Time commitment**: Completing an MBA program requires a significant time investment, typically 1-2 years, which may mean putting your career on hold or working part-time.\n2. **Financial investment**: Pursuing an MBA can be expensive, with tuition fees, living expenses, and opportunity costs adding up quickly.\n3. **Opportunity cost**: The time and financial investment in an MBA might mean delaying other career opportunities or entrepreneurial ventures.\n\n**Alternative options to achieve your career goals:**\n\n1. **Online courses and certifications**: Continuing to take online courses and certifications, like the ones we discussed earlier, can help you develop specialized skills and enhance your career prospects.\n2. **Professional certifications**: Pursuing certifications like the Certified Digital Marketing Professional (CDMP) or the Certified Marketing Professional (CMP) can demonstrate your expertise and commitment to the field.\n3. **Mentorship and coaching**: Finding a mentor or coach who can guide you in your career and provide valuable insights can be a cost-effective and flexible way to achieve your goals.\n4. **Industry events and conferences**: Attending industry events, conferences, and meetups can help you network, learn from experts, and stay updated on the latest trends and best practices.\n\nBefore making a decision, consider the following:\n\n1. **Reflect on your goals**: What do you want to achieve in your career, and how will an MBA help you get there?\n2. **Assess your current situation**: Can you afford the time and financial investment, or are there other commitments that might impact your ability to pursue an MBA?\n3. **Research alternatives**: Explore alternative options that can help you achieve your career goals, and weigh the pros and cons of each.\n\nTake your time to think about your goals, situation, and options. It might be helpful to discuss your plans with a mentor, career coach, or industry professionals to get their insights and guidance."
+    },
+    {
+      "rank": 25,
+      "turn_id": "9d5a389d_t3",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[assistant] Congratulations to your niece on her high school graduation!  I'd be happy to help you with recommendations, but I'm a large language model, I don't",
+      "_full": "[assistant] Congratulations to your niece on her high school graduation!\n\nI'd be happy to help you with recommendations, but I'm a large language model, I don't have access to your location or city. However, I can suggest a few ways to find a great family-friendly restaurant in your area:\n\n1. **Online Review Sites**: Check out review websites like Yelp, TripAdvisor, or Google Reviews to see what other families have to say about local restaurants. Filter your search by rating, cuisine, and price range to find a spot that suits your needs.\n2. **Ask for Referrals**: Ask friends, family members, or colleagues for recommendations. They might have had a great experience at a local restaurant that's perfect for a family gathering.\n3. **Check Social Media**: Look up local restaurants on social media platforms like Facebook or Instagram. You can get an idea of their menu, atmosphere, and events they host.\n4. **Restaurant Websites**: Visit the websites of local restaurants to see if they have a private dining area or special menus for large groups.\n5. **Call Ahead**: Once you have a few options, call the restaurants to ask about their availability, menu options, and any special accommodations they can make for your group.\n\nWhen selecting a restaurant, consider factors like:\n\n* Menu variety: Choose a place that offers a range of options to cater to different tastes and dietary restrictions.\n* Ambiance: Opt for a restaurant with a welcoming atmosphere that's suitable for a celebratory occasion.\n* Space: Ensure the restaurant has a private area or can accommodate your group size comfortably.\n* Budget: Pick a restaurant that fits within your budget and offers good value for the price.\n\nRemember to book your reservation well in advance to ensure availability, especially on weekends or during peak hours.\n\nI hope these suggestions help you find the perfect spot to celebrate your niece's graduation!"
+    },
+    {
+      "rank": 26,
+      "turn_id": "9d5a389d_t5",
+      "session_date": "2023/05/22 (Mon) 11:38",
+      "preview": "[assistant] Unfortunately, I'm a large language model, I don't have access to your location or the specific city you're referring to. I can't provide you with a",
+      "_full": "[assistant] Unfortunately, I'm a large language model, I don't have access to your location or the specific city you're referring to. I can't provide you with a list of restaurants near a specific convention center.\n\nHowever, I can suggest a few ways to find a great restaurant near the convention center:\n\n1. **Google Search**: Type \"restaurants near [City Convention Center]\" or \"family-friendly restaurants near [City Convention Center]\" and see what comes up.\n2. **Maps Apps**: Use a maps app like Google Maps, Apple Maps, or Waze to search for restaurants near the convention center. You can filter results by rating, distance, and cuisine.\n3. **Review Sites**: Check out review websites like Yelp, TripAdvisor, or OpenTable to find top-rated restaurants near the convention center.\n4. **Ask Locals**: Ask colleagues, friends, or family members who are familiar with the area for recommendations.\n\nRemember to check reviews, menus, and availability before making a final decision. It's always a good idea to call ahead or make a reservation to ensure the restaurant can accommodate your group.\n\nI hope this helps, and I'm sure you'll find a great spot to celebrate your niece's graduation!"
+    },
+    {
+      "rank": 27,
+      "turn_id": "answer_2e2085fa_1_t1",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[assistant] A Berkeley grad! That's impressive! With your background and experience, you're wise to stay updated on the latest marketing trends. I'd be happy to",
+      "_full": "[assistant] A Berkeley grad! That's impressive! With your background and experience, you're wise to stay updated on the latest marketing trends. I'd be happy to recommend some online courses that can help you enhance your content creation and strategy skills. Here are a few options:\n\n**Content Creation:**\n\n1. **HubSpot Content Marketing Certification**: A free course that covers the fundamentals of content marketing, including creating engaging content, measuring performance, and optimizing for SEO.\n2. **Copyblogger's Content Marketing Mastery**: A comprehensive course that focuses on creating high-quality, engaging content that resonates with your audience.\n3. **Udemy's Content Creation Bootcamp**: A hands-on course that teaches you how to create various types of content, including blog posts, videos, and social media posts.\n\n**Content Strategy:**\n\n1. **Coursera's Digital Marketing Specialization** (University of Illinois at Urbana-Champaign): A 6-course specialization that covers digital marketing strategy, including content marketing, SEO, and analytics.\n2. **edX's Digital Strategy and Action** (University of Virginia): A course that focuses on developing a digital strategy, including creating a content marketing plan and measuring its effectiveness.\n3. **LinkedIn Learning's Content Strategy Fundamentals**: A course that teaches you how to develop a content strategy that aligns with your business goals and resonates with your target audience.\n\n**Additional Recommendations:**\n\n1. **Digital Marketing Institute's Certified Digital Marketing Professional**: A comprehensive course that covers a wide range of digital marketing topics, including content marketing, SEO, and social media marketing.\n2. **Skillshare's Content Marketing Mastery**: A course that focuses on creating a content marketing strategy and creating engaging content across various channels.\n3. **MarketingProfs University's Content Marketing University**: A course that covers advanced content marketing topics, including content strategy, creation, and measurement.\n\nThese courses are all online, self-paced, and designed for professionals with a marketing background like yours. You can choose the ones that align with your interests and goals. Additionally, many of these courses offer certifications or credits, which can be a great way to enhance your resume and demonstrate your expertise.\n\nRemember to read reviews, check the course curriculum, and ensure the course is updated to reflect the latest marketing trends before enrolling. Good luck with your learning journey!"
+    }
+  ],
+  "step2_find_event_mentions": [
+    {
+      "date": "2023-05-22",
+      "preview": "event: niece graduated from high school [date=2023-05-22]"
+    },
+    {
+      "date": "2023/05/22 (Mon) 11:38",
+      "preview": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaurant. Do you have any"
+    }
+  ],
+  "step3_find_event_via_trinity": {
+    "preview": "completed Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley at age 25",
+    "date": "2023-05-26",
+    "age_at_event": 25
+  },
+  "step4_find_age_at_event_in_store": {
+    "preview": "By the way, I have a Bachelor's degree in Business Administration with a concentration in Marketing from the University of California, Berkeley, which I completed at the age of 25.",
+    "date": "2023/05/26 (Fri) 19:08",
+    "age_at_event": 25
+  },
+  "step5_fact_age_entries": [
+    {
+      "age_at_event": 25,
+      "turn_id": "answer_2e2085fa_1_t0",
+      "session_date": "2023/05/26 (Fri) 19:08",
+      "preview": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been working in digital marketing for a while now, and I think it's essential to stay updated on the latest trends. By the way, I have a Bachelor's degree in Business"
+    }
+  ]
+}

@@ -7,6 +7,24 @@ fails are NOT retrieve_missing**. Each has a distinct
 existing-path issue. No code change in this log — three
 follow-up workstream proposals.
 
+**Revision history**:
+- v1 (2026-05-25): initial audit. Labeled c18a7dc8 as
+  `anchor_disambiguation`, gpt4_93159ced_abs as
+  `attention_classification_regression`.
+- v2 (2026-05-25): per Codex review, relabeled c18a7dc8
+  → `skill_anchor_subject_disambiguation`,
+  gpt4_93159ced_abs → `temporal_endpoint_support_gap`.
+- v3 (2026-05-25 PM): AAS-1 live probe (FLAWED keyword
+  search) appeared to falsify the c18a7dc8 premise;
+  reclassified to `gold_or_input_limitation`.
+- **v4 (2026-05-26): AAS-1 RETRACTED**. Keyword search
+  used `"my bachelor"` but the user phrases the fact as
+  `"a Bachelor's degree ... completed at the age of 25"`.
+  A broader scan finds the deterministic age-25 evidence.
+  c18a7dc8 reclassified to
+  `age_interval_evidence_priority_gap`; restored to
+  priority-1 alongside `temporal_endpoint_support_gap`.
+
 ---
 
 ## Why This Audit
@@ -67,49 +85,62 @@ STRUCTURED SKILL (age_interval, conf=0.90):
 Computed answer: 1
 ```
 
-**Failure layer (revised TWICE — final form per AAS-1 live probe)**:
+**Failure layer (revised THIRD time — AAS-1 finding RETRACTED 2026-05-26)**:
 
 The first revision (Codex 2026-05-25) proposed
-`skill_anchor_subject_disambiguation`: skill receives both
-user-owned and family-owned graduation candidates, picks
-wrong one. AAS-1 live probe falsifies the premise:
+`skill_anchor_subject_disambiguation`. AAS-1 (2026-05-25)
+"falsified" the premise based on a haystack keyword scan.
 
-- `_find_event_mentions("graduated from college", retrieved)`
-  on the audit sandbox returns **only 2 candidates**, BOTH
-  family-graduations (niece x2, same event in event + dialog
-  form). User-owned graduation NOT present.
-- Searching the entire c18a7dc8 haystack for first-person
-  graduation markers ("i graduated", "my college", "my
-  degree", "when i was", "years old", "my graduation", etc.)
-  returns **0 user-owned graduation mentions**.
-- Gold-marked user session (`answer_2e2085fa_1/_2`) contains
-  age ("32-year-old Digital Marketing Specialist") and
-  "in the industry for a while", but NO explicit
-  "I graduated from college on [date]" statement.
-- Gold=7 appears to depend on assuming standard US
-  graduation age 25 and computing 32 − 25 = 7. This is
-  knowledge external to the haystack text.
+**AAS-1 RETRACTION (2026-05-26)**: the keyword search was
+buggy. The keyword list included `"my bachelor"` but the
+user phrases the fact as `"a Bachelor's degree ... which
+I completed at the age of 25"` (note `a`, not `my`). A
+broader scan (`"bachelor"`, `"age of 25"`) finds the
+turn immediately:
 
-**Final label**: `gold_or_input_limitation`. The text does
-not contain the data required to compute gold=7
-deterministically; the gold relies on an implicit
-common-knowledge assumption about graduation age.
+> `answer_2e2085fa_1_t0` (USER): "I have a Bachelor's
+> degree in Business Administration with a concentration
+> in Marketing from the University of California,
+> Berkeley, **which I completed at the age of 25**."
 
-**Subject-ownership filter** would NOT have saved this qid,
-because there is no user-owned graduation event to filter
-TO. The filter is still a sound idea for age_interval
-robustness in general (would prevent picking niece's
-graduation as an anchor when there's no better candidate),
-but it cannot be justified on c18a7dc8 alone — needs
-broader LME-S survey for qids where user-owned and
-family-owned graduations coexist before pursuing.
+This IS the user-owned, deterministic, in-text graduation
+evidence. Gold = current_age (32) − graduation_age (25) =
+7 is text-grounded; NOT a common-knowledge assumption.
+
+**Final label (post-retraction)**: `age_interval_evidence_priority_gap`.
+The skill already documents this exact paraphrase gap
+(`age_interval.py:246`: "When token-overlap fails (e.g.
+'graduated from college' ≠ 'completed Bachelor's at age
+25')..."). Failure mechanism:
+
+1. `_find_event_mentions("graduated from college", ...)`
+   (line 106): tokenization keeps `{graduated, college}`
+   after stopword filter; the Bachelor's turn lacks both
+   tokens (`completed, bachelor, degree, age, ...`) → score
+   0 → not a candidate. Niece's "graduated from high
+   school" overlaps on `graduated` → 0.5 ≥ 0.4 → enters
+   `b_matches`.
+2. `_find_event_via_trinity` escalation (line 246) runs in
+   older/younger mode. If it returns `(content, date,
+   age=None)` — i.e. picks a date-only memory without
+   `at the age of N` — then `b_content` is non-empty.
+3. Line 595's explicit `at the age of N` store-scan is
+   gated on `if b_content is None`, so it gets skipped
+   when escalation set a date-only anchor → the deterministic
+   age-25 evidence in `answer_2e2085fa_1_t0` is never read.
+
+**Revised label rationale**: the skill has BOTH a semantic
+escalation path AND an explicit `at the age of N` store
+scan — the failure is in their *priority*. Explicit
+`age_at_event` evidence (deterministic) should be preferred
+over date-only anchors found by semantic escalation. This
+is an existing-path priority fix, not input limitation.
 
 **Historical context**: `age_interval.py:191` documents
-"c18a7dc8 had ~60-80% V6.1 PASS" — under text-only inputs,
-this is the LLM probability of guessing the standard
-graduation age correctly. V8.2.1 single-run PASS was at the
-lucky end of that LLM-guess distribution. There is no
-text-grounded path to a deterministic answer.
+"c18a7dc8 had ~60-80% V6.1 PASS" — consistent with semantic
+trinity sometimes picking the user-owned bachelor turn and
+sometimes not; not consistent with the (now-retracted)
+"text doesn't contain the data" hypothesis.
 
 ### b46e15ed — "How many months have passed since I participated in two charity events in a row, on consecutive days?" (gold=2)
 
@@ -212,54 +243,64 @@ baseline" with caveats. The audit reveals:
   these are **integration / wiring** problems on existing
   skills, not new skill design.
 
-Updated taxonomy (post-LSA-3 + AAS-1 live probe):
+Updated taxonomy (post-LSA-3 + AAS-1 RETRACTION 2026-05-26):
 
 | label | count | qids |
 |---|---|---|
-| gold_or_input_limitation | 4 | 1c0ddc50, b6025781, d6233ab6, **c18a7dc8 (moved after AAS-1)** |
-| event_cluster_interval_shape_gap | 1 | b46e15ed |
+| **age_interval_evidence_priority_gap** | **1** | **c18a7dc8** |
 | temporal_endpoint_support_gap | 1 | gpt4_93159ced_abs |
+| event_cluster_interval_shape_gap | 1 | b46e15ed |
 | computation_high_risk | 1 | gpt4_ab202e7f |
 | evidence_present_computation_missing | 1 | gpt4_d6585ce8 |
+| gold_or_input_limitation | 3 | 1c0ddc50, b6025781, d6233ab6 |
 
-LSA-2 v1's "no LSA-5 pilot recommended" still stands for the
-"narrow new helper" workstream. But the 3 existing-path
-issues identified here justify three NEW (separate,
-non-LSA-shaped) audit/fix workstreams. None auto-started.
+Two existing-path narrow-deterministic candidates now in
+scope: `c18a7dc8` (age_interval evidence priority) and
+`gpt4_93159ced_abs` (temporal endpoint support gate). Both
+are integration / priority-rule fixes on existing skills,
+not new skill design. Both warrant a read-only audit before
+implementation.
 
 ## Decision
 
 - **LSA-2 v1 wording revised**: the conclusion "LME-S narrow
   deterministic optimization is converged" is too strong.
   Convergence holds for **new narrow helpers**, but
-  **existing-path regressions exist** on at least 3 of 8
-  remaining fails. These don't match the LSA helper-design
-  template; they need wiring / classification audits.
+  **existing-path regressions exist** on at least 2 of 8
+  remaining fails (was claimed as 1 after AAS-1; correctly 2
+  after the AAS-1 retraction).
 - **No code change in this log**. Each existing-path issue
   needs its own scoped audit before any commit.
-- **Two follow-up workstream proposals (revised after AAS-1)**:
-  1. **PRIORITY 1**: `temporal endpoint support gate` —
-     read-only design + small-scale validation. For
-     `gpt4_93159ced_abs`: before emitting a date-arithmetic
-     answer, verify both temporal endpoints are
-     evidentiarily supported. Same core idea as V8.2.2a
-     role-mismatch support-aware guard, applied to temporal
-     commit. Now the highest-priority concrete fix:
-     existing skill machinery + narrow deterministic
-     guard + clear positive case (gold=abstain text exists).
-  2. **DEFER**: `b46e15ed event_cluster_interval`. Pre-audit
+- **Two follow-up workstream proposals (revised 2026-05-26
+  after AAS-1 retraction)**:
+  1. **PRIORITY 1 (a)**: `AAS-2 — age_interval evidence
+     priority audit`. Live-probe c18a7dc8 in the audit
+     sandbox: capture what `_find_event_via_trinity`
+     returns, whether `b_content` becomes non-empty with
+     `age_at_event=None`, and whether reordering to prefer
+     explicit `at the age of N` evidence (run store-scan
+     before semantic escalation, or unconditionally when
+     escalation returns age=None) rescues c18a7dc8 without
+     regressing other older/younger qids. Read-only first.
+  2. **PRIORITY 1 (b)**: `TESG-1 — temporal endpoint
+     support gate audit`. Classify "how long ... before/
+     after/until Y" samples into endpoint-occurred /
+     endpoint-not-occurred / evidence-insufficient. Confirm
+     a support-aware commit gate (mirroring V8.2.2a
+     role-mismatch guard) blocks `gpt4_93159ced_abs`
+     over-commit without breaking legitimate duration
+     questions. Read-only first.
+  3. **DEFER**: `b46e15ed event_cluster_interval`. Pre-audit
      needed to determine if "elapsed-since-cluster" shape
      recurs in more than one qid; if one-off, don't extend.
-  3. **DROPPED (per AAS-1 live probe)**: `age_interval
-     subject-owned anchor` for c18a7dc8. The probe showed
-     `_find_event_mentions` returns only family-graduation
-     candidates because the haystack has no user-owned
-     graduation event. A subject-ownership filter has
-     nothing to filter TO on this qid. Filter may still
-     be useful on other qids; needs broader LME-S survey
-     before justified.
 
-Each warrants its own go-ahead. None auto-started.
+Both 1(a) and 1(b) should be e2e-validated independently
+when their audits conclude — must not be packaged into one
+PR for joint validation (different layers, different
+positive cases, different blast radii).
+
+Each warrants its own go-ahead. None auto-started for
+implementation.
 
 ## Caveats
 
