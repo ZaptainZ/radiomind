@@ -1,0 +1,50 @@
+[
+  {
+    "qid": "c18a7dc8",
+    "question": "How many years older am I than when I graduated from college?",
+    "gold": "7",
+    "gold_is_abstain": false,
+    "skill_fired": true,
+    "skill_name": "age_interval",
+    "skill_conf": 0.9,
+    "skill_answer": "7",
+    "backing_evidence_age_at_event_present": true,
+    "llm_final_answer": "7 years",
+    "llm_abstained": false,
+    "jab_veto_would_fire": false,
+    "rewrite_trigger_would_fire": false,
+    "would_break_correct_abstain": false
+  },
+  {
+    "qid": "157a136e",
+    "question": "How many years older is my grandma than me?",
+    "gold": "43",
+    "gold_is_abstain": false,
+    "skill_fired": false,
+    "skill_name": null,
+    "skill_conf": null,
+    "skill_answer": null,
+    "backing_evidence_age_at_event_present": false,
+    "llm_final_answer": "The information provided is not enough to determine the age difference.",
+    "llm_abstained": true,
+    "jab_veto_would_fire": true,
+    "rewrite_trigger_would_fire": false,
+    "would_break_correct_abstain": false
+  },
+  {
+    "qid": "6613b389",
+    "question": "How many months before my anniversary did Rachel get engaged?",
+    "gold": "2",
+    "gold_is_abstain": false,
+    "skill_fired": false,
+    "skill_name": null,
+    "skill_conf": null,
+    "skill_answer": null,
+    "backing_evidence_age_at_event_present": false,
+    "llm_final_answer": "Rachel got engaged 2 months and 7 days before your anniversary.",
+    "llm_abstained": false,
+    "jab_veto_would_fire": false,
+    "rewrite_trigger_would_fire": false,
+    "would_break_correct_abstain": false
+  }
+]

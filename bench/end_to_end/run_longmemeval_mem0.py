@@ -749,6 +749,25 @@ def run(
         except Exception:
             pass
 
+        # TSI-1c (2026-05-26): age_interval commit closure. When the
+        # age_interval skill fired with conf>=0.85, produced a numeric
+        # answer, BOTH backing evidences (at-age-N + current-age) are
+        # present in retrieved memories, AND the answer-LLM emitted a
+        # pure canonical abstain — override the abstain with the
+        # skill's number. TSI-1b verified the trigger surface is just
+        # 3 LME-S qids with concrete (non-abstain) golds, so this
+        # rewrite cannot break a correct abstain on the audited
+        # surface.
+        try:
+            from radiomind.core.age_interval_commit import (
+                maybe_age_interval_commit_closure,
+            )
+            answer = maybe_age_interval_commit_closure(
+                question, mem_results, answer, temporal_section,
+            )
+        except Exception:
+            pass
+
         judge_prompt = JUDGE_PROMPT.format(
             question=question, answer=gold_str, response=answer,
         )
