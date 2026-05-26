@@ -1,0 +1,1 @@
+{"question_id": "c18a7dc8", "q": "How many years older am I than when I graduated from college?", "gold": "7", "answer": "The information provided is not enough.", "correct": false, "qtype": "multi-session", "verdict_tail": "ches the abstention ground truth.\n</judge_thinking>\nyes\n[JAB-1a VETO: concrete gold + canonical abstain response → FAIL]", "judge_failed": false}

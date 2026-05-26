@@ -386,11 +386,62 @@ shown ≥1):
   Without JAB-1a, the NEXT regression would silently
   pass.
 
-### Live veto validation
+### Live veto validation — RESULT
 
-Re-ran c18a7dc8 e2e through the patched runner. Result:
-[in progress — appended on completion to
-`bench/end_to_end/aas2-c18a7dc8-e2e-jab1a.json`].
+Re-ran c18a7dc8 e2e through the JAB-1a patched runner.
+
+- Final answer: `"The information provided is not enough."`
+- Gold: `"7"`
+- LLM judge verdict: `yes` (PASS — same wrong call as
+  the pre-patch run)
+- **Verdict tail** (post-patch):
+  ```
+  ...matches the abstention ground truth.
+  </judge_thinking>
+  yes
+  [JAB-1a VETO: concrete gold + canonical abstain response → FAIL]
+  ```
+- **`correct: False`** — JAB-1a deterministically
+  flipped the wrong LLM-judge PASS to FAIL.
+
+This is the closed-loop evidence: same answer, same LLM
+judge verdict, OPPOSITE final `correct` value before vs
+after JAB-1a. The veto is wired correctly into the runner
+and fires on the targeted shape.
+
+### JAB-1b tightening
+
+Per Codex P1 (2026-05-26 second review), the initial
+JAB-1a `is_abstain_response()` used `re.search()` on the
+whole answer, so a response like
+`"$0.75. Not enough info to determine why."` would have
+been incorrectly classified as abstain and vetoed.
+
+JAB-1b adds `has_concrete_commitment()` and requires:
+- canonical abstain phrase present, AND
+- no concrete commitment elsewhere (currency, quantity-
+  with-unit, year, explicit "the answer is X" framings).
+
+Unit tests at `tests/test_jab1_abstain_veto.py`:
+**29 cases / 29 pass**:
+- 8 veto-fires shapes from real historical artifacts
+  (c18a7dc8, b46e15ed, d12ceb0e, $300, $0.75-elaborate,
+  86f00804 entity, cousin's wedding text)
+- 4 abstain-gold no-veto (29f2956b_abs / 93159ced_abs /
+  canonical / cannot-be-determined gold)
+- **6 concrete-commitment no-veto** (Codex P1 examples:
+  `$0.75 + caveat`, `meta-quote + 7`, `2023 + hedge`,
+  `4 with abstain context`, `4y9m with abstain`, `$300
+  with abstain`)
+- 5 regular-pass no-veto (exact match, prose, currency,
+  duration, empty)
+- 6 detector primitives
+
+Historical scan re-run with the tighter detector
+produced identical counts → all historical "abstain"
+responses really were pure abstains. No regression on
+the contemporary V8.2.2a `0.92 = 0 false-pass`
+finding.
 
 ## 7. Files
 
