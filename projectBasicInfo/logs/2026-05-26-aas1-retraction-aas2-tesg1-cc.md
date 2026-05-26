@@ -229,15 +229,35 @@ The proposed support-aware commit gate distinguishes ALL 3
   override — analogous to V8.2.2a's role-mismatch guard.
   Same architectural precedent.
 
-### Recommendation
+### Recommendation — IMPLEMENTED 2026-05-26
 
-Open implementation workstream. Scope: add a single
-`temporal_endpoint_support_guard` helper that fires only
-when `_TEMPORAL_RE` classifies a query as `before_Y` /
-`until_Y` and the endpoint Y is a noun phrase. Before
-emitting a date-arithmetic answer, check for first-person
-work/event-occurrence evidence of Y in the retrieved
-memories. If none, route to canonical-abstain.
+Shipped as commit `25934e4`:
+- `src/radiomind/core/temporal_endpoint_guard.py`:
+  `temporal_endpoint_support_guard` (prefix) +
+  `maybe_rewrite_with_temporal_guard` (post-process).
+  Mirror role_mismatch_guard architecture.
+- `tests/test_temporal_endpoint_guard.py`: 23 cases,
+  23/23 pass.
+- Wired into `run_longmemeval_mem0.py` at the role-guard
+  layer.
+
+### TESG-1 e2e validation (2026-05-26)
+
+Ran both anchors through the patched runner:
+
+| qid | gold | answer | correct |
+|---|---|---|---|
+| `gpt4_93159ced` (NovaTech) | "4 years and 9 months" | "You worked for about 4 years and 9 months before starting at NovaTech." | **PASS** (preserved) |
+| `gpt4_93159ced_abs` (Google) | "...not enough info...haven't started at Google yet" | "The information provided is not enough." | **PASS** (FLIP from prior FAIL) |
+
+Both qids correct → TESG-1 ships with overall accuracy
+1.0 on the targeted pair. Negative anchor (NovaTech)
+unchanged; positive case (Google) flipped via canonical
+abstain, judge correctly accepts.
+
+Scope strictly limited to the employer endpoint
+sub-shape per Codex P2.4. Event endpoint
+(`gpt4_cd90e484` goldfinches) remains scope-deferred.
 
 **Scope clarification (Codex review 2026-05-26 P2)**:
 TESG-1 first impl will cover the **employer endpoint
