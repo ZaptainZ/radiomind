@@ -344,6 +344,21 @@ def run(
                     per_type.setdefault(qtype, {"n": 0, "correct": 0})
                     per_type[qtype]["n"] += 1
                     per_type[qtype]["correct"] += int(bool(rec.get("correct")))
+                    # Codex 2026-05-28: judge stats must also be
+                    # rebuilt from the checkpoint, otherwise the
+                    # post-resume run only counts its own window and
+                    # top-level `judge_errors / judge_n /
+                    # model_correct` are wrong.
+                    if "judge_errors" not in overall:
+                        overall["judge_errors"] = 0
+                        overall["judge_n"] = 0
+                        overall["model_correct"] = 0
+                    if rec.get("judge_failed"):
+                        overall["judge_errors"] += 1
+                    else:
+                        overall["judge_n"] += 1
+                        if rec.get("correct"):
+                            overall["model_correct"] += 1
             if done_qids:
                 print(f"  resume: loaded {len(done_qids)} completed questions from checkpoint", flush=True)
         except Exception as e:

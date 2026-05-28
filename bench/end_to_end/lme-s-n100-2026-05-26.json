@@ -11,12 +11,12 @@
   "answer_profile": "dashscope",
   "judge_profile": "openrouter",
   "elapsed_s": 50048.8,
-  "overall_accuracy": 0.92,
-  "model_correct": 52,
-  "judged_n": 56,
+  "overall_accuracy": 0.93,
+  "model_correct": 93,
+  "judged_n": 100,
   "judge_errors": 0,
   "raw_accuracy": 0.92,
-  "judged_accuracy": 0.9286,
+  "judged_accuracy": 0.93,
   "judge_error_rate": 0.0,
   "by_type": {
     "knowledge-update": {
@@ -80,10 +80,11 @@
       "q": "I've been sneezing quite a bit lately. Do you think it might be my living room?",
       "gold": "The user would prefer responses that consider the potential impact of their cat, Luna, and her shedding on their sneezing, as well as the recent deep clean of the living room and its possible effect on stirring up dust. They might not prefer responses that fail to take into account these specific details previously mentioned, such as generic suggestions or unrelated factors.",
       "answer": "Yes, it's possible. Your living room has a cat that sheds a lot, and pet dander is a common allergen that can cause sneezing.",
-      "correct": false,
+      "correct": true,
       "qtype": "single-session-preference",
-      "verdict_tail": "rror attempt 3: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)>]",
-      "judge_failed": true
+      "verdict_tail": "<judge_thinking>\n1. **Core Factual Claim**: The correct answer focuses on the potential impact of the user's cat, Luna, and her shedding on their sneezing, as well as the recent deep clean of the living room and its possible effect on stirring up dust.\n\n2. **Model Response Analysis**: The model response mentions the presence of a cat that sheds a lot and identifies pet dander as a common allergen that can cause sneezing. This directly addresses the potential impact of the cat, Luna, on the user's sneezing.\n\n3. **Missing Elements**: The model response does not mention the recent deep clean of the living room and its possible effect on stirring up dust. However, the core focus of the correct answer is on the cat and its shedding, which the model response does address.\n\n4. **Superset Consideration**: The model response is not a superset because it does not include the aspect of the recent deep clean stirring up dust. However, it does cover the primary concern about the cat and its sheddin",
+      "judge_failed": false,
+      "rejudged_2026_05_28": true
     },
     {
       "question_id": "a96c20ee",
@@ -1046,5 +1047,32 @@
       "judge_failed": false
     }
   ],
-  "benchmark_mode": "a2a-practice"
+  "benchmark_mode": "a2a-practice",
+  "judge_n": 100,
+  "by_question_type": {
+    "single-session-assistant": {
+      "n": 17,
+      "correct": 17
+    },
+    "single-session-user": {
+      "n": 16,
+      "correct": 16
+    },
+    "temporal-reasoning": {
+      "n": 17,
+      "correct": 15
+    },
+    "single-session-preference": {
+      "n": 16,
+      "correct": 14
+    },
+    "multi-session": {
+      "n": 18,
+      "correct": 15
+    },
+    "knowledge-update": {
+      "n": 16,
+      "correct": 16
+    }
+  }
 }

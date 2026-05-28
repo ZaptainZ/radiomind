@@ -10,19 +10,39 @@
 
 | metric | value |
 |---|---|
-| **overall accuracy** | **0.92** (92/100) |
+| **overall accuracy (raw)** | **0.93** (93/100) — after `75f70248` rejudge |
+| **overall accuracy (initial run)** | 0.92 (92/100) — included 1 judge SSL infra error |
 | qids | 100, stratified, IDENTICAL sample as V8.2.2a |
-| judge infra errors | 1 (SSL EOF on `75f70248`, retried 3x; marked FAIL on default) |
+| judge infra errors (post-rejudge) | 0 |
 | JAB-1a vetoes triggered | **0** |
-| commit | main HEAD `5a5bf67` (TESG-1c + TSI-1d + all guards) |
+| commit | main HEAD `5a5bf67` + rejudge patch (this log's commit) |
 
-Tied with V8.2.2a-judge-fixed (0.92) on the identical 100-qid
-sample, but composition shifted:
+Initial n=100 run had 1 unjudged record (`75f70248` SSL EOF
+on the judge's third retry). Per Codex 2026-05-28: that does
+NOT directly translate to a PASS — the actual answer might
+or might not match gold. Resolution: rejudge the single record
+through gpt-4o on the saved (gold, answer) pair.
+
+Rejudge result: **`75f70248` → PASS**. Updated raw accuracy
+**0.93**. (The answer mentions cat dander but not the deep-
+clean dust trigger; gpt-4o judge accepted as semantically
+covering the gold's primary claim.)
+
+### Final score range vs V8.2.2a
+
+| | v822a-judge-fixed | new (post-rejudge) | delta |
+|---|---|---|---|
+| score | 0.92 (92/100) | **0.93** (93/100) | **+1** |
+| judge_failed | 0 | 0 | — |
+| judged_accuracy | 0.92 | 0.93 | — |
+
+Composition (v822 vs new, identical 100-qid sample):
 
 - **FIXED** (V8.2.2a FAIL → new PASS, 3): `c18a7dc8`,
   `gpt4_93159ced_abs`, `b6025781`
-- **REGRESSED** (V8.2.2a PASS → new FAIL, 3): `75f70248`,
-  `bb7c3b45`, `gpt4_194be4b3`
+- **REGRESSED** (V8.2.2a PASS → new FAIL, 2): `bb7c3b45`,
+  `gpt4_194be4b3`
+- **Initially-unjudged-then-confirmed-PASS** (1): `75f70248`
 
 ## Fix Attribution
 
@@ -40,7 +60,7 @@ preference question that doesn't trigger any of our helpers.
 
 | qid | category | cause |
 |---|---|---|
-| `75f70248` | single-session-preference | **judge infra error** — SSL EOF after 3 retries → default `correct=False`. NOT a model regression. If retried successfully, score would be 0.93. |
+| `75f70248` | single-session-preference | initial run: judge SSL EOF after 3 retries. **Rejudged 2026-05-28 → PASS**. Not a regression; was a transient infra fail. |
 | `bb7c3b45` | multi-session | LLM stochasticity. V8.2.2a committed "$300", today abstained. Doesn't trigger TESG/TSI/JAB. Probably commit-side calibration drift (no helper fix yet). |
 | `gpt4_194be4b3` | multi-session | LLM stochasticity. V8.2.2a counted 4 instruments, today counted 5. Entity-norm border case — `gpt4_ab202e7f` (kitchen count) is the same shape and was already deferred for `computation_high_risk` (open-vocabulary normalization). Same class. |
 
@@ -77,13 +97,22 @@ regressed qids.
 - JAB-1a deterministic abstain veto deployed; 0 false-passes
   in this n=100 run, confirming V8.2.2a-era "0.92 is not
   inflated" claim continues to hold on current main.
-- 91 of the 92 PASSes are real model+judge agreements; 1
-  PASS (`b6025781`) is stochastic-improved over V8.2.2a.
+- Net **+1** vs V8.2.2a (0.92 → 0.93) attributable to 3 FIX
+  − 2 REGRESS:
+  - 2 FIX directly causal to this workstream's helpers
+    (c18a7dc8, gpt4_93159ced_abs)
+  - 1 FIX stochastic (b6025781, preference advice — not
+    target of any helper, LLM happened to give a better
+    matching answer this run)
+  - 2 REGRESS not caused by helpers (bb7c3b45, gpt4_194be4b3
+    — both outside TESG/TSI/JAB trigger surface)
 
 **Does NOT:**
 
-- Improve the aggregate score above 0.92. Net composition is
-  identical (3 FIX − 3 REGRESS).
+- Push the score significantly above V8.2.2a (the +1 delta is
+  within stochastic noise band for a 100-qid sample). The
+  claim is "no regression + 2 target closures shipped", not
+  "RadioMind is now meaningfully stronger at LME-S".
 - Address the regression on `bb7c3b45` (which would need
   retrieval-bridging or commit-side calibration work — out
   of scope here).
@@ -94,11 +123,10 @@ regressed qids.
   (JAB-1 historical scan showed V8.2.2a `0.92` had 0
   abstain false-passes; that claim was retracted earlier).
 
-## Remaining Known Fails (8/100)
+## Remaining Known Fails (7/100, post-rejudge)
 
 | qid | qtype | label |
 |---|---|---|
-| `75f70248` | single-session-preference | judge HTTP error (re-run would resolve) |
 | `1c0ddc50` | single-session-preference | gold_or_input_limitation (preference advice) |
 | `gpt4_194be4b3` | multi-session | computation_high_risk (entity norm) |
 | `b46e15ed` | temporal-reasoning | event_cluster_interval_shape_gap (defer) |
@@ -107,10 +135,37 @@ regressed qids.
 | `d6233ab6` | single-session-preference | gold_or_input_limitation (preference advice) |
 | `bb7c3b45` | multi-session | stochastic LLM regression (calibration; new fail class) |
 
+## Bench Hygiene Patches (this commit)
+
+Per Codex 2026-05-28 P2 — bug found in runner's checkpoint
+resume path: it rebuilt `correct` / `n` / `per_type` from
+checkpoint records but did NOT rebuild `judge_errors` /
+`judge_n` / `model_correct`. Initial artifact had:
+
+- top-level: `judge_errors=0, judge_n=56, judged_accuracy=
+  0.9286` (post-resume window only)
+- per_query derived: `judge_failed=1, judged_n=99,
+  judged_accuracy=0.9293`
+
+Fix in `bench/end_to_end/run_longmemeval_mem0.py` resume
+loop: also accumulate judge stats during checkpoint replay.
+After this fix + rejudging `75f70248`, top-level and
+per_query-derived stats match: `judge_errors=0, judge_n=100,
+judged_accuracy=0.93`.
+
+`bench/end_to_end/rejudge_single_qid.py`: small utility for
+rejudging a single qid in an existing artifact when the
+original judge call hit a transient error. Used to flip
+`75f70248` from unjudged→PASS. Applies JAB-1a veto after
+rejudge (in case the new verdict is abstain-PASS on concrete
+gold).
+
 ## Files
 
-- Artifact: `bench/end_to_end/lme-s-n100-2026-05-26.json`
+- Artifact (post-rejudge): `bench/end_to_end/lme-s-n100-2026-05-26.json`
 - Checkpoint: `bench/end_to_end/lme-s-n100-2026-05-26.checkpoint.jsonl`
+- Rejudge utility: `bench/end_to_end/rejudge_single_qid.py`
+- Runner resume fix: `bench/end_to_end/run_longmemeval_mem0.py`
 - This log: `projectBasicInfo/logs/2026-05-28-lme-s-n100-jab-protected-baseline-cc.md`
 - Related logs:
   - `projectBasicInfo/logs/2026-05-26-aas1-retraction-aas2-tesg1-cc.md`
