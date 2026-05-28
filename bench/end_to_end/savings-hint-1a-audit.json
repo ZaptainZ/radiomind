@@ -1,0 +1,46 @@
+[
+  {
+    "qid": "e25c3b8d",
+    "question": "How much did I save on the designer handbag at TK Maxx?",
+    "gold": "$300",
+    "extracted_item": "the designer handbag at TK Maxx",
+    "item_anchors_tried": [
+      "designer handbag at tk maxx",
+      "designer handbag",
+      "designer handbag at"
+    ],
+    "matched_anchor": "designer handbag",
+    "paid_count": 1,
+    "paid_amounts": [
+      200.0
+    ],
+    "paid_snippet_sample": "reat deals at TK Maxx before, like that designer handbag I got for $200. I might have to check out their formal",
+    "retail_count": 0,
+    "retail_amounts": [],
+    "retail_snippet_sample": null,
+    "two_anchor_clean": false,
+    "deterministic_saving": null
+  },
+  {
+    "qid": "bb7c3b45",
+    "question": "How much did I save on the Jimmy Choo heels?",
+    "gold": "$300",
+    "extracted_item": "the Jimmy Choo heels",
+    "item_anchors_tried": [
+      "jimmy choo heels"
+    ],
+    "matched_anchor": "jimmy choo heels",
+    "paid_count": 1,
+    "paid_amounts": [
+      200.0
+    ],
+    "paid_snippet_sample": "dvice. I was thinking of wearing my new Jimmy Choo heels that I got at the outlet mall for $200 - do you have any outfit suggestions th",
+    "retail_count": 1,
+    "retail_amounts": [
+      500.0
+    ],
+    "retail_snippet_sample": "igner brands can be really pricey, like Jimmy Choo heels, which I know originally retailed for $500. That's really helpful, thank you! I th",
+    "two_anchor_clean": true,
+    "deterministic_saving": 300.0
+  }
+]
