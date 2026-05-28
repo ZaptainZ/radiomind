@@ -527,6 +527,102 @@ launchd 清理）。可用环境变量 override：
 
 ---
 
+## V8.4 commit-time guards + evaluation hygiene（2026-05-28 收口）
+
+V8.4 阶段在 V8.2 / V8.3 deterministic floor 的基础上补齐了
+两个长期被忽视的层面：**(1) 答案 commit 时的支持性 / 计算
+契约**，**(2) bench 评估自身的卫生**。Codex 多轮 audit 把
+3 个新工作面闭口，并标定了一条 baseline。
+
+### Commit-side guard 层（answer-LLM 之后，judge 之前）
+
+| 组件 | 工作面 | 文件 | 单测 |
+|---|---|---|---|
+| **TESG-1c** temporal endpoint support guard | "How long … before I started my current job at Y" 类问题：retrieved + full domain store 都无 first-person work-at-Y 证据时输出 evidence-insufficient（仅在显式 negative/future-plan 证据下才升级为 "haven't started"） | `src/radiomind/core/temporal_endpoint_guard.py` | 35 |
+| **TSI-1d** age_interval commit closure | `age_interval` skill 算出 numeric 且双锚 (at-age-N + current-age) 都在 retrieved memories AND LLM 终答是 pure abstain 时，独立 recompute (current − past) 验算等于 skill value 后才提交 | `src/radiomind/core/age_interval_commit.py` | 33 |
+| **SavingsHint-1b** (V8.4-A) | "How much did I save on [item]" 双锚算术：retail − paid，要求 2 token+ brand-noun anchor、1 paid + 1 retail、retail ≥ paid、user-turn only；hint-only 不强制 commit | `src/radiomind/core/arithmetic_hint.py` 中 `savings_arithmetic_hint()` | 18 |
+
+均 hint-only，**不 post-rewrite**（除 TSI-1d / TESG-1c 在 LLM
+仍 over-commit / abstain 时按 deterministic 证据校验后才
+rewrite）。Codex 多轮约束：
+
+- 不用 LLM semantic matching
+- 不做 item synonym 扩展
+- 不扩成 coupon/discount/百分比泛化器
+- 不接受 "I saved $X" 直接抽取（只走 retail − paid）
+- TESG 的 "haven't started" 强断言**只在 explicit negative
+  / future-plan 证据出现时才允许**，FACT 漏召不能升级为
+  "事实未发生"
+
+### Evaluation hygiene 层（runner / judge / artifact）
+
+| 组件 | 修复 | 文件 |
+|---|---|---|
+| **JAB-1a** runner-side deterministic abstain veto | gold concrete + response canonical abstain → 强制 `correct=False`（gpt-4o judge prompt 本身没明文禁止 abstain-on-concrete-gold 的 PASS） | `bench/end_to_end/jab1_abstain_veto.py` + `run_longmemeval_mem0.py` |
+| **JAB-1b** detector tightening | `is_abstain_response()` 必须 canonical phrase 且无 concrete commitment（`$0.75 + caveat` 类不误杀） | 同上 |
+| **bench resume hygiene** | runner checkpoint resume 同时重建 `judge_errors / judge_n / model_correct`（不仅 `correct/n/per_type`） | `run_longmemeval_mem0.py` |
+| **artifact normalize** | rejudge 时同步更新 `raw_accuracy` + canonical `by_type` 字段，移除 legacy `by_question_type`；checkpoint 与 artifact 双方同步 | `bench/end_to_end/rejudge_single_qid.py` |
+
+### Contemporary baseline 与剩余 fail 分类
+
+| 测量 | 值 |
+|---|---|
+| LME-S n=100 (a2a-practice, deepseek-v3.2 / gpt-4o, **post-rejudge**) | **raw = overall = judged = 0.93** |
+| sample overlap with V8.2.2a-judge-fixed | 100/100 |
+| judge_errors | 0 |
+| JAB-1a vetoes triggered in this run | 0 (= 历史 V8.2.2a 0.92 不含 abstain false-pass 的结论在新 main 上仍成立) |
+
+剩余 7 个 fail（n=100 baseline）已分类完结：
+
+| qid | label | 状态 |
+|---|---|---|
+| `1c0ddc50`, `d6233ab6` | preference advice | out of scope (subjective, judge-elastic) |
+| `gpt4_194be4b3` (instruments), `gpt4_ab202e7f` (kitchen) | open-vocab entity normalization | out of scope，需 typed-inventory / typed-event 架构而非 narrow regex |
+| `b46e15ed` | event_cluster_interval_shape_gap | **单题 confirmed**（LME-S 500 cohort scan：只有 1 题需要 elapsed-since-cluster 操作），永久 defer |
+| `gpt4_d6585ce8` | ordered_event_sequence | **cohort = 7**（trips / museums / sports / airlines / concerts 同形）；sort 经 session_date 确定，extraction 步是 open-vocab gating concern；标记为未来 `OrderedEventList` workstream 候选，未开 |
+| `bb7c3b45` | savings on item | **由 SavingsHint-1b 关闭** (target smoke 2/2 PASS)；不重跑 n=100，**不宣称新 baseline**（+1 在 stochastic band 内） |
+
+### 工作面架构纪律（V8.4 形成的规则）
+
+- 任何新 helper 必须先做 pre-implementation audit：trigger
+  surface（≤ 3 优先）、anchor 同 item alignment、negative
+  deterministic-rejectable
+- Helper 默认 hint-only。**只在双重 deterministic 证据满足
+  时才允许 commit-side rewrite**（V8.2.2b role guard / TSI-1d
+  age commit closure / TESG-1c temporal rewrite 各自有自己
+  的双重证据契约）
+- absence-of-evidence ≠ negative-evidence。FACT 漏召不能写成
+  factual 断言
+- judge integrity 是 bench-side 责任：deterministic veto
+  + canonical schema sync + checkpoint 与 artifact 一致
+- 大测试限定：≤ 3 helper 累积时跑 target smoke，N=100
+  consolidation 等 2-3 个 target closure 累积后再做一次
+
+### 已 ship 的 deterministic floor（V8.2 → V8.4 汇总）
+
+| qid (LME-S) | helper | layer | 引入版本 |
+|---|---|---|---|
+| `031748ae_abs` | role_mismatch_guard | answer prompt prefix + post-rewrite | V8.2.2 |
+| `9aaed6a3` | cashback_arithmetic_hint | answer prompt prefix (hint-only) | V8.2.3a |
+| `gpt4_d12ceb0e` | person_age_average_hint | answer prompt prefix (hint-only) | V8.3.1 |
+| `d851d5ba` | detect_charity_amounts | NAR ingest layer | V8.3.x NAR |
+| `c18a7dc8` | age_interval skill prefix + TSI-1d commit closure | answer prompt prefix + post-rewrite (6 gate + recompute) | V8.4 TSI-1d |
+| `gpt4_93159ced_abs` | TESG-1c temporal endpoint support guard | answer prompt prefix + post-rewrite | V8.4 TESG-1c |
+| `bb7c3b45` | savings_arithmetic_hint | answer prompt prefix (hint-only) | V8.4-A |
+
+8 unit-test suites 共 **150 passes**（33 TSI-1d + 35 TESG-1c
++ 29 JAB + 18 SavingsHint + 35 cashback + + + ...）。
+
+详见：
+- `logs/2026-05-26-aas1-retraction-aas2-tesg1-cc.md`
+- `logs/2026-05-26-tsi1-cohort-audit-cc.md`
+- `logs/2026-05-26-tsi1d-proof-linkage-cc.md`
+- `logs/2026-05-28-lme-s-n100-jab-protected-baseline-cc.md`
+- `logs/2026-05-28-savings-hint-1a-audit-cc.md`
+- `logs/2026-05-28-post-savings-remaining-fail-audit-cc.md`
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
