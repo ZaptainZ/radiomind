@@ -338,3 +338,139 @@ def maybe_age_interval_commit_closure(
         f"Past-age source: {past_evidence!r}. "
         f"Current-age source: {current_evidence!r}.)"
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.5 Diagnostic / Refusal-Reason Hook (read-only)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# A wider age-phrase regex used ONLY for diagnostics: catches
+# normalized variants the strict `_age_at_event` regex misses
+# (e.g. "at age 25", "aged 22 when ...", "I was 18 when ...").
+# Used to distinguish "no age info at all" from "age info exists
+# but in unrecognized phrasing" — these are different fix shapes.
+_DIAG_AGE_VARIANT_RE = re.compile(
+    r"\b(?:at\s+(?:the\s+)?age(?:\s+of)?|aged|when\s+i\s+was|"
+    r"i\s+(?:was|am)|when\s+i\s+turned|turned)\s+(\d{1,3})\b",
+    re.IGNORECASE,
+)
+
+
+def diagnose_age_interval(
+    question: str,
+    retrieved_memories: list[Any],
+    temporal_section: str = "",
+) -> dict:
+    """Parallel diagnostic for the age_interval skill +
+    `maybe_age_interval_commit_closure` rewrite path.
+
+    Returns:
+      {
+        "fired": bool,                            # did rewrite fire
+        "refusal_reason": str | None,             # why not
+        "skill_emitted_structured": bool,         # did skill produce
+                                                  # STRUCTURED SKILL block
+        "skill_name": str | None,
+        "skill_conf": float | None,
+        "skill_computed": str | None,
+        "found_age_at_event_strict": int | None,  # tight regex hit
+        "found_age_variant_loose": int | None,    # wider regex hit
+        "found_current_age": int | None,
+        "variant_mismatch_detected": bool,        # tight missed, loose hit
+      }
+
+    Refusal-reason codes (rewrite-path):
+      - `skill_did_not_fire`           (no STRUCTURED SKILL in temporal)
+      - `skill_not_age_interval`       (other skill produced output)
+      - `low_confidence`               (conf < 0.85)
+      - `non_integer_skill_answer`
+      - `mode_unsupported`             (since/before/after — outside scope)
+      - `llm_did_not_abstain`          (gate 6 check is upstream; we
+                                        only see retrieve+skill here, so
+                                        this is reported as "n/a" from
+                                        this function — call-site logs)
+      - `age_at_event_not_in_retrieved` (strict + loose both miss)
+      - `age_phrase_variant_unsupported` (loose hits but strict misses)
+      - `current_age_not_in_retrieved`
+      - `recompute_mismatch`           (current-past != skill_value)
+    """
+    out: dict = {
+        "fired": False,
+        "refusal_reason": None,
+        "skill_emitted_structured": False,
+        "skill_name": None,
+        "skill_conf": None,
+        "skill_computed": None,
+        "found_age_at_event_strict": None,
+        "found_age_variant_loose": None,
+        "found_current_age": None,
+        "variant_mismatch_detected": False,
+    }
+
+    skill_name, conf, computed = parse_temporal_section(temporal_section)
+    out["skill_name"] = skill_name
+    out["skill_conf"] = conf
+    out["skill_computed"] = computed
+    if skill_name:
+        out["skill_emitted_structured"] = True
+
+    # Scan retrieved memories for age signals (regardless of skill state)
+    texts = _iter_memory_text(retrieved_memories)
+    for text in texts:
+        if _AGE_AT_EVENT_RE.search(text) and out["found_age_at_event_strict"] is None:
+            m = _AGE_AT_EVENT_RE.search(text)
+            if m:
+                out["found_age_at_event_strict"] = int(m.group(1))
+        if _DIAG_AGE_VARIANT_RE.search(text) and out["found_age_variant_loose"] is None:
+            m2 = _DIAG_AGE_VARIANT_RE.search(text)
+            if m2:
+                out["found_age_variant_loose"] = int(m2.group(1))
+    # Current age
+    cur = _find_current_age(retrieved_memories)
+    if cur is not None:
+        out["found_current_age"] = cur[0]
+
+    # Variant-mismatch flag: loose hit, strict miss → fixable by
+    # widening _age_at_event regex; OR by upgrading FACT extractor
+    # to keep raw phrasing.
+    out["variant_mismatch_detected"] = bool(
+        out["found_age_variant_loose"] is not None
+        and out["found_age_at_event_strict"] is None
+    )
+
+    # Decision tree for rewrite-path refusal
+    if skill_name != "age_interval":
+        if skill_name is None:
+            out["refusal_reason"] = "skill_did_not_fire"
+        else:
+            out["refusal_reason"] = "skill_not_age_interval"
+        return out
+    if conf is None or conf < 0.85:
+        out["refusal_reason"] = "low_confidence"
+        return out
+    try:
+        skill_value = int((computed or "").strip())
+    except (TypeError, ValueError):
+        out["refusal_reason"] = "non_integer_skill_answer"
+        return out
+    mode = _question_mode(question)
+    if mode not in ("older", "younger"):
+        out["refusal_reason"] = "mode_unsupported"
+        return out
+    if out["found_age_at_event_strict"] is None:
+        if out["variant_mismatch_detected"]:
+            out["refusal_reason"] = "age_phrase_variant_unsupported"
+        else:
+            out["refusal_reason"] = "age_at_event_not_in_retrieved"
+        return out
+    if out["found_current_age"] is None:
+        out["refusal_reason"] = "current_age_not_in_retrieved"
+        return out
+    past = out["found_age_at_event_strict"]
+    current = out["found_current_age"]
+    expected = current - past if mode == "older" else past - current
+    if expected != skill_value:
+        out["refusal_reason"] = "recompute_mismatch"
+        return out
+    out["fired"] = True
+    return out

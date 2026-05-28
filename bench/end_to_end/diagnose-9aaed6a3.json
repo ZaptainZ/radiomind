@@ -1,0 +1,405 @@
+{
+  "qid": "9aaed6a3",
+  "question": "How much cashback did I earn at SaveMart last Thursday?",
+  "gold": "$0.75",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_353d3c6d_2",
+    "answer_353d3c6d_1"
+  ],
+  "question_date": "2023/05/30 (Tue) 23:17",
+  "ingest_stats": {
+    "turns_ingested": 541,
+    "sessions": 51,
+    "turns_total": 541
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 23,
+    "gold_hits_in_top_30": 10,
+    "gold_ranks_first_10": [
+      1,
+      2,
+      3,
+      5,
+      11,
+      18,
+      21,
+      24,
+      28,
+      30
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "answer_353d3c6d_1_t0",
+      "session_id": "answer_353d3c6d_1",
+      "is_gold_session": true,
+      "score": 0.7466,
+      "content_preview": "[user] I'm trying to get a sense of my expenses for the month. Can you help me track my grocery expenses? I spent $75 on groceries at SaveMart last Thursday."
+    },
+    {
+      "rank": 2,
+      "turn_id": "answer_353d3c6d_2_t5",
+      "session_id": "answer_353d3c6d_2",
+      "is_gold_session": true,
+      "score": 0.6382,
+      "content_preview": "[assistant] Adding pasta and marinara sauce to your list sounds like a great idea.  Let's estimate the cost of these items:  1. Pasta (1 pound) - $1.49 2. Marin"
+    },
+    {
+      "rank": 3,
+      "turn_id": "answer_353d3c6d_1_t1",
+      "session_id": "answer_353d3c6d_1",
+      "is_gold_session": true,
+      "score": 0.5912,
+      "content_preview": "[assistant] I'd be happy to help you track your grocery expenses.  Let's start with the $75 you spent at SaveMart last Thursday. I'll keep a running total of yo"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4454,
+      "content_preview": "event: spent $12.99 on a sandwich and salad with 20% off offer [date=2023-05-16]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "answer_353d3c6d_2_t10",
+      "session_id": "answer_353d3c6d_2",
+      "is_gold_session": true,
+      "score": 0.654,
+      "content_preview": "[user] I'd like to know if SaveMart has any sales or promotions on ground beef this week. Can you check if there are any deals I can take advantage of?"
+    },
+    {
+      "rank": 6,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4345,
+      "content_preview": "event: went grocery shopping at Walmart [date=2023-04-26]"
+    },
+    {
+      "rank": 7,
+      "turn_id": "c846422a_1_t5",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.533,
+      "content_preview": "[assistant] The 2% cashback on online grocery purchases with Walmart+ is a great benefit, and I'd be happy to clarify how it works.  **How the 2% cashback works"
+    },
+    {
+      "rank": 8,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.416,
+      "content_preview": "event: spent $50 at Office Depot for printer ink and paper [date=2023-04-23]"
+    },
+    {
+      "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.415,
+      "content_preview": "event: spent $50 at Sephora on skincare products [date=2023-05-16]"
+    },
+    {
+      "rank": 10,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4138,
+      "content_preview": "event: spent $100 at Gap on a new pair of jeans and a sweater [date=2023-05-20]"
+    },
+    {
+      "rank": 11,
+      "turn_id": "answer_353d3c6d_2_t2",
+      "session_id": "answer_353d3c6d_2",
+      "is_gold_session": true,
+      "score": 0.5114,
+      "content_preview": "[user] I'm planning to buy some basic items like milk, eggs, bread, and a few snacks. I don't have any dietary restrictions, and I'm shopping for myself. I'd li"
+    },
+    {
+      "rank": 12,
+      "turn_id": "c846422a_1_t7",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5093,
+      "content_preview": "[assistant] The million-dollar question!  Whether or not it's worth paying the monthly fee for Walmart+ solely for the 2% cashback on online grocery purchases d"
+    },
+    {
+      "rank": 13,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4073,
+      "content_preview": "event: spent $15 on coffee and snacks at The Daily Grind [date=2023-05-16]"
+    },
+    {
+      "rank": 14,
+      "turn_id": "c846422a_1_t3",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.49,
+      "content_preview": "[assistant] Walmart does offer a cashback and rewards program for online shopping, although it's not exactly like Ibotta or Fetch Rewards. Here are the details:"
+    },
+    {
+      "rank": 15,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3894,
+      "content_preview": "event: donated $20 to the 'Paws for a Cause' event [date=2023-03-12]"
+    },
+    {
+      "rank": 16,
+      "turn_id": "c846422a_1_t6",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5684,
+      "content_preview": "[user] That's good to know. Do you think it's worth it to pay the monthly fee for Walmart+ just for the 2% cashback on online grocery purchases, considering I'm"
+    },
+    {
+      "rank": 17,
+      "turn_id": "c846422a_1_t10",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.564,
+      "content_preview": "[user] I'll make sure to factor in those exclusions when I'm calculating the potential cashback earnings from Walmart+. Thanks for the heads up! By the way, do "
+    },
+    {
+      "rank": 18,
+      "turn_id": "answer_353d3c6d_2_t9",
+      "session_id": "answer_353d3c6d_2",
+      "is_gold_session": true,
+      "score": 0.4679,
+      "content_preview": "[assistant] Buying in bulk can often lead to significant savings.  Let's assume the 3-pound pack of ground beef is priced at $9.99. This works out to:  $9.99 ÷ "
+    },
+    {
+      "rank": 19,
+      "turn_id": "c846422a_1_t9",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5519,
+      "content_preview": "[assistant] Walmart+ does have some restrictions on earning cashback, although they're relatively limited. Here are some exclusions to keep in mind:  **Excluded"
+    },
+    {
+      "rank": 20,
+      "turn_id": "c846422a_1_t11",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5504,
+      "content_preview": "[assistant] Walmart+ does offer a cashback tracking feature, making it easy to monitor your earnings. Here's what you can expect:  **Walmart+ Cashback Tracker:*"
+    },
+    {
+      "rank": 21,
+      "turn_id": "answer_353d3c6d_2_t7",
+      "session_id": "answer_353d3c6d_2",
+      "is_gold_session": true,
+      "score": 0.4575,
+      "content_preview": "[assistant] Ground beef would be a great addition to your pasta dish.  The cost of ground beef can vary depending on the quality and lean-to-fat ratio. Let's as"
+    },
+    {
+      "rank": 22,
+      "turn_id": "c846422a_1_t2",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5413,
+      "content_preview": "[user] I'll check those out. Do you know if Walmart offers any cashback or rewards programs for online shopping, similar to Ibotta or Fetch Rewards?"
+    },
+    {
+      "rank": 23,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3484,
+      "content_preview": "event: donated old furniture to charity [date=2023-05-24]"
+    },
+    {
+      "rank": 24,
+      "turn_id": "answer_353d3c6d_1_t2",
+      "session_id": "answer_353d3c6d_1",
+      "is_gold_session": true,
+      "score": 0.4295,
+      "content_preview": "[user] I also had some coffee expenses last week. I spent $15 on coffee and snacks at The Daily Grind, and then another $12.99 on a sandwich and salad with thei"
+    },
+    {
+      "rank": 25,
+      "turn_id": "c846422a_1_t8",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.5093,
+      "content_preview": "[user] I've been using Ibotta and Fetch Rewards for a while now, and I've been pretty happy with the cashback I've earned. But I do shop online at Walmart fairl"
+    },
+    {
+      "rank": 26,
+      "turn_id": "c846422a_1_t4",
+      "session_id": "c846422a_1",
+      "is_gold_session": false,
+      "score": 0.496,
+      "content_preview": "[user] That's a lot to take in. Can you tell me more about the 2% cashback on online grocery purchases with Walmart+? Is it on top of any digital coupons or pro"
+    },
+    {
+      "rank": 27,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.329,
+      "content_preview": "event: went to a spot with parents [date=2023-05-28]"
+    },
+    {
+      "rank": 28,
+      "turn_id": "answer_353d3c6d_1_t9",
+      "session_id": "answer_353d3c6d_1",
+      "is_gold_session": true,
+      "score": 0.4055,
+      "content_preview": "[assistant] Let's add that to your non-grocery total.  **Grocery Total: $75**  **Non-Grocery Total: $77.99 + $100 = $177.99**  **Total Expenses: $75 + $177.99 ="
+    },
+    {
+      "rank": 29,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3269,
+      "content_preview": "event: volunteered at the 'Paws for a Cause' 5K run/walk [date=2023-03-12]"
+    },
+    {
+      "rank": 30,
+      "turn_id": "answer_353d3c6d_1_t11",
+      "session_id": "answer_353d3c6d_1",
+      "is_gold_session": true,
+      "score": 0.4036,
+      "content_preview": "[assistant] Let's add that to your non-grocery total.  **Grocery Total: $75**  **Non-Grocery Total: $177.99 + $50 = $227.99**  **Total Expenses: $75 + $227.99 ="
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Memories show 2% cashback rate and $75 spent at SaveMart.\n  Calculation: 2% × $75 = $1.50.\n  If the question asks for cashback earned, the answer is $1.50.\n\n",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": true,
+      "refusal_reason": null,
+      "rate": 0.02,
+      "merchant": "SaveMart",
+      "amount": 75.0,
+      "computed_cashback": 1.5
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "store_anchor_probe": {
+    "fact_entries_total": 500,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "100",
+        "snippet": "cery order with a subtotal of $100.\n* You apply a 1"
+      },
+      {
+        "amount": "35",
+        "snippet": "n online grocery orders (min. $35 order)\n* 2% cashback on online grocery purchases "
+      },
+      {
+        "amount": "2",
+        "snippet": "prices are reasonable (around $2-$4 per drink).\n2. **Peet's Coffee**: Another well"
+      },
+      {
+        "amount": "4",
+        "snippet": "ces are reasonable (around $2-$4 per drink).\n2. **Peet's Coffee**: Another well-kn"
+      },
+      {
+        "amount": "2",
+        "snippet": "ar to The Coffee Bean (around $2-$4 "
+      },
+      {
+        "amount": "4",
+        "snippet": "to The Coffee Bean (around $2-$4 "
+      },
+      {
+        "amount": "20",
+        "snippet": "[user] I also donated $20 to the \"Paws for a Cause\" event, which was a grea"
+      },
+      {
+        "amount": "75",
+        "snippet": "cery total.\n\n**Grocery Total: $75**\n\n**Non-Grocery Total: $177.99 + $50 = $227.99**"
+      },
+      {
+        "amount": "177.99",
+        "snippet": ": $75**\n\n**Non-Grocery Total: $177.99 + $50 = $227.99**\n\n**Total Expenses: $75 + $227.9"
+      },
+      {
+        "amount": "50",
+        "snippet": "*Non-Grocery Total: $177.99 + $50 = $227.99**\n\n**Total Expenses: $75 + $227.99 = $3"
+      },
+      {
+        "amount": "227.99",
+        "snippet": "rocery Total: $177.99 + $50 = $227.99**\n\n**Total Expenses: $75 + $227.99 = $302.99**\n\nI"
+      },
+      {
+        "amount": "75",
+        "snippet": " $227.99**\n\n**Total Expenses: $75 + $227.99 = $302.99**\n\nI've updated the totals. Y"
+      },
+      {
+        "amount": "227.99",
+        "snippet": "99**\n\n**Total Expenses: $75 + $227.99 = $302.99**\n\nI've updated the totals. You're gett"
+      },
+      {
+        "amount": "302.99",
+        "snippet": "tal Expenses: $75 + $227.99 = $302.99**\n\nI've updated the totals. You're getting a clea"
+      },
+      {
+        "amount": "50",
+        "snippet": "[user] I also spent $50 at Sephora last week on skincare products."
+      }
+    ],
+    "age_strict_in_store": [
+      {
+        "age": 20,
+        "snippet": "ur target audience is couples aged 20-40, look for influencers who have a following wit"
+      }
+    ],
+    "age_loose_in_store": [
+      {
+        "age": 20,
+        "snippet": "ur target audience is couples aged 20-40, look for influencers who have a following wit"
+      }
+    ]
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "$0.75",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  }
+}

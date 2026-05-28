@@ -424,3 +424,161 @@ def savings_arithmetic_hint(
             f"{anchor}, the answer is {_fmt(saving)}.\n\n"
         )
     return ""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.5 Diagnostic / Refusal-Reason Hooks (read-only)
+# ─────────────────────────────────────────────────────────────────────────────
+# These functions mirror the corresponding helpers but return
+# structured `{fired, refusal_reason, proof}` records instead of
+# the prompt-prefix string. They do NOT mutate helper behavior —
+# only expose WHY a helper stayed silent (or which proof inputs
+# it used when it fired). Consumed by diagnose_qid.py.
+
+# Wider age-phrase regex used ONLY for diagnostics: identifies
+# memories carrying age info in normalized variants
+# (e.g. "at age 25") that the strict _age_at_event regex misses.
+_DIAG_AGE_VARIANT_RE = re.compile(
+    r"\b(?:at\s+age|aged|at\s+the\s+age\s+of|when\s+i\s+was|"
+    r"i\s+(?:was|am)|when\s+i\s+turned|turned)\s+(\d{1,3})\b",
+    re.IGNORECASE,
+)
+
+
+def diagnose_savings(
+    question: str, retrieved_memories: list[Any],
+) -> dict:
+    """Parallel diagnostic for `savings_arithmetic_hint`.
+
+    Returns:
+      {
+        "fired": bool,
+        "refusal_reason": str | None,
+        "anchor": str | None,
+        "paid_amounts": list[float],
+        "retail_amounts": list[float],
+        "computed_saving": float | None,
+      }
+
+    Refusal-reason codes:
+      - `no_trigger_match`
+      - `item_anchor_too_short`
+      - `no_user_turns_in_memories`
+      - `paid_anchor_not_found_in_user_turns`
+      - `multi_paid_amounts`
+      - `retail_anchor_not_found_in_user_turns`
+      - `multi_retail_amounts`
+      - `retail_less_than_paid`
+    """
+    out: dict = {
+        "fired": False, "refusal_reason": None, "anchor": None,
+        "paid_amounts": [], "retail_amounts": [],
+        "computed_saving": None,
+    }
+    if not question:
+        out["refusal_reason"] = "empty_question"
+        return out
+    if not retrieved_memories:
+        out["refusal_reason"] = "no_retrieved_memories"
+        return out
+    m = _SAVINGS_QUERY_TRIGGER.search(question)
+    if not m:
+        out["refusal_reason"] = "no_trigger_match"
+        return out
+    item_phrase = m.group("item").strip()
+    anchors = _savings_item_anchors(item_phrase)
+    if not anchors:
+        out["refusal_reason"] = "item_anchor_too_short"
+        return out
+    user_texts: list[str] = []
+    for txt in _iter_memory_text(retrieved_memories):
+        if "[assistant]" in txt.lower():
+            continue
+        user_texts.append(txt)
+    if not user_texts:
+        out["refusal_reason"] = "no_user_turns_in_memories"
+        return out
+    blob = "\n".join(user_texts)
+
+    last_reason: str = "no_anchor_fully_matched"
+    for anchor in anchors:
+        paid_amounts = _savings_scan_amounts(
+            blob, anchor, _SAVINGS_PAID_TEMPLATES,
+        )
+        retail_amounts = _savings_scan_amounts(
+            blob, anchor, _SAVINGS_RETAIL_TEMPLATES,
+        )
+        if len(paid_amounts) == 0:
+            last_reason = "paid_anchor_not_found_in_user_turns"
+            continue
+        if len(paid_amounts) > 1:
+            last_reason = "multi_paid_amounts"
+            continue
+        if len(retail_amounts) == 0:
+            last_reason = "retail_anchor_not_found_in_user_turns"
+            continue
+        if len(retail_amounts) > 1:
+            last_reason = "multi_retail_amounts"
+            continue
+        if retail_amounts[0] < paid_amounts[0]:
+            last_reason = "retail_less_than_paid"
+            continue
+        out.update({
+            "fired": True, "refusal_reason": None,
+            "anchor": anchor,
+            "paid_amounts": paid_amounts,
+            "retail_amounts": retail_amounts,
+            "computed_saving": retail_amounts[0] - paid_amounts[0],
+        })
+        return out
+    out["refusal_reason"] = last_reason
+    # Record the first anchor's amounts for visibility
+    if anchors:
+        out["anchor"] = anchors[0]
+        out["paid_amounts"] = _savings_scan_amounts(
+            blob, anchors[0], _SAVINGS_PAID_TEMPLATES,
+        )
+        out["retail_amounts"] = _savings_scan_amounts(
+            blob, anchors[0], _SAVINGS_RETAIL_TEMPLATES,
+        )
+    return out
+
+
+def diagnose_cashback(
+    question: str, retrieved_memories: list[Any],
+) -> dict:
+    """Parallel diagnostic for `cashback_arithmetic_hint`.
+
+    Refusal-reason codes:
+      - `no_trigger_match`
+      - `no_user_memories`
+      - `no_cashback_rate_in_memories`
+      - `no_merchant_amount`
+    """
+    out: dict = {
+        "fired": False, "refusal_reason": None,
+        "rate": None, "merchant": None, "amount": None,
+        "computed_cashback": None,
+    }
+    if not _query_triggers(question):
+        out["refusal_reason"] = "no_trigger_match"
+        return out
+    mems = _iter_memory_text(retrieved_memories)
+    if not mems:
+        out["refusal_reason"] = "no_user_memories"
+        return out
+    rate = _find_cashback_rate(mems)
+    if rate is None:
+        out["refusal_reason"] = "no_cashback_rate_in_memories"
+        return out
+    out["rate"] = rate
+    merchant = _extract_merchant_from_query(question)
+    out["merchant"] = merchant
+    amount = _find_merchant_amount(mems, merchant)
+    if amount is None:
+        out["refusal_reason"] = "no_merchant_amount"
+        return out
+    out["amount"] = amount
+    out["fired"] = True
+    out["computed_cashback"] = rate * amount
+    return out

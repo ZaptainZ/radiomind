@@ -128,55 +128,125 @@ For now, the diagnostic tool exposes it after-the-fact.
 No code change to the helper — by design Phase 1 doesn't
 mutate behavior.
 
-### Second diagnostic finding (c18a7dc8)
+### Second diagnostic finding (c18a7dc8) — RETRACTED ATTRIBUTION 2026-05-28
 
-Running `diagnose_qid --qid c18a7dc8` against a fresh
-sandbox produced a paired insight:
+Original attribution claim: "FACT extraction stripped
+the age qualifier". **RETRACTED.** Codex re-read the
+diagnose JSON and found that rank 1's preview actually
+reads:
 
-- 5/5 gold-session turns retrieved in top-30 (ranks 12,
-  14, 21, 22, 25). Retrieve recall is fine for this qid.
-- BUT rank 1 of the retrieve is the FACT-extracted event
-  `"completed Bachelor's degree in Business Administration
-  with a concentration ..."`. The **explicit `at the age
-  of 25` phrase from the raw user turn was NOT preserved
-  in the FACT extraction**.
-- `age_interval` skill's resolver requires the
-  `_age_at_event` regex to find `"at the age of N"` /
-  `"when I was N"` / `"aged N"`. With the FACT-layer
-  abstraction stripping the age qualifier, the skill
-  found no backing → did NOT fire.
-- The `run_temporal_precision` fallback path returned a
-  trinity-view answer of `"4 days ago"` — wrong for
-  gold=7.
+> `event: completed Bachelor's degree in Business
+> Administration with a concentration in Marketing from
+> University of California, Berkeley **at age 25**
+> [date=2023-05-26]`
 
-Earlier AAS-2 probe on the LSA-3 sandbox showed
-`STRUCTURED SKILL (age_interval, conf=0.9)
-Computed answer: 7`. The difference is FACT-extraction
-state between sandboxes — confirming `age_interval`'s
-reliability depends not on the helper itself but on
-**whether the upstream extractor preserves the age
-qualifier in FACT-layer events**.
+The FACT extractor **DID preserve the age info** — it
+just normalized the raw user phrasing `"completed at the
+age of 25"` into `"at age 25"` (no "the", no "of").
 
-Same architectural lesson as bb7c3b45 SavingsHint:
-helpers are designed correctly under audit-time
-assumptions, but their *runtime triggering* depends on
-extractor / retrieve state that isn't currently
-observable from helper output.
+The age_interval skill's `_age_at_event` regex requires
+`at\s+the\s+age\s+of` / `when\s+I\s+was` / `aged` — none
+of which matches `"at age N"`. So the helper failure is
+a **phrase-variant mismatch** at the helper regex,
+NOT a FACT extraction loss.
 
-### Combined implication
+The correct refusal reason (now exposed by Phase 1.5):
+`age_phrase_variant_unsupported`. Different fix shape:
+either widen the `_age_at_event` regex to include the
+`at age N` form, or normalize FACT phrasings back to the
+canonical "at the age of" pattern.
 
-Both findings reinforce Pillar 2 (Proof-Carrying Result)
-and Pillar 4 (Diagnostic UX):
+Earlier AAS-2 probe got `STRUCTURED SKILL` because the
+LSA-3 sandbox had raw user turns (not FACT events) in
+its retrieve top-K. Same skill, same memories shape,
+different proximity outcome.
 
-- Phase 2's `Proof.refusal_reason` field would carry
-  exactly these signals (`paid_anchor_not_retrieved`,
-  `age_at_event_phrase_lost_in_FACT_extraction`).
-- Phase 1's diagnostic tool already surfaces them
-  post-hoc; this is sufficient to make audits
-  reproducible without rerunning full e2e + judge.
-- Neither finding implies the helpers are wrong. They
-  imply the helpers are **conditional** on upstream
-  state we previously didn't observe.
+### Combined implication (revised)
+
+Both findings still reinforce Pillar 2 (Proof-Carrying
+Result) and Pillar 4 (Diagnostic UX). The diagnostic
+tool's first-pass attribution was **too strong** — it
+took the helper's empty-string output and inferred a
+specific upstream cause without verifying. Phase 1.5
+(refusal-reason instrumentation) fixes exactly this: the
+helper itself now reports which gate it failed and what
+related signals it found nearby, so attribution is
+mechanical rather than inferential.
+
+### Phase 1.5 4-qid re-run — confirmed and refined
+
+After implementing `diagnose_*` parallel functions on
+each helper (and adding per-qid sandbox + full-store
+anchor probe), re-ran 4 representative qids:
+
+| qid | helper | fired | refusal_reason | proof state |
+|---|---|---|---|---|
+| `9aaed6a3` | cashback | **TRUE** ✓ | — | rate=0.01, merchant=SaveMart, amount=$75, product=$0.75 |
+| `bb7c3b45` | savings | False | `paid_anchor_not_found_in_user_turns` | anchor="jimmy choo heels", retail=$500 found, paid not in user-turn memories |
+| `gpt4_d12ceb0e` | person_age | False | `kin_role_missing=['self']` | grandpa=78, dad=58, grandma=75, mom=55 — self age missing |
+| `c18a7dc8` | age_interval | False | `current_age_not_in_retrieved` | skill DID fire conf=0.9→"7"; strict `_age_at_event=25` matched a raw user turn; user's current-age (32) self-id missing |
+
+### Findings — accurate this time
+
+1. **9aaed6a3 cashback is reliably retrievable.** Helper
+   fires deterministically; serves as the positive
+   anchor.
+
+2. **c18a7dc8 attribution corrected (again).** The
+   earlier "FACT extraction stripped age qualifier" was
+   wrong (retraction above). The new "phrase variant
+   unsupported" attribution is ALSO wrong: the `_age_at_
+   event` strict regex did match a raw user turn (the
+   raw turn IS in retrieve top-200 alongside the FACT
+   event). The actual refusal is at the rewrite layer:
+   **the user's current-age self-id ("as a 32-year-old
+   Digital Marketing Specialist") was NOT in retrieve
+   top-200**. Without current age, the recompute-match
+   gate can't validate.
+
+3. **gpt4_d12ceb0e (person_age) shows the same shape**:
+   4 of 5 kin ages retrieved, but `self` is missing.
+
+4. **bb7c3b45 retrieve recall sensitivity confirmed**:
+   user-turn-with-$200 ranks outside top-200; only the
+   assistant echo of "$200" is retrieved (filtered).
+
+### Architectural pattern
+
+Three of four helper failures share the SAME root cause:
+**the user's first-person self-statement anchor (paid
+price / current age / etc.) ranks outside retrieve
+top-200, even when the haystack carries it.**
+
+- bb7c3b45: paid anchor user-turn ranks out
+- gpt4_d12ceb0e: self-age statement ranks out
+- c18a7dc8: current-age self-id ranks out
+
+This is NOT a helper design problem. The helpers
+correctly refuse to commit. It's a **retrieval recall
+problem** that's invisible until Phase 1.5 instrumented
+the refusal reasons.
+
+### Implications for Phase 2+
+
+- The right next workstream is not refactoring helpers
+  into a registry. The retrieval layer is leaking
+  first-person self-statements. Pillar 2's `Proof`
+  schema would carry `retrieve_window` snapshots, but
+  the actual fix is on the **retrieval side** —
+  potentially boost first-person `i\s+(am|'m|was)\s+
+  \d` self-id patterns OR add a domain-store-scan
+  fallback for current-age / paid-price anchors.
+- Phase 1.5 already de-risks Phase 2 / 3 by surfacing
+  this pattern. Without it, refactoring helpers into a
+  registry would have looked clean while production
+  remained quietly retrieve-recall-fragile.
+
+These findings are not implementation directives — they
+are observations the tool generated. The user/Codex
+review will decide whether to open a retrieve-recall
+workstream, a store-scan-fallback workstream, or stay
+paused.
 
 ### Pillar 2 — Proof-Carrying Result
 

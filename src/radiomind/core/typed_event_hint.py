@@ -215,3 +215,66 @@ def person_age_average_hint(
         f"  If the question asks for the average age across me, my parents, "
         f"and my grandparents, the answer is {mean_str}.\n\n"
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.5 Diagnostic / Refusal-Reason Hook (read-only)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def diagnose_person_age(
+    question: str, retrieved_memories: list[Any],
+) -> dict:
+    """Parallel diagnostic for `person_age_average_hint`.
+
+    Refusal-reason codes:
+      - `no_trigger_match`
+      - `no_user_memories`
+      - `kin_role_missing`           (which role: in `missing_roles`)
+      - `kin_role_age_ambiguous`     (multiple distinct ages for one role)
+    """
+    out: dict = {
+        "fired": False, "refusal_reason": None,
+        "kin_ages": {}, "missing_roles": [], "ambiguous_roles": [],
+        "computed_mean": None,
+    }
+    if not _query_triggers(question):
+        out["refusal_reason"] = "no_trigger_match"
+        return out
+    mems = _iter_memory_text(retrieved_memories)
+    if not mems:
+        out["refusal_reason"] = "no_user_memories"
+        return out
+    raw = _extract_kin_ages(mems)
+    out["kin_ages_raw"] = dict(raw)
+    missing: list[str] = []
+    ambiguous: list[str] = []
+    resolved: dict[str, int] = {}
+    for role in _REQUIRED_ROLES:
+        ages = raw.get(role, [])
+        if not ages:
+            missing.append(role)
+            continue
+        if len(set(ages)) > 1:
+            ambiguous.append(role)
+            continue
+        age = _resolve_role_age(ages)
+        if age is None:
+            ambiguous.append(role)
+            continue
+        resolved[role] = age
+    if missing:
+        out["refusal_reason"] = "kin_role_missing"
+        out["missing_roles"] = missing
+        out["kin_ages"] = resolved
+        return out
+    if ambiguous:
+        out["refusal_reason"] = "kin_role_age_ambiguous"
+        out["ambiguous_roles"] = ambiguous
+        out["kin_ages"] = resolved
+        return out
+    out["fired"] = True
+    out["kin_ages"] = resolved
+    values = [resolved[r] for r in _REQUIRED_ROLES]
+    out["computed_mean"] = sum(values) / len(values)
+    return out

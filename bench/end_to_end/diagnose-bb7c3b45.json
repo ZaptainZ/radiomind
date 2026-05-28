@@ -4,15 +4,14 @@
   "gold": "$300",
   "qtype": "multi-session",
   "answer_session_ids": [
-    "answer_de64539a_1",
-    "answer_de64539a_2"
+    "answer_de64539a_2",
+    "answer_de64539a_1"
   ],
   "question_date": "2023/05/30 (Tue) 23:31",
   "ingest_stats": {
-    "turns_ingested": -1,
-    "sessions": -1,
-    "turns_total": -1,
-    "note": "reused sandbox"
+    "turns_ingested": 495,
+    "sessions": 47,
+    "turns_total": 495
   },
   "retrieve_window": {
     "top_k_probed": 200,
@@ -23,8 +22,8 @@
       2,
       12,
       13,
-      21,
-      22
+      19,
+      21
     ]
   },
   "retrieve_top_30_preview": [
@@ -49,64 +48,64 @@
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.4335,
-      "content_preview": "event: lost two pairs of shoes due to cat chewing [date=2023-05-24]"
+      "score": 0.4382,
+      "content_preview": "event: returned to Trendy Wear store twice since first visit [date=2023-05-29]"
     },
     {
       "rank": 4,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.4162,
-      "content_preview": "event: bought Chanel bag [date=2023-05-29]"
+      "score": 0.4335,
+      "content_preview": "event: lost two pairs of shoes due to cat chewing [date=2023-05-24]"
     },
     {
       "rank": 5,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.398,
-      "content_preview": "event: redeemed $20 gift card from Trendy Wear [date=2023-05-29]"
+      "score": 0.4111,
+      "content_preview": "event: redeemed a $20 gift card from Trendy Wear [date=2023-05-29]"
     },
     {
       "rank": 6,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.3962,
-      "content_preview": "event: visited Trendy Wear store twice since first visit [date=2023-05-29]"
+      "score": 0.4106,
+      "content_preview": "event: received a 10% discount from sales associate Rachel during first visit [date=2023-05-29]"
     },
     {
       "rank": 7,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.3853,
-      "content_preview": "event: made purchases at Trendy Wear over past few weeks [date=2023-05-29]"
+      "score": 0.3942,
+      "content_preview": "event: bought a Chanel bag [date=2023-05-29]"
     },
     {
       "rank": 8,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.382,
-      "content_preview": "event: received 10% discount from sales associate Rachel [date=2023-05-29]"
+      "score": 0.381,
+      "content_preview": "event: made purchases at Trendy Wear over the past few weeks [date=2023-05-29]"
     },
     {
       "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3716,
+      "content_preview": "event: visited Trendy Wear store for the first time [date=2023-05-29]"
+    },
+    {
+      "rank": 10,
       "turn_id": "0c061750_1_t0",
       "session_id": "0c061750_1",
       "is_gold_session": false,
       "score": 0.3757,
       "content_preview": "[user] I'm thinking of getting a bike carrier for my car, so I can transport my bike more easily. I've been researching online, and I think I'll buy a Saris Bon"
-    },
-    {
-      "rank": 10,
-      "turn_id": "",
-      "session_id": "",
-      "is_gold_session": false,
-      "score": 0.3635,
-      "content_preview": "event: first visit to Trendy Wear store [date=2023-05-29]"
     },
     {
       "rank": 11,
@@ -134,22 +133,6 @@
     },
     {
       "rank": 14,
-      "turn_id": "",
-      "session_id": "",
-      "is_gold_session": false,
-      "score": 0.3335,
-      "content_preview": "event: bought new bike helmet (blue and white Bell helmet) [date=2023-03-10]"
-    },
-    {
-      "rank": 15,
-      "turn_id": "",
-      "session_id": "",
-      "is_gold_session": false,
-      "score": 0.3316,
-      "content_preview": "event: stayed at Hyatt Regency Chicago for business conference [date=2023-03-12]"
-    },
-    {
-      "rank": 16,
       "turn_id": "3891baea_4_t9",
       "session_id": "3891baea_4",
       "is_gold_session": false,
@@ -157,7 +140,7 @@
       "content_preview": "[assistant] Congratulations on accumulating enough points to redeem a $20 gift card! That's awesome that you've been a repeat customer at Trendy Wear and have b"
     },
     {
-      "rank": 17,
+      "rank": 15,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
@@ -165,15 +148,7 @@
       "content_preview": "event: stayed at Hyatt Regency Chicago for business conference [date=2023-03-14]"
     },
     {
-      "rank": 18,
-      "turn_id": "",
-      "session_id": "",
-      "is_gold_session": false,
-      "score": 0.3275,
-      "content_preview": "event: stayed at Hyatt Regency Chicago for business conference [date=2023-03-13]"
-    },
-    {
-      "rank": 19,
+      "rank": 16,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
@@ -181,7 +156,7 @@
       "content_preview": "event: stayed at Hyatt Regency Chicago for business conference [date=2023-03-10]"
     },
     {
-      "rank": 20,
+      "rank": 17,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
@@ -189,7 +164,15 @@
       "content_preview": "event: bought Kryptonite U-lock [date=2023-05-30]"
     },
     {
-      "rank": 21,
+      "rank": 18,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3261,
+      "content_preview": "event: earned over 10,000 points with Walgreens Balance Rewards card [date=2023-05-21]"
+    },
+    {
+      "rank": 19,
       "turn_id": "answer_de64539a_1_t9",
       "session_id": "answer_de64539a_1",
       "is_gold_session": true,
@@ -197,7 +180,15 @@
       "content_preview": "[assistant] With your long, dark hair, you have a lot of versatility when it comes to styling options. Here are some thoughts on whether to wear your hair up or"
     },
     {
-      "rank": 22,
+      "rank": 20,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.321,
+      "content_preview": "event: bought a new bike helmet [date=2023-03-10]"
+    },
+    {
+      "rank": 21,
       "turn_id": "answer_de64539a_1_t7",
       "session_id": "answer_de64539a_1",
       "is_gold_session": true,
@@ -205,7 +196,7 @@
       "content_preview": "[assistant] I think that sounds like a fantastic choice! A coral-colored necklace with a geometric design can add a wonderful touch of whimsy and playfulness to"
     },
     {
-      "rank": 23,
+      "rank": 22,
       "turn_id": "13b6b7ab_1_t4",
       "session_id": "13b6b7ab_1",
       "is_gold_session": false,
@@ -213,12 +204,20 @@
       "content_preview": "[user] I'm thinking of spending around $50 for the gift. Do you think I could find a nice candle or essential oil set in that price range that would pair well w"
     },
     {
+      "rank": 23,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3164,
+      "content_preview": "event: used the fitness center during stay at Hilton Tokyo Shinjuku [date=2023-01]"
+    },
+    {
       "rank": 24,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.3178,
-      "content_preview": "event: stayed at Hyatt Regency Chicago for business conference [date=2023-03-11]"
+      "score": 0.3157,
+      "content_preview": "event: looked up Champion 2000 watt model [date=2023-05-25]"
     },
     {
       "rank": 25,
@@ -233,40 +232,40 @@
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.3104,
-      "content_preview": "event: planned making matching pillowcase [date=2023-05-25]"
+      "score": 0.3035,
+      "content_preview": "event: got back from a week-long trip to Bali with closest friends [date=2023-05-27]"
     },
     {
       "rank": 27,
-      "turn_id": "",
-      "session_id": "",
+      "turn_id": "13b6b7ab_1_t0",
+      "session_id": "13b6b7ab_1",
       "is_gold_session": false,
-      "score": 0.3429,
-      "content_preview": "Invest in quality gear for your passions and celebrate loved ones' milestones."
+      "score": 0.3062,
+      "content_preview": "[user] I'm trying to find a gift for my friend's new apartment. Can you suggest some ideas for a nice housewarming gift? By the way, I recently got a great cust"
     },
     {
       "rank": 28,
-      "turn_id": "",
-      "session_id": "",
+      "turn_id": "4f2d6be4_1_t10",
+      "session_id": "4f2d6be4_1",
       "is_gold_session": false,
-      "score": 0.3035,
-      "content_preview": "event: got back from a week-long trip to Bali with closest friends [date=2023-05-27]"
+      "score": 0.3643,
+      "content_preview": "[user] I think I'll redeem my cashback rewards now to get the household essentials I need. I've been earning 1% cashback on all my purchases with my Target RedC"
     },
     {
       "rank": 29,
       "turn_id": "",
       "session_id": "",
       "is_gold_session": false,
-      "score": 0.3029,
-      "content_preview": "event: had minor issue with bike gears during last bike trip [date=2023-05-30]"
+      "score": 0.3312,
+      "content_preview": "Invest in quality gear for your passions and celebrate loved ones' achievements."
     },
     {
       "rank": 30,
-      "turn_id": "",
-      "session_id": "",
+      "turn_id": "3891baea_4_t8",
+      "session_id": "3891baea_4",
       "is_gold_session": false,
-      "score": 0.3016,
-      "content_preview": "event: earned over 10,000 Walgreens Balance Rewards points in the past three months [date=2023-05-21]"
+      "score": 0.359,
+      "content_preview": "[user] I'll definitely keep an eye out for those keywords and descriptions when I'm browsing at Trendy Wear. Since I've been back to the store twice since my fi"
     }
   ],
   "helper_signals": {
@@ -277,6 +276,113 @@
     "temporal_endpoint_support_guard": "",
     "run_temporal_precision": "",
     "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "paid_anchor_not_found_in_user_turns",
+      "anchor": "jimmy choo heels",
+      "paid_amounts": [],
+      "retail_amounts": [
+        500.0
+      ],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "store_anchor_probe": {
+    "fact_entries_total": 495,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "150",
+        "snippet": "runk rack, which costs around $150. By the way, I just got a new bike helmet recentl"
+      },
+      {
+        "amount": "20",
+        "snippet": " prices (average price point: $20-$100).\n2. **Cuyana**: Cuyana focuses on minimalis"
+      },
+      {
+        "amount": "100",
+        "snippet": "ces (average price point: $20-$100).\n2. **Cuyana**: Cuyana focuses on minimalist, ti"
+      },
+      {
+        "amount": "500",
+        "snippet": " know originally retailed for $500."
+      },
+      {
+        "amount": "20",
+        "snippet": "ing enough points to redeem a $20 gift card! That's awesome that you've been a repe"
+      },
+      {
+        "amount": "20",
+        "snippet": " be surprised at how far your $20 can stretch! You could even consider pair"
+      },
+      {
+        "amount": "20",
+        "snippet": "ted enough points to redeem a $20 gift card, I'm hoping to find a top that's not on"
+      },
+      {
+        "amount": "20",
+        "snippet": " place to shop, and with your $20 gift card, you can score a fantastic top to pair "
+      },
+      {
+        "amount": "20",
+        "snippet": "Trendy Wear, since I have the $20 gift card to use. Do you think they would have a "
+      },
+      {
+        "amount": "20",
+        "snippet": "ratulations on redeeming your $20 gift card from Trendy Wear! That's awesome that y"
+      },
+      {
+        "amount": "20",
+        "snippet": "By the way, I just redeemed a $20 gift card from Trendy Wear, which I earned from m"
+      },
+      {
+        "amount": "20",
+        "snippet": "t to pay anywhere from around $20 to $100 or more for a small hobbyist starter moto"
+      },
+      {
+        "amount": "100",
+        "snippet": "y anywhere from around $20 to $100 or more for a small hobbyist starter motor.\n\nLess"
+      },
+      {
+        "amount": "250",
+        "snippet": "pated in the 5K walk, raising $250 for local food banks\n\n**April 2nd**\n\n* Charity Ga"
+      },
+      {
+        "amount": "5,000",
+        "snippet": "rt of a team that raised over $5,000 for cancer research\n\n**May 10th**\n\n* Fundraiser D"
+      }
+    ],
+    "age_strict_in_store": [],
+    "age_loose_in_store": []
   },
   "structured_skill_section": null,
   "jab_what_if": {

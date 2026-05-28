@@ -138,8 +138,11 @@ def _safe(fn, *args, **kwargs):
 
 def _probe_helpers(mind, question: str, mem_results: list[dict],
                    q_date: str, domain: str) -> dict:
-    """Probe each registered helper / skill section in isolation."""
+    """Probe each registered helper / skill section in isolation.
+    Returns both raw signal strings AND structured diagnose_*
+    records (Phase 1.5 — refusal-reason instrumentation)."""
     signals: dict[str, str] = {}
+    proofs: dict[str, dict] = {}
 
     # role_mismatch_guard
     from radiomind.core.role_mismatch_guard import role_mismatch_guard
@@ -150,6 +153,7 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
     # cashback_arithmetic_hint + savings_arithmetic_hint
     from radiomind.core.arithmetic_hint import (
         cashback_arithmetic_hint, savings_arithmetic_hint,
+        diagnose_savings, diagnose_cashback,
     )
     signals["cashback_arithmetic_hint"] = _safe(
         cashback_arithmetic_hint, question, mem_results,
@@ -157,11 +161,18 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
     signals["savings_arithmetic_hint"] = _safe(
         savings_arithmetic_hint, question, mem_results,
     )
+    proofs["savings"] = _safe(diagnose_savings, question, mem_results)
+    proofs["cashback"] = _safe(diagnose_cashback, question, mem_results)
 
     # person_age_average_hint
-    from radiomind.core.typed_event_hint import person_age_average_hint
+    from radiomind.core.typed_event_hint import (
+        person_age_average_hint, diagnose_person_age,
+    )
     signals["person_age_average_hint"] = _safe(
         person_age_average_hint, question, mem_results,
+    )
+    proofs["person_age"] = _safe(
+        diagnose_person_age, question, mem_results,
     )
 
     # temporal_endpoint_support_guard
@@ -185,7 +196,78 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
         query=question, retrieved_memories=mem_results, domain=domain,
     )
 
-    return signals
+    # age_interval diagnose runs AFTER run_temporal_precision so it
+    # can parse the STRUCTURED SKILL section that the runner injects.
+    from radiomind.core.age_interval_commit import diagnose_age_interval
+    proofs["age_interval"] = _safe(
+        diagnose_age_interval,
+        question, mem_results,
+        temporal_section=signals.get("run_temporal_precision", "") or "",
+    )
+
+    return {"signals": signals, "proofs": proofs}
+
+
+def _probe_store_anchors(mind, domain: str, question: str) -> dict:
+    """Scan the full domain FACT store and contrast against retrieve
+    top-K. Surfaces anchors that exist in the store but didn't make
+    it into retrieved context — the helper-vs-retrieve-recall
+    distinction the user/Codex flagged.
+
+    Probes these anchor families (independent of helper code):
+      - dollar amounts: `$N` in FACT entries
+      - age phrases (strict): `at the age of N` / `when I was N`
+      - age phrases (loose):  `at age N` / `aged N` / etc.
+
+    Returns counts + sample snippets.
+    """
+    out: dict = {
+        "fact_entries_total": 0,
+        "dollar_amounts_in_store": [],
+        "age_strict_in_store": [],
+        "age_loose_in_store": [],
+    }
+    try:
+        from radiomind.core.types import MemoryLevel
+        facts = mind._store.list_by_domain(
+            domain, level=MemoryLevel.FACT, limit=500,
+        )
+    except Exception as e:
+        out["error"] = str(e)
+        return out
+    out["fact_entries_total"] = len(facts)
+    DOL_RE = re.compile(r"\$\s*(\d[\d,]*(?:\.\d+)?)")
+    STRICT_AGE = re.compile(
+        r"(?:at\s+the\s+age\s+of|when\s+I\s+was|aged)\s+(\d{1,3})",
+        re.IGNORECASE,
+    )
+    LOOSE_AGE = re.compile(
+        r"\b(?:at\s+(?:the\s+)?age(?:\s+of)?|aged|when\s+i\s+was|"
+        r"i\s+(?:was|am)|when\s+i\s+turned|turned)\s+(\d{1,3})\b",
+        re.IGNORECASE,
+    )
+    for f in facts[:500]:
+        text = (f.content or "")[:600]
+        for m in DOL_RE.finditer(text):
+            out["dollar_amounts_in_store"].append({
+                "amount": m.group(1),
+                "snippet": text[max(0, m.start()-30):m.end()+50],
+            })
+        for m in STRICT_AGE.finditer(text):
+            out["age_strict_in_store"].append({
+                "age": int(m.group(1)),
+                "snippet": text[max(0, m.start()-30):m.end()+50],
+            })
+        for m in LOOSE_AGE.finditer(text):
+            out["age_loose_in_store"].append({
+                "age": int(m.group(1)),
+                "snippet": text[max(0, m.start()-30):m.end()+50],
+            })
+    # Cap sample sizes for JSON readability
+    out["dollar_amounts_in_store"] = out["dollar_amounts_in_store"][:15]
+    out["age_strict_in_store"] = out["age_strict_in_store"][:10]
+    out["age_loose_in_store"] = out["age_loose_in_store"][:10]
+    return out
 
 
 def _parse_structured_skill(section: str) -> dict | None:
@@ -258,6 +340,47 @@ def _print_summary(rec: dict) -> None:
     if not fired:
         print("  (all helpers silent)")
 
+    # Phase 1.5 — refusal-reason proofs
+    print(f"\nhelper proofs (refusal reasons / proof state):")
+    for k, p in rec.get("helper_proofs", {}).items():
+        if not isinstance(p, dict):
+            print(f"  {k}: {p}")
+            continue
+        fired_flag = p.get("fired", False)
+        reason = p.get("refusal_reason")
+        mark = "✓ FIRED" if fired_flag else f"✗ refused: {reason}"
+        # Show key extracted state
+        extras = []
+        for key in ("anchor", "paid_amounts", "retail_amounts",
+                    "computed_saving", "rate", "merchant", "amount",
+                    "computed_cashback", "kin_ages", "missing_roles",
+                    "ambiguous_roles", "computed_mean",
+                    "skill_name", "skill_conf", "skill_computed",
+                    "found_age_at_event_strict",
+                    "found_age_variant_loose", "found_current_age",
+                    "variant_mismatch_detected"):
+            if key in p and p[key] not in (None, [], {}):
+                extras.append(f"{key}={p[key]!r}")
+        print(f"  {k:<14} {mark}")
+        if extras:
+            print(f"    state: {'; '.join(extras[:5])}")
+
+    # Phase 1.5 — store anchor probe
+    sa = rec.get("store_anchor_probe", {})
+    print(f"\nstore anchor probe (FACT-layer):")
+    print(f"  FACT entries total: {sa.get('fact_entries_total', 0)}")
+    print(f"  $ amounts in store: {len(sa.get('dollar_amounts_in_store', []))} samples")
+    for d in (sa.get('dollar_amounts_in_store') or [])[:5]:
+        print(f"    ${d.get('amount')}: {d.get('snippet','')[:100]}")
+    print(f"  age (strict) in store: "
+          f"{len(sa.get('age_strict_in_store', []))} hits")
+    for d in (sa.get('age_strict_in_store') or [])[:3]:
+        print(f"    age={d.get('age')}: {d.get('snippet','')[:100]}")
+    print(f"  age (loose) in store: "
+          f"{len(sa.get('age_loose_in_store', []))} hits")
+    for d in (sa.get('age_loose_in_store') or [])[:3]:
+        print(f"    age={d.get('age')}: {d.get('snippet','')[:100]}")
+
     ss = rec.get("structured_skill_section")
     if ss:
         print(f"\nSTRUCTURED SKILL: {ss}")
@@ -274,13 +397,17 @@ def _print_summary(rec: dict) -> None:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--qid", required=True)
-    p.add_argument("--sandbox", type=Path,
-                   default=Path("/tmp/rm-diagnose-qid"))
+    p.add_argument("--sandbox", type=Path, default=None,
+                   help="Per-qid sandbox path. Defaults to "
+                        "/tmp/rm-diagnose-qid-<qid> so multiple qids "
+                        "don't clobber each other.")
     p.add_argument("--keep-sandbox", action="store_true",
                    help="Skip wiping the sandbox; reuse if already "
                         "ingested for this qid.")
     p.add_argument("--out", type=Path, default=None)
     args = p.parse_args()
+    if args.sandbox is None:
+        args.sandbox = Path(f"/tmp/rm-diagnose-qid-{args.qid}")
 
     if not DATASET.exists():
         print(f"dataset missing: {DATASET}", flush=True)
@@ -349,12 +476,15 @@ def main() -> int:
     # see the same input shape as production.
     mem_results = _build_mem_results(mind, question, domain,
                                      top_k=RUNNER_TOP_K)
-    helper_signals = _probe_helpers(
+    probe_out = _probe_helpers(
         mind, question, mem_results, q_date, domain,
     )
+    helper_signals = probe_out["signals"]
+    helper_proofs = probe_out["proofs"]
     structured = _parse_structured_skill(
         helper_signals.get("run_temporal_precision", "") or "",
     )
+    store_anchors = _probe_store_anchors(mind, domain, question)
 
     # Aggregate gold-recall stats across the full top-200 window
     gold_in_top200 = sum(1 for r in retrieve_full if r["is_gold_session"])
@@ -378,6 +508,8 @@ def main() -> int:
         },
         "retrieve_top_30_preview": retrieve,
         "helper_signals": helper_signals,
+        "helper_proofs": helper_proofs,
+        "store_anchor_probe": store_anchors,
         "structured_skill_section": structured,
         "jab_what_if": _jab_what_if(gold),
     }

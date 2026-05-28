@@ -1,0 +1,314 @@
+{
+  "qid": "gpt4_d12ceb0e",
+  "question": "What is the average age of me, my parents, and my grandparents?",
+  "gold": "59.6",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_2504635e_2",
+    "answer_2504635e_1",
+    "answer_2504635e_3"
+  ],
+  "question_date": "2023/05/30 (Tue) 22:44",
+  "ingest_stats": {
+    "turns_ingested": 477,
+    "sessions": 45,
+    "turns_total": 477
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 6,
+    "gold_hits_in_top_30": 6,
+    "gold_ranks_first_10": [
+      1,
+      5,
+      12,
+      13,
+      14,
+      17
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "answer_2504635e_3_t0",
+      "session_id": "answer_2504635e_3",
+      "is_gold_session": true,
+      "score": 0.4953,
+      "content_preview": "[user] I'm considering going back to school to get a master's degree, but I'm not sure what field I want to pursue. My grandma is 75 and my grandpa is 78, and s"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4072,
+      "content_preview": "event: spent quality time watching TV show with grandma before she passed [date=2023-03]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3964,
+      "content_preview": "event: grandma passed away [date=2023-03]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3912,
+      "content_preview": "event: got the call about grandma's passing [date=2023-05-20]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "answer_2504635e_2_t1",
+      "session_id": "answer_2504635e_2",
+      "is_gold_session": true,
+      "score": 0.4019,
+      "content_preview": "[assistant] That's great to hear that you're taking steps to get healthier and setting a good example for your parents! However, I have to say that I'm a large "
+    },
+    {
+      "rank": 6,
+      "turn_id": "73f4798f_t2",
+      "session_id": "73f4798f",
+      "is_gold_session": false,
+      "score": 0.3698,
+      "content_preview": "[user] They live in Springfield, Illinois. Grandma loved classic American comfort food, especially meatloaf and mashed potatoes. She was a simple person with si"
+    },
+    {
+      "rank": 7,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3354,
+      "content_preview": "event: saw grandma laugh during final days while watching TV show [date=2023-03]"
+    },
+    {
+      "rank": 8,
+      "turn_id": "73f4798f_t0",
+      "session_id": "73f4798f",
+      "is_gold_session": false,
+      "score": 0.3596,
+      "content_preview": "[user] I'm planning a trip to visit my mom and dad soon. Can you help me find some good restaurants near their place that serve my grandma's favorite food, whic"
+    },
+    {
+      "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3119,
+      "content_preview": "event: turned 32 years old [date=2023-02-12]"
+    },
+    {
+      "rank": 10,
+      "turn_id": "2fe5510e_3_t2",
+      "session_id": "2fe5510e_3",
+      "is_gold_session": false,
+      "score": 0.3141,
+      "content_preview": "[user] What's the average lifespan of a portable power bank? Should I expect it to last a year or two with regular use?"
+    },
+    {
+      "rank": 11,
+      "turn_id": "73f4798f_t5",
+      "session_id": "73f4798f",
+      "is_gold_session": false,
+      "score": 0.306,
+      "content_preview": "[assistant] I think I can help you out!  There was a popular sitcom from the 80s with a main character named Alex, and I'm pretty sure I know the one you're thi"
+    },
+    {
+      "rank": 12,
+      "turn_id": "answer_2504635e_3_t1",
+      "session_id": "answer_2504635e_3",
+      "is_gold_session": true,
+      "score": 0.304,
+      "content_preview": "[assistant] I'm glad you're thinking about your future and considering furthering your education! It's great that your grandparents' experience has inspired you"
+    },
+    {
+      "rank": 13,
+      "turn_id": "answer_2504635e_2_t0",
+      "session_id": "answer_2504635e_2",
+      "is_gold_session": true,
+      "score": 0.2813,
+      "content_preview": "[user] I'm trying to get healthier and wondering if you can recommend some exercises that are suitable for people my age. By the way, my parents are getting old"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_2504635e_2_t2",
+      "session_id": "answer_2504635e_2",
+      "is_gold_session": true,
+      "score": 0.2813,
+      "content_preview": "[user] Can you give me some suggestions on how to get started with a workout routine, like how many times a week I should exercise and for how long each session"
+    },
+    {
+      "rank": 15,
+      "turn_id": "2fe5510e_3_t1",
+      "session_id": "2fe5510e_3",
+      "is_gold_session": false,
+      "score": 0.2199,
+      "content_preview": "[assistant] Music festivals can be a real battery killer, can't they? Don't worry, I'm happy to help you find a reliable portable power bank to keep your phone "
+    },
+    {
+      "rank": 16,
+      "turn_id": "2fe5510e_3_t3",
+      "session_id": "2fe5510e_3",
+      "is_gold_session": false,
+      "score": 0.2199,
+      "content_preview": "[assistant] The average lifespan of a portable power bank can vary depending on several factors, including the quality of the battery, usage patterns, and stora"
+    },
+    {
+      "rank": 17,
+      "turn_id": "answer_2504635e_3_t2",
+      "session_id": "answer_2504635e_3",
+      "is_gold_session": true,
+      "score": 0.2128,
+      "content_preview": "[user] I'm interested in the Data Science program, but I don't have a strong background in math or statistics. Can you recommend some online resources to help m"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "kin_role_missing",
+      "kin_ages": {
+        "grandpa": 78,
+        "dad": 58,
+        "grandma": 75,
+        "mom": 55
+      },
+      "missing_roles": [
+        "self"
+      ],
+      "ambiguous_roles": [],
+      "computed_mean": null,
+      "kin_ages_raw": {
+        "grandma": [
+          75
+        ],
+        "grandpa": [
+          78
+        ],
+        "mom": [
+          55
+        ],
+        "dad": [
+          58
+        ]
+      }
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": 32,
+      "found_current_age": null,
+      "variant_mismatch_detected": true
+    }
+  },
+  "store_anchor_probe": {
+    "fact_entries_total": 477,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "5",
+        "snippet": "ight find:\n\n* Basic sweaters: $5-$10 (originally $15-$25)\n* Mid-range sweaters: $1"
+      },
+      {
+        "amount": "10",
+        "snippet": "t find:\n\n* Basic sweaters: $5-$10 (originally $15-$25)\n* Mid-range sweaters: $10-$2"
+      },
+      {
+        "amount": "15",
+        "snippet": " sweaters: $5-$10 (originally $15-$25)\n* Mid-range sweaters: $10-$20 (originally $2"
+      },
+      {
+        "amount": "25",
+        "snippet": "aters: $5-$10 (originally $15-$25)\n* Mid-range sweaters: $10-$20 (originally $25-$4"
+      },
+      {
+        "amount": "10",
+        "snippet": "15-$25)\n* Mid-range sweaters: $10-$20 (originally $25-$40)\n* Premium sweaters: $20-"
+      },
+      {
+        "amount": "20",
+        "snippet": "25)\n* Mid-range sweaters: $10-$20 (originally $25-$40)\n* Premium sweaters: $20-$30 "
+      },
+      {
+        "amount": "25",
+        "snippet": "sweaters: $10-$20 (originally $25-$40)\n* Premium sweaters: $20-$30 (originally $40-"
+      },
+      {
+        "amount": "40",
+        "snippet": "ters: $10-$20 (originally $25-$40)\n* Premium sweaters: $20-$30 (originally $40-$60)"
+      },
+      {
+        "amount": "20",
+        "snippet": " $25-$40)\n* Premium sweaters: $20-$30 (originally $40-$60)\n\nKeep in mind that price"
+      },
+      {
+        "amount": "30",
+        "snippet": "-$40)\n* Premium sweaters: $20-$30 (originally $40-$60)\n\nKeep in mind that prices ma"
+      },
+      {
+        "amount": "40",
+        "snippet": "sweaters: $20-$30 (originally $40-$60)\n\nKeep in mind that prices may vary depending"
+      },
+      {
+        "amount": "60",
+        "snippet": "ters: $20-$30 (originally $40-$60)\n\nKeep in mind that prices may vary depending on "
+      },
+      {
+        "amount": "1.50",
+        "snippet": "ced bell peppers and onions. ($1.50 per serving)\n2. **Avo"
+      },
+      {
+        "amount": "1050",
+        "snippet": "ted:\n\n* Audiovisual Portions: $1050\n\t+ Includes: 30 minute video with custom audio an"
+      },
+      {
+        "amount": "1050",
+        "snippet": "[user] Audiovisual Portions: $1050\nIncludes: 30 minute video with custom audio and v"
+      }
+    ],
+    "age_strict_in_store": [],
+    "age_loose_in_store": [
+      {
+        "age": 32,
+        "snippet": "ne my age? By the way, I just turned 32 on February 12th, so I'm feeling a bit more motiv"
+      }
+    ]
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "59.6",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  }
+}
