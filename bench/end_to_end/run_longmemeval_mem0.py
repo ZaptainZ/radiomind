@@ -586,6 +586,27 @@ def run(
         except Exception:
             pass
 
+        # V8.4-A (2026-05-28): SavingsHint. Deterministic 2-anchor
+        # arithmetic helper for "how much did I save on [item]?"
+        # queries where retrieved user-turn memories carry both a
+        # paid price AND a retail/original/MSRP price for the SAME
+        # item phrase (≥2 token brand+noun anchor). Computes
+        # retail − paid. Target: LME-S bb7c3b45 (Jimmy Choo $500
+        # retail − $200 paid = $300). Hint-only, never forces
+        # commit. Pre-implementation audit (SavingsHint-1a):
+        # bench/end_to_end/savings_hint_1a_audit.py. Trigger
+        # surface = 2 in LME-S 500.
+        savings_hint_section = ""
+        try:
+            from radiomind.core.arithmetic_hint import (
+                savings_arithmetic_hint,
+            )
+            savings_hint_section = savings_arithmetic_hint(
+                question, mem_results,
+            )
+        except Exception:
+            pass
+
         # V8.2.3a: cashback arithmetic hint. Deterministic helper for
         # "how much cashback/rebate at X" queries where memories contain
         # both a rate and an amount. Computes rate × amount and surfaces
@@ -667,6 +688,10 @@ def run(
         # (innermost wrapper). Both are deterministic answer-side helpers.
         if cashback_hint_section:
             ans_prompt = cashback_hint_section + ans_prompt
+        # V8.4-A SavingsHint at the same innermost wrapper layer.
+        # Both hints are deterministic answer-side helpers.
+        if savings_hint_section:
+            ans_prompt = savings_hint_section + ans_prompt
         # V8.3.1: typed-event hint (person_age average) at the same
         # innermost-wrapper level as the other deterministic helpers.
         if person_age_hint_section:
