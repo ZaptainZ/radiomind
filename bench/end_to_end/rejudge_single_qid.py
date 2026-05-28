@@ -26,6 +26,9 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--artifact", type=Path, required=True)
     p.add_argument("--qid", type=str, required=True)
+    p.add_argument("--checkpoint", type=Path, default=None,
+                   help="Optional checkpoint .jsonl to keep in sync "
+                        "with the artifact (Codex 2026-05-28 P2).")
     p.add_argument("--judge-model", default="gpt-4o")
     p.add_argument("--judge-profile", default="openrouter")
     args = p.parse_args()
@@ -97,36 +100,78 @@ def main() -> int:
     target["judge_failed"] = False
     target["rejudged_2026_05_28"] = True
 
-    # Recompute aggregate
+    # Recompute aggregate fields. Match the canonical schema written
+    # by run_longmemeval_mem0.py end-of-run (line ~890-914):
+    #   raw_accuracy, overall_accuracy, judge_errors, judge_n,
+    #   model_correct, judged_n, judged_accuracy, judge_error_rate,
+    #   by_type: {qtype: {n, accuracy}}
     total = len(pq)
     correct = sum(1 for r in pq if r.get("correct"))
     judge_failed = sum(1 for r in pq if r.get("judge_failed"))
     judge_n = total - judge_failed
-    model_correct = correct
-    d["overall_accuracy"] = round(correct / total, 4)
+    model_correct = correct  # all non-judge-failed PASSes
+    raw_acc = round(correct / total, 4) if total else 0.0
+    judged_acc = round(model_correct / judge_n, 4) if judge_n else None
+
+    # Codex P1 (2026-05-28): keep raw_accuracy in sync.
+    d["raw_accuracy"] = raw_acc
+    d["overall_accuracy"] = raw_acc
     d["judge_errors"] = judge_failed
     d["judge_n"] = judge_n
-    d["model_correct"] = model_correct
     d["judged_n"] = judge_n
-    d["judged_accuracy"] = (
-        round(model_correct / judge_n, 4) if judge_n else None
+    d["model_correct"] = model_correct
+    d["judged_accuracy"] = judged_acc
+    d["judge_error_rate"] = (
+        round(judge_failed / total, 4) if total else 0.0
     )
-    # by_question_type stays the same logically (this rec was
-    # already in there via count + correct delta, but accuracy
-    # may shift); just recompute fresh.
+
+    # Codex P1 (2026-05-28): canonical schema uses `by_type`
+    # (NOT `by_question_type`); each entry has `n` and float
+    # `accuracy` (not `correct` count). Recompute and unify.
     from collections import Counter
     per_type_n = Counter(r.get("qtype", "?") for r in pq)
     per_type_correct = Counter(
         r.get("qtype", "?") for r in pq if r.get("correct")
     )
-    d["by_question_type"] = {
-        k: {"n": per_type_n[k], "correct": per_type_correct[k]}
-        for k in per_type_n
+    d["by_type"] = {
+        k: {
+            "n": per_type_n[k],
+            "accuracy": round(per_type_correct[k] / per_type_n[k], 4),
+        }
+        for k in sorted(per_type_n)
     }
+    # Drop any legacy `by_question_type` written by earlier
+    # versions of this utility to keep the artifact schema clean.
+    d.pop("by_question_type", None)
 
     args.artifact.write_text(
         json.dumps(d, indent=2, ensure_ascii=False),
     )
+
+    # Codex P2 (2026-05-28): also patch the matching checkpoint
+    # line so canonical state in the checkpoint mirrors the
+    # artifact post-rejudge. Otherwise checkpoint replay would
+    # rebuild pre-rejudge stats.
+    if args.checkpoint is not None and args.checkpoint.exists():
+        lines = args.checkpoint.read_text().splitlines()
+        patched_lines: list[str] = []
+        n_patched = 0
+        for ln in lines:
+            try:
+                rec = json.loads(ln)
+            except Exception:
+                patched_lines.append(ln)
+                continue
+            if rec.get("question_id") == args.qid:
+                rec["correct"] = bool(new_correct)
+                rec["verdict_tail"] = new_verdict[:1000]
+                rec["judge_failed"] = False
+                rec["rejudged_2026_05_28"] = True
+                n_patched += 1
+            patched_lines.append(json.dumps(rec, ensure_ascii=False))
+        args.checkpoint.write_text("\n".join(patched_lines) + "\n")
+        print(f"  checkpoint: patched {n_patched} line(s) for "
+              f"{args.qid}", flush=True)
     print(f"\n=== Updated artifact ===")
     print(f"  raw accuracy: {correct}/{total} = {correct/total:.4f}")
     print(f"  judge_failed: {judge_failed}")

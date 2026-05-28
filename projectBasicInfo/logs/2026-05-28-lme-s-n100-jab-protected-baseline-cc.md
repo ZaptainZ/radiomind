@@ -24,9 +24,17 @@ or might not match gold. Resolution: rejudge the single record
 through gpt-4o on the saved (gold, answer) pair.
 
 Rejudge result: **`75f70248` → PASS**. Updated raw accuracy
-**0.93**. (The answer mentions cat dander but not the deep-
-clean dust trigger; gpt-4o judge accepted as semantically
-covering the gold's primary claim.)
+**0.93**.
+
+**Caveat on the rejudge semantics** (Codex 2026-05-28
+confirmed): the answer covers gold's primary
+cat/dander cause, but does NOT cover the gold's secondary
+"recent deep clean stirred up dust" sub-cause. gpt-4o judge
+accepted as semantically equivalent on the primary claim.
+This is a judge interpretation call, not a verbatim match.
+The PASS is therefore the judge's call, not a tight gold-
+to-answer overlap — recorded here so future reviewers know
+the basis.
 
 ### Final score range vs V8.2.2a
 
@@ -135,30 +143,48 @@ regressed qids.
 | `d6233ab6` | single-session-preference | gold_or_input_limitation (preference advice) |
 | `bb7c3b45` | multi-session | stochastic LLM regression (calibration; new fail class) |
 
-## Bench Hygiene Patches (this commit)
+## Bench Hygiene Patches
 
-Per Codex 2026-05-28 P2 — bug found in runner's checkpoint
-resume path: it rebuilt `correct` / `n` / `per_type` from
-checkpoint records but did NOT rebuild `judge_errors` /
-`judge_n` / `model_correct`. Initial artifact had:
+### Codex 2026-05-28 P2 (resume judge stats)
 
-- top-level: `judge_errors=0, judge_n=56, judged_accuracy=
-  0.9286` (post-resume window only)
-- per_query derived: `judge_failed=1, judged_n=99,
-  judged_accuracy=0.9293`
+Runner's checkpoint resume rebuilt `correct` / `n` /
+`per_type` from checkpoint records but did NOT rebuild
+`judge_errors` / `judge_n` / `model_correct`. After resume
+the top-level fields were the post-resume window only.
 
 Fix in `bench/end_to_end/run_longmemeval_mem0.py` resume
 loop: also accumulate judge stats during checkpoint replay.
-After this fix + rejudging `75f70248`, top-level and
-per_query-derived stats match: `judge_errors=0, judge_n=100,
-judged_accuracy=0.93`.
 
-`bench/end_to_end/rejudge_single_qid.py`: small utility for
-rejudging a single qid in an existing artifact when the
-original judge call hit a transient error. Used to flip
-`75f70248` from unjudged→PASS. Applies JAB-1a veto after
-rejudge (in case the new verdict is abstain-PASS on concrete
-gold).
+### Codex 2026-05-28 second-pass P1 + P1 + P2 (rejudge schema sync)
+
+First-pass rejudge wrote `overall_accuracy` and
+`judged_accuracy` but left `raw_accuracy` stale at 0.92,
+and added a new `by_question_type` field that diverged from
+the canonical `by_type` schema. Checkpoint still held the
+pre-rejudge SSL FAIL.
+
+Fix in `bench/end_to_end/rejudge_single_qid.py`:
+- Update `raw_accuracy` alongside `overall_accuracy`.
+- Recompute `by_type` in the canonical schema
+  `{qtype: {n, accuracy}}` (float, not count).
+- Drop legacy `by_question_type` field if present.
+- Add `--checkpoint` option to patch the matching qid line
+  in the checkpoint so canonical state mirrors the artifact.
+
+One-shot normalize pass run on
+`bench/end_to_end/lme-s-n100-2026-05-26.json` +
+`.checkpoint.jsonl`. Post-normalize:
+
+- `raw_accuracy = overall_accuracy = judged_accuracy = 0.93`
+- `judge_errors = 0`, `judge_n = 100`
+- `by_type.single-session-preference.accuracy = 0.875` (14/16)
+- `by_type.knowledge-update.accuracy = 1.0` (16/16)
+- `by_type.multi-session.accuracy = 0.8333` (15/18)
+- `by_type.temporal-reasoning.accuracy = 0.8824` (15/17)
+- `by_question_type` field removed
+- Checkpoint line for `75f70248` patched
+  (`correct=true, judge_failed=false,
+  rejudged_2026_05_28=true`)
 
 ## Files
 

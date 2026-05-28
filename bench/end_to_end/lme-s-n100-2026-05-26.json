@@ -15,7 +15,7 @@
   "model_correct": 93,
   "judged_n": 100,
   "judge_errors": 0,
-  "raw_accuracy": 0.92,
+  "raw_accuracy": 0.93,
   "judged_accuracy": 0.93,
   "judge_error_rate": 0.0,
   "by_type": {
@@ -33,7 +33,7 @@
     },
     "single-session-preference": {
       "n": 16,
-      "accuracy": 0.8125
+      "accuracy": 0.875
     },
     "single-session-user": {
       "n": 16,
@@ -1048,31 +1048,5 @@
     }
   ],
   "benchmark_mode": "a2a-practice",
-  "judge_n": 100,
-  "by_question_type": {
-    "single-session-assistant": {
-      "n": 17,
-      "correct": 17
-    },
-    "single-session-user": {
-      "n": 16,
-      "correct": 16
-    },
-    "temporal-reasoning": {
-      "n": 17,
-      "correct": 15
-    },
-    "single-session-preference": {
-      "n": 16,
-      "correct": 14
-    },
-    "multi-session": {
-      "n": 18,
-      "correct": 15
-    },
-    "knowledge-update": {
-      "n": 16,
-      "correct": 16
-    }
-  }
+  "judge_n": 100
 }
