@@ -4,15 +4,16 @@
   "gold": "59.6",
   "qtype": "multi-session",
   "answer_session_ids": [
-    "answer_2504635e_2",
+    "answer_2504635e_3",
     "answer_2504635e_1",
-    "answer_2504635e_3"
+    "answer_2504635e_2"
   ],
   "question_date": "2023/05/30 (Tue) 22:44",
   "ingest_stats": {
-    "turns_ingested": 477,
-    "sessions": 45,
-    "turns_total": 477
+    "turns_ingested": -1,
+    "sessions": -1,
+    "turns_total": -1,
+    "note": "reused sandbox"
   },
   "retrieve_window": {
     "top_k_probed": 200,
@@ -195,10 +196,10 @@
       "fired": false,
       "refusal_reason": "kin_role_missing",
       "kin_ages": {
-        "grandpa": 78,
         "dad": 58,
+        "mom": 55,
         "grandma": 75,
-        "mom": 55
+        "grandpa": 78
       },
       "missing_roles": [
         "self"

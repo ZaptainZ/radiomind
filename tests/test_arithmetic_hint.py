@@ -15,9 +15,11 @@ import pytest
 
 from radiomind.core.arithmetic_hint import (
     cashback_arithmetic_hint,
+    diagnose_cashback,
     _query_triggers,
     _extract_merchant_from_query,
     _find_cashback_rate,
+    _find_cashback_rate_scoped,
     _find_merchant_amount,
 )
 
@@ -245,3 +247,140 @@ class TestCodexMerchantAmbiguityGuard:
         hint = cashback_arithmetic_hint(q, mems)
         assert hint  # merchant filter narrows to SaveMart
         assert "$0.75" in hint
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.5a — merchant-scoped rate correctness (Codex 2026-05-28)
+#
+# Root case: diagnose-9aaed6a3.json showed the helper grabbing an
+# unrelated Walmart+ 2% rate and applying it to a SaveMart question
+# (2% × $75 = $1.50), when gold is $0.75 (1% × $75). The rate must
+# be attributable to the target merchant or a generic all-purchases
+# scope before firing.
+# ─────────────────────────────────────────────────────────────────────────────
+class TestPhase15aMerchantScopedRate:
+    SAVEMART_Q = "How much cashback did I earn at SaveMart last Thursday?"
+
+    def test_walmart_rate_not_applied_to_savemart(self):
+        """THE root false-positive: SaveMart $75 spend + only a
+        Walmart+ 2% rate in memories → must NOT output $1.50."""
+        mems = [
+            mem("I spent $75 on groceries at SaveMart last Thursday."),
+            mem("The 2% cashback on online grocery purchases with "
+                "Walmart+ is a great benefit."),
+            mem("Is it worth paying the monthly fee for Walmart+ just "
+                "for the 2% cashback on online grocery purchases?"),
+        ]
+        hint = cashback_arithmetic_hint(self.SAVEMART_Q, mems)
+        assert hint == "", f"must refuse; got: {hint!r}"
+        # And the diagnostic must label it precisely
+        d = diagnose_cashback(self.SAVEMART_Q, mems)
+        assert d["fired"] is False
+        assert d["refusal_reason"] == "rate_merchant_mismatch"
+
+    def test_savemart_scoped_rate_fires_correct(self):
+        """SaveMart $75 + SaveMart-scoped 1% rate → $0.75 (gold)."""
+        mems = [
+            mem("I spent $75 on groceries at SaveMart last Thursday."),
+            mem("Remember, with your SaveMart card 1% cashback, you'll "
+                "earn $0.01 for every dollar you spend."),
+            # Distractor competing rate, different merchant:
+            mem("The 2% cashback with Walmart+ is also available."),
+        ]
+        hint = cashback_arithmetic_hint(self.SAVEMART_Q, mems)
+        assert hint, f"should fire; got: {hint!r}"
+        assert "$0.75" in hint
+        assert "1%" in hint
+        d = diagnose_cashback(self.SAVEMART_Q, mems)
+        assert d["fired"] is True
+        assert abs(d["computed_cashback"] - 0.75) < 1e-9
+
+    def test_generic_all_purchases_rate_with_ownership_fires(self):
+        """SaveMart $75 + '1% cashback on all purchases' (the user's
+        own card, ownership language) → $0.75."""
+        mems = [
+            mem("I spent $75 on groceries at SaveMart last Thursday."),
+            mem("I have a rewards card and I earn 1% cashback on all "
+                "purchases."),
+        ]
+        hint = cashback_arithmetic_hint(self.SAVEMART_Q, mems)
+        assert hint, f"should fire via generic scope; got: {hint!r}"
+        assert "$0.75" in hint
+
+    def test_conflicting_savemart_rates_refuse(self):
+        """Two distinct SaveMart-scoped rates → can't disambiguate."""
+        mems = [
+            mem("I spent $75 on groceries at SaveMart last Thursday."),
+            mem("My SaveMart card gives 1% cashback."),
+            mem("Actually SaveMart now gives 3% cashback on groceries."),
+        ]
+        hint = cashback_arithmetic_hint(self.SAVEMART_Q, mems)
+        assert hint == ""
+        d = diagnose_cashback(self.SAVEMART_Q, mems)
+        assert d["refusal_reason"] == "multiple_conflicting_rates"
+
+    def test_hypothetical_recommendation_rate_refused(self):
+        """Rate only in an assistant hypothetical ('you could get a
+        card with 3% cashback') — no ownership, names another product
+        → must refuse, not fire $2.25."""
+        mems = [
+            mem("I spent $75 on groceries at SaveMart last Thursday."),
+            mem("You could consider the BlueCash card which offers 3% "
+                "cashback on groceries if you sign up."),
+        ]
+        hint = cashback_arithmetic_hint(self.SAVEMART_Q, mems)
+        assert hint == "", f"must refuse hypothetical; got: {hint!r}"
+
+    def test_floating_rate_with_named_merchant_refused(self):
+        """SaveMart question, only rate floats with a competing brand
+        → rate_merchant_mismatch."""
+        mems = [
+            mem("I spent $75 at SaveMart last Thursday."),
+            mem("Costco membership gives 2% cashback on purchases."),
+        ]
+        d = diagnose_cashback(self.SAVEMART_Q, mems)
+        assert d["fired"] is False
+        assert d["refusal_reason"] == "rate_merchant_mismatch"
+
+
+class TestFindCashbackRateScoped:
+    def test_target_scope_single(self):
+        rate, reason = _find_cashback_rate_scoped(
+            ["My SaveMart card gives 1% cashback.",
+             "Walmart+ gives 2% cashback."],
+            "SaveMart",
+        )
+        assert rate == 0.01
+        assert reason is None
+
+    def test_target_scope_conflict(self):
+        rate, reason = _find_cashback_rate_scoped(
+            ["SaveMart 1% cashback.", "SaveMart 3% cashback now."],
+            "SaveMart",
+        )
+        assert rate is None
+        assert reason == "multiple_conflicting_rates"
+
+    def test_competing_merchant_only(self):
+        rate, reason = _find_cashback_rate_scoped(
+            ["Walmart+ membership: 2% cashback."],
+            "SaveMart",
+        )
+        assert rate is None
+        assert reason == "rate_merchant_mismatch"
+
+    def test_no_rate(self):
+        rate, reason = _find_cashback_rate_scoped(
+            ["I spent $75 at SaveMart."],
+            "SaveMart",
+        )
+        assert rate is None
+        assert reason == "no_cashback_rate_in_memories"
+
+    def test_no_target_single_unscoped_rate_ok(self):
+        rate, reason = _find_cashback_rate_scoped(
+            ["I have 2% cashback.", "Spent $50."],
+            None,
+        )
+        assert rate == 0.02
+        assert reason is None

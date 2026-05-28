@@ -4,14 +4,15 @@
   "gold": "$300",
   "qtype": "multi-session",
   "answer_session_ids": [
-    "answer_de64539a_2",
-    "answer_de64539a_1"
+    "answer_de64539a_1",
+    "answer_de64539a_2"
   ],
   "question_date": "2023/05/30 (Tue) 23:31",
   "ingest_stats": {
-    "turns_ingested": 495,
-    "sessions": 47,
-    "turns_total": 495
+    "turns_ingested": -1,
+    "sessions": -1,
+    "turns_total": -1,
+    "note": "reused sandbox"
   },
   "retrieve_window": {
     "top_k_probed": 200,

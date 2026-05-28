@@ -108,7 +108,14 @@ def _parse_amount(s: str) -> float:
 
 
 def _find_cashback_rate(mem_texts: list[str]) -> float | None:
-    """Return the first detected cashback rate as a fraction (e.g. 0.01 for 1%)."""
+    """Return the first detected cashback rate as a fraction (e.g. 0.01 for 1%).
+
+    DEPRECATED (Phase 1.5a 2026-05-28): unscoped — returns the first
+    rate in ANY memory, which produced a false-positive on 9aaed6a3
+    (grabbed Walmart+ 2% and applied it to a SaveMart question).
+    Kept only for backward-compat callers; new code must use
+    `_find_cashback_rate_scoped`.
+    """
     for t in mem_texts:
         m = _RATE_RE.search(t)
         if m:
@@ -117,6 +124,116 @@ def _find_cashback_rate(mem_texts: list[str]) -> float | None:
             except ValueError:
                 continue
     return None
+
+
+# Generic "applies to everything" scope — a rate stated as applying
+# to all purchases is usable even without a merchant mention.
+_GENERIC_SCOPE_RE = re.compile(
+    r"\b(?:all|every|each)\s+(?:purchase|transaction|order|buy|"
+    r"grocery\s+purchase)s?\b|\bon\s+everything\b|\bany\s+purchase\b",
+    re.IGNORECASE,
+)
+
+# Ownership / first-person language that marks a rate as the USER's
+# actual card rate (vs a hypothetical assistant recommendation).
+_OWNERSHIP_RE = re.compile(
+    r"\b(?:your|you'?ll\s+earn|you\s+earn|you\s+get|i\s+have|"
+    r"my\s+|i\s+earn|i\s+get|i'?ve\s+got)\b",
+    re.IGNORECASE,
+)
+
+# Competing-merchant signal: a brand token with "+" (Walmart+) or a
+# capitalized brand followed by membership/card/rewards/program/
+# cashback. Used to distinguish `rate_merchant_mismatch` from
+# `rate_anchor_unscoped` (both refuse; label is for diagnosis).
+_OTHER_BRAND_RE = re.compile(
+    r"\b([A-Z][A-Za-z]{2,})\+"
+    r"|\b([A-Z][A-Za-z]{2,})\s+(?:membership|card|rewards?|program|plus)\b",
+)
+
+
+def _has_competing_merchant(text: str, target_lower: str) -> bool:
+    """True if the text names a brand distinct from the target."""
+    for m in _OTHER_BRAND_RE.finditer(text):
+        brand = (m.group(1) or m.group(2) or "").lower().rstrip("+")
+        if brand and brand != target_lower:
+            return True
+    return False
+
+
+def _find_cashback_rate_scoped(
+    mem_texts: list[str], merchant: str | None,
+) -> tuple[float | None, str | None]:
+    """Return (rate_fraction, refusal_reason).
+
+    A rate is only returned when it can be attributed to the SAME
+    context the question asks about:
+      1. merchant-scoped: rate appears in a memory that also mentions
+         the target merchant (strongest).
+      2. generic: rate stated as applying to "all/every purchase"
+         AND with first-person ownership language (the user's own
+         card), not a hypothetical recommendation.
+
+    Refusal reasons (Phase 1.5a):
+      - `no_cashback_rate_in_memories`
+      - `multiple_conflicting_rates`        (≥2 distinct rates in scope)
+      - `rate_merchant_mismatch`            (only rates belong to a
+                                             different named merchant)
+      - `rate_anchor_unscoped`              (rate floats with no merchant
+                                             / generic context)
+      - `rate_not_supporting_target_merchant` (other rates exist, can't
+                                             cleanly classify)
+    """
+    target = (merchant or "").lower().strip()
+    target_rates: set[float] = set()
+    generic_rates: set[float] = set()
+    other_rates: set[float] = set()
+    other_named_merchant = False
+    other_no_context = False
+
+    for t in mem_texts:
+        low = t.lower()
+        for m in _RATE_RE.finditer(t):
+            try:
+                rate = round(float(m.group(1)) / 100.0, 4)
+            except ValueError:
+                continue
+            if target and target in low:
+                target_rates.add(rate)
+            elif _GENERIC_SCOPE_RE.search(t) and _OWNERSHIP_RE.search(t):
+                generic_rates.add(rate)
+            else:
+                other_rates.add(rate)
+                if _has_competing_merchant(t, target):
+                    other_named_merchant = True
+                else:
+                    other_no_context = True
+
+    if target_rates:
+        if len(target_rates) == 1:
+            return next(iter(target_rates)), None
+        return None, "multiple_conflicting_rates"
+    if generic_rates:
+        if len(generic_rates) == 1:
+            return next(iter(generic_rates)), None
+        return None, "multiple_conflicting_rates"
+    if other_rates:
+        if other_named_merchant:
+            # A competing named merchant owns the rate(s) — never
+            # safe to attribute to the target. (9aaed6a3 root case:
+            # Walmart+ 2% must not apply to a SaveMart question.)
+            return None, "rate_merchant_mismatch"
+        if not target and len(other_rates) == 1:
+            # No merchant in the question + a single unambiguous
+            # rate with no competing brand → safe to compute.
+            return next(iter(other_rates)), None
+        if target:
+            # Question names a merchant but the rate floats free of
+            # it — don't attribute.
+            return None, "rate_not_supporting_target_merchant"
+        # No target, multiple unscoped rates → can't disambiguate.
+        return None, "rate_anchor_unscoped"
+    return None, "no_cashback_rate_in_memories"
 
 
 def _find_merchant_amount(
@@ -195,7 +312,9 @@ def cashback_arithmetic_hint(
 
     Fires only when ALL three hold:
       1. Query is a cashback/rebate earning question
-      2. Retrieved memories contain a cashback rate (X%)
+      2. Retrieved memories contain a cashback rate (X%) ATTRIBUTABLE
+         to the target merchant or a generic all-purchases scope
+         (Phase 1.5a — no longer the first rate in any memory)
       3. Retrieved memories contain a spend amount (preferably at the
          merchant named in the question)
 
@@ -209,11 +328,13 @@ def cashback_arithmetic_hint(
     if not mems:
         return ""
 
-    rate = _find_cashback_rate(mems)
+    merchant = _extract_merchant_from_query(question)
+    # Phase 1.5a: merchant-scoped rate (refuse when the only rate
+    # belongs to a different merchant / can't be attributed).
+    rate, _rate_refusal = _find_cashback_rate_scoped(mems, merchant)
     if rate is None:
         return ""
 
-    merchant = _extract_merchant_from_query(question)
     amount = _find_merchant_amount(mems, merchant)
     if amount is None:
         return ""
@@ -567,13 +688,16 @@ def diagnose_cashback(
     if not mems:
         out["refusal_reason"] = "no_user_memories"
         return out
-    rate = _find_cashback_rate(mems)
-    if rate is None:
-        out["refusal_reason"] = "no_cashback_rate_in_memories"
-        return out
-    out["rate"] = rate
     merchant = _extract_merchant_from_query(question)
     out["merchant"] = merchant
+    # Phase 1.5a: merchant-scoped rate finder returns a specific
+    # refusal reason when the rate can't be attributed to the
+    # target merchant / a generic scope.
+    rate, rate_refusal = _find_cashback_rate_scoped(mems, merchant)
+    if rate is None:
+        out["refusal_reason"] = rate_refusal
+        return out
+    out["rate"] = rate
     amount = _find_merchant_amount(mems, merchant)
     if amount is None:
         out["refusal_reason"] = "no_merchant_amount"

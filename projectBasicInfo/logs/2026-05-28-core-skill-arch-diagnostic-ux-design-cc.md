@@ -248,6 +248,73 @@ review will decide whether to open a retrieve-recall
 workstream, a store-scan-fallback workstream, or stay
 paused.
 
+### Phase 1.5a — cashback proof correctness fix (Codex 2026-05-28)
+
+Codex spot-checked the "positive anchor" claim (9aaed6a3
+cashback fired ✓) and found it was **NOT clean**:
+
+- `diagnose-9aaed6a3.json` proof: `rate=0.02, amount=75,
+  computed_cashback=1.5` — but gold is `$0.75`.
+- The helper grabbed the unrelated **Walmart+ 2%** rate
+  (retrieve ranks 7-26) and applied it to the **SaveMart**
+  $75 spend. The correct **SaveMart 1%** rate was at ranks
+  56-57.
+- Root cause: `_find_cashback_rate(mem_texts)` returned the
+  FIRST rate in any memory, ignoring merchant scope.
+- (My earlier Monitor summary also misreported this as
+  `rate=0.01 → $0.75`, inconsistent with the artifact —
+  another reason the diagnostic JSON, not a prose summary,
+  is the source of truth.)
+
+**Fix**: `_find_cashback_rate_scoped(mem_texts, merchant)`
+returns `(rate, refusal_reason)`. A rate fires only when
+attributable to:
+1. the target merchant (rate in a memory mentioning it), or
+2. a generic all-purchases scope WITH first-person
+   ownership language (the user's own card, not a
+   hypothetical recommendation).
+
+New refusal reasons:
+- `multiple_conflicting_rates` (≥2 distinct in-scope rates)
+- `rate_merchant_mismatch` (only rates belong to a
+  different named merchant — the Walmart+ case)
+- `rate_anchor_unscoped` (rate floats with no context)
+- `rate_not_supporting_target_merchant` (target named, but
+  rate can't be attributed to it)
+
+A narrow safe path is preserved: a merchant-less question
+with a single unambiguous rate and no competing brand
+still fires.
+
+**Verification** — re-ran all 4 diagnose qids after the fix:
+
+| qid | before | after |
+|---|---|---|
+| 9aaed6a3 | `fired, rate=0.02 → $1.50` ❌ | `fired, rate=0.01 SaveMart → $0.75` ✓ |
+| bb7c3b45 | paid_anchor_not_found | unchanged |
+| c18a7dc8 | current_age_not_in_retrieved | unchanged |
+| gpt4_d12ceb0e | kin_role_missing=['self'] | unchanged |
+
+The 9aaed6a3 fix flips from a wrong $1.50 to the correct
+$0.75 (the SaveMart 1% rate WAS retrieved; it was just
+being shadowed by the first-seen Walmart 2%). The three
+self-anchor-recall findings are unaffected — they remain
+the real Phase 1.5 finding.
+
+Tests: 11 new Phase 1.5a regression cases
+(`tests/test_arithmetic_hint.py`), suite-wide 161/161 pass.
+
+**Implication**: the proof layer itself had a
+false-positive before this fix. This validates the
+user/Codex sequencing call — harden proof CORRECTNESS
+before opening the self-anchor retrieve-recall workstream,
+so that workstream isn't built on a proof layer that
+sometimes lies. The retrieve-recall workstream (boost
+first-person self-statements OR domain-store-scan
+fallback for paid-price / current-age anchors) remains
+the recommended next step, now on a trustworthy proof
+base. Not opened yet — awaiting go-ahead.
+
 ### Pillar 2 — Proof-Carrying Result
 
 Today, helpers emit prose text and the LLM is asked to
