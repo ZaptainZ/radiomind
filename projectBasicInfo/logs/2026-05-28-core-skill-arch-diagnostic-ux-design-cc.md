@@ -128,6 +128,56 @@ For now, the diagnostic tool exposes it after-the-fact.
 No code change to the helper — by design Phase 1 doesn't
 mutate behavior.
 
+### Second diagnostic finding (c18a7dc8)
+
+Running `diagnose_qid --qid c18a7dc8` against a fresh
+sandbox produced a paired insight:
+
+- 5/5 gold-session turns retrieved in top-30 (ranks 12,
+  14, 21, 22, 25). Retrieve recall is fine for this qid.
+- BUT rank 1 of the retrieve is the FACT-extracted event
+  `"completed Bachelor's degree in Business Administration
+  with a concentration ..."`. The **explicit `at the age
+  of 25` phrase from the raw user turn was NOT preserved
+  in the FACT extraction**.
+- `age_interval` skill's resolver requires the
+  `_age_at_event` regex to find `"at the age of N"` /
+  `"when I was N"` / `"aged N"`. With the FACT-layer
+  abstraction stripping the age qualifier, the skill
+  found no backing → did NOT fire.
+- The `run_temporal_precision` fallback path returned a
+  trinity-view answer of `"4 days ago"` — wrong for
+  gold=7.
+
+Earlier AAS-2 probe on the LSA-3 sandbox showed
+`STRUCTURED SKILL (age_interval, conf=0.9)
+Computed answer: 7`. The difference is FACT-extraction
+state between sandboxes — confirming `age_interval`'s
+reliability depends not on the helper itself but on
+**whether the upstream extractor preserves the age
+qualifier in FACT-layer events**.
+
+Same architectural lesson as bb7c3b45 SavingsHint:
+helpers are designed correctly under audit-time
+assumptions, but their *runtime triggering* depends on
+extractor / retrieve state that isn't currently
+observable from helper output.
+
+### Combined implication
+
+Both findings reinforce Pillar 2 (Proof-Carrying Result)
+and Pillar 4 (Diagnostic UX):
+
+- Phase 2's `Proof.refusal_reason` field would carry
+  exactly these signals (`paid_anchor_not_retrieved`,
+  `age_at_event_phrase_lost_in_FACT_extraction`).
+- Phase 1's diagnostic tool already surfaces them
+  post-hoc; this is sufficient to make audits
+  reproducible without rerunning full e2e + judge.
+- Neither finding implies the helpers are wrong. They
+  imply the helpers are **conditional** on upstream
+  state we previously didn't observe.
+
 ### Pillar 2 — Proof-Carrying Result
 
 Today, helpers emit prose text and the LLM is asked to

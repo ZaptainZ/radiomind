@@ -1,0 +1,245 @@
+{
+  "qid": "c18a7dc8",
+  "question": "How many years older am I than when I graduated from college?",
+  "gold": "7",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_2e2085fa_1",
+    "answer_2e2085fa_2"
+  ],
+  "question_date": "2023/05/30 (Tue) 23:37",
+  "ingest_stats": {
+    "turns_ingested": 509,
+    "sessions": 49,
+    "turns_total": 509
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 5,
+    "gold_hits_in_top_30": 5,
+    "gold_ranks_first_10": [
+      12,
+      14,
+      21,
+      22,
+      25
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0328,
+      "content_preview": "event: completed Bachelor's degree in Business Administration with a concentration in Marketing from University of California, Berkeley at age 25 [date=2023-05-"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0315,
+      "content_preview": "event: attended colleague's son's middle school graduation ceremony [date=2023-05-10]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0301,
+      "content_preview": "event: niece's middle school graduation ceremony [date=2023-05-29]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0294,
+      "content_preview": "event: niece's high school graduation ceremony [date=2023-04-22]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "f716720c_3_t6",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0323,
+      "content_preview": "[user] I think I'll go with patio seating, I want to people-watch and enjoy the downtown atmosphere. Do you think I could find a spot that's within a 10-15 minu"
+    },
+    {
+      "rank": 6,
+      "turn_id": "f716720c_3_t0",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0308,
+      "content_preview": "[user] I need help finding a good restaurant for brunch this weekend. You know, I was just thinking about my cousin's graduation ceremony last month and how we "
+    },
+    {
+      "rank": 7,
+      "turn_id": "f716720c_3_t1",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0159,
+      "content_preview": "[assistant] I'd be happy to help you find a great brunch spot near your office! However, I have to say, you've got a lot of graduation ceremonies on your mind! "
+    },
+    {
+      "rank": 8,
+      "turn_id": "9d5a389d_t11",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0154,
+      "content_preview": "[assistant] It's completely understandable to reminisce about the ceremony! It's a special moment to cherish, and I'm sure you're excited to celebrate with your"
+    },
+    {
+      "rank": 9,
+      "turn_id": "9d5a389d_t1",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0149,
+      "content_preview": "[assistant] Congratulations to your colleague's daughter on her graduation!  Calculating the number of guests to invite based on the number of tickets you have "
+    },
+    {
+      "rank": 10,
+      "turn_id": "9d5a389d_t9",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0145,
+      "content_preview": "[assistant] I think there might be some confusion! You mentioned earlier that your niece's graduation ceremony was last month, but you're planning a family gath"
+    },
+    {
+      "rank": 11,
+      "turn_id": "9d5a389d_t0",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0141,
+      "content_preview": "[user] I'm trying to get a headcount for my colleague's daughter's middle school graduation ceremony next week. Can you remind me how to calculate the number of"
+    },
+    {
+      "rank": 12,
+      "turn_id": "answer_2e2085fa_1_t6",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0139,
+      "content_preview": "[user] That's really helpful, thank you! I'm glad to hear that these courses can help me transition into a more specialized role. I've been thinking about my lo"
+    },
+    {
+      "rank": 13,
+      "turn_id": "9d5a389d_t4",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0137,
+      "content_preview": "[user] I was actually thinking of a restaurant near the city's convention center, since that's where my niece's graduation ceremony was held last month."
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_2e2085fa_1_t0",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0135,
+      "content_preview": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been working in digital ma"
+    },
+    {
+      "rank": 15,
+      "turn_id": "9d5a389d_t2",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0133,
+      "content_preview": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaurant. Do you have any"
+    },
+    {
+      "rank": 16,
+      "turn_id": "f716720c_3_t5",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0226,
+      "content_preview": "[assistant] Outdoor seating is a great idea! Enjoying the downtown atmosphere while catching up with your colleagues will make the experience even more pleasant"
+    },
+    {
+      "rank": 17,
+      "turn_id": "f716720c_3_t7",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0226,
+      "content_preview": "[assistant] Patio seating it is! You'll get to enjoy the downtown atmosphere and people-watching, which is always entertaining.  Finding a spot within a 10-15 m"
+    },
+    {
+      "rank": 18,
+      "turn_id": "f716720c_3_t2",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0111,
+      "content_preview": "[user] I'm thinking of somewhere casual, not too pricey, with a relaxed atmosphere. Nothing too fancy, just a spot to catch up with my colleagues. My office is "
+    },
+    {
+      "rank": 19,
+      "turn_id": "9d5a389d_t10",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0108,
+      "content_preview": "[user] Yeah, I guess I was just reminiscing about the ceremony. Anyway, I'll go search for those restaurants near the convention center now."
+    },
+    {
+      "rank": 20,
+      "turn_id": "9d5a389d_t8",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0101,
+      "content_preview": "[user] I'll search for these options near the convention center and see what's available. By the way, speaking of the convention center, I still remember how pr"
+    },
+    {
+      "rank": 21,
+      "turn_id": "answer_2e2085fa_1_t5",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0097,
+      "content_preview": "[assistant] The HubSpot Content Marketing Certification is a great starting point, and it's excellent that you're thinking ahead about your career goals.  Both "
+    },
+    {
+      "rank": 22,
+      "turn_id": "answer_2e2085fa_1_t7",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0097,
+      "content_preview": "[assistant] Pursuing an MBA is a significant decision, and it's great that you're thinking about your long-term career goals.  An MBA can be beneficial for adva"
+    },
+    {
+      "rank": 23,
+      "turn_id": "9d5a389d_t3",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0096,
+      "content_preview": "[assistant] Congratulations to your niece on her high school graduation!  I'd be happy to help you with recommendations, but I'm a large language model, I don't"
+    },
+    {
+      "rank": 24,
+      "turn_id": "9d5a389d_t5",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0096,
+      "content_preview": "[assistant] Unfortunately, I'm a large language model, I don't have access to your location or the specific city you're referring to. I can't provide you with a"
+    },
+    {
+      "rank": 25,
+      "turn_id": "answer_2e2085fa_1_t1",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0095,
+      "content_preview": "[assistant] A Berkeley grad! That's impressive! With your background and experience, you're wise to stay updated on the latest marketing trends. I'd be happy to"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "ATTENTION-ROUTED TRINITY VIEW (three opposing stances reconciled; trust this over hedging unless retrieval contradicts):\n- answer: 4 days ago\n\n",
+    "run_open_domain_specific": ""
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "7",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  }
+}
