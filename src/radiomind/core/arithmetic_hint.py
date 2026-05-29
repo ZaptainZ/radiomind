@@ -761,6 +761,11 @@ def diagnose_cashback(
         return out
     merchant = _extract_merchant_from_query(question)
     out["merchant"] = merchant
+    # Always record amount (for diagnosis) — even on a rate-missing
+    # refusal — so callers can tell whether the amount side is also
+    # missing (SelfAnchor-2b only supplements the rate, not amount).
+    amount = _find_merchant_amount(mems, merchant)
+    out["amount"] = amount
     # Phase 1.5a: merchant-scoped rate finder returns a specific
     # refusal reason when the rate can't be attributed to the
     # target merchant / a generic scope.
@@ -769,11 +774,9 @@ def diagnose_cashback(
         out["refusal_reason"] = rate_refusal
         return out
     out["rate"] = rate
-    amount = _find_merchant_amount(mems, merchant)
     if amount is None:
         out["refusal_reason"] = "no_merchant_amount"
         return out
-    out["amount"] = amount
     out["fired"] = True
     out["computed_cashback"] = rate * amount
     return out

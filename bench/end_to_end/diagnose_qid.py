@@ -220,6 +220,7 @@ def _probe_self_anchor(mind, domain: str, proofs: dict,
     """
     from radiomind.core.self_anchor import (
         scan_current_age_user_turns, scan_paid_price_user_turns,
+        scan_cashback_rate_user_turns,
     )
     out: dict = {}
 
@@ -254,6 +255,22 @@ def _probe_self_anchor(mind, domain: str, proofs: dict,
         if anchor:
             out["paid_price"] = _proof_to_dict(
                 _safe(scan_paid_price_user_turns, mind, domain, anchor))
+
+    # cashback rate — relevant to cashback (SelfAnchor-2b). Probe only
+    # when retrieve-side refused for a rate-missing reason AND a
+    # merchant is known. Also surface whether the amount IS present,
+    # since 2b only supplements the rate (not the amount).
+    cb = proofs.get("cashback") or {}
+    _RATE_MISSING = {
+        "no_cashback_rate_in_memories", "rate_merchant_mismatch",
+        "rate_anchor_unscoped", "rate_not_supporting_target_merchant",
+    }
+    if cb.get("refusal_reason") in _RATE_MISSING and cb.get("merchant"):
+        d = _proof_to_dict(
+            _safe(scan_cashback_rate_user_turns, mind, domain,
+                  cb.get("merchant")))
+        d["amount_in_retrieve"] = cb.get("amount") is not None
+        out["cashback_rate"] = d
     return out
 
 
