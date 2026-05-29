@@ -249,6 +249,8 @@ def maybe_age_interval_commit_closure(
     retrieved_memories: list[Any],
     llm_answer: str,
     temporal_section: str,
+    mind: Any | None = None,
+    domain: str | None = None,
 ) -> str:
     """If TSI-1d gates hold, replace the LLM's pure abstain with a
     commit to the skill's numeric answer — but ONLY after
@@ -317,9 +319,22 @@ def maybe_age_interval_commit_closure(
     past_age, past_evidence = past
 
     current = _find_current_age(retrieved_memories)
-    if current is None:
+    current_scan_scope = None
+    if current is not None:
+        current_age, current_evidence = current
+    elif mind is not None and domain:
+        # SelfAnchor-1b: current age missing from retrieved memories
+        # — recover from the domain store's user-turn layer (first-
+        # person current-age only). Past-age side stays from retrieve.
+        from radiomind.core.self_anchor import scan_current_age_user_turns
+        proof = scan_current_age_user_turns(mind, domain)
+        if proof is None:
+            return llm_answer
+        current_age = int(proof.value)
+        current_evidence = proof.quote
+        current_scan_scope = (proof.source_turn_id, proof.scan_scope)
+    else:
         return llm_answer
-    current_age, current_evidence = current
 
     # Gate 7: independent recompute must match skill value
     if mode == "older":
@@ -330,13 +345,17 @@ def maybe_age_interval_commit_closure(
         return llm_answer
 
     unit = _question_unit(question)
+    cur_src = (
+        f" (SelfAnchor store-scan: turn {current_scan_scope[0]}, "
+        f"scope={current_scan_scope[1]})" if current_scan_scope else ""
+    )
     return (
         f"{skill_value} {unit}. (Verified: current age "
         f"{current_age} {'minus' if mode == 'older' else 'subtracted from'} "
         f"past-event age {past_age} = {skill_value}, "
         f"matching the skill computation. "
         f"Past-age source: {past_evidence!r}. "
-        f"Current-age source: {current_evidence!r}.)"
+        f"Current-age source: {current_evidence!r}{cur_src}.)"
     )
 
 

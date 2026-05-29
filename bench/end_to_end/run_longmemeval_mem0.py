@@ -602,7 +602,7 @@ def run(
                 savings_arithmetic_hint,
             )
             savings_hint_section = savings_arithmetic_hint(
-                question, mem_results,
+                question, mem_results, mind=mind, domain=domain,
             )
         except Exception:
             pass
@@ -630,7 +630,8 @@ def run(
         person_age_hint_section = ""
         try:
             from radiomind.core.typed_event_hint import person_age_average_hint
-            person_age_hint_section = person_age_average_hint(question, mem_results)
+            person_age_hint_section = person_age_average_hint(
+                question, mem_results, mind=mind, domain=domain)
         except Exception:
             pass
 
@@ -804,6 +805,7 @@ def run(
             )
             answer = maybe_age_interval_commit_closure(
                 question, mem_results, answer, temporal_section,
+                mind=mind, domain=domain,
             )
         except Exception:
             pass

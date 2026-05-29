@@ -477,6 +477,7 @@ def _savings_scan_amounts(
 
 def savings_arithmetic_hint(
     question: str, retrieved_memories: list[Any],
+    mind: Any | None = None, domain: str | None = None,
 ) -> str:
     """Return a deterministic arithmetic hint for the savings
     delta on a specific item when ALL of these hold:
@@ -490,8 +491,14 @@ def savings_arithmetic_hint(
          turn memories.
       5. retail >= paid (otherwise math is impossible — refuse).
 
+    SelfAnchor-1b: when the retail anchor is satisfied but the paid
+    anchor is missing from retrieved user turns AND `mind`+`domain`
+    are supplied, a targeted store scan recovers the paid price from
+    the domain's user-turn layer (the paid anchor often ranks out of
+    retrieve top-200). The scan is item-scoped, user-turns only, and
+    its source turn_id + quote are surfaced in the hint.
+
     Returns "" otherwise. Hint-only — never forces commit.
-    Architecture parallel to cashback_arithmetic_hint.
     """
     if not question or not retrieved_memories:
         return ""
@@ -523,20 +530,41 @@ def savings_arithmetic_hint(
         retail_amounts = _savings_scan_amounts(
             blob, anchor, _SAVINGS_RETAIL_TEMPLATES,
         )
-        if len(paid_amounts) != 1 or len(retail_amounts) != 1:
+        if len(retail_amounts) != 1:
+            continue
+        retail = retail_amounts[0]
+
+        # SelfAnchor-1b: retail present, paid missing → store-scan.
+        paid_source = None  # (turn_id, quote, scan_scope)
+        if len(paid_amounts) == 0 and mind is not None and domain:
+            from radiomind.core.self_anchor import (
+                scan_paid_price_user_turns,
+            )
+            proof = scan_paid_price_user_turns(mind, domain, anchor)
+            if proof is not None:
+                paid_amounts = [proof.value]
+                paid_source = (proof.source_turn_id, proof.quote,
+                               proof.scan_scope)
+
+        if len(paid_amounts) != 1:
             continue
         paid = paid_amounts[0]
-        retail = retail_amounts[0]
         if retail < paid:
             continue  # impossible "savings" → refuse
         saving = retail - paid
         # Render dollar amounts cleanly
         def _fmt(v: float) -> str:
             return f"${v:.2f}" if v % 1 else f"${v:.0f}"
+        paid_line = f"  Paid: {_fmt(paid)} (user-stated purchase price"
+        if paid_source:
+            paid_line += (f"; SelfAnchor store-scan from turn "
+                          f"{paid_source[0]}, scope={paid_source[2]}, "
+                          f"quote={paid_source[1]!r}")
+        paid_line += ")\n"
         return (
             "ARITHMETIC HINT (deterministic, from retrieved memories):\n"
             f"  Item: {anchor}\n"
-            f"  Paid: {_fmt(paid)} (user-stated purchase price)\n"
+            f"{paid_line}"
             f"  Retail: {_fmt(retail)} (user-stated original / "
             f"retail / MSRP price)\n"
             f"  Saving: {_fmt(retail)} − {_fmt(paid)} = "

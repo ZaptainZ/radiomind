@@ -165,6 +165,7 @@ def _resolve_role_age(ages: list[int]) -> int | None:
 def person_age_average_hint(
     question: str,
     retrieved_memories: list[Any],
+    mind: Any | None = None, domain: str | None = None,
 ) -> str:
     """Return a typed-event arithmetic hint, or "" if conditions don't fire.
 
@@ -173,6 +174,13 @@ def person_age_average_hint(
       2. All 5 kin roles {self, mom, dad, grandma, grandpa} have an
          extractable, unambiguous age in retrieved memories
       3. All ages are plausible (0 < age < 130)
+
+    SelfAnchor-1b: when the only missing role is `self` AND
+    `mind`+`domain` are supplied, a targeted store scan recovers the
+    user's own current age from the domain's user-turn layer (the
+    self-age statement often ranks out of retrieve top-200). The
+    scan is first-person only and surfaces its source turn_id +
+    quote in the hint.
 
     Format:
       "TYPED EVENT HINT: ages found — self=32, mom=55, dad=58, grandma=75,
@@ -186,11 +194,28 @@ def person_age_average_hint(
 
     raw = _extract_kin_ages(mems)
     resolved: dict[str, int] = {}
+    self_source = None  # (turn_id, quote, scan_scope)
+    missing: list[str] = []
     for role in _REQUIRED_ROLES:
         age = _resolve_role_age(raw.get(role, []))
         if age is None:
-            return ""  # missing or ambiguous — refuse hint
-        resolved[role] = age
+            missing.append(role)
+        else:
+            resolved[role] = age
+
+    # SelfAnchor-1b: recover ONLY a missing `self` age via store scan.
+    # All kin roles must already be resolved from retrieve (we only
+    # supplement the single self anchor, never kin).
+    if missing == ["self"] and mind is not None and domain:
+        from radiomind.core.self_anchor import scan_current_age_user_turns
+        proof = scan_current_age_user_turns(mind, domain)
+        if proof is not None:
+            resolved["self"] = int(proof.value)
+            self_source = (proof.source_turn_id, proof.quote, proof.scan_scope)
+            missing = []
+
+    if missing:
+        return ""  # still missing/ambiguous — refuse hint
 
     # Compute mean
     values = [resolved[r] for r in ("self", "mom", "dad", "grandma", "grandpa")]
@@ -208,9 +233,17 @@ def person_age_average_hint(
         f"{r}={resolved[r]}" for r in ("self", "mom", "dad", "grandma", "grandpa")
     )
     sum_expr = "+".join(str(v) for v in values)
+    self_line = ""
+    if self_source:
+        self_line = (
+            f"  (self age via SelfAnchor store-scan from turn "
+            f"{self_source[0]}, scope={self_source[2]}, "
+            f"quote={self_source[1]!r})\n"
+        )
     return (
         "TYPED EVENT HINT (deterministic, from retrieved memories):\n"
         f"  Ages found: {ages_str}.\n"
+        f"{self_line}"
         f"  Mean = ({sum_expr})/{n} = {total}/{n} = {mean_str}.\n"
         f"  If the question asks for the average age across me, my parents, "
         f"and my grandparents, the answer is {mean_str}.\n\n"
