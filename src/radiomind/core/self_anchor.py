@@ -34,15 +34,16 @@ from typing import Any
 class SelfAnchorProof:
     """Traceable result of a store-scan supplement.
 
-    `value`         the recovered anchor value (float for paid,
-                    int for age)
+    `value`         the recovered anchor value (float for paid /
+                    cashback_rate fraction, int for age)
     `source_turn_id` turn id of the user turn it came from
     `quote`         ~chars around the match, for human audit
     `scan_scope`    what the scan was restricted to (e.g.
-                    "user_turns;item=jimmy choo heels" or
-                    "user_turns;first_person_current_age")
+                    "user_turns;item=jimmy choo heels",
+                    "user_turns;first_person_current_age",
+                    "user_turns;merchant=SaveMart")
     """
-    kind: str            # "paid_price" | "current_age"
+    kind: str            # "paid_price" | "current_age" | "cashback_rate"
     value: float
     source_turn_id: str
     quote: str
@@ -213,3 +214,59 @@ def scan_paid_price_user_turns(
         if len(found) > 1:
             return None  # ambiguous paid prices for this anchor
     return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Cashback rate (merchant-scoped) — SelfAnchor-2b
+# ─────────────────────────────────────────────────────────────────────────────
+def scan_cashback_rate_user_turns(
+    mind: Any, domain: str | None, merchant: str | None,
+) -> SelfAnchorProof | None:
+    """Scan the domain store's user turns for the merchant-scoped
+    cashback rate. Reuses `_find_cashback_rate_scoped` verbatim, so
+    a competing-merchant rate (e.g. Walmart+ 2% for a SaveMart
+    question) is rejected exactly as on the retrieve side.
+
+    Returns a single proof when the scoped finder yields one rate,
+    else None. User turns only; never assistant echo; merchant must
+    be known (no merchant-less scan).
+    """
+    if not merchant:
+        return None
+    from radiomind.core.arithmetic_hint import (
+        _find_cashback_rate_scoped, _RATE_RE,
+    )
+    user_turns = _iter_store_user_turns(mind, domain)
+    if not user_turns:
+        return None
+    texts = [c for _, c in user_turns]
+    rate, reason = _find_cashback_rate_scoped(texts, merchant)
+    if rate is None:
+        return None
+    # Locate the source turn + quote for the chosen merchant-scoped
+    # rate (a user turn mentioning the merchant AND a rate).
+    m_low = merchant.lower()
+    target_pct = round(rate * 100, 4)
+    for tid, content in user_turns:
+        if m_low not in content.lower():
+            continue
+        for m in _RATE_RE.finditer(content):
+            try:
+                pct = round(float(m.group(1)), 4)
+            except (TypeError, ValueError):
+                continue
+            if pct == target_pct:
+                return SelfAnchorProof(
+                    kind="cashback_rate", value=rate,
+                    source_turn_id=tid,
+                    quote=_quote(content, m.start(), m.end()),
+                    scan_scope=f"user_turns;merchant={merchant}",
+                )
+    # Rate resolved (e.g. via generic all-purchases scope) but no
+    # merchant-co-located source turn found — return proof without a
+    # specific turn rather than fabricate one.
+    return SelfAnchorProof(
+        kind="cashback_rate", value=rate,
+        source_turn_id="?", quote="",
+        scan_scope=f"user_turns;merchant={merchant}",
+    )

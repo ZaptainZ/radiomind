@@ -297,3 +297,103 @@ class TestAgeIntervalSupplement:
         out = maybe_age_interval_commit_closure(
             self.Q, retrieved, self.ABSTAIN, self.SECTION)
         assert out == self.ABSTAIN
+
+
+# ─────────────────────────────────────────────────────────────────────
+# SelfAnchor-2b: cashback rate store-scan (merchant-scoped)
+# ─────────────────────────────────────────────────────────────────────
+from radiomind.core.self_anchor import scan_cashback_rate_user_turns
+from radiomind.core.arithmetic_hint import cashback_arithmetic_hint
+
+
+class TestCashbackRateScan:
+    def test_savemart_1pct_recovered(self):
+        # 9aaed6a3 real shape: SaveMart 1% in a user turn
+        m = mind_with(_Entry(
+            "[user] I have a membership at SaveMart and can earn 1% "
+            "cashback on all purchases.", turn_id="answer_353d3c6d_2_t0"))
+        p = scan_cashback_rate_user_turns(m, "d", "SaveMart")
+        assert p is not None
+        assert p.value == 0.01
+        assert p.kind == "cashback_rate"
+        assert p.source_turn_id == "answer_353d3c6d_2_t0"
+        assert "merchant=SaveMart" in p.scan_scope
+
+    def test_competing_merchant_rejected(self):
+        # Only Walmart+ 2% present → SaveMart question must NOT recover
+        m = mind_with(_Entry(
+            "[user] The 2% cashback with Walmart+ is a nice benefit."))
+        assert scan_cashback_rate_user_turns(m, "d", "SaveMart") is None
+
+    def test_assistant_echo_rejected(self):
+        m = mind_with(_Entry(
+            "SaveMart gives 1% cashback on all purchases.",
+            role="assistant"))
+        assert scan_cashback_rate_user_turns(m, "d", "SaveMart") is None
+
+    def test_no_merchant_no_scan(self):
+        m = mind_with(_Entry("[user] I earn 1% cashback at SaveMart."))
+        assert scan_cashback_rate_user_turns(m, "d", None) is None
+
+    def test_conflicting_savemart_rates_refuse(self):
+        m = mind_with(
+            _Entry("[user] My SaveMart card gives 1% cashback.", turn_id="t1"),
+            _Entry("[user] Actually SaveMart now gives 3% cashback.", turn_id="t2"),
+        )
+        assert scan_cashback_rate_user_turns(m, "d", "SaveMart") is None
+
+
+class TestCashbackSupplementIntegration:
+    Q = "How much cashback did I earn at SaveMart last Thursday?"
+
+    def test_rate_recovered_amount_in_retrieve(self):
+        # retrieved: SaveMart $75 spend present + competing Walmart 2%;
+        # SaveMart 1% rate ONLY in store → store-scan recovers → $0.75
+        retrieved = [
+            {"memory": "[user] I spent $75 on groceries at SaveMart last Thursday."},
+            {"memory": "[user] The 2% cashback with Walmart+ is great."},
+        ]
+        store = mind_with(
+            _Entry("[user] I spent $75 on groceries at SaveMart last Thursday.", turn_id="ta"),
+            _Entry("[user] I have a SaveMart membership with 1% cashback on all purchases.", turn_id="tr"),
+            _Entry("[user] The 2% cashback with Walmart+ is great.", turn_id="tw"),
+        )
+        hint = cashback_arithmetic_hint(self.Q, retrieved, mind=store, domain="d")
+        assert "$0.75" in hint
+        assert "SelfAnchor store-scan" in hint
+        assert "tr" in hint
+
+    def test_no_amount_no_supplement(self):
+        # No spend amount in retrieve → must NOT scan rate (only補 rate
+        # when amount already present)
+        retrieved = [{"memory": "[user] The 2% cashback with Walmart+ is great."}]
+        store = mind_with(
+            _Entry("[user] SaveMart 1% cashback on all purchases.", turn_id="tr"))
+        assert cashback_arithmetic_hint(self.Q, retrieved, mind=store, domain="d") == ""
+
+    def test_competing_only_in_store_refuses(self):
+        # amount present, but store also only has Walmart 2% → scoped
+        # finder refuses → no hint
+        retrieved = [{"memory": "[user] I spent $75 at SaveMart last Thursday."}]
+        store = mind_with(
+            _Entry("[user] I spent $75 at SaveMart last Thursday.", turn_id="ta"),
+            _Entry("[user] Walmart+ gives 2% cashback.", turn_id="tw"),
+        )
+        assert cashback_arithmetic_hint(self.Q, retrieved, mind=store, domain="d") == ""
+
+    def test_rate_in_retrieve_no_scan_needed(self):
+        # rate already in retrieve → fires without store-scan marker
+        retrieved = [
+            {"memory": "[user] I spent $75 at SaveMart with my SaveMart 1% cashback card."},
+        ]
+        store = mind_with(_Entry("[user] unrelated", turn_id="x"))
+        hint = cashback_arithmetic_hint(self.Q, retrieved, mind=store, domain="d")
+        assert "$0.75" in hint
+        assert "SelfAnchor store-scan" not in hint
+
+    def test_no_store_refuses(self):
+        retrieved = [
+            {"memory": "[user] I spent $75 at SaveMart last Thursday."},
+            {"memory": "[user] Walmart+ 2% cashback."},
+        ]
+        assert cashback_arithmetic_hint(self.Q, retrieved) == ""

@@ -304,9 +304,21 @@ def _find_merchant_amount(
 # ─────────────────────────────────────────────────────────────────────────────
 # Main entry
 # ─────────────────────────────────────────────────────────────────────────────
+# Rate-missing refusal reasons that SelfAnchor-2b may supplement
+# via a merchant-scoped store scan (the rate exists in the store
+# but ranked out of retrieve). Excludes amount-side refusals.
+_RATE_MISSING_REFUSALS = frozenset({
+    "no_cashback_rate_in_memories",
+    "rate_merchant_mismatch",
+    "rate_anchor_unscoped",
+    "rate_not_supporting_target_merchant",
+})
+
+
 def cashback_arithmetic_hint(
     question: str,
     retrieved_memories: list[Any],
+    mind: Any | None = None, domain: str | None = None,
 ) -> str:
     """Return a calculation hint prefix, or "" if conditions don't fire.
 
@@ -317,6 +329,15 @@ def cashback_arithmetic_hint(
          (Phase 1.5a — no longer the first rate in any memory)
       3. Retrieved memories contain a spend amount (preferably at the
          merchant named in the question)
+
+    SelfAnchor-2b: when the spend amount IS present and the merchant
+    IS known but the merchant-scoped RATE is missing from retrieve
+    (a rate-missing refusal), AND mind+domain are supplied, a
+    targeted store scan recovers the rate from the domain's user-turn
+    layer (the merchant-scoped rate often ranks out of retrieve
+    top-200; SelfAnchor-2a confirmed). The scan reuses the same
+    merchant scoping, so a competing-merchant rate is still rejected.
+    Store scan supplements ONLY the rate, never the amount.
 
     Format:
       "ARITHMETIC HINT: memories show <rate>% cashback and $<amount> spent
@@ -331,9 +352,26 @@ def cashback_arithmetic_hint(
     merchant = _extract_merchant_from_query(question)
     # Phase 1.5a: merchant-scoped rate (refuse when the only rate
     # belongs to a different merchant / can't be attributed).
-    rate, _rate_refusal = _find_cashback_rate_scoped(mems, merchant)
+    rate, rate_refusal = _find_cashback_rate_scoped(mems, merchant)
+
+    rate_source = None  # (turn_id, scan_scope)
     if rate is None:
-        return ""
+        # SelfAnchor-2b: only supplement a rate-missing refusal, only
+        # when merchant is known AND the spend amount is already
+        # present in retrieve (store scan补 rate, 不补 amount).
+        if (rate_refusal in _RATE_MISSING_REFUSALS
+                and merchant and mind is not None and domain):
+            amount_probe = _find_merchant_amount(mems, merchant)
+            if amount_probe is not None:
+                from radiomind.core.self_anchor import (
+                    scan_cashback_rate_user_turns,
+                )
+                proof = scan_cashback_rate_user_turns(mind, domain, merchant)
+                if proof is not None:
+                    rate = proof.value
+                    rate_source = (proof.source_turn_id, proof.scan_scope)
+        if rate is None:
+            return ""
 
     amount = _find_merchant_amount(mems, merchant)
     if amount is None:
@@ -351,9 +389,14 @@ def cashback_arithmetic_hint(
     amount_str = f"${amount:.2f}" if amount % 1 else f"${amount:.0f}"
 
     merchant_clause = f" at {merchant}" if merchant else ""
+    rate_clause = ""
+    if rate_source:
+        rate_clause = (f"  (rate via SelfAnchor store-scan from turn "
+                       f"{rate_source[0]}, scope={rate_source[1]})\n")
     return (
         "ARITHMETIC HINT (deterministic, from retrieved memories):\n"
         f"  Memories show {rate_str}% cashback rate and {amount_str} spent{merchant_clause}.\n"
+        f"{rate_clause}"
         f"  Calculation: {rate_str}% × {amount_str} = {product_str}.\n"
         f"  If the question asks for cashback earned, the answer is {product_str}.\n\n"
     )

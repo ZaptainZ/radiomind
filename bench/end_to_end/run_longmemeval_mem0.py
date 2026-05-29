@@ -617,7 +617,8 @@ def run(
         cashback_hint_section = ""
         try:
             from radiomind.core.arithmetic_hint import cashback_arithmetic_hint
-            cashback_hint_section = cashback_arithmetic_hint(question, mem_results)
+            cashback_hint_section = cashback_arithmetic_hint(
+                question, mem_results, mind=mind, domain=domain)
         except Exception:
             pass
 
