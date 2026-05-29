@@ -1,0 +1,24 @@
+{
+  "qid": "bb7c3b45",
+  "kind": "paid",
+  "question": "How much did I save on the Jimmy Choo heels?",
+  "gold": "$300",
+  "raw_user_turns": 247,
+  "store_user_turns": 247,
+  "retrieve_user_turns": 46,
+  "in_raw": [
+    {
+      "tid": "answer_de64539a_1_t0",
+      "val": "200"
+    }
+  ],
+  "in_store": [
+    {
+      "tid": "answer_de64539a_1_t0",
+      "val": "200"
+    }
+  ],
+  "in_retrieve": [],
+  "regex_recoverable": true,
+  "verdict": "RECOVERABLE: in store, missed by retrieve"
+}

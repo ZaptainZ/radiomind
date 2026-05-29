@@ -1,0 +1,24 @@
+{
+  "qid": "gpt4_d12ceb0e",
+  "kind": "current_age",
+  "question": "What is the average age of me, my parents, and my grandparents?",
+  "gold": "59.6",
+  "raw_user_turns": 236,
+  "store_user_turns": 236,
+  "retrieve_user_turns": 7,
+  "in_raw": [
+    {
+      "tid": "answer_2504635e_1_t0",
+      "val": "32"
+    }
+  ],
+  "in_store": [
+    {
+      "tid": "answer_2504635e_1_t0",
+      "val": "32"
+    }
+  ],
+  "in_retrieve": [],
+  "regex_recoverable": true,
+  "verdict": "RECOVERABLE: in store, missed by retrieve"
+}

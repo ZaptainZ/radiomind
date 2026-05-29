@@ -1,0 +1,29 @@
+{
+  "qid": "e25c3b8d",
+  "kind": "paid",
+  "question": "How much did I save on the designer handbag at TK Maxx?",
+  "gold": "$300",
+  "raw_user_turns": 260,
+  "store_user_turns": 260,
+  "retrieve_user_turns": 19,
+  "in_raw": [
+    {
+      "tid": "answer_6702277b_2_t6",
+      "val": "200"
+    }
+  ],
+  "in_store": [
+    {
+      "tid": "answer_6702277b_2_t6",
+      "val": "200"
+    }
+  ],
+  "in_retrieve": [
+    {
+      "tid": "answer_6702277b_2_t6",
+      "val": "200"
+    }
+  ],
+  "regex_recoverable": true,
+  "verdict": "in_retrieve (helper-side issue, not recall)"
+}

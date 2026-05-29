@@ -1,0 +1,24 @@
+{
+  "qid": "c18a7dc8",
+  "kind": "current_age",
+  "question": "How many years older am I than when I graduated from college?",
+  "gold": "7",
+  "raw_user_turns": 252,
+  "store_user_turns": 252,
+  "retrieve_user_turns": 10,
+  "in_raw": [
+    {
+      "tid": "answer_2e2085fa_2_t8",
+      "val": "32"
+    }
+  ],
+  "in_store": [
+    {
+      "tid": "answer_2e2085fa_2_t8",
+      "val": "32"
+    }
+  ],
+  "in_retrieve": [],
+  "regex_recoverable": true,
+  "verdict": "RECOVERABLE: in store, missed by retrieve"
+}
