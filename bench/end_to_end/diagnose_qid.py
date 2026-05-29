@@ -208,6 +208,55 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
     return {"signals": signals, "proofs": proofs}
 
 
+def _probe_self_anchor(mind, domain: str, proofs: dict,
+                       question: str) -> dict:
+    """SelfAnchor-1c: when a helper's refusal is a self-anchor recall
+    gap, show whether the store-scan supplement WOULD recover it, with
+    the same proof fields the production hint carries (recovered /
+    source_turn_id / scan_scope / quote).
+
+    Mirrors the production wiring: only probes a scan when the matching
+    helper refused for the corresponding self-anchor reason.
+    """
+    from radiomind.core.self_anchor import (
+        scan_current_age_user_turns, scan_paid_price_user_turns,
+    )
+    out: dict = {}
+
+    def _proof_to_dict(p):
+        if p is None or not hasattr(p, "value"):
+            return {"recovered": False}
+        return {
+            "recovered": True,
+            "value": p.value,
+            "source_turn_id": p.source_turn_id,
+            "scan_scope": p.scan_scope,
+            "quote": p.quote,
+        }
+
+    # current age — relevant to age_interval (current_age_not_in_retrieved)
+    # and person_age (kin_role_missing=['self'])
+    ai = proofs.get("age_interval") or {}
+    pa = proofs.get("person_age") or {}
+    age_relevant = (
+        ai.get("refusal_reason") == "current_age_not_in_retrieved"
+        or pa.get("missing_roles") == ["self"]
+    )
+    if age_relevant:
+        out["current_age"] = _proof_to_dict(
+            _safe(scan_current_age_user_turns, mind, domain)
+            if mind is not None else None)
+
+    # paid price — relevant to SavingsHint
+    sv = proofs.get("savings") or {}
+    if sv.get("refusal_reason") == "paid_anchor_not_found_in_user_turns":
+        anchor = sv.get("anchor")
+        if anchor:
+            out["paid_price"] = _proof_to_dict(
+                _safe(scan_paid_price_user_turns, mind, domain, anchor))
+    return out
+
+
 def _probe_store_anchors(mind, domain: str, question: str) -> dict:
     """Scan the full domain FACT store and contrast against retrieve
     top-K. Surfaces anchors that exist in the store but didn't make
@@ -365,6 +414,19 @@ def _print_summary(rec: dict) -> None:
         if extras:
             print(f"    state: {'; '.join(extras[:5])}")
 
+    # SelfAnchor-1c — store-scan recovery probe
+    sap = rec.get("self_anchor_probe", {})
+    if sap:
+        print(f"\nself-anchor store-scan probe:")
+        for kind, p in sap.items():
+            if p.get("recovered"):
+                print(f"  ↪ {kind}: RECOVERED value={p.get('value')} "
+                      f"from {p.get('source_turn_id')} "
+                      f"scope={p.get('scan_scope')}")
+                print(f"     quote: {p.get('quote','')[:90]}")
+            else:
+                print(f"  ↪ {kind}: not recoverable")
+
     # Phase 1.5 — store anchor probe
     sa = rec.get("store_anchor_probe", {})
     print(f"\nstore anchor probe (FACT-layer):")
@@ -485,6 +547,7 @@ def main() -> int:
         helper_signals.get("run_temporal_precision", "") or "",
     )
     store_anchors = _probe_store_anchors(mind, domain, question)
+    self_anchor = _probe_self_anchor(mind, domain, helper_proofs, question)
 
     # Aggregate gold-recall stats across the full top-200 window
     gold_in_top200 = sum(1 for r in retrieve_full if r["is_gold_session"])
@@ -509,6 +572,7 @@ def main() -> int:
         "retrieve_top_30_preview": retrieve,
         "helper_signals": helper_signals,
         "helper_proofs": helper_proofs,
+        "self_anchor_probe": self_anchor,
         "store_anchor_probe": store_anchors,
         "structured_skill_section": structured,
         "jab_what_if": _jab_what_if(gold),

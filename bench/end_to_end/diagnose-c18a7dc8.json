@@ -283,6 +283,15 @@
       "variant_mismatch_detected": false
     }
   },
+  "self_anchor_probe": {
+    "current_age": {
+      "recovered": true,
+      "value": 32.0,
+      "source_turn_id": "answer_2e2085fa_2_t8",
+      "scan_scope": "user_turns;first_person_current_age",
+      "quote": "nd knowledge in digital marketing. As a 32-year-old Digital Marketing Specialist at TechSavvy"
+    }
+  },
   "store_anchor_probe": {
     "fact_entries_total": 500,
     "dollar_amounts_in_store": [

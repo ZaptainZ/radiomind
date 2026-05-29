@@ -580,7 +580,36 @@ rewrite）。Codex 多轮约束：
 | `gpt4_194be4b3` (instruments), `gpt4_ab202e7f` (kitchen) | open-vocab entity normalization | out of scope，需 typed-inventory / typed-event 架构而非 narrow regex |
 | `b46e15ed` | event_cluster_interval_shape_gap | **单题 confirmed**（LME-S 500 cohort scan：只有 1 题需要 elapsed-since-cluster 操作），永久 defer |
 | `gpt4_d6585ce8` | ordered_event_sequence | **cohort = 7**（trips / museums / sports / airlines / concerts 同形）；sort 经 session_date 确定，extraction 步是 open-vocab gating concern；标记为未来 `OrderedEventList` workstream 候选，未开 |
-| `bb7c3b45` | savings on item | **由 SavingsHint-1b 关闭** (target smoke 2/2 PASS)；不重跑 n=100，**不宣称新 baseline**（+1 在 stochastic band 内） |
+| `bb7c3b45` | savings on item | **由 SavingsHint-1b + SelfAnchor paid-anchor store-scan 关闭**（target smoke PASS；paid $200 锚在 store user-turn 但被 retrieve top-200 漏掉，SelfAnchor-1b 兜底召回）；不重跑 n=100，**不宣称 material gain**（+1 在 stochastic band 内） |
+
+### SelfAnchor-1b store-scan supplement（2026-05-29）
+
+Phase 1.5 诊断发现 3 个 helper 失败同形：user 第一人称
+self anchor（付款价 / 当前年龄）在 store 的 user-turn 层，
+却被 retrieve top-200 漏掉（FACT events 占满窗口，user-turn
+召回率仅 3-19%）。
+
+`src/radiomind/core/self_anchor.py` 提供 helper-specific、只读
+的 store user-turn 扫描，**仅在 helper 已进入正确语义通道且
+单缺一个 self anchor 时**触发，不改全局 `mind.search` 排序：
+
+| helper | 兜底召回 | 形态 |
+|---|---|---|
+| `savings_arithmetic_hint` | paid price（item-scoped） | bb7c3b45 |
+| `person_age_average_hint` | self age（仅 `missing==['self']`） | gpt4_d12ceb0e |
+| `maybe_age_interval_commit_closure` | current age（gate-7 recompute 仍强制） | c18a7dc8 |
+
+每次召回带 `SelfAnchorProof(source_turn_id / quote /
+scan_scope)`，进入 hint/rewrite，proof 可追溯。self-age 正则
+严格限定第一人称（`I'm N` / `I (just) turned N` /
+`as a N-year-old <occupation>`），有 kin-guard 排除
+"my dad, as a 58-year-old"，无裸 `(\d{2})-year-old`。
+
+验证：单测 29（含 kin/assistant/裸-pattern 负例）+ 3-qid
+e2e smoke 3/3 + trigger-face 负例（157a136e/6613b389 self-age
+scan → None，kin-guard 挡住亲属年龄）。详见
+`logs/2026-05-29-selfanchor-1a-audit-cc.md` +
+`logs/2026-05-29-selfanchor-1b-closeout-cc.md`。
 
 ### 工作面架构纪律（V8.4 形成的规则）
 
