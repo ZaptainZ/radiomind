@@ -780,3 +780,92 @@ def diagnose_cashback(
     out["fired"] = True
     out["computed_cashback"] = rate * amount
     return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TrustClosure-1b: cashback commit closure (cashback-specific pilot)
+# ─────────────────────────────────────────────────────────────────────────────
+# Generalizes the TSI-1d age_interval post-rewrite to cashback — the only
+# helper with an empirical, unhandled trust-gap (TrustClosure-1a: 9aaed6a3
+# abstains ~1/4-1/3 even when the hint carries 1% x $75 = $0.75). NOT a
+# global registry — a single cashback closure. Hard gate (Codex-locked):
+#   - only cashback; only when llm_answer is a PURE canonical abstain
+#   - complete proof: merchant + amount (retrieved) + rate (retrieve-scoped
+#     OR SelfAnchor-2b store-scan, with source)
+#   - merchant-scoped / generic-all-purposes scope only (reuse
+#     _find_cashback_rate_scoped — competing/conflicting → no rate → bypass)
+#   - recompute: rate x amount == committed value
+#   - amount missing / concrete answer / any mismatch → bypass
+
+def resolve_cashback_proof(
+    question: str, retrieved_memories, mind=None, domain=None,
+) -> dict | None:
+    """Return a complete cashback proof dict, or None when any anchor is
+    missing/ambiguous. Mirrors cashback_arithmetic_hint's resolution
+    (same scoped finders) so hint and closure never disagree.
+
+    dict: {merchant, amount, rate, product,
+           rate_source_turn_id, rate_scan_scope}
+    """
+    if not _query_triggers(question):
+        return None
+    mems = _iter_memory_text(retrieved_memories)
+    if not mems:
+        return None
+    merchant = _extract_merchant_from_query(question)
+    if not merchant:
+        return None
+    # amount MUST be in retrieve — store scan supplements rate only
+    amount = _find_merchant_amount(mems, merchant)
+    if amount is None:
+        return None
+    rate, refusal = _find_cashback_rate_scoped(mems, merchant)
+    rate_src_tid = None
+    rate_scope = None
+    if rate is None:
+        if (refusal in _RATE_MISSING_REFUSALS
+                and mind is not None and domain):
+            from radiomind.core.self_anchor import (
+                scan_cashback_rate_user_turns,
+            )
+            proof = scan_cashback_rate_user_turns(mind, domain, merchant)
+            if proof is not None:
+                rate = proof.value
+                rate_src_tid = proof.source_turn_id
+                rate_scope = proof.scan_scope
+    if rate is None:
+        return None
+    return {
+        "merchant": merchant,
+        "amount": amount,
+        "rate": rate,
+        "product": round(rate * amount, 2),
+        "rate_source_turn_id": rate_src_tid,
+        "rate_scan_scope": rate_scope,
+    }
+
+
+def maybe_cashback_commit_closure(
+    question: str, retrieved_memories, llm_answer: str,
+    mind=None, domain=None,
+) -> str:
+    """If the LLM emitted a PURE abstain but the cashback proof is
+    complete and recomputes, commit the computed value. Otherwise return
+    llm_answer unchanged. Mirrors maybe_age_interval_commit_closure.
+    """
+    from radiomind.core.age_interval_commit import _is_pure_abstain
+    if not _is_pure_abstain(llm_answer):
+        return llm_answer
+    proof = resolve_cashback_proof(
+        question, retrieved_memories, mind=mind, domain=domain,
+    )
+    if proof is None:
+        return llm_answer
+    if round(proof["rate"] * proof["amount"], 2) != proof["product"]:
+        return llm_answer
+
+    def _fmt(v: float) -> str:
+        return f"${v:.2f}" if v % 1 else f"${v:.0f}"
+
+    return (f"You earned {_fmt(proof['product'])} in cashback "
+            f"at {proof['merchant']}.")

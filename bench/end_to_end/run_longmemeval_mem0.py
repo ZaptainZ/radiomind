@@ -838,6 +838,22 @@ def run(
         except Exception:
             pass
 
+        # TrustClosure-1b: cashback commit closure. When the LLM emitted
+        # a PURE abstain but a complete, recomputing cashback proof
+        # exists (merchant-scoped rate × retrieved amount), commit the
+        # value. Mirrors the TSI-1d age closure. Never overwrites a
+        # concrete answer. Target: 9aaed6a3 (the only empirical cashback
+        # trust-gap).
+        try:
+            from radiomind.core.arithmetic_hint import (
+                maybe_cashback_commit_closure,
+            )
+            answer = maybe_cashback_commit_closure(
+                question, mem_results, answer, mind=mind, domain=domain,
+            )
+        except Exception:
+            pass
+
         judge_prompt = JUDGE_PROMPT.format(
             question=question, answer=gold_str, response=answer,
         )
