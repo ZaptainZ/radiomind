@@ -622,6 +622,33 @@ def run(
         except Exception:
             pass
 
+        # SelfAnchor-2b telemetry (read-only; does NOT change model
+        # behavior). Splits "helper stayed silent" from "LLM ignored
+        # the hint" on cashback-trigger qids, so a smoke FAIL can be
+        # attributed to amount-side recall / rate store-scan / trust-gap
+        # without re-running.
+        cashback_telemetry: dict = {}
+        try:
+            from radiomind.core.arithmetic_hint import (
+                diagnose_cashback as _diag_cb,
+                _query_triggers as _cb_trig,
+            )
+            if _cb_trig(question):
+                _dc = _diag_cb(question, mem_results)
+                cashback_telemetry = {
+                    "merchant": _dc.get("merchant"),
+                    "amount_in_retrieve": _dc.get("amount") is not None,
+                    "amount": _dc.get("amount"),
+                    "rate_in_retrieve": _dc.get("rate"),
+                    "rate_refusal": _dc.get("refusal_reason"),
+                    "hint_emitted": bool(cashback_hint_section),
+                    "store_scan_used": (
+                        "SelfAnchor store-scan" in cashback_hint_section),
+                    "hint_preview": cashback_hint_section[:220],
+                }
+        except Exception:
+            pass
+
         # V8.3.1: typed-event arithmetic hint — person_age average.
         # Deterministic helper for the closed kin set {self, mom, dad,
         # grandma, grandpa} when query asks for the average age across
@@ -889,6 +916,8 @@ def run(
             "correct": is_correct, "qtype": qtype, "verdict_tail": verdict[-120:],
             "judge_failed": judge_failed,
         }
+        if cashback_telemetry:
+            record["cashback_telemetry"] = cashback_telemetry
         per_query_log.append(record)
         _append_checkpoint(record)
 

@@ -151,15 +151,22 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
     )
 
     # cashback_arithmetic_hint + savings_arithmetic_hint
+    # IMPORTANT: pass mind/domain so these signals exercise the SAME
+    # SelfAnchor store-scan path the runner uses. Without them the
+    # diagnostic would silently skip the supplement and disagree with
+    # production (e.g. self_anchor_probe says recovered=true while the
+    # signal shows "").
     from radiomind.core.arithmetic_hint import (
         cashback_arithmetic_hint, savings_arithmetic_hint,
         diagnose_savings, diagnose_cashback,
     )
     signals["cashback_arithmetic_hint"] = _safe(
         cashback_arithmetic_hint, question, mem_results,
+        mind=mind, domain=domain,
     )
     signals["savings_arithmetic_hint"] = _safe(
         savings_arithmetic_hint, question, mem_results,
+        mind=mind, domain=domain,
     )
     proofs["savings"] = _safe(diagnose_savings, question, mem_results)
     proofs["cashback"] = _safe(diagnose_cashback, question, mem_results)
@@ -170,6 +177,7 @@ def _probe_helpers(mind, question: str, mem_results: list[dict],
     )
     signals["person_age_average_hint"] = _safe(
         person_age_average_hint, question, mem_results,
+        mind=mind, domain=domain,
     )
     proofs["person_age"] = _safe(
         diagnose_person_age, question, mem_results,
