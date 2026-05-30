@@ -1,0 +1,1 @@
+{"question_id": "9aaed6a3", "q": "How much cashback did I earn at SaveMart last Thursday?", "gold": "$0.75", "answer": "The information provided is not enough.", "correct": false, "qtype": "multi-session", "verdict_tail": " with an abstention ground truth.\n</judge_thinking>\nyes\n[JAB-1a VETO: concrete gold + canonical abstain response → FAIL]", "judge_failed": false}

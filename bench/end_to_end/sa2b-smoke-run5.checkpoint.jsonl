@@ -1,0 +1,1 @@
+{"question_id": "9aaed6a3", "q": "How much cashback did I earn at SaveMart last Thursday?", "gold": "$0.75", "answer": "The information provided is not enough.", "correct": false, "qtype": "multi-session", "verdict_tail": "he specific cashback amount. Therefore, the model response is not equivalent to the correct answer.\n</judge_thinking>\nno", "judge_failed": false}
