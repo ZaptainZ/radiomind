@@ -845,6 +845,39 @@ def resolve_cashback_proof(
     }
 
 
+def _fmt_money(v: float) -> str:
+    """Single source of truth for the cashback commit value rendering.
+    Extracted from maybe_cashback_commit_closure (byte-identical output) so
+    the Phase2-1b ProofResult adapter renders the same string."""
+    return f"${v:.2f}" if v % 1 else f"${v:.0f}"
+
+
+def cashback_proof_to_result(proof: dict):
+    """Phase2-1b telemetry-only adapter: losslessly carry the cashback proof
+    dict (from resolve_cashback_proof) in a unified ProofResult. Pure; does
+    NOT affect any commit decision. See proof_result.py."""
+    from radiomind.core.proof_result import ProofResult, Source
+    amount = proof["amount"]
+    rate = proof["rate"]
+    product = proof["product"]
+    return ProofResult(
+        kind="cashback",
+        value=product,
+        inputs={"amount": amount, "rate": rate},
+        sources=[Source(
+            turn_id=proof.get("rate_source_turn_id"),
+            quote=None,
+            role="rate",
+        )],
+        recompute_ok=(round(rate * amount, 2) == product),
+        rendered=f"You earned {_fmt_money(product)} in cashback "
+                 f"at {proof['merchant']}.",
+        subject=proof["merchant"],
+        scan_scope=proof.get("rate_scan_scope"),
+        confidence=None,
+    )
+
+
 def maybe_cashback_commit_closure(
     question: str, retrieved_memories, llm_answer: str,
     mind=None, domain=None,
@@ -864,8 +897,5 @@ def maybe_cashback_commit_closure(
     if round(proof["rate"] * proof["amount"], 2) != proof["product"]:
         return llm_answer
 
-    def _fmt(v: float) -> str:
-        return f"${v:.2f}" if v % 1 else f"${v:.0f}"
-
-    return (f"You earned {_fmt(proof['product'])} in cashback "
+    return (f"You earned {_fmt_money(proof['product'])} in cashback "
             f"at {proof['merchant']}.")
