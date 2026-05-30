@@ -918,6 +918,22 @@ def run(
         }
         if cashback_telemetry:
             record["cashback_telemetry"] = cashback_telemetry
+        # TrustClosure-1a telemetry (read-only): which deterministic
+        # hint helpers fired vs whether the final answer is a pure
+        # abstain. hint_emitted=True + answer_pure_abstain=True is the
+        # trust-gap signature, surfaced uniformly across all helpers.
+        try:
+            from jab1_abstain_veto import is_abstain_response as _is_ab
+            record["helper_hints"] = {
+                "savings": bool(savings_hint_section),
+                "person_age": bool(person_age_hint_section),
+                "cashback": bool(cashback_hint_section),
+                "role_guard": bool(role_guard_section),
+                "temporal_endpoint": bool(temporal_endpoint_section),
+                "answer_pure_abstain": _is_ab(answer),
+            }
+        except Exception:
+            pass
         per_query_log.append(record)
         _append_checkpoint(record)
 
