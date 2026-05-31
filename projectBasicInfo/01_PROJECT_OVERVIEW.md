@@ -611,6 +611,41 @@ scan → None，kin-guard 挡住亲属年龄）。详见
 `logs/2026-05-29-selfanchor-1a-audit-cc.md` +
 `logs/2026-05-29-selfanchor-1b-closeout-cc.md`。
 
+### Phase 2 Proof carrier（2026-05-31 收口）
+
+Phase 2 把已验证的 **commit-on-abstain** 家族抽成轻量
+proof carrier，但刻意没有建立全局 registry / dispatcher。
+关键边界来自 1a audit：post-LLM closure 分成两个极性相反的
+家族，不能强塞进同一个抽象：
+
+- **COMMIT_ON_ABSTAIN**：cashback / age。LLM 纯 abstain 时，
+  若 deterministic proof 完整且 `recompute_ok`，升级为具体值。
+- **SUPPRESS_OVERCOMMIT**：role / TESG。LLM 给出具体过度承诺时，
+  若证据不支持，降级为 abstain；它们没有 value/recompute。
+
+新增核心模块 `src/radiomind/core/proof_result.py`：
+
+| 组件 | 作用 |
+|---|---|
+| `Source(turn_id, quote, role)` | list-valued provenance，支持 cashback rate / age 双源 |
+| `ProofResult(kind, value, inputs, sources, recompute_ok, rendered, subject, scan_scope, confidence)` | committer 家族 proof carrier |
+| `is_commit_abstain_candidate(answer)` | concrete answer 的快速 bypass |
+| `commit_on_abstain(proof, answer)` | pure-abstain + complete proof + recompute_ok → `proof.rendered` |
+
+cashback 与 age 各自保留 domain-specific proof resolution 与
+前置 gate，只在尾部共享 `commit_on_abstain`。role / TESG
+仍独立保留 suppressor 逻辑；runner 继续显式顺序调用各 closure。
+测试覆盖：Phase2-1e 收口时相关 committer / carrier / self-anchor
+套件 **105 passed**，精确输出测试证明 byte-path 不变。
+
+详见：
+- `logs/2026-05-31-phase2-proof-registry-audit-cc.md`
+- `logs/2026-05-31-phase2-1b-proof-carrier-cashback-codex.md`
+- `logs/2026-05-31-phase2-1c-proof-carrier-age-cc.md`
+- `logs/2026-05-31-phase2-1d-shared-commit-on-abstain-cashback-cc.md`
+- `logs/2026-05-31-phase2-1e-age-shared-gate-fast-bypass-cc.md`
+- `logs/2026-05-31-phase2-closeout-cc.md`
+
 ### 工作面架构纪律（V8.4 形成的规则）
 
 - 任何新 helper 必须先做 pre-implementation audit：trigger
