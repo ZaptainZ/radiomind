@@ -22,3 +22,9 @@ htmlcov/
 .claude/settings.local.json
 .claude/hooks/
 rust-core/target/
+
+# Bench artifacts — resumable checkpoints are regenerable.
+bench/end_to_end/**/*.checkpoint.jsonl
+
+# Local agent config.
+.codex/
