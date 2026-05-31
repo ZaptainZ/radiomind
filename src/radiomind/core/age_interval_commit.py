@@ -394,12 +394,17 @@ def maybe_age_interval_commit_closure(
         return llm_answer
 
     unit = _question_unit(question)
-    return age_interval_proof_to_result(
+    # Phase2-1e: commit through the shared gate. Gates 7 (recompute) and 8
+    # (pure abstain) above already hold here, so commit_on_abstain returns
+    # the rendered bytes unchanged — same output, one gate.
+    result = age_interval_proof_to_result(
         skill_value=skill_value, unit=unit, mode=mode,
         past_age=past_age, current_age=current_age,
         past_evidence=past_evidence, current_evidence=current_evidence,
         current_scan_scope=current_scan_scope, confidence=conf,
-    ).rendered
+    )
+    from radiomind.core.proof_result import commit_on_abstain
+    return commit_on_abstain(result, llm_answer)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

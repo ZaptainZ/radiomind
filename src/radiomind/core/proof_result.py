@@ -55,18 +55,25 @@ class ProofResult:
     confidence: float | None = None
 
 
+def is_commit_abstain_candidate(llm_answer: str) -> bool:
+    """Cheap pre-check (Phase2-1e): is the answer a pure canonical abstain?
+    Lets a committer fast-bypass expensive proof resolution on the concrete
+    path before building a ProofResult / calling commit_on_abstain."""
+    from radiomind.core.age_interval_commit import _is_pure_abstain
+    return _is_pure_abstain(llm_answer)
+
+
 def commit_on_abstain(proof: "ProofResult | None", llm_answer: str) -> str:
     """Phase2-1d shared COMMIT_ON_ABSTAIN gate.
 
     Commit the proof's rendered value ONLY when the LLM emitted a pure
     canonical abstain AND the proof is complete and recomputes. Never
     overwrites a concrete answer; returns llm_answer unchanged otherwise.
-    The committer closures (cashback now; age later) delegate their tail
-    here so the gate lives in one place. Suppressors (role, TESG) do NOT
-    use this — opposite abstain polarity (see the 1a audit §3).
+    Both committer closures (cashback, age) delegate their tail here so the
+    gate lives in one place. Suppressors (role, TESG) do NOT use this —
+    opposite abstain polarity (see the 1a audit §3).
     """
-    from radiomind.core.age_interval_commit import _is_pure_abstain
-    if not _is_pure_abstain(llm_answer):
+    if not is_commit_abstain_candidate(llm_answer):
         return llm_answer
     if proof is None or not proof.recompute_ok:
         return llm_answer

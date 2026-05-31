@@ -886,12 +886,16 @@ def maybe_cashback_commit_closure(
     complete and recomputes, commit the computed value. Otherwise return
     llm_answer unchanged. Mirrors maybe_age_interval_commit_closure.
     """
-    # Phase2-1d: gate delegated to the shared commit_on_abstain. The proof
-    # dict is converted to a ProofResult carrier; the abstain / recompute /
-    # never-overwrite-concrete decision and the rendered bytes are identical
-    # to the prior inline logic (the closure tests pin the output). resolve
-    # runs unconditionally now (read-only; discarded on the concrete path).
-    from radiomind.core.proof_result import commit_on_abstain
+    # Phase2-1d/1e: gate delegated to the shared commit_on_abstain; the proof
+    # dict is converted to a ProofResult carrier. Fast-bypass on a concrete
+    # answer BEFORE resolving (resolve is read-only but can store-scan, so
+    # skip it unless the LLM actually abstained). Rendered bytes are identical
+    # to the prior inline logic (the closure tests pin the output).
+    from radiomind.core.proof_result import (
+        is_commit_abstain_candidate, commit_on_abstain,
+    )
+    if not is_commit_abstain_candidate(llm_answer):
+        return llm_answer
     proof = resolve_cashback_proof(
         question, retrieved_memories, mind=mind, domain=domain,
     )

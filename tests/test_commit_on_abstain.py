@@ -37,3 +37,12 @@ def test_none_proof_leaves_abstain_unchanged():
 
 def test_recompute_failure_leaves_abstain_unchanged():
     assert commit_on_abstain(_pr(recompute_ok=False), ABSTAIN) == ABSTAIN
+
+
+def test_is_commit_abstain_candidate():
+    from radiomind.core.proof_result import is_commit_abstain_candidate
+    assert is_commit_abstain_candidate(ABSTAIN) is True
+    assert is_commit_abstain_candidate("I don't have enough information.") is True
+    assert is_commit_abstain_candidate("You earned $5.") is False
+    # hybrid (concrete + hedge) is not a pure abstain
+    assert is_commit_abstain_candidate("$5. Not enough info though.") is False
