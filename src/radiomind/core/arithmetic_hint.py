@@ -886,16 +886,14 @@ def maybe_cashback_commit_closure(
     complete and recomputes, commit the computed value. Otherwise return
     llm_answer unchanged. Mirrors maybe_age_interval_commit_closure.
     """
-    from radiomind.core.age_interval_commit import _is_pure_abstain
-    if not _is_pure_abstain(llm_answer):
-        return llm_answer
+    # Phase2-1d: gate delegated to the shared commit_on_abstain. The proof
+    # dict is converted to a ProofResult carrier; the abstain / recompute /
+    # never-overwrite-concrete decision and the rendered bytes are identical
+    # to the prior inline logic (the closure tests pin the output). resolve
+    # runs unconditionally now (read-only; discarded on the concrete path).
+    from radiomind.core.proof_result import commit_on_abstain
     proof = resolve_cashback_proof(
         question, retrieved_memories, mind=mind, domain=domain,
     )
-    if proof is None:
-        return llm_answer
-    if round(proof["rate"] * proof["amount"], 2) != proof["product"]:
-        return llm_answer
-
-    return (f"You earned {_fmt_money(proof['product'])} in cashback "
-            f"at {proof['merchant']}.")
+    result = cashback_proof_to_result(proof) if proof is not None else None
+    return commit_on_abstain(result, llm_answer)

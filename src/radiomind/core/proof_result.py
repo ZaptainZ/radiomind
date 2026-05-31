@@ -53,3 +53,21 @@ class ProofResult:
     subject: str | None = None
     scan_scope: str | None = None
     confidence: float | None = None
+
+
+def commit_on_abstain(proof: "ProofResult | None", llm_answer: str) -> str:
+    """Phase2-1d shared COMMIT_ON_ABSTAIN gate.
+
+    Commit the proof's rendered value ONLY when the LLM emitted a pure
+    canonical abstain AND the proof is complete and recomputes. Never
+    overwrites a concrete answer; returns llm_answer unchanged otherwise.
+    The committer closures (cashback now; age later) delegate their tail
+    here so the gate lives in one place. Suppressors (role, TESG) do NOT
+    use this — opposite abstain polarity (see the 1a audit §3).
+    """
+    from radiomind.core.age_interval_commit import _is_pure_abstain
+    if not _is_pure_abstain(llm_answer):
+        return llm_answer
+    if proof is None or not proof.recompute_ok:
+        return llm_answer
+    return proof.rendered
