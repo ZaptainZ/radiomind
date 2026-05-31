@@ -244,6 +244,55 @@ def _question_mode(question: str) -> str | None:
     return m.group(1).lower() if m else None
 
 
+def age_interval_proof_to_result(
+    *, skill_value, unit, mode, past_age, current_age,
+    past_evidence, current_evidence, current_scan_scope, confidence,
+):
+    """Phase2-1c telemetry-only adapter: carry the age_interval proof in a
+    unified ProofResult. Pure; the closure renders FROM this object so the
+    committed bytes are produced in exactly one place. Does NOT change any
+    gate. See proof_result.py.
+
+    age is the stress test for `sources: list[Source]` — dual provenance
+    (at_age + current_age), where at_age has only a quote (no turn_id; the
+    strict regex returns no id) and current_age has a turn_id only on the
+    SelfAnchor store-scan path. `subject` is None (age has no merchant-like
+    anchor); `confidence` is the skill confidence (cashback leaves it None).
+    """
+    from radiomind.core.proof_result import ProofResult, Source
+    cur_src = (
+        f" (SelfAnchor store-scan: turn {current_scan_scope[0]}, "
+        f"scope={current_scan_scope[1]})" if current_scan_scope else ""
+    )
+    rendered = (
+        f"{skill_value} {unit}. (Verified: current age "
+        f"{current_age} {'minus' if mode == 'older' else 'subtracted from'} "
+        f"past-event age {past_age} = {skill_value}, "
+        f"matching the skill computation. "
+        f"Past-age source: {past_evidence!r}. "
+        f"Current-age source: {current_evidence!r}{cur_src}.)"
+    )
+    recomputed = (current_age - past_age) if mode == "older" else (past_age - current_age)
+    return ProofResult(
+        kind="age_interval",
+        value=skill_value,
+        inputs={"past_age": past_age, "current_age": current_age, "mode": mode},
+        sources=[
+            Source(turn_id=None, quote=past_evidence, role="at_age"),
+            Source(
+                turn_id=(current_scan_scope[0] if current_scan_scope else None),
+                quote=current_evidence,
+                role="current_age",
+            ),
+        ],
+        recompute_ok=(recomputed == skill_value),
+        rendered=rendered,
+        subject=None,
+        scan_scope=(current_scan_scope[1] if current_scan_scope else None),
+        confidence=confidence,
+    )
+
+
 def maybe_age_interval_commit_closure(
     question: str,
     retrieved_memories: list[Any],
@@ -345,18 +394,12 @@ def maybe_age_interval_commit_closure(
         return llm_answer
 
     unit = _question_unit(question)
-    cur_src = (
-        f" (SelfAnchor store-scan: turn {current_scan_scope[0]}, "
-        f"scope={current_scan_scope[1]})" if current_scan_scope else ""
-    )
-    return (
-        f"{skill_value} {unit}. (Verified: current age "
-        f"{current_age} {'minus' if mode == 'older' else 'subtracted from'} "
-        f"past-event age {past_age} = {skill_value}, "
-        f"matching the skill computation. "
-        f"Past-age source: {past_evidence!r}. "
-        f"Current-age source: {current_evidence!r}{cur_src}.)"
-    )
+    return age_interval_proof_to_result(
+        skill_value=skill_value, unit=unit, mode=mode,
+        past_age=past_age, current_age=current_age,
+        past_evidence=past_evidence, current_evidence=current_evidence,
+        current_scan_scope=current_scan_scope, confidence=conf,
+    ).rendered
 
 
 # ─────────────────────────────────────────────────────────────────────────────
