@@ -563,7 +563,7 @@ rewrite）。Codex 多轮约束：
 | **bench resume hygiene** | runner checkpoint resume 同时重建 `judge_errors / judge_n / model_correct`（不仅 `correct/n/per_type`） | `run_longmemeval_mem0.py` |
 | **artifact normalize** | rejudge 时同步更新 `raw_accuracy` + canonical `by_type` 字段，移除 legacy `by_question_type`；checkpoint 与 artifact 双方同步 | `bench/end_to_end/rejudge_single_qid.py` |
 | **bench artifact hygiene** | `*.checkpoint.jsonl` 是可再生中间件，已从 repo 移除并忽略；result `.json` 不通配忽略，继续由人工决定是否作为里程碑显式提交；`.codex/` 视为本机配置 | `.gitignore` + `projectBasicInfo/logs/2026-05-31-repo-hygiene-bench-artifacts-codex.md` |
-| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic / event-date-parse / list-ordering routing 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 303 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` + `tests/test_event_date_parse.py` + `tests/test_list_ordering_routing.py` |
+| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic / event-date-parse / list-ordering routing/extraction 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 307 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` + `tests/test_event_date_parse.py` + `tests/test_list_ordering_routing.py` |
 
 ### Contemporary baseline 与剩余 fail 分类
 
@@ -699,6 +699,24 @@ ordering 问题现在会向 answer prompt 注入 `STRUCTURED SKILL
 `logs/2026-06-01-orderedeventlist-1c-completeness-audit-cc.md`、
 `logs/2026-06-01-orderedeventlist-1c-routing-audit-codex.md`、
 `logs/2026-06-01-orderedeventlist-1d-routing-and-completeness-cc.md`。
+
+### OrderedEventList-1f extraction pipeline（2026-06-01）
+
+1e smoke 证明 1d 的路由与 FACT 枚举有效，但直接把 467 条 FACT
+一次性交给抽取会崩成 0 instances；即便用 `museum/museums`
+相关性过滤到 42 条、覆盖 6/6 gold，单次抽取仍只出 3/6。1f
+因此把 `ListOrderingSkill` 内部改成：
+
+`FACT enumeration → deterministic relevance filter → chunked extraction → merge/dedup → sort`
+
+具体包括 `_relevant_facts(...)`（单复数 token 归一）、`_chunks(...)`
+和 per-chunk `_extract_chunk(...)`、以及 `_merge_dedup(...)`
+（归一名折叠，保留最早日期）。这只是 extraction mechanics
+闭环；还未声明真实 qid 成功。下一步 1g 需要复用
+`gpt4_7abb270c` sandbox 做单 qid ingest+LLM re-smoke，看能否从
+1e 的 3/6 恢复到 6/6。commit-closure 仍然 premature。
+
+详见 `logs/2026-06-01-orderedeventlist-1f-extraction-pipeline-cc.md`。
 
 ### 工作面架构纪律（V8.4 形成的规则）
 
