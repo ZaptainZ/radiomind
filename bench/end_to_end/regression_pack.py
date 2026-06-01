@@ -69,6 +69,9 @@ PACK: dict[str, list[str]] = {
     "skill:list-ordering": [
         "tests/test_list_ordering_routing.py",
     ],
+    "harness:target-pack": [
+        "tests/test_target_pack.py",
+    ],
 }
 
 
