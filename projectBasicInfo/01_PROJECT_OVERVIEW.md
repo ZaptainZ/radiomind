@@ -563,6 +563,7 @@ rewrite）。Codex 多轮约束：
 | **bench resume hygiene** | runner checkpoint resume 同时重建 `judge_errors / judge_n / model_correct`（不仅 `correct/n/per_type`） | `run_longmemeval_mem0.py` |
 | **artifact normalize** | rejudge 时同步更新 `raw_accuracy` + canonical `by_type` 字段，移除 legacy `by_question_type`；checkpoint 与 artifact 双方同步 | `bench/end_to_end/rejudge_single_qid.py` |
 | **bench artifact hygiene** | `*.checkpoint.jsonl` 是可再生中间件，已从 repo 移除并忽略；result `.json` 不通配忽略，继续由人工决定是否作为里程碑显式提交；`.codex/` 视为本机配置 | `.gitignore` + `projectBasicInfo/logs/2026-05-31-repo-hygiene-bench-artifacts-codex.md` |
+| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 294 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` |
 
 ### Contemporary baseline 与剩余 fail 分类
 
