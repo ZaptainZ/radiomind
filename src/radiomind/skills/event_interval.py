@@ -29,6 +29,7 @@ from datetime import datetime
 from typing import Any
 
 from radiomind.skills.base import Skill, SkillResult
+from radiomind.skills.date_utils import parse_event_date
 
 
 # "How many weeks/months/days"
@@ -60,26 +61,8 @@ _SINCE_WHEN_RE = re.compile(
 )
 
 
-_DATE_FORMATS = ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y")
-_YMD_RE = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
-
-
 def _parse_date(s: str) -> datetime | None:
-    if not s:
-        return None
-    s = str(s).strip()
-    m = _YMD_RE.search(s)
-    if m:
-        try:
-            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        except ValueError:
-            pass
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(s[: len(fmt) + 4], fmt)
-        except ValueError:
-            continue
-    return None
+    return parse_event_date(s)
 
 
 def _unit_to_days(unit: str) -> int:

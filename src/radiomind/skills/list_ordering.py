@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Any
 
 from radiomind.skills.base import Skill, SkillResult
+from radiomind.skills.date_utils import parse_event_date
 
 
 _TRIGGER_RE = re.compile(
@@ -31,19 +32,8 @@ _TRIGGER_RE_2 = re.compile(
     re.IGNORECASE,
 )
 
-_DATE_FORMATS = ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y")
-
-
 def _parse_date(s: str) -> datetime | None:
-    if not s:
-        return None
-    s = str(s).strip()
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(s[: len(fmt) + 4], fmt)
-        except ValueError:
-            continue
-    return None
+    return parse_event_date(s)
 
 
 def _extract_noun_from_trigger(query: str) -> str | None:

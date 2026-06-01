@@ -63,6 +63,9 @@ PACK: dict[str, list[str]] = {
     "diagnostic:closure-view": [
         "tests/test_closure_view.py",
     ],
+    "skill:event-date-parse": [
+        "tests/test_event_date_parse.py",
+    ],
 }
 
 

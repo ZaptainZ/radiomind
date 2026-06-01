@@ -563,7 +563,7 @@ rewrite）。Codex 多轮约束：
 | **bench resume hygiene** | runner checkpoint resume 同时重建 `judge_errors / judge_n / model_correct`（不仅 `correct/n/per_type`） | `run_longmemeval_mem0.py` |
 | **artifact normalize** | rejudge 时同步更新 `raw_accuracy` + canonical `by_type` 字段，移除 legacy `by_question_type`；checkpoint 与 artifact 双方同步 | `bench/end_to_end/rejudge_single_qid.py` |
 | **bench artifact hygiene** | `*.checkpoint.jsonl` 是可再生中间件，已从 repo 移除并忽略；result `.json` 不通配忽略，继续由人工决定是否作为里程碑显式提交；`.codex/` 视为本机配置 | `.gitignore` + `projectBasicInfo/logs/2026-05-31-repo-hygiene-bench-artifacts-codex.md` |
-| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 294 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` |
+| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic / event-date-parse 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 299 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` + `tests/test_event_date_parse.py` |
 
 ### Contemporary baseline 与剩余 fail 分类
 
@@ -657,6 +657,24 @@ diagnose 工具里手抄 8 道 gate；runner 行为不变。
 - `logs/2026-05-31-phase2-closeout-cc.md`
 - `logs/2026-06-01-phase2-2b-closure-view-cashback-suppressor-cc.md`
 - `logs/2026-06-01-phase2-2c-age-resolver-and-closure-view-cc.md`
+
+### OrderedEventList-1b date parser（2026-06-01）
+
+`ListOrderingSkill` 已存在并注册，负责 "order of X from earliest
+to latest" 的 extract → sort → render 管线。1a audit 发现它并非
+缺能力，而是被日期解析 bug 静默杀死：LongMemEval session date
+形如 `2022/12/19 (Mon) 19:53`，旧 `_parse_date` 用
+`s[:len(fmt)+4]` 切片导致 `strptime` 全部失败。
+
+1b 新增共享 helper `src/radiomind/skills/date_utils.py`：
+`parse_event_date(...)` 支持 `YYYY-MM-DD`、`YYYY/MM/DD`、
+`YYYY/MM/DD (Dow) HH:MM`、`March 5, 2023` / `Mar 5, 2023`。
+`list_ordering.py` 与 `event_interval.py` 的 `_parse_date` 都委托
+该 helper，避免同款 parser 再次分叉。单测：
+`tests/test_event_date_parse.py`，并已纳入 deterministic
+regression pack。
+
+详见 `logs/2026-06-01-orderedeventlist-1b-date-parser-fix-codex.md`。
 
 ### 工作面架构纪律（V8.4 形成的规则）
 
