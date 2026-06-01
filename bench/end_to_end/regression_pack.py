@@ -66,6 +66,9 @@ PACK: dict[str, list[str]] = {
     "skill:event-date-parse": [
         "tests/test_event_date_parse.py",
     ],
+    "skill:list-ordering": [
+        "tests/test_list_ordering_routing.py",
+    ],
 }
 
 

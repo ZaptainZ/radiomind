@@ -563,7 +563,7 @@ rewrite）。Codex 多轮约束：
 | **bench resume hygiene** | runner checkpoint resume 同时重建 `judge_errors / judge_n / model_correct`（不仅 `correct/n/per_type`） | `run_longmemeval_mem0.py` |
 | **artifact normalize** | rejudge 时同步更新 `raw_accuracy` + canonical `by_type` 字段，移除 legacy `by_question_type`；checkpoint 与 artifact 双方同步 | `bench/end_to_end/rejudge_single_qid.py` |
 | **bench artifact hygiene** | `*.checkpoint.jsonl` 是可再生中间件，已从 repo 移除并忽略；result `.json` 不通配忽略，继续由人工决定是否作为里程碑显式提交；`.codex/` 视为本机配置 | `.gitignore` + `projectBasicInfo/logs/2026-05-31-repo-hygiene-bench-artifacts-codex.md` |
-| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic / event-date-parse 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 299 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` + `tests/test_event_date_parse.py` |
+| **deterministic regression pack** | 每次架构改动前的本地 smoke standard：按 closure / hint / SelfAnchor / JAB / diagnostic / event-date-parse / list-ordering routing 分类复用现有 faithful unit tests；无 ingest、无 LLM、无 benchmark，约 303 tests / ~1–2s | `bench/end_to_end/regression_pack.py` + `tests/test_closure_view.py` + `tests/test_event_date_parse.py` + `tests/test_list_ordering_routing.py` |
 
 ### Contemporary baseline 与剩余 fail 分类
 
@@ -675,6 +675,30 @@ to latest" 的 extract → sort → render 管线。1a audit 发现它并非
 regression pack。
 
 详见 `logs/2026-06-01-orderedeventlist-1b-date-parser-fix-codex.md`。
+
+### OrderedEventList-1d routing + FACT completeness（2026-06-01）
+
+1c audit 进一步确认：生产 bench runner 只通过
+`run_temporal_precision(date)` / `run_open_domain_specific(inference)`
+间接进入 skill registry；chronological list-ordering 是
+`detail`/`lookup`-like 形态，没有对应 `wants` 入口。1d 没有新增
+广义 `detail` router，也没有引入全局 `"order"` wants-class，而是加了
+专用入口 `RadioMind.run_list_ordering(...)`，由
+`ListOrderingSkill` 自己的 trigger gate 控制。
+
+同时 `ListOrderingSkill.resolve(...)` 在有 `mind._store + domain`
+时枚举全域 FACT (`list_by_domain(..., limit=500)`)，不再只看
+top-k `memories[:30]`；`_collect_instances_via_llm(...)` 也支持
+bare `MemoryEntry`，以接住 FACT 枚举返回类型。该改动是行为新增：
+ordering 问题现在会向 answer prompt 注入 `STRUCTURED SKILL
+(list_ordering, ...)` hint。确定性测试：
+`tests/test_list_ordering_routing.py`，并已纳入 regression pack。
+真实 cohort extraction 质量留给 1e 单 qid ingest+LLM smoke 验证。
+
+详见
+`logs/2026-06-01-orderedeventlist-1c-completeness-audit-cc.md`、
+`logs/2026-06-01-orderedeventlist-1c-routing-audit-codex.md`、
+`logs/2026-06-01-orderedeventlist-1d-routing-and-completeness-cc.md`。
 
 ### 工作面架构纪律（V8.4 形成的规则）
 

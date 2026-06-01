@@ -61,6 +61,9 @@ def _collect_instances_via_llm(
         elif isinstance(m, dict):
             sdate = m.get("created_at") or m.get("session_date", "")
             content = m.get("memory") or m.get("content") or ""
+        elif hasattr(m, "content"):  # bare MemoryEntry (FACT enumeration)
+            sdate = (getattr(m, "metadata", None) or {}).get("session_date", "")
+            content = m.content or ""
         else:
             continue
         if not content:
@@ -115,12 +118,35 @@ class ListOrderingSkill(Skill):
         entity_noun = _extract_noun_from_trigger(query)
         if not entity_noun:
             return None
-        llm = context.get("mind")._llm if context.get("mind") else None
+        mind = context.get("mind")
+        llm = mind._llm if mind else None
         if llm is None:
             return None
 
+        # OrderedEventList-1d (B): completeness. Gold answers are 3-6 needles
+        # scattered across ~50 sessions, so top-k retrieval cannot surface
+        # them all. When a store + domain are available, enumerate the full
+        # FACT layer (as event_interval/age_interval do) instead of the
+        # passed-in top-k memories.
+        candidates = memories
+        max_memories = 30
+        domain = context.get("domain")
+        store = getattr(mind, "_store", None)
+        if store is not None and domain:
+            try:
+                from radiomind.core.types import MemoryLevel
+                facts = store.list_by_domain(
+                    domain, level=MemoryLevel.FACT, limit=500,
+                )
+                if facts:
+                    candidates = facts
+                    max_memories = 500
+            except Exception:
+                pass
+
         # Trinity-backed extraction of instances
-        instances = _collect_instances_via_llm(query, entity_noun, memories, llm)
+        instances = _collect_instances_via_llm(
+            query, entity_noun, candidates, llm, max_memories=max_memories)
         if len(instances) < 2:
             return None
 

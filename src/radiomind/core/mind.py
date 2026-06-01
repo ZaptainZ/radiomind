@@ -1320,6 +1320,28 @@ class RadioMind:
             domain=domain, user_id=user_id,
         )
 
+    def run_list_ordering(
+        self, query: str, retrieved_memories: list, domain: str = "",
+    ) -> str:
+        """OrderedEventList-1d: dedicated entry for chronological
+        list-ordering questions. The attention router has no `wants` class
+        for ordering, so this bypasses the wants gate and routes purely on
+        ListOrderingSkill's own trigger. Returns the skill's STRUCTURED
+        SKILL hint prefix, or "" when the question isn't an ordering query
+        or the skill can't resolve."""
+        from radiomind.skills.list_ordering import (
+            ListOrderingSkill, _extract_noun_from_trigger,
+        )
+        if _extract_noun_from_trigger(query) is None:
+            return ""
+        try:
+            res = ListOrderingSkill().resolve(
+                query, retrieved_memories, {"mind": self, "domain": domain},
+            )
+            return res.prefix() if res else ""
+        except Exception:
+            return ""
+
     def run_evidence_candidates(
         self, query: str, retrieved_memories: list,
         top_k: int = 5,

@@ -523,6 +523,17 @@ def run(
             )
         except Exception:
             pass
+        # OrderedEventList-1d: chronological list-ordering questions have no
+        # attention `wants` class, so they route via this dedicated entry
+        # (gated on ListOrderingSkill's own trigger), independent of the
+        # date/inference wrappers above.
+        list_ordering_section = ""
+        try:
+            list_ordering_section = mind.run_list_ordering(
+                query=question, retrieved_memories=mem_results, domain=domain,
+            )
+        except Exception:
+            pass
 
         profile_section = ""
         try:
@@ -738,6 +749,8 @@ def run(
             ans_prompt = temporal_section + ans_prompt
         if open_domain_section:
             ans_prompt = open_domain_section + ans_prompt
+        if list_ordering_section:
+            ans_prompt = list_ordering_section + ans_prompt
         if profile_section:
             ans_prompt = profile_section + ans_prompt
         if preference_section:
