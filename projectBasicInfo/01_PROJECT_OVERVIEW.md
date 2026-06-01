@@ -639,6 +639,14 @@ cashback 与 age 各自保留 domain-specific proof resolution 与
 测试覆盖：Phase2-1e 收口时相关 committer / carrier / self-anchor
 套件 **105 passed**，精确输出测试证明 byte-path 不变。
 
+Phase2-2b/2c 又把该 proof contract 接入诊断 UX：
+`bench/end_to_end/diagnose_qid.py` 的 `closure_view` 会以只读
+方式展示两个 committer（cashback / age）的 `ProofResult`
+投影、`commit_on_abstain` what-if，以及两个 suppressor（role /
+TESG）的 overcommit/bypass what-if。age 侧通过
+`resolve_age_interval_proof(...) -> ProofResult | None` 避免在
+diagnose 工具里手抄 8 道 gate；runner 行为不变。
+
 详见：
 - `logs/2026-05-31-phase2-proof-registry-audit-cc.md`
 - `logs/2026-05-31-phase2-1b-proof-carrier-cashback-codex.md`
@@ -646,6 +654,8 @@ cashback 与 age 各自保留 domain-specific proof resolution 与
 - `logs/2026-05-31-phase2-1d-shared-commit-on-abstain-cashback-cc.md`
 - `logs/2026-05-31-phase2-1e-age-shared-gate-fast-bypass-cc.md`
 - `logs/2026-05-31-phase2-closeout-cc.md`
+- `logs/2026-06-01-phase2-2b-closure-view-cashback-suppressor-cc.md`
+- `logs/2026-06-01-phase2-2c-age-resolver-and-closure-view-cc.md`
 
 ### 工作面架构纪律（V8.4 形成的规则）
 
