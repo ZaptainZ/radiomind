@@ -481,6 +481,125 @@ def _print_summary(rec: dict) -> None:
     print()
 
 
+_CANON_ABSTAIN = "The information provided is not enough."
+
+
+def _probe_closure_view(question: str, mem_results: list[dict],
+                        mind, domain: str) -> dict:
+    """Phase2-2b: project the closure rewrite decision for this qid —
+    "would a committer commit, or a suppressor downgrade, this answer?"
+
+    Read-only what-if. Calls the REAL proof builders + gates with
+    deterministic sample answers; does NOT change runner behaviour or
+    ordering and builds no dispatcher. Preserves the two-family polarity
+    split (see 2026-06-01 diagnostic-ux audit): committers commit on a
+    pure abstain; suppressors downgrade a concrete over-commit.
+
+    Scope (2b): cashback committer + role/TESG suppressors. age committer
+    is deferred until a shared age proof resolver is extracted (the audit
+    flags that hand-reconstructing age's gates here would duplicate the
+    production gate sequence).
+    """
+    out: dict = {"committers": {}, "suppressors": {}}
+
+    # ---- committer: cashback ----
+    try:
+        from radiomind.core.arithmetic_hint import (
+            resolve_cashback_proof, cashback_proof_to_result,
+        )
+        from radiomind.core.proof_result import commit_on_abstain
+        pdict = resolve_cashback_proof(
+            question, mem_results, mind=mind, domain=domain,
+        )
+        if pdict is None:
+            out["committers"]["cashback"] = {"proof_available": False}
+        else:
+            pr = cashback_proof_to_result(pdict)
+            sample_concrete = "You earned $1.23 in cashback at TestMart."
+            out["committers"]["cashback"] = {
+                "proof_available": True,
+                "proof": {
+                    "kind": pr.kind, "value": pr.value, "inputs": pr.inputs,
+                    "sources": [{"turn_id": s.turn_id, "quote": s.quote,
+                                 "role": s.role} for s in pr.sources],
+                    "recompute_ok": pr.recompute_ok, "subject": pr.subject,
+                    "scan_scope": pr.scan_scope, "rendered": pr.rendered,
+                },
+                "would_commit_on_canonical_abstain":
+                    commit_on_abstain(pr, _CANON_ABSTAIN) == pr.rendered,
+                "would_overwrite_concrete_answer":
+                    commit_on_abstain(pr, sample_concrete) != sample_concrete,
+            }
+    except Exception as e:  # diagnostic must never crash the probe
+        out["committers"]["cashback"] = {"error": repr(e)}
+
+    # ---- suppressor: role ----
+    try:
+        from radiomind.core.role_mismatch_guard import (
+            detect_role_mismatch, maybe_rewrite_with_guard,
+        )
+        det = detect_role_mismatch(question, mem_results)
+        sample = "You manage a team of 12 engineers."
+        supp = maybe_rewrite_with_guard(question, mem_results, sample)
+        byp = maybe_rewrite_with_guard(question, mem_results, _CANON_ABSTAIN)
+        out["suppressors"]["role"] = {
+            "detection": det,
+            "would_suppress_sample_overcommit": supp != sample,
+            "would_bypass_canonical_abstain": byp == _CANON_ABSTAIN,
+            "rendered_if_suppressed": supp if supp != sample else None,
+        }
+    except Exception as e:
+        out["suppressors"]["role"] = {"error": repr(e)}
+
+    # ---- suppressor: temporal endpoint ----
+    try:
+        from radiomind.core.temporal_endpoint_guard import (
+            detect_temporal_endpoint_mismatch,
+            maybe_rewrite_with_temporal_guard,
+        )
+        det = detect_temporal_endpoint_mismatch(
+            question, mem_results, mind=mind, domain=domain)
+        sample = "You worked there for 5 years."
+        supp = maybe_rewrite_with_temporal_guard(
+            question, mem_results, sample, mind=mind, domain=domain)
+        byp = maybe_rewrite_with_temporal_guard(
+            question, mem_results, _CANON_ABSTAIN, mind=mind, domain=domain)
+        out["suppressors"]["temporal_endpoint"] = {
+            "detection": det,
+            "would_suppress_sample_overcommit": supp != sample,
+            "would_bypass_canonical_abstain": byp == _CANON_ABSTAIN,
+            "rendered_if_suppressed": supp if supp != sample else None,
+        }
+    except Exception as e:
+        out["suppressors"]["temporal_endpoint"] = {"error": repr(e)}
+
+    return out
+
+
+def _print_closure_view(cv: dict) -> None:
+    if not cv:
+        return
+    print("=== closure_view (Phase2-2b: would a closure rewrite the answer?) ===")
+    for name, v in (cv.get("committers") or {}).items():
+        if v.get("error"):
+            print(f"  committer {name}: error {v['error']}"); continue
+        if not v.get("proof_available"):
+            print(f"  committer {name}: no proof → would NOT commit"); continue
+        pr = v.get("proof", {})
+        print(f"  committer {name}: value={pr.get('value')} "
+              f"recompute_ok={pr.get('recompute_ok')} "
+              f"commit_on_abstain={v.get('would_commit_on_canonical_abstain')} "
+              f"overwrite_concrete={v.get('would_overwrite_concrete_answer')}")
+        print(f"      rendered: {pr.get('rendered')!r}")
+    for name, v in (cv.get("suppressors") or {}).items():
+        if v.get("error"):
+            print(f"  suppressor {name}: error {v['error']}"); continue
+        print(f"  suppressor {name}: detected={'yes' if v.get('detection') else 'no'} "
+              f"suppress_overcommit={v.get('would_suppress_sample_overcommit')} "
+              f"bypass_abstain={v.get('would_bypass_canonical_abstain')}")
+    print()
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--qid", required=True)
@@ -573,6 +692,8 @@ def main() -> int:
     )
     store_anchors = _probe_store_anchors(mind, domain, question)
     self_anchor = _probe_self_anchor(mind, domain, helper_proofs, question)
+    closure_view = _safe(_probe_closure_view,
+                         question, mem_results, mind, domain)
 
     # Aggregate gold-recall stats across the full top-200 window
     gold_in_top200 = sum(1 for r in retrieve_full if r["is_gold_session"])
@@ -601,6 +722,7 @@ def main() -> int:
         "store_anchor_probe": store_anchors,
         "structured_skill_section": structured,
         "jab_what_if": _jab_what_if(gold),
+        "closure_view": closure_view,
     }
 
     out = args.out or Path(
@@ -610,6 +732,7 @@ def main() -> int:
     out.write_text(json.dumps(rec, indent=2, ensure_ascii=False))
 
     _print_summary(rec)
+    _print_closure_view(rec.get("closure_view") or {})
     print(f"saved → {out}")
     return 0
 
