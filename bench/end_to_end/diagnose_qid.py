@@ -485,7 +485,7 @@ _CANON_ABSTAIN = "The information provided is not enough."
 
 
 def _probe_closure_view(question: str, mem_results: list[dict],
-                        mind, domain: str) -> dict:
+                        mind, domain: str, temporal_section: str = "") -> dict:
     """Phase2-2b: project the closure rewrite decision for this qid —
     "would a committer commit, or a suppressor downgrade, this answer?"
 
@@ -533,6 +533,36 @@ def _probe_closure_view(question: str, mem_results: list[dict],
     except Exception as e:  # diagnostic must never crash the probe
         out["committers"]["cashback"] = {"error": repr(e)}
 
+    # ---- committer: age_interval (Phase2-2c) ----
+    try:
+        from radiomind.core.age_interval_commit import (
+            resolve_age_interval_proof,
+        )
+        from radiomind.core.proof_result import commit_on_abstain
+        pr = resolve_age_interval_proof(
+            question, mem_results, temporal_section, mind=mind, domain=domain)
+        if pr is None:
+            out["committers"]["age_interval"] = {"proof_available": False}
+        else:
+            sample_concrete = "You are 7 years older."
+            out["committers"]["age_interval"] = {
+                "proof_available": True,
+                "proof": {
+                    "kind": pr.kind, "value": pr.value, "inputs": pr.inputs,
+                    "sources": [{"turn_id": s.turn_id, "quote": s.quote,
+                                 "role": s.role} for s in pr.sources],
+                    "recompute_ok": pr.recompute_ok, "subject": pr.subject,
+                    "scan_scope": pr.scan_scope, "confidence": pr.confidence,
+                    "rendered": pr.rendered,
+                },
+                "would_commit_on_canonical_abstain":
+                    commit_on_abstain(pr, _CANON_ABSTAIN) == pr.rendered,
+                "would_overwrite_concrete_answer":
+                    commit_on_abstain(pr, sample_concrete) != sample_concrete,
+            }
+    except Exception as e:
+        out["committers"]["age_interval"] = {"error": repr(e)}
+
     # ---- suppressor: role ----
     try:
         from radiomind.core.role_mismatch_guard import (
@@ -579,7 +609,7 @@ def _probe_closure_view(question: str, mem_results: list[dict],
 def _print_closure_view(cv: dict) -> None:
     if not cv:
         return
-    print("=== closure_view (Phase2-2b: would a closure rewrite the answer?) ===")
+    print("=== closure_view (Phase2: would a closure rewrite the answer?) ===")
     for name, v in (cv.get("committers") or {}).items():
         if v.get("error"):
             print(f"  committer {name}: error {v['error']}"); continue
@@ -692,8 +722,10 @@ def main() -> int:
     )
     store_anchors = _probe_store_anchors(mind, domain, question)
     self_anchor = _probe_self_anchor(mind, domain, helper_proofs, question)
-    closure_view = _safe(_probe_closure_view,
-                         question, mem_results, mind, domain)
+    closure_view = _safe(
+        _probe_closure_view, question, mem_results, mind, domain,
+        helper_signals.get("run_temporal_precision", "") or "",
+    )
 
     # Aggregate gold-recall stats across the full top-200 window
     gold_in_top200 = sum(1 for r in retrieve_full if r["is_gold_session"])

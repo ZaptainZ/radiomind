@@ -293,6 +293,72 @@ def age_interval_proof_to_result(
     )
 
 
+def resolve_age_interval_proof(
+    question: str,
+    retrieved_memories: list[Any],
+    temporal_section: str,
+    mind: Any | None = None,
+    domain: str | None = None,
+):
+    """Phase2-2c: resolve the age_interval proof into a ProofResult,
+    independent of the LLM answer. Returns None when any structural gate
+    fails (wrong/low-confidence skill, non-int or negative value,
+    unsupported mode, or missing past-age / current-age evidence).
+
+    This is the answer-independent half of maybe_age_interval_commit_closure
+    (gates 1-6 + proof construction). The recompute check (gate 7) is carried
+    on the ProofResult as `recompute_ok` and enforced by commit_on_abstain;
+    the pure-abstain check (gate 8) is the caller's commit decision. Shared
+    with diagnose_qid's closure_view so the diagnostic never re-derives the
+    gate sequence by hand.
+    """
+    skill_name, conf, computed = parse_temporal_section(temporal_section)
+    if skill_name != "age_interval":
+        return None
+    if conf is None or conf < 0.85:
+        return None
+    if not computed:
+        return None
+    try:
+        skill_value = int(computed.strip())
+    except (TypeError, ValueError):
+        return None
+    if skill_value < 0:
+        return None
+
+    mode = _question_mode(question)
+    if mode not in ("older", "younger"):
+        return None
+
+    past = _find_age_at_event(retrieved_memories)
+    if past is None:
+        return None
+    past_age, past_evidence = past
+
+    current = _find_current_age(retrieved_memories)
+    current_scan_scope = None
+    if current is not None:
+        current_age, current_evidence = current
+    elif mind is not None and domain:
+        from radiomind.core.self_anchor import scan_current_age_user_turns
+        p = scan_current_age_user_turns(mind, domain)
+        if p is None:
+            return None
+        current_age = int(p.value)
+        current_evidence = p.quote
+        current_scan_scope = (p.source_turn_id, p.scan_scope)
+    else:
+        return None
+
+    unit = _question_unit(question)
+    return age_interval_proof_to_result(
+        skill_value=skill_value, unit=unit, mode=mode,
+        past_age=past_age, current_age=current_age,
+        past_evidence=past_evidence, current_evidence=current_evidence,
+        current_scan_scope=current_scan_scope, confidence=conf,
+    )
+
+
 def maybe_age_interval_commit_closure(
     question: str,
     retrieved_memories: list[Any],
@@ -339,72 +405,22 @@ def maybe_age_interval_commit_closure(
         before, after, etc.), date arithmetic is outside this
         gate's scope. The rewrite stays dormant for those.
     """
-    skill_name, conf, computed = parse_temporal_section(temporal_section)
-    if skill_name != "age_interval":
-        return llm_answer
-    if conf is None or conf < 0.85:
-        return llm_answer
-    if not computed:
-        return llm_answer
-    try:
-        skill_value = int(computed.strip())
-    except (TypeError, ValueError):
-        return llm_answer
-    if skill_value < 0:
-        return llm_answer
-
-    mode = _question_mode(question)
-    if mode not in ("older", "younger"):
-        # Other modes need date arithmetic — outside our recompute
-        # scope. Don't trust the skill answer in this gate.
-        return llm_answer
-
-    if not _is_pure_abstain(llm_answer):
-        return llm_answer
-
-    past = _find_age_at_event(retrieved_memories)
-    if past is None:
-        return llm_answer
-    past_age, past_evidence = past
-
-    current = _find_current_age(retrieved_memories)
-    current_scan_scope = None
-    if current is not None:
-        current_age, current_evidence = current
-    elif mind is not None and domain:
-        # SelfAnchor-1b: current age missing from retrieved memories
-        # — recover from the domain store's user-turn layer (first-
-        # person current-age only). Past-age side stays from retrieve.
-        from radiomind.core.self_anchor import scan_current_age_user_turns
-        proof = scan_current_age_user_turns(mind, domain)
-        if proof is None:
-            return llm_answer
-        current_age = int(proof.value)
-        current_evidence = proof.quote
-        current_scan_scope = (proof.source_turn_id, proof.scan_scope)
-    else:
-        return llm_answer
-
-    # Gate 7: independent recompute must match skill value
-    if mode == "older":
-        recomputed = current_age - past_age
-    else:  # younger
-        recomputed = past_age - current_age
-    if recomputed != skill_value:
-        return llm_answer
-
-    unit = _question_unit(question)
-    # Phase2-1e: commit through the shared gate. Gates 7 (recompute) and 8
-    # (pure abstain) above already hold here, so commit_on_abstain returns
-    # the rendered bytes unchanged — same output, one gate.
-    result = age_interval_proof_to_result(
-        skill_value=skill_value, unit=unit, mode=mode,
-        past_age=past_age, current_age=current_age,
-        past_evidence=past_evidence, current_evidence=current_evidence,
-        current_scan_scope=current_scan_scope, confidence=conf,
+    # Phase2-2c: gates 1-6 + proof construction extracted to
+    # resolve_age_interval_proof (shared with diagnose_qid's closure_view).
+    # The abstain pre-check and the recompute/commit decision stay here via
+    # the shared gate, so the committed bytes are unchanged: a concrete
+    # answer fast-bypasses; a recompute mismatch yields recompute_ok=False
+    # which commit_on_abstain rejects → llm_answer unchanged.
+    from radiomind.core.proof_result import (
+        is_commit_abstain_candidate, commit_on_abstain,
     )
-    from radiomind.core.proof_result import commit_on_abstain
-    return commit_on_abstain(result, llm_answer)
+    if not is_commit_abstain_candidate(llm_answer):
+        return llm_answer
+    proof = resolve_age_interval_proof(
+        question, retrieved_memories, temporal_section,
+        mind=mind, domain=domain,
+    )
+    return commit_on_abstain(proof, llm_answer)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
