@@ -1,0 +1,497 @@
+{
+  "qid": "bb7c3b45",
+  "question": "How much did I save on the Jimmy Choo heels?",
+  "gold": "$300",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_de64539a_1",
+    "answer_de64539a_2"
+  ],
+  "question_date": "2023/05/30 (Tue) 23:31",
+  "ingest_stats": {
+    "turns_ingested": 495,
+    "sessions": 47,
+    "turns_total": 495
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 23,
+    "gold_hits_in_top_30": 6,
+    "gold_ranks_first_10": [
+      2,
+      3,
+      13,
+      14,
+      21,
+      22
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.5034,
+      "content_preview": "event: stored shoes in high cabinet [date=2023-05-24]"
+    },
+    {
+      "rank": 2,
+      "turn_id": "answer_de64539a_2_t0",
+      "session_id": "answer_de64539a_2",
+      "is_gold_session": true,
+      "score": 0.5665,
+      "content_preview": "[user] I'm looking for some advice on affordable fashion brands that offer high-quality clothing. I've been trying to cut back on fast fashion and opt for more "
+    },
+    {
+      "rank": 3,
+      "turn_id": "answer_de64539a_2_t1",
+      "session_id": "answer_de64539a_2",
+      "is_gold_session": true,
+      "score": 0.5465,
+      "content_preview": "[assistant] Great decision to move towards more sustainable fashion choices! You're right, fast fashion can have a significant environmental and social impact. "
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4382,
+      "content_preview": "event: returned to Trendy Wear store twice since first visit [date=2023-05-29]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4335,
+      "content_preview": "event: lost two pairs of shoes due to cat chewing [date=2023-05-24]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4204,
+      "content_preview": "event: received a 10% discount from sales associate Rachel during first store visit [date=2023-05-29]"
+    },
+    {
+      "rank": 7,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4162,
+      "content_preview": "event: bought Chanel bag [date=2023-05-29]"
+    },
+    {
+      "rank": 8,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4111,
+      "content_preview": "event: redeemed a $20 gift card from Trendy Wear [date=2023-05-29]"
+    },
+    {
+      "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.381,
+      "content_preview": "event: made purchases at Trendy Wear over the past few weeks [date=2023-05-29]"
+    },
+    {
+      "rank": 10,
+      "turn_id": "0c061750_1_t0",
+      "session_id": "0c061750_1",
+      "is_gold_session": false,
+      "score": 0.3757,
+      "content_preview": "[user] I'm thinking of getting a bike carrier for my car, so I can transport my bike more easily. I've been researching online, and I think I'll buy a Saris Bon"
+    },
+    {
+      "rank": 11,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3635,
+      "content_preview": "event: first visit to Trendy Wear store [date=2023-05-29]"
+    },
+    {
+      "rank": 12,
+      "turn_id": "3891baea_4_t4",
+      "session_id": "3891baea_4",
+      "is_gold_session": false,
+      "score": 0.3737,
+      "content_preview": "[user] I was actually thinking of buying a top from Trendy Wear, since I have the $20 gift card to use. Do you think they would have a good selection of silk bl"
+    },
+    {
+      "rank": 13,
+      "turn_id": "answer_de64539a_1_t10",
+      "session_id": "answer_de64539a_1",
+      "is_gold_session": true,
+      "score": 0.5312,
+      "content_preview": "[user] I think I'll wear my hair down for this outfit. I like the idea of adding a touch of relaxed, effortless glamour to the outfit. Plus, I think it will cre"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_de64539a_1_t3",
+      "session_id": "answer_de64539a_1",
+      "is_gold_session": true,
+      "score": 0.529,
+      "content_preview": "[assistant] A Little Black Dress (LBD) is a versatile canvas that can be elevated with the right accessories. Here are some suggestions to complement your Jimmy"
+    },
+    {
+      "rank": 15,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3454,
+      "content_preview": "event: redeemed cashback rewards from Target RedCard to buy household essentials [date=2023-05-21]"
+    },
+    {
+      "rank": 16,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3347,
+      "content_preview": "event: accumulated enough points to redeem a gift card [date=2023-05-29]"
+    },
+    {
+      "rank": 17,
+      "turn_id": "3891baea_4_t9",
+      "session_id": "3891baea_4",
+      "is_gold_session": false,
+      "score": 0.4082,
+      "content_preview": "[assistant] Congratulations on accumulating enough points to redeem a $20 gift card! That's awesome that you've been a repeat customer at Trendy Wear and have b"
+    },
+    {
+      "rank": 18,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.327,
+      "content_preview": "event: bought Kryptonite U-lock [date=2023-05-30]"
+    },
+    {
+      "rank": 19,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3242,
+      "content_preview": "event: stayed at the Hyatt Regency in Chicago for a business conference [date=2023-03-10]"
+    },
+    {
+      "rank": 20,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3231,
+      "content_preview": "event: bought new bike helmet [date=2023-03-10]"
+    },
+    {
+      "rank": 21,
+      "turn_id": "answer_de64539a_1_t9",
+      "session_id": "answer_de64539a_1",
+      "is_gold_session": true,
+      "score": 0.4778,
+      "content_preview": "[assistant] With your long, dark hair, you have a lot of versatility when it comes to styling options. Here are some thoughts on whether to wear your hair up or"
+    },
+    {
+      "rank": 22,
+      "turn_id": "answer_de64539a_1_t7",
+      "session_id": "answer_de64539a_1",
+      "is_gold_session": true,
+      "score": 0.4753,
+      "content_preview": "[assistant] I think that sounds like a fantastic choice! A coral-colored necklace with a geometric design can add a wonderful touch of whimsy and playfulness to"
+    },
+    {
+      "rank": 23,
+      "turn_id": "13b6b7ab_1_t4",
+      "session_id": "13b6b7ab_1",
+      "is_gold_session": false,
+      "score": 0.3954,
+      "content_preview": "[user] I'm thinking of spending around $50 for the gift. Do you think I could find a nice candle or essential oil set in that price range that would pair well w"
+    },
+    {
+      "rank": 24,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3097,
+      "content_preview": "event: got customized picture frame from Things Remembered for brother's graduation gift [date=2023-05-21]"
+    },
+    {
+      "rank": 25,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3035,
+      "content_preview": "event: got back from a week-long trip to Bali with closest friends [date=2023-05-27]"
+    },
+    {
+      "rank": 26,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3029,
+      "content_preview": "event: had minor issue with bike gears during last bike trip [date=2023-05-30]"
+    },
+    {
+      "rank": 27,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3028,
+      "content_preview": "event: got mom scented candles from Bath & Body Works [date=2023-05-21]"
+    },
+    {
+      "rank": 28,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3019,
+      "content_preview": "event: Alex installed new chain at bike shop [date=2023-03-18]"
+    },
+    {
+      "rank": 29,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3016,
+      "content_preview": "event: earned over 10,000 Walgreens Balance Rewards points in the past three months [date=2023-05-21]"
+    },
+    {
+      "rank": 30,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3011,
+      "content_preview": "event: been vegan for about three weeks [date=2023-05-27]"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Item: jimmy choo heels\n  Paid: $200 (user-stated purchase price; SelfAnchor store-scan from turn answer_de64539a_1_t0, scope=user_turns;item=jimmy choo heels, quote='. I was thinking of wearing my new Jimmy Choo heels that I got at the outlet mall for $200 - do you have any outfit suggestio')\n  Retail: $500 (user-stated original / retail / MSRP price)\n  Saving: $500 − $200 = $300.\n  If the question asks how much was saved on jimmy choo heels, the answer is $300.\n\n",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "paid_anchor_not_found_in_user_turns",
+      "anchor": "jimmy choo heels",
+      "paid_amounts": [],
+      "retail_amounts": [
+        500.0
+      ],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "self_anchor_probe": {
+    "paid_price": {
+      "recovered": true,
+      "value": 200.0,
+      "source_turn_id": "answer_de64539a_1_t0",
+      "scan_scope": "user_turns;item=jimmy choo heels",
+      "quote": ". I was thinking of wearing my new Jimmy Choo heels that I got at the outlet mall for $200 - do you have any outfit suggestio"
+    }
+  },
+  "store_anchor_probe": {
+    "fact_entries_total": 495,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "150",
+        "snippet": "runk rack, which costs around $150. By the way, I just got a new bike helmet recentl"
+      },
+      {
+        "amount": "20",
+        "snippet": " prices (average price point: $20-$100).\n2. **Cuyana**: Cuyana focuses on minimalis"
+      },
+      {
+        "amount": "100",
+        "snippet": "ces (average price point: $20-$100).\n2. **Cuyana**: Cuyana focuses on minimalist, ti"
+      },
+      {
+        "amount": "500",
+        "snippet": " know originally retailed for $500."
+      },
+      {
+        "amount": "20",
+        "snippet": "ing enough points to redeem a $20 gift card! That's awesome that you've been a repe"
+      },
+      {
+        "amount": "20",
+        "snippet": " be surprised at how far your $20 can stretch! You could even consider pair"
+      },
+      {
+        "amount": "20",
+        "snippet": "ted enough points to redeem a $20 gift card, I'm hoping to find a top that's not on"
+      },
+      {
+        "amount": "20",
+        "snippet": " place to shop, and with your $20 gift card, you can score a fantastic top to pair "
+      },
+      {
+        "amount": "20",
+        "snippet": "Trendy Wear, since I have the $20 gift card to use. Do you think they would have a "
+      },
+      {
+        "amount": "20",
+        "snippet": "ratulations on redeeming your $20 gift card from Trendy Wear! That's awesome that y"
+      },
+      {
+        "amount": "20",
+        "snippet": "By the way, I just redeemed a $20 gift card from Trendy Wear, which I earned from m"
+      },
+      {
+        "amount": "20",
+        "snippet": "t to pay anywhere from around $20 to $100 or more for a small hobbyist starter moto"
+      },
+      {
+        "amount": "100",
+        "snippet": "y anywhere from around $20 to $100 or more for a small hobbyist starter motor.\n\nLess"
+      },
+      {
+        "amount": "250",
+        "snippet": "pated in the 5K walk, raising $250 for local food banks\n\n**April 2nd**\n\n* Charity Ga"
+      },
+      {
+        "amount": "5,000",
+        "snippet": "rt of a team that raised over $5,000 for cancer research\n\n**May 10th**\n\n* Fundraiser D"
+      }
+    ],
+    "age_strict_in_store": [],
+    "age_loose_in_store": []
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "$300",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  },
+  "closure_view": {
+    "committers": {
+      "cashback": {
+        "proof_available": false
+      },
+      "age_interval": {
+        "proof_available": false
+      }
+    },
+    "suppressors": {
+      "role": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      },
+      "temporal_endpoint": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      }
+    }
+  },
+  "path_summary": {
+    "qid": "bb7c3b45",
+    "retrieval": {
+      "gold_hits_top_200": 23,
+      "gold_hits_top_30": 6
+    },
+    "deterministic_layer": {
+      "fired": [],
+      "refused": [
+        {
+          "helper": "savings",
+          "reason": "paid_anchor_not_found_in_user_turns"
+        },
+        {
+          "helper": "cashback",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "person_age",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "age_interval",
+          "reason": "skill_did_not_fire"
+        }
+      ],
+      "proofs_available": []
+    },
+    "skill_route": {
+      "temporal_precision": "silent",
+      "open_domain_specific": "silent",
+      "list_ordering": "not_probed",
+      "structured_skill": null
+    },
+    "closure_decision": {
+      "committers": {
+        "cashback": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        },
+        "age_interval": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        }
+      },
+      "suppressors": {
+        "role": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        },
+        "temporal_endpoint": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        }
+      }
+    },
+    "diagnosis": {
+      "layer": "helper_refusal",
+      "reason": "savings refused: paid_anchor_not_found_in_user_turns"
+    },
+    "final_answer": {
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "judge_failed": false,
+      "answer_error": false,
+      "pure_abstain": false,
+      "helper_hints": null
+    }
+  }
+}

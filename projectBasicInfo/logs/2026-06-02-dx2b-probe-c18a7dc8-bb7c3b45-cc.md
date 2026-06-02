@@ -3,9 +3,10 @@
 **Date**: 2026-06-02
 **Author**: Claude Code
 **Status**: Read-only diagnose probes (authorized, narrow scope: localize layer
-only, no fix, no code change, no n=100). c18a7dc8 current-build probe COMPLETED;
-bb7c3b45 live probe did not finish (LLM-latency wall) — bb7c3b45 result is from
-the existing May-29 diagnose rec (provisional) + the e2e overlay.
+only, no fix, no code change, no n=100). Both c18a7dc8 and bb7c3b45 current-build
+probes COMPLETED (bb7c3b45 re-run succeeded once the LLM endpoint recovered).
+c18a7dc8 additionally got a fresh single-qid run; bb7c3b45 got a dataset
+root-cause dig. No fix opened.
 
 ---
 
@@ -63,36 +64,56 @@ a guard that detects the concrete-wrong "0" (suppressor-shaped), which is a
 different closure family than the existing committer. Not a quick win; left as a
 documented headroom candidate, no fix opened.
 
-## bb7c3b45 — savings (PROVISIONAL, May-29 rec + overlay)
-Live probe stalled on LLM latency before writing; used existing
-`diagnose-bb7c3b45.json` (May-29 build, no `closure_view`) + overlay.
+## bb7c3b45 — savings (CONFIRMED, current-build probe)
+`diagnose-bb7c3b45-dx2b.json` (current build, with `closure_view`).
 
-- **retrieval: gold 6/30, 23/200** → not a retrieval gap.
+- retrieval: gold 6/30, 23/200.
 - savings helper_proof: `fired: false`,
   `refusal_reason: paid_anchor_not_found_in_user_turns`,
   `retail_amounts: [500.0]` (found), `paid_amounts: []` (NOT found),
-  `computed_saving: null`. Gold is $300 → paid ($200) anchor missing.
-- savings is **hint-only — there is no savings committer** (closure_view lists
-  only cashback + age_interval committers), so there is no commit-on-abstain
-  rescue. Abstain stands.
+  `computed_saving: null`.
+- savings is **hint-only — no savings committer** (closure_view: only cashback
+  + age_interval), so no commit-on-abstain rescue. Abstain stands.
 - **diagnosis.layer = `helper_refusal`** (savings:
   paid_anchor_not_found_in_user_turns).
 
-**Reading:** a genuine current gap, but the lever is **anchor extraction**
-(pull the *paid amount* from the retrieved user turns — retail price is already
-extracted), NOT retrieval breadth and NOT answer-LLM trust. Provisional until a
-current-build probe confirms; re-run when the LLM endpoint is healthy.
+### Root-cause dig (dataset evidence) — it IS a retrieval problem
+Both anchors exist in USER turns, in **different sessions**:
+- retail $500 — s42 t0 "...Jimmy Choo heels, which I know originally retailed
+  for $500" → **retrieved** (preview rank 2) → extracted ✓.
+- paid $200 — s14 t0 "...my new Jimmy Choo heels that I got at the outlet mall
+  for $200" (and s14 t1 "for $200 is a steal!") → **NOT in top-30**.
+- $500 − $200 = $300 = gold.
+
+Decisive nuance: gold session s14 **is** partially retrieved — but only its
+*fluffy outfit-advice turns* (LBD r14, necklace r22, hair r13/r21). Its
+*quantitative* turns (t0/t1, carrying "$200") rank BELOW the chatty turns and
+fall out of the window. So `paid_anchor_not_found_in_user_turns` is because the
+paid turn was **never retrieved**, not (primarily) because the parser can't read
+"got ... for $200".
+
+**Corrected reading (supersedes the provisional "anchor extraction, NOT
+retrieval" note):** the lever is **retrieval granularity/ranking** — the
+number-bearing turn under-ranks vs same-session chatter, so the proof input
+never reaches the savings helper. This is a concrete instance of the #3 audit's
+"retrieval reliability of proof inputs" / 第四律 lever, NOT a quick
+extraction-regex tweak (improving the parser is moot when the turn isn't
+recalled). Higher effort than a "small fix"; left as a retrieval-side headroom
+candidate, no fix opened.
 
 ## Cross-cutting findings
 
-1. **Family C is NOT one lever.** The two qids differ:
-   - c18a7dc8 = committer already ready on main; historical fail is stale →
-     verify-with-fresh-run, not fix.
-   - bb7c3b45 = real gap in **numeric-anchor extraction** within retrieved
-     sessions (paid-amount), and being hint-only it has no committer to rescue.
-   Neither is a retrieval-breadth problem (both have gold in top-30), refining
-   the audit's "retrieval reliability OR trust" into a third, more precise
-   lever: **anchor/fact extraction between retrieval and closure.**
+1. **Family C is NOT one lever.** The two qids fail for entirely different
+   reasons:
+   - c18a7dc8 = answer-LLM **concrete-overcommits to a wrong value (0)**; the
+     ready committer can't help (abstain-only polarity). Lever is upstream
+     (hint fire+trust, or a suppressor-shaped guard).
+   - bb7c3b45 = the **quantitative proof turn ($200 paid) is never retrieved**
+     (out-ranked by same-session chatter), so savings can't compute; hint-only,
+     no committer rescue. Lever is **retrieval granularity/ranking** (第四律).
+   Same Family-C bucket, opposite mechanisms and opposite fix directions —
+   confirming the audit's point that "Family C" is a label for a band, not a
+   single fixable cause.
 
 2. **`closure_view` is decisive and only exists on current-build recs.** The
    old May-29 rec lacks it, so an offline overlay on the old rec mislabels
@@ -118,12 +139,14 @@ No fix opened (per scope).
   "0", not abstain → committer can't rescue). NOT downgraded; remains a headroom
   candidate whose lever is upstream (hint-fire+trust, or a suppressor-shaped
   guard), not the existing commit_on_abstain. No fix opened.
-- bb7c3b45: regenerate its current-build diagnose rec when LLM is healthy to
-  confirm `helper_refusal` / paid-anchor extraction; only then consider whether
-  paid-amount extraction is worth a workstream.
+- bb7c3b45: current-build diagnose DONE + dataset dig → root cause is
+  **retrieval ranking** (the $200 paid turn under-ranks vs same-session chatter
+  and never reaches the savings helper), not extraction. NOT a small fix; it is
+  a retrieval-side headroom candidate (第四律). No fix opened.
 
 ## Files
 - `bench/end_to_end/diagnose-c18a7dc8-dx2b.json` (current-build diagnose rec)
 - `bench/end_to_end/fresh-c18a7dc8-verify.json` (fresh single-qid run; FAIL,
   concrete-wrong "0")
-- (bb7c3b45 current-build rec NOT produced — live probe stopped)
+- `bench/end_to_end/diagnose-bb7c3b45-dx2b.json` (current-build diagnose rec;
+  helper_refusal, paid turn not retrieved)
