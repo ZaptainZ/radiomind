@@ -105,6 +105,34 @@ def llm_call(
     raise last_exc if last_exc is not None else RuntimeError("llm_call failed")
 
 
+def _answer_with_retry(
+    ans_prompt: str, config_path: Path, *, model: str, profile: str,
+    max_tokens: int = 1500, attempts: int = 3,
+) -> str:
+    """Answer-LLM call with an OUTER transient-error retry mirroring the
+    judge's (V8.2.2b). `llm_call` already retries internally (3x), but a
+    longer DNS/network blip during a multi-hour run can still exhaust it and
+    spuriously emit '[answer error: ...]' (target-pack v1 baseline: bb7c3b45
+    and c18a7dc8 hit '[Errno 8] nodename nor servname']). The judge has an
+    extra outer loop; give the answer the same resilience. Returns the
+    stripped answer, or '[answer error: <last>]' once the attempts exhaust —
+    a persistent / non-transient failure still surfaces as an error, never a
+    fake answer."""
+    import time
+    last = ""
+    for attempt in range(attempts):
+        try:
+            return strip_thinking(llm_call(
+                ans_prompt, config_path, model=model,
+                max_tokens=max_tokens, profile=profile,
+            ))
+        except Exception as e:
+            last = f"[answer error: {e}]"
+            if attempt < attempts - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s backoff
+    return last
+
+
 _THINK_PATTERN = re.compile(r"<mem_thinking>[\s\S]*?</mem_thinking>", re.IGNORECASE)
 _FINAL_VERDICT_RE = re.compile(
     r"(?:final\s+verdict|verdict|answer)\s*[:：]\s*[\"'`]?(yes|no)\b",
@@ -771,18 +799,14 @@ def run(
         calibration = mind.get_meta_calibration()
         if calibration:
             ans_prompt = ans_prompt + "\n\n" + calibration
-        try:
-            # 1500 tokens: deepseek (esp. DashScope backend) emits
-            # verbose <mem_thinking> blocks; 800 truncated 4 of 100 in
-            # the v2 run, dropping their final answer line and forcing
-            # FAIL. 1500 covers the long-tail cases observed.
-            raw_answer = llm_call(
-                ans_prompt, config_path,
-                model=answer_model, max_tokens=1500, profile=answer_profile,
-            )
-            answer = strip_thinking(raw_answer)
-        except Exception as e:
-            answer = f"[answer error: {e}]"
+        # 1500 tokens: deepseek (esp. DashScope backend) emits verbose
+        # <mem_thinking> blocks; 800 truncated 4 of 100 in the v2 run,
+        # dropping their final answer line and forcing FAIL. 1500 covers the
+        # long-tail cases observed. AnswerRetry-1b: outer retry mirrors judge.
+        answer = _answer_with_retry(
+            ans_prompt, config_path,
+            model=answer_model, profile=answer_profile, max_tokens=1500,
+        )
 
         # Trinity bidirectional abstain gate: review every answer (whether
         # the model abstained OR committed) and decide keep/abstain/rewrite.

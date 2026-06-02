@@ -72,6 +72,9 @@ PACK: dict[str, list[str]] = {
     "harness:target-pack": [
         "tests/test_target_pack.py",
     ],
+    "harness:answer-retry": [
+        "tests/test_answer_retry.py",
+    ],
 }
 
 
