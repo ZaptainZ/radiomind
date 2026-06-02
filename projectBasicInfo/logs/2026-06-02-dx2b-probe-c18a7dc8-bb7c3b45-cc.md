@@ -32,11 +32,36 @@ where it FAILED).
 - **diagnosis.layer = `answer_or_judge_path`** ("proof was ready but final
   answer wrong").
 
-**Reading:** NOT retrieval, NOT a current logic gap. On current main the
-age_interval committer would rescue this to "7"; the v6.1.1 abstain is a
-**stale historical artifact** (that run predates the committer being effective).
-This is exactly why the #3 audit is framed as a historical map. Likely already
-realized on main — **confirm with a single fresh run, do not "fix".**
+**Reading (pre-verification):** NOT retrieval. closure_view shows the committer
+would rescue a *pure abstain* to "7". Hypothesis was: likely already realized on
+main; confirm with a fresh run.
+
+### FRESH-RUN VERIFICATION (2026-06-02) — hypothesis REFUTED
+`fresh-c18a7dc8-verify.json` (current main, deepseek-v3.2/dashscope answer,
+gpt-4o/openrouter judge, single qid):
+- **correct: false** — still fails on current main.
+- **answer = "You are 0 years older than when you graduated from college."**
+  (gold 7) — `answer_pure_abstain: false`. The live answer-LLM gives a
+  **confident concrete WRONG value (0)**, not an abstain.
+- Therefore `is_commit_abstain_candidate(answer)` is False → **commit_on_abstain
+  does NOT fire** (by design it only rescues pure abstains, never overwrites a
+  concrete answer). The committer being "ready" is irrelevant here.
+- `helper_hints`: age_interval not in the tracked-hint set and no hint fired;
+  the answer-LLM did its own (wrong) arithmetic → "0".
+
+**Corrected conclusion: do NOT downgrade c18a7dc8.** It still fails on main, and
+the failure MODE differs by run: v6.1.1 = pure abstain (committer-rescuable),
+fresh = **concrete overcommit to a wrong value (0)** (NOT in commit_on_abstain's
+polarity — that's the suppressor family's shape, but age_interval is a
+committer). So the DX-2b overlay's `answer_or_judge_path` label was right that
+it's not retrieval, but "already realized on main" was wrong: the committer
+covers only one of the two failure modes this qid exhibits.
+
+**Real lever for c18a7dc8:** upstream of the committer — either make the
+age_interval hint actually fire AND be trusted so the answer-LLM emits 7, or add
+a guard that detects the concrete-wrong "0" (suppressor-shaped), which is a
+different closure family than the existing committer. Not a quick win; left as a
+documented headroom candidate, no fix opened.
 
 ## bb7c3b45 — savings (PROVISIONAL, May-29 rec + overlay)
 Live probe stalled on LLM latency before writing; used existing
@@ -88,13 +113,17 @@ current-build probe confirms; re-run when the LLM endpoint is healthy.
    now. Fast path = build_path_summary offline on a current-build rec.
 
 ## Decision
-No fix opened (per scope). Next, if resumed:
-- c18a7dc8: one fresh single-qid run to confirm the committer now passes it on
-  main (cheap verification, not a fix).
+No fix opened (per scope).
+- c18a7dc8: fresh single-qid run DONE → **still fails on main** (concrete-wrong
+  "0", not abstain → committer can't rescue). NOT downgraded; remains a headroom
+  candidate whose lever is upstream (hint-fire+trust, or a suppressor-shaped
+  guard), not the existing commit_on_abstain. No fix opened.
 - bb7c3b45: regenerate its current-build diagnose rec when LLM is healthy to
   confirm `helper_refusal` / paid-anchor extraction; only then consider whether
   paid-amount extraction is worth a workstream.
 
 ## Files
-- `bench/end_to_end/diagnose-c18a7dc8-dx2b.json` (new, current-build, milestone)
+- `bench/end_to_end/diagnose-c18a7dc8-dx2b.json` (current-build diagnose rec)
+- `bench/end_to_end/fresh-c18a7dc8-verify.json` (fresh single-qid run; FAIL,
+  concrete-wrong "0")
 - (bb7c3b45 current-build rec NOT produced — live probe stopped)
