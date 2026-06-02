@@ -630,6 +630,149 @@ def _print_closure_view(cv: dict) -> None:
     print()
 
 
+def _classify_layer(retrieval: dict, det: dict, closure: dict,
+                    structured) -> tuple[str, str]:
+    """Conservative diagnosis.layer (DX-2a). Only the labels the deterministic
+    sections can prove; answer/judge/parked labels are left to DX-2b's e2e
+    overlay."""
+    committers = closure.get("committers") or {}
+    suppressors = closure.get("suppressors") or {}
+    for n, v in committers.items():
+        if v.get("proof_available") and v.get("would_commit_on_abstain"):
+            return ("closure_ready",
+                    f"{n} committer proof ready; if e2e abstains it's a "
+                    f"trust-gap or answer-path issue")
+    for n, v in suppressors.items():
+        if v.get("detected"):
+            return ("closure_ready",
+                    f"{n} suppressor detected; would downgrade an overcommit")
+    if det.get("refused"):
+        r = det["refused"][0]
+        return "helper_refusal", f"{r['helper']} refused: {r['reason']}"
+    if det.get("fired"):
+        return ("proof_ready",
+                f"helper(s) {det['fired']} produced proof; line may be "
+                f"hint-only (no closure)")
+    if retrieval.get("gold_hits_top_200") == 0:
+        return "retrieval_gap", "no gold sessions in top-200 retrieve"
+    if structured:
+        return ("skill_route_gap",
+                "structured skill present but no closure/helper resolved it")
+    return "unknown", "insufficient deterministic evidence to localize"
+
+
+def build_path_summary(rec: dict) -> dict:
+    """DX-2a: derive a single failure-location path from the existing
+    diagnose sections (retrieval -> helper proof -> skill route -> closure
+    decision -> diagnosis). Pure projection — no new probes, no LLM. Prefers
+    helper_proofs / closure_view over raw helper_signals."""
+    rw = rec.get("retrieve_window") or {}
+    retrieval = {
+        "gold_hits_top_200": rw.get("gold_hits_in_top_200"),
+        "gold_hits_top_30": rw.get("gold_hits_in_top_30"),
+    }
+
+    proofs = rec.get("helper_proofs") or {}
+    fired, refused = [], []
+    for name, p in proofs.items():
+        if not isinstance(p, dict):
+            continue
+        reason = p.get("refusal_reason")
+        if reason:
+            refused.append({"helper": name, "reason": reason})
+        else:
+            fired.append(name)
+
+    cv = rec.get("closure_view") or {}
+    committers = cv.get("committers") or {}
+    suppressors = cv.get("suppressors") or {}
+    closure_decision = {
+        "committers": {
+            n: ({"error": True} if not isinstance(v, dict) or "error" in v else {
+                "proof_available": bool(v.get("proof_available")),
+                "would_commit_on_abstain":
+                    v.get("would_commit_on_canonical_abstain"),
+                "would_overwrite_concrete":
+                    v.get("would_overwrite_concrete_answer"),
+            })
+            for n, v in committers.items()
+        },
+        "suppressors": {
+            n: {
+                "detected": bool(v.get("detection")) if isinstance(v, dict) else False,
+                "would_suppress_overcommit":
+                    v.get("would_suppress_sample_overcommit")
+                    if isinstance(v, dict) else None,
+            }
+            for n, v in suppressors.items()
+        },
+    }
+    deterministic_layer = {
+        "fired": fired,
+        "refused": refused,
+        "proofs_available": [
+            n for n, v in committers.items()
+            if isinstance(v, dict) and v.get("proof_available")
+        ],
+    }
+
+    sig = rec.get("helper_signals") or {}
+
+    def _route(key):
+        v = sig.get(key)
+        if v is None:
+            return "absent"
+        return "fired" if str(v).strip() else "silent"
+
+    structured = rec.get("structured_skill_section")
+    skill_route = {
+        "temporal_precision": _route("run_temporal_precision"),
+        "open_domain_specific": _route("run_open_domain_specific"),
+        # DX-2a gap: diagnose_qid does not probe run_list_ordering yet.
+        "list_ordering": "not_probed",
+        "structured_skill": (
+            structured.get("skill_name") if isinstance(structured, dict)
+            else ("present" if structured else None)),
+    }
+
+    layer, reason = _classify_layer(
+        retrieval, deterministic_layer, closure_decision, structured)
+    return {
+        "qid": rec.get("qid"),
+        "retrieval": retrieval,
+        "deterministic_layer": deterministic_layer,
+        "skill_route": skill_route,
+        "closure_decision": closure_decision,
+        "diagnosis": {"layer": layer, "reason": reason},
+    }
+
+
+def _print_path_summary(s: dict) -> None:
+    if not s:
+        return
+    r = s.get("retrieval") or {}
+    det = s.get("deterministic_layer") or {}
+    cl = s.get("closure_decision") or {}
+    dx = s.get("diagnosis") or {}
+    print("=== PATH SUMMARY (DX-2a: where did this qid fail?) ===")
+    print(f"  retrieval:     gold {r.get('gold_hits_top_200')}/200, "
+          f"{r.get('gold_hits_top_30')}/30")
+    fired = ", ".join(det.get("fired") or []) or "none"
+    refused = ", ".join(f"{x['helper']}({x['reason']})"
+                        for x in (det.get("refused") or [])) or "none"
+    print(f"  deterministic: fired=[{fired}] refused=[{refused}] "
+          f"proofs={det.get('proofs_available') or []}")
+    print(f"  skill route:   {s.get('skill_route')}")
+    commit_acts = [n for n, v in (cl.get('committers') or {}).items()
+                   if v.get('would_commit_on_abstain')]
+    supp_acts = [n for n, v in (cl.get('suppressors') or {}).items()
+                 if v.get('detected')]
+    print(f"  closure:       would-commit={commit_acts or 'none'} "
+          f"suppressors-detected={supp_acts or 'none'}")
+    print(f"  >> diagnosis:  {dx.get('layer')} — {dx.get('reason')}")
+    print()
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--qid", required=True)
@@ -761,8 +904,10 @@ def main() -> int:
         f"bench/end_to_end/diagnose-{args.qid}.json"
     )
     out.parent.mkdir(parents=True, exist_ok=True)
+    rec["path_summary"] = _safe(build_path_summary, rec)
     out.write_text(json.dumps(rec, indent=2, ensure_ascii=False))
 
+    _print_path_summary(rec.get("path_summary") or {})
     _print_summary(rec)
     _print_closure_view(rec.get("closure_view") or {})
     print(f"saved → {out}")
