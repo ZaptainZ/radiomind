@@ -1,0 +1,514 @@
+{
+  "qid": "c18a7dc8",
+  "question": "How many years older am I than when I graduated from college?",
+  "gold": "7",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_2e2085fa_1",
+    "answer_2e2085fa_2"
+  ],
+  "question_date": "2023/05/30 (Tue) 23:37",
+  "ingest_stats": {
+    "turns_ingested": 509,
+    "sessions": 49,
+    "turns_total": 509
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 5,
+    "gold_hits_in_top_30": 5,
+    "gold_ranks_first_10": [
+      14,
+      16,
+      23,
+      24,
+      27
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.032,
+      "content_preview": "event: attended colleague's son's middle school graduation ceremony [date=2023-05-10]"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0315,
+      "content_preview": "event: niece graduated from high school [date=2023-04-22]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.031,
+      "content_preview": "event: colleague's daughter's middle school graduation ceremony [date=2023-05-29]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0296,
+      "content_preview": "event: saw niece walk across stage at graduation ceremony [date=2023-04-22]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.029,
+      "content_preview": "event: niece's graduation ceremony was held at convention center [date=2023-04-22]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.0286,
+      "content_preview": "event: completed Bachelor's degree in Business Administration with a concentration in Marketing from University of California, Berkeley [date=2023-05-26]"
+    },
+    {
+      "rank": 7,
+      "turn_id": "f716720c_3_t6",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0328,
+      "content_preview": "[user] I think I'll go with patio seating, I want to people-watch and enjoy the downtown atmosphere. Do you think I could find a spot that's within a 10-15 minu"
+    },
+    {
+      "rank": 8,
+      "turn_id": "f716720c_3_t0",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0303,
+      "content_preview": "[user] I need help finding a good restaurant for brunch this weekend. You know, I was just thinking about my cousin's graduation ceremony last month and how we "
+    },
+    {
+      "rank": 9,
+      "turn_id": "f716720c_3_t1",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0161,
+      "content_preview": "[assistant] I'd be happy to help you find a great brunch spot near your office! However, I have to say, you've got a lot of graduation ceremonies on your mind! "
+    },
+    {
+      "rank": 10,
+      "turn_id": "9d5a389d_t11",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0152,
+      "content_preview": "[assistant] It's completely understandable to reminisce about the ceremony! It's a special moment to cherish, and I'm sure you're excited to celebrate with your"
+    },
+    {
+      "rank": 11,
+      "turn_id": "9d5a389d_t1",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0147,
+      "content_preview": "[assistant] Congratulations to your colleague's daughter on her graduation!  Calculating the number of guests to invite based on the number of tickets you have "
+    },
+    {
+      "rank": 12,
+      "turn_id": "9d5a389d_t9",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0143,
+      "content_preview": "[assistant] I think there might be some confusion! You mentioned earlier that your niece's graduation ceremony was last month, but you're planning a family gath"
+    },
+    {
+      "rank": 13,
+      "turn_id": "9d5a389d_t0",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0137,
+      "content_preview": "[user] I'm trying to get a headcount for my colleague's daughter's middle school graduation ceremony next week. Can you remind me how to calculate the number of"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_2e2085fa_1_t6",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0135,
+      "content_preview": "[user] That's really helpful, thank you! I'm glad to hear that these courses can help me transition into a more specialized role. I've been thinking about my lo"
+    },
+    {
+      "rank": 15,
+      "turn_id": "9d5a389d_t4",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0133,
+      "content_preview": "[user] I was actually thinking of a restaurant near the city's convention center, since that's where my niece's graduation ceremony was held last month."
+    },
+    {
+      "rank": 16,
+      "turn_id": "answer_2e2085fa_1_t0",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0132,
+      "content_preview": "[user] I'm looking to explore some online courses to improve my marketing skills, particularly in content creation and strategy. I've been working in digital ma"
+    },
+    {
+      "rank": 17,
+      "turn_id": "9d5a389d_t2",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.013,
+      "content_preview": "[user] I'm also planning a family gathering for my niece who just graduated from high school. We're thinking of having it at a local restaurant. Do you have any"
+    },
+    {
+      "rank": 18,
+      "turn_id": "f716720c_3_t5",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.023,
+      "content_preview": "[assistant] Outdoor seating is a great idea! Enjoying the downtown atmosphere while catching up with your colleagues will make the experience even more pleasant"
+    },
+    {
+      "rank": 19,
+      "turn_id": "f716720c_3_t7",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.023,
+      "content_preview": "[assistant] Patio seating it is! You'll get to enjoy the downtown atmosphere and people-watching, which is always entertaining.  Finding a spot within a 10-15 m"
+    },
+    {
+      "rank": 20,
+      "turn_id": "f716720c_3_t2",
+      "session_id": "f716720c_3",
+      "is_gold_session": false,
+      "score": 0.0113,
+      "content_preview": "[user] I'm thinking of somewhere casual, not too pricey, with a relaxed atmosphere. Nothing too fancy, just a spot to catch up with my colleagues. My office is "
+    },
+    {
+      "rank": 21,
+      "turn_id": "9d5a389d_t10",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0106,
+      "content_preview": "[user] Yeah, I guess I was just reminiscing about the ceremony. Anyway, I'll go search for those restaurants near the convention center now."
+    },
+    {
+      "rank": 22,
+      "turn_id": "9d5a389d_t8",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.01,
+      "content_preview": "[user] I'll search for these options near the convention center and see what's available. By the way, speaking of the convention center, I still remember how pr"
+    },
+    {
+      "rank": 23,
+      "turn_id": "answer_2e2085fa_1_t5",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0095,
+      "content_preview": "[assistant] The HubSpot Content Marketing Certification is a great starting point, and it's excellent that you're thinking ahead about your career goals.  Both "
+    },
+    {
+      "rank": 24,
+      "turn_id": "answer_2e2085fa_1_t7",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0095,
+      "content_preview": "[assistant] Pursuing an MBA is a significant decision, and it's great that you're thinking about your long-term career goals.  An MBA can be beneficial for adva"
+    },
+    {
+      "rank": 25,
+      "turn_id": "9d5a389d_t3",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0093,
+      "content_preview": "[assistant] Congratulations to your niece on her high school graduation!  I'd be happy to help you with recommendations, but I'm a large language model, I don't"
+    },
+    {
+      "rank": 26,
+      "turn_id": "9d5a389d_t5",
+      "session_id": "9d5a389d",
+      "is_gold_session": false,
+      "score": 0.0093,
+      "content_preview": "[assistant] Unfortunately, I'm a large language model, I don't have access to your location or the specific city you're referring to. I can't provide you with a"
+    },
+    {
+      "rank": 27,
+      "turn_id": "answer_2e2085fa_1_t1",
+      "session_id": "answer_2e2085fa_1",
+      "is_gold_session": true,
+      "score": 0.0092,
+      "content_preview": "[assistant] A Berkeley grad! That's impressive! With your background and experience, you're wise to stay updated on the latest marketing trends. I'd be happy to"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "STRUCTURED SKILL (age_interval, conf=0.90): trust this unless retrieval explicitly contradicts.\n- graduated from college → 2023-05-26\n- current age (store self-ID) → 32\nComputed answer: 7\n\n",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "current_age_not_in_retrieved",
+      "skill_emitted_structured": true,
+      "skill_name": "age_interval",
+      "skill_conf": 0.9,
+      "skill_computed": "7",
+      "found_age_at_event_strict": 25,
+      "found_age_variant_loose": 25,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "self_anchor_probe": {
+    "current_age": {
+      "recovered": true,
+      "value": 32.0,
+      "source_turn_id": "answer_2e2085fa_2_t8",
+      "scan_scope": "user_turns;first_person_current_age",
+      "quote": "nd knowledge in digital marketing. As a 32-year-old Digital Marketing Specialist at TechSavvy"
+    }
+  },
+  "store_anchor_probe": {
+    "fact_entries_total": 500,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "400",
+        "snippet": "ality shadow box cases in the $400-$600 price range:\n\n**Brands:**\n\n1. **Fanatics:** "
+      },
+      {
+        "amount": "600",
+        "snippet": " shadow box cases in the $400-$600 price range:\n\n**Brands:**\n\n1. **Fanatics:** Fanat"
+      },
+      {
+        "amount": "400",
+        "snippet": "ically designed for jerseys. ($400-$600)\n2. **Steiner Sports:** Steiner Sports is an"
+      },
+      {
+        "amount": "600",
+        "snippet": "y designed for jerseys. ($400-$600)\n2. **Steiner Sports:** Steiner Sports is another"
+      },
+      {
+        "amount": "400",
+        "snippet": "o get something that's around $400-$600, which seems to be in the premium range. Do "
+      },
+      {
+        "amount": "600,",
+        "snippet": " something that's around $400-$600, which seems to be in the premium range. Do you ha"
+      },
+      {
+        "amount": "150",
+        "snippet": "all (16\" x 20\" to 18\" x 24\"): $150-$300\n* Medium (20\" x 24\" to 22\" x 28\"): $200-$400"
+      },
+      {
+        "amount": "300",
+        "snippet": "16\" x 20\" to 18\" x 24\"): $150-$300\n* Medium (20\" x 24\" to 22\" x 28\"): $200-$400\n* La"
+      },
+      {
+        "amount": "200",
+        "snippet": "ium (20\" x 24\" to 22\" x 28\"): $200-$400\n* Large (24\" x 28\" to 26\" x 32\"): $250-$500\n"
+      },
+      {
+        "amount": "400",
+        "snippet": "20\" x 24\" to 22\" x 28\"): $200-$400\n* Large (24\" x 28\" to 26\" x 32\"): $250-$500\n* Ext"
+      },
+      {
+        "amount": "250",
+        "snippet": "rge (24\" x 28\" to 26\" x 32\"): $250-$500\n* Extra Large (28\" x 32\" to 30\" x 36\"): $300"
+      },
+      {
+        "amount": "500",
+        "snippet": "24\" x 28\" to 26\" x 32\"): $250-$500\n* Extra Large (28\" x 32\" to 30\" x 36\"): $300-$600"
+      },
+      {
+        "amount": "300",
+        "snippet": "rge (28\" x 32\" to 30\" x 36\"): $300-$600\n\n**Premium Shadow Box Cases:**\n\n* Small (16\""
+      },
+      {
+        "amount": "600",
+        "snippet": "28\" x 32\" to 30\" x 36\"): $300-$600\n\n**Premium Shadow Box Cases:**\n\n* Small (16\" x 20"
+      },
+      {
+        "amount": "300",
+        "snippet": "all (16\" x 20\" to 18\" x 24\"): $300-$500\n* Medium (20\" x 24\" to 22\" x 28\"): $400-$700"
+      }
+    ],
+    "age_strict_in_store": [
+      {
+        "age": 25,
+        "snippet": ", Berkeley, which I completed at the age of 25. Do you have any course recommendations that woul"
+      }
+    ],
+    "age_loose_in_store": [
+      {
+        "age": 25,
+        "snippet": ", Berkeley, which I completed at the age of 25. Do you have any course recommendations that woul"
+      }
+    ]
+  },
+  "structured_skill_section": {
+    "skill_name": "age_interval",
+    "confidence": 0.9,
+    "computed_answer": "7"
+  },
+  "jab_what_if": {
+    "gold": "7",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  },
+  "closure_view": {
+    "committers": {
+      "cashback": {
+        "proof_available": false
+      },
+      "age_interval": {
+        "proof_available": true,
+        "proof": {
+          "kind": "age_interval",
+          "value": 7,
+          "inputs": {
+            "past_age": 25,
+            "current_age": 32,
+            "mode": "older"
+          },
+          "sources": [
+            {
+              "turn_id": null,
+              "quote": "m the University of California, Berkeley, which I completed at the age of 25. Do you have any course recommendations that would be suitable for someone with",
+              "role": "at_age"
+            },
+            {
+              "turn_id": "answer_2e2085fa_2_t8",
+              "quote": "nd knowledge in digital marketing. As a 32-year-old Digital Marketing Specialist at TechSavvy",
+              "role": "current_age"
+            }
+          ],
+          "recompute_ok": true,
+          "subject": null,
+          "scan_scope": "user_turns;first_person_current_age",
+          "confidence": 0.9,
+          "rendered": "7 years. (Verified: current age 32 minus past-event age 25 = 7, matching the skill computation. Past-age source: 'm the University of California, Berkeley, which I completed at the age of 25. Do you have any course recommendations that would be suitable for someone with'. Current-age source: 'nd knowledge in digital marketing. As a 32-year-old Digital Marketing Specialist at TechSavvy' (SelfAnchor store-scan: turn answer_2e2085fa_2_t8, scope=user_turns;first_person_current_age).)"
+        },
+        "would_commit_on_canonical_abstain": true,
+        "would_overwrite_concrete_answer": false
+      }
+    },
+    "suppressors": {
+      "role": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      },
+      "temporal_endpoint": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      }
+    }
+  },
+  "path_summary": {
+    "qid": "c18a7dc8",
+    "retrieval": {
+      "gold_hits_top_200": 5,
+      "gold_hits_top_30": 5
+    },
+    "deterministic_layer": {
+      "fired": [],
+      "refused": [
+        {
+          "helper": "savings",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "cashback",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "person_age",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "age_interval",
+          "reason": "current_age_not_in_retrieved"
+        }
+      ],
+      "proofs_available": [
+        "age_interval"
+      ]
+    },
+    "skill_route": {
+      "temporal_precision": "fired",
+      "open_domain_specific": "silent",
+      "list_ordering": "not_probed",
+      "structured_skill": "age_interval"
+    },
+    "closure_decision": {
+      "committers": {
+        "cashback": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        },
+        "age_interval": {
+          "proof_available": true,
+          "would_commit_on_abstain": true,
+          "would_overwrite_concrete": false
+        }
+      },
+      "suppressors": {
+        "role": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        },
+        "temporal_endpoint": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        }
+      }
+    },
+    "diagnosis": {
+      "layer": "answer_or_judge_path",
+      "reason": "deterministic proof was ready but final answer wrong — answer-LLM ignored the hint (trust-gap) or answer-path issue"
+    },
+    "final_answer": {
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "judge_failed": false,
+      "answer_error": false,
+      "pure_abstain": false,
+      "helper_hints": null
+    }
+  }
+}
