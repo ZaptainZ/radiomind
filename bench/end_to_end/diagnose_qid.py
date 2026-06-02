@@ -661,7 +661,62 @@ def _classify_layer(retrieval: dict, det: dict, closure: dict,
     return "unknown", "insufficient deterministic evidence to localize"
 
 
-def build_path_summary(rec: dict) -> dict:
+def _extract_final(e2e: dict) -> dict:
+    """DX-2b: project a saved runner per_query record (run_longmemeval_mem0
+    `per_query` entry) into the path_summary final_answer block. Field names
+    match the runner: question_id / answer / correct / judge_failed /
+    helper_hints."""
+    ans = e2e.get("answer") or ""
+    return {
+        "answer": ans[:160],
+        "correct": bool(e2e.get("correct")),
+        "judge_failed": bool(e2e.get("judge_failed")),
+        "answer_error": isinstance(ans, str) and ans.startswith("[answer error"),
+        "pure_abstain": bool((e2e.get("helper_hints") or {})
+                             .get("answer_pure_abstain")),
+        "helper_hints": e2e.get("helper_hints"),
+    }
+
+
+def _overlay_e2e(det_layer: str, det_reason: str, final: dict) -> tuple[str, str]:
+    """DX-2b: reclassify diagnosis.layer using the saved e2e final answer, on
+    top of the deterministic localization, so a red target-pack qid
+    auto-attributes to the answer/judge path instead of looking like a logic
+    gap. Infra/judge errors and pass/fail win over deterministic labels; a
+    wrong final answer with a ready closure becomes answer_or_judge_path."""
+    if final.get("answer_error"):
+        return ("answer_or_judge_path",
+                "answer-LLM returned an error string (infra/transient), "
+                "not a logic result")
+    if final.get("judge_failed"):
+        return ("answer_or_judge_path",
+                "judge infra error; e2e verdict unreliable")
+    if final.get("correct"):
+        return ("pass", "e2e answer judged correct")
+    # wrong, no infra error
+    if det_layer == "closure_ready":
+        return ("answer_or_judge_path",
+                "deterministic proof was ready but final answer wrong — "
+                "answer-LLM ignored the hint (trust-gap) or answer-path issue")
+    return det_layer, det_reason
+
+
+def _load_e2e_record(path: Path, qid: str) -> dict | None:
+    """DX-2b: find this qid's per_query record in a saved runner result json.
+    Matches on question_id (the runner's key). Returns None if the file or qid
+    is absent — the overlay is strictly optional."""
+    try:
+        data = json.loads(Path(path).read_text())
+    except Exception:
+        return None
+    rows = data.get("per_query") if isinstance(data, dict) else data
+    for r in rows or []:
+        if r.get("question_id") == qid or r.get("qid") == qid:
+            return r
+    return None
+
+
+def build_path_summary(rec: dict, e2e: dict | None = None) -> dict:
     """DX-2a: derive a single failure-location path from the existing
     diagnose sections (retrieval -> helper proof -> skill route -> closure
     decision -> diagnosis). Pure projection — no new probes, no LLM. Prefers
@@ -737,7 +792,11 @@ def build_path_summary(rec: dict) -> dict:
 
     layer, reason = _classify_layer(
         retrieval, deterministic_layer, closure_decision, structured)
-    return {
+    final = None
+    if e2e is not None:
+        final = _extract_final(e2e)
+        layer, reason = _overlay_e2e(layer, reason, final)
+    out = {
         "qid": rec.get("qid"),
         "retrieval": retrieval,
         "deterministic_layer": deterministic_layer,
@@ -745,6 +804,9 @@ def build_path_summary(rec: dict) -> dict:
         "closure_decision": closure_decision,
         "diagnosis": {"layer": layer, "reason": reason},
     }
+    if final is not None:
+        out["final_answer"] = final
+    return out
 
 
 def _print_path_summary(s: dict) -> None:
@@ -769,6 +831,19 @@ def _print_path_summary(s: dict) -> None:
                  if v.get('detected')]
     print(f"  closure:       would-commit={commit_acts or 'none'} "
           f"suppressors-detected={supp_acts or 'none'}")
+    fa = s.get("final_answer")
+    if fa is not None:
+        flags = []
+        if fa.get("answer_error"):
+            flags.append("ANSWER-ERROR")
+        if fa.get("judge_failed"):
+            flags.append("JUDGE-FAILED")
+        if fa.get("pure_abstain"):
+            flags.append("pure-abstain")
+        verdict = "correct" if fa.get("correct") else "WRONG"
+        tail = f" [{', '.join(flags)}]" if flags else ""
+        print(f"  e2e answer:    {verdict}{tail}  "
+              f"{(fa.get('answer') or '')!r}")
     print(f"  >> diagnosis:  {dx.get('layer')} — {dx.get('reason')}")
     print()
 
@@ -784,6 +859,12 @@ def main() -> int:
                    help="Skip wiping the sandbox; reuse if already "
                         "ingested for this qid.")
     p.add_argument("--out", type=Path, default=None)
+    p.add_argument("--e2e-result", type=Path, default=None,
+                   help="DX-2b: a saved run_longmemeval_mem0 result json. "
+                        "Overlays this qid's final answer (correct / "
+                        "judge_failed / [answer error] / pure-abstain) into "
+                        "path_summary so red target-pack qids auto-attribute "
+                        "to the answer-or-judge path.")
     args = p.parse_args()
     if args.sandbox is None:
         args.sandbox = Path(f"/tmp/rm-diagnose-qid-{args.qid}")
@@ -904,7 +985,12 @@ def main() -> int:
         f"bench/end_to_end/diagnose-{args.qid}.json"
     )
     out.parent.mkdir(parents=True, exist_ok=True)
-    rec["path_summary"] = _safe(build_path_summary, rec)
+    e2e_rec = (_load_e2e_record(args.e2e_result, args.qid)
+               if args.e2e_result else None)
+    if args.e2e_result and e2e_rec is None:
+        print(f"NOTE: --e2e-result given but qid {args.qid} not found in "
+              f"{args.e2e_result}; path_summary will omit final_answer.")
+    rec["path_summary"] = _safe(build_path_summary, rec, e2e_rec)
     out.write_text(json.dumps(rec, indent=2, ensure_ascii=False))
 
     _print_path_summary(rec.get("path_summary") or {})
