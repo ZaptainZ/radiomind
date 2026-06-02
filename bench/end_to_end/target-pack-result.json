@@ -1,0 +1,228 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 10,
+  "total_ingested_turns": 5075,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 15527.4,
+  "overall_accuracy": 0.6,
+  "model_correct": 6,
+  "judged_n": 10,
+  "judge_errors": 0,
+  "raw_accuracy": 0.6,
+  "judged_accuracy": 0.6,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "multi-session": {
+      "n": 5,
+      "accuracy": 0.6
+    },
+    "temporal-reasoning": {
+      "n": 4,
+      "accuracy": 0.5
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_d12ceb0e",
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The average age across you, your parents, and your grandparents is 59.6 years.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ge. There are no discrepancies or omissions in the model response compared to the correct answer.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": true,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "$3,750",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ding the exact amount of money raised for charity. There is no discrepancy or missing information.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9aaed6a3",
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "You earned $0.75 in cashback at SaveMart last Thursday.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "f the cashback amount and the context of the transaction. There is no discrepancy between the two.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "cashback_telemetry": {
+        "merchant": "SaveMart",
+        "amount_in_retrieve": true,
+        "amount": 75.0,
+        "rate_in_retrieve": null,
+        "rate_refusal": "rate_merchant_mismatch",
+        "hint_emitted": true,
+        "store_scan_used": true,
+        "hint_preview": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Memories show 1% cashback rate and $75 spent at SaveMart.\n  (rate via SelfAnchor store-scan from turn answer_353d3c6d_2_t0, scope=user_turns;merchant=SaveMart)\n"
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": true,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "bb7c3b45",
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "[answer error: <urlopen error [Errno 8] nodename nor servname provided, or not known>]",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "the amount saved on the heels, which is entirely unaddressed. Therefore, the response is incorrect.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "[answer error: <urlopen error [Errno 8] nodename nor servname provided, or not known>]",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "ntic equivalence or a superset of the correct answer.\n\nTherefore, the model response is incorrect.\n</judge_thinking>\n\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "s not provide the specific number of months that have passed. Therefore, the final verdict is \"no.\"\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "gpt4_7abb270c",
+      "q": "What is the order of the six museums I visited from earliest to latest?",
+      "gold": "Science Museum, Museum of Contemporary Art, Metropolitan Museum of Art, Museum of History, Modern Art Museum, Natural History Museum",
+      "answer": "Museum of Contemporary Art, Science Museum's 'Space Exploration' exhibition, Metropolitan Museum of Art, Modern Art Museum, Richard Wagner Museum, Natural History Museum.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "l claim correctly. The order is incorrect, and there is a substitution of one museum with another.\n</judge_thinking>\n\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_93159ced",
+      "q": "How long have I been working before I started my current job at NovaTech?",
+      "gold": "4 years and 9 months",
+      "answer": "You worked for 4 years and 9 months before starting at NovaTech.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "e user worked before starting at NovaTech, matching the correct answer in both meaning and detail.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_93159ced_abs",
+      "q": "How long have I been working before I started my current job at Google?",
+      "gold": "The information provided is not enough. From the information provided, You haven't started working at Google yet.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": ", the model response is semantically equivalent to the correct answer in terms of the core claim.\n\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": true,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "le as a Senior Software Engineer. The core concept of insufficient information is fully addressed.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": true,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
