@@ -88,13 +88,17 @@ Knowledge-update reached 1.000.
 
 ### LoCoMo cat 1-4 (multi-turn dialog, n=100)
 
+> ⚠️ **Historical artifact (gpt-4o run, 2026-04-20).** This is a historical
+> n=100 result, **not** a current-main baseline after the V8.x / diagnostic /
+> closure work. Re-run before citing it as a current LoCoMo score.
+
 | System | Score |
 |---|---:|
-| Mem0 v3                             | 0.916 |
-| **RadioMind (gpt-4o + gpt-4o)**     | **0.890** |
-| MemMachine                          | 0.917 |
+| Mem0 v3                                              | 0.916 |
+| **RadioMind (historical gpt-4o run, 2026-04-20)**   | **0.890** |
+| MemMachine                                           | 0.917 |
 
-Comparable to Mem0 within 2.6 pt. The remaining gap is dialog-specific (anaphora resolution, speaker tracking) — design space for future iterations.
+On that historical run, comparable to Mem0 within 2.6 pt. The remaining gap is dialog-specific (anaphora resolution, speaker tracking) — design space for future iterations.
 
 ### What made the numbers move
 
