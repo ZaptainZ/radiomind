@@ -88,6 +88,10 @@ qtypes — design surfaces for the next iteration.
 | **RadioMind (gpt-4o answer)** | **0.830** | **0.890** |
 | **RadioMind (deepseek answer, n=100 v3)** | **0.860** | (not re-run with v3) |
 
+> ⚠️ The **LoCoMo 0.890** figure is a historical n=100 artifact (gpt-4o run,
+> 2026-04-20) and has **not** been re-run after the V8.x / diagnostic / closure
+> work — treat it as historical, not a current-main LoCoMo baseline.
+
 ### Architectural gain validation
 
 20 historical fail qids → **20 / 20 flipped FAIL → PASS** in v2-fix
