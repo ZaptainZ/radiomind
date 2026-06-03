@@ -75,8 +75,14 @@ PACK: dict[str, list[str]] = {
     "harness:answer-retry": [
         "tests/test_answer_retry.py",
     ],
+    "harness:devtools": [
+        "tests/test_devtools.py",
+    ],
     "diagnostic:path-summary": [
         "tests/test_path_summary.py",
+    ],
+    "diagnostic:report": [
+        "tests/test_diagnosis_report.py",
     ],
 }
 

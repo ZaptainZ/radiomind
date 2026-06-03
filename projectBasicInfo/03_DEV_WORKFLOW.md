@@ -7,16 +7,41 @@
 
 ---
 
-## 1. The three gates (run in this order)
+## 1. The gates (one CLI, run in this order)
 
-| Gate | Command | What it proves | When |
-|------|---------|----------------|------|
-| **Deterministic gate** | `~/.radiomind-bench-venv/bin/python bench/end_to_end/regression_pack.py` | 16 behaviour categories (committers, suppressors, hints, SelfAnchor, JAB, skills, diagnostics) still pass. Fast, no ingest/LLM/benchmark. | **Every change.** Before and after. |
-| **E2E gate** | `bench/end_to_end/target_pack.py` (answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter) | A curated qid set still behaves end-to-end through the full ingest+answer+judge pipeline. Heavy (hours). | **Manual / authorized, after key-path changes only.** NOT in the default loop. |
-| **Failure-path debugger** | `bench/end_to_end/diagnose_qid.py --qid <q> [--e2e-result <run.json>]` | *Where* a single qid fails: retrieval → helper proof → skill route → closure → final answer. | When a gate goes red, or to localize one qid. |
+All gates are reachable through **one repo-dev dispatcher** —
+`python -m bench.end_to_end.devtools <verb>` (a thin wrapper; **not** a
+pip-installed command — it lives in `bench/` and needs the repo checkout). Prefix
+with `~/.radiomind-bench-venv/bin/python` (see Environment below). The underlying
+scripts still work directly; the dispatcher just gives one stable entry surface.
+
+```bash
+# 1. deterministic gate — every change, before & after (fast: no ingest/LLM)
+python -m bench.end_to_end.devtools regression-pack
+# 2a. parse an existing e2e artifact (fast, no run; --report is required)
+python -m bench.end_to_end.devtools target-pack --report <artifact.json>
+# 2b. run the heavy real e2e gate — manual/authorized only (NOT via devtools):
+~/.radiomind-bench-venv/bin/python bench/end_to_end/target_pack.py
+# 3. localize one qid (heavy: real ingest + LLM)
+python -m bench.end_to_end.devtools diagnose --qid <q> [--e2e-result <run.json>]
+# 4. render a stable report from an existing diagnose json (pure, no re-run)
+python -m bench.end_to_end.devtools report --diagnose-json <diagnose.json> --out <dir>
+```
+
+| Gate | devtools verb | Underlying | What it proves | When |
+|------|---------------|-----------|----------------|------|
+| **Deterministic gate** | `regression-pack` | `regression_pack.py` | 18 behaviour categories (committers, suppressors, hints, SelfAnchor, JAB, skills, harness, diagnostics) still pass. Fast, no ingest/LLM/benchmark. | **Every change.** Before and after. |
+| **E2E gate** | `target-pack --report <json>` (parse only) | `target_pack.py` | A curated qid set still behaves end-to-end through the full ingest+answer+judge pipeline. Heavy (hours) for a real run — devtools only exposes **artifact parsing**; the real run is `target_pack.py` directly. | **Manual / authorized, after key-path changes only.** NOT in the default loop. |
+| **Failure-path debugger** | `diagnose --qid <q> [--e2e-result <run.json>]` | `diagnose_qid.py` | *Where* a single qid fails: retrieval → helper proof → skill route → closure → final answer. | When a gate goes red, or to localize one qid. |
+| **Standard report** | `report --diagnose-json <json> --out <dir>` | `diagnosis_report.py` | Projects a diagnose json into a stable `diagnosis.json` + human `summary.md` with a `next_action` (pure lookup on `diagnosis.layer`; no re-run). | After `diagnose`, to get a copy-pasteable triage report. |
+
+Recommended order: **`regression-pack` → `target-pack --report` / real `target_pack.py`
+→ `diagnose` → `report`.**
 
 Rule of thumb: **regression_pack is the gate you must never skip; target_pack is
-the gate you run on purpose; diagnose_qid is the microscope.**
+the gate you run on purpose; diagnose_qid is the microscope; report is the
+write-up.** devtools `target-pack` deliberately cannot trigger the heavy real e2e
+(`--report` is required), so it is always safe to run.
 
 ### Environment (hard rules)
 - Always use `~/.radiomind-bench-venv/bin/python` (py3.13). iCloud evicts
@@ -73,10 +98,20 @@ Key invariants (learned, not negotiable):
 
 ## 4. When a gate goes red — diagnose decision tree
 
+Triage flow (copy-paste):
+```bash
+# a red target-pack qid → localize it, then write the report
+python -m bench.end_to_end.devtools diagnose --qid <q> --e2e-result <the-run.json>
+python -m bench.end_to_end.devtools report --diagnose-json bench/end_to_end/diagnose-<q>.json --out /tmp/rm-report-<q>
+# read /tmp/rm-report-<q>/summary.md → it states the layer, meaning, fix family, and DO-NOT
+```
+
 1. **regression_pack red** → a behaviour regressed. The failing category names
    the test file; fix or revert. Never push past a red deterministic gate.
 2. **target_pack red** → run
-   `diagnose_qid.py --qid <q> --e2e-result <the-run.json>`. Read
+   `devtools diagnose --qid <q> --e2e-result <the-run.json>` (or `diagnose_qid.py`
+   directly), then `devtools report --diagnose-json <the diagnose json> --out <dir>`.
+   The report's `next_action` / `do_not` are a pure lookup on
    `path_summary.diagnosis.layer`:
 
 | layer | meaning | direction |
@@ -107,7 +142,10 @@ directly, not just the top label.
 
 ## 6. Where things live
 
+- Dispatcher: `bench/end_to_end/devtools.py` (one CLI over all gates; thin wrapper)
 - Gates: `bench/end_to_end/{regression_pack,target_pack,diagnose_qid}.py`
+- Report: `bench/end_to_end/diagnosis_report.py` (`LAYER_GUIDANCE` lookup →
+  `diagnosis.json` + `summary.md`; pure projection of a diagnose json)
 - Manifests: `target_pack.py` MANIFEST (required vs observe_only with `mode`)
 - Proof: `src/radiomind/core/proof_result.py`,
   `arithmetic_hint.py` (cashback), `age_interval_commit.py`

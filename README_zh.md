@@ -116,6 +116,22 @@ knowledge-update 达到 1.000。
 
 > 方法学、原始数据、完整审计轨迹见 [`projectBasicInfo/01_PROJECT_OVERVIEW.md`](projectBasicInfo/01_PROJECT_OVERVIEW.md) 和 [`RELEASE.md`](RELEASE.md)。
 
+### 开发与诊断
+
+要给 RadioMind 本身做开发？current main 由 deterministic / e2e / diagnostic 三类
+gate 验证，全部收在一个仓库内 dev CLI 后面：
+
+```bash
+python -m bench.end_to_end.devtools regression-pack                       # 快速 deterministic gate（每次改动）
+python -m bench.end_to_end.devtools target-pack --report <artifact.json>  # 解析 curated e2e artifact
+python -m bench.end_to_end.devtools diagnose --qid <q> [--e2e-result <run.json>]   # 定位单个失败 qid
+python -m bench.end_to_end.devtools report --diagnose-json <diagnose.json> --out <dir>  # 生成稳定 triage 报告
+```
+
+完整工作流、"改 X 前先跑 Y" 矩阵、closure/proof 边界、红点如何流入
+`diagnose` → `report`：见
+[`projectBasicInfo/03_DEV_WORKFLOW.md`](projectBasicInfo/03_DEV_WORKFLOW.md)。
+
 ### Backend 无关，是设计而不是承诺
 
 同一份 RadioMind 代码在多个 LLM 栈下跑出同样的成绩——这才是真正的看点。已验证的组合：

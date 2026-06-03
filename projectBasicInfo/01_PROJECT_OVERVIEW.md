@@ -1454,3 +1454,4 @@ class RadioMindHermesProvider(MemoryProvider):
   - `docs/`: quickstart, integration, api-reference
   - `src/radiomind/`: Python 源码 (36 files)
   - `rust-core/`: Rust 守护进程源码
+  - `bench/end_to_end/devtools.py`: bench/dev workflow 统一入口 CLI（`python -m bench.end_to_end.devtools <regression-pack|target-pack|diagnose|report>`）；详见 `03_DEV_WORKFLOW.md`

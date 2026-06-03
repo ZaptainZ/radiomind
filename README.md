@@ -118,6 +118,22 @@ On that historical run, comparable to Mem0 within 2.6 pt. The remaining gap is d
 
 > Methodology, raw numbers, and the full audit trail live in [`projectBasicInfo/01_PROJECT_OVERVIEW.md`](projectBasicInfo/01_PROJECT_OVERVIEW.md) and [`RELEASE.md`](RELEASE.md).
 
+### Development & diagnostics
+
+Working on RadioMind itself? Current main is validated by deterministic / e2e /
+diagnostic gates, all behind one repo-dev CLI:
+
+```bash
+python -m bench.end_to_end.devtools regression-pack                       # fast deterministic gate (every change)
+python -m bench.end_to_end.devtools target-pack --report <artifact.json>  # parse a curated e2e artifact
+python -m bench.end_to_end.devtools diagnose --qid <q> [--e2e-result <run.json>]   # localize one failing qid
+python -m bench.end_to_end.devtools report --diagnose-json <diagnose.json> --out <dir>  # stable triage report
+```
+
+Full workflow, the "before you change X run Y" matrix, the closure/proof
+boundaries, and how a red qid flows into `diagnose` → `report`:
+[`projectBasicInfo/03_DEV_WORKFLOW.md`](projectBasicInfo/03_DEV_WORKFLOW.md).
+
 ### Backend-agnostic by design
 
 The same RadioMind code passes the same benchmark on multiple LLM stacks — that's the headline. We've validated on:
