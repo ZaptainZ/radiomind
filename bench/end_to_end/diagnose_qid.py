@@ -647,6 +647,20 @@ def _classify_layer(retrieval: dict, det: dict, closure: dict,
             return ("closure_ready",
                     f"{n} suppressor detected; would downgrade an overcommit")
     if det.get("refused"):
+        # DX-2c: a refusal whose reason says a required anchor/input was not
+        # found *in the retrieved turns* is a different failure than a plain
+        # gate miss (no_trigger_match / skill_did_not_fire): the evidence turn
+        # likely never reached the window. Prefer such a refusal for the label
+        # (also de-noises the refused[0] bias toward irrelevant helpers).
+        _MISSING = ("not_found", "not_in_retrieved", "not_in_user_turns")
+        missing = [r for r in det["refused"]
+                   if any(k in (r.get("reason") or "") for k in _MISSING)]
+        if missing:
+            r = missing[0]
+            return ("proof_input_turn_missing",
+                    f"{r['helper']}: {r['reason']} — a required proof input was "
+                    f"not found in the retrieved turns (the evidence turn was "
+                    f"likely out-ranked / not retrieved, not an extraction bug)")
         r = det["refused"][0]
         return "helper_refusal", f"{r['helper']} refused: {r['reason']}"
     if det.get("fired"):
@@ -678,12 +692,17 @@ def _extract_final(e2e: dict) -> dict:
     }
 
 
-def _overlay_e2e(det_layer: str, det_reason: str, final: dict) -> tuple[str, str]:
-    """DX-2b: reclassify diagnosis.layer using the saved e2e final answer, on
+def _overlay_e2e(det_layer: str, det_reason: str, final: dict,
+                 closure: dict | None = None) -> tuple[str, str]:
+    """DX-2b/2c: reclassify diagnosis.layer using the saved e2e final answer, on
     top of the deterministic localization, so a red target-pack qid
-    auto-attributes to the answer/judge path instead of looking like a logic
-    gap. Infra/judge errors and pass/fail win over deterministic labels; a
-    wrong final answer with a ready closure becomes answer_or_judge_path."""
+    auto-attributes to the right path instead of looking like a logic gap.
+    Infra/judge errors and pass/fail win over deterministic labels.
+
+    DX-2c: when a committer's proof was ready but the answer-LLM returned a
+    CONCRETE wrong value (not an abstain), commit_on_abstain never fires (it
+    only rescues abstains) — that is `concrete_wrong_bypassed_committer`, a
+    distinct mode from the abstain trust-gap (`answer_or_judge_path`)."""
     if final.get("answer_error"):
         return ("answer_or_judge_path",
                 "answer-LLM returned an error string (infra/transient), "
@@ -694,6 +713,15 @@ def _overlay_e2e(det_layer: str, det_reason: str, final: dict) -> tuple[str, str
     if final.get("correct"):
         return ("pass", "e2e answer judged correct")
     # wrong, no infra error
+    committers = (closure or {}).get("committers") or {}
+    committer_ready = any(c.get("proof_available") and c.get("would_commit_on_abstain")
+                         for c in committers.values())
+    if committer_ready and not final.get("pure_abstain"):
+        return ("concrete_wrong_bypassed_committer",
+                "a committer proof was ready, but the answer-LLM returned a "
+                "concrete wrong value (not an abstain), so commit_on_abstain "
+                "never fired — lever is upstream (hint trust) or a "
+                "suppressor-shaped guard, not the existing committer")
     if det_layer == "closure_ready":
         return ("answer_or_judge_path",
                 "deterministic proof was ready but final answer wrong — "
@@ -795,7 +823,7 @@ def build_path_summary(rec: dict, e2e: dict | None = None) -> dict:
     final = None
     if e2e is not None:
         final = _extract_final(e2e)
-        layer, reason = _overlay_e2e(layer, reason, final)
+        layer, reason = _overlay_e2e(layer, reason, final, closure_decision)
     out = {
         "qid": rec.get("qid"),
         "retrieval": retrieval,

@@ -183,3 +183,59 @@ def test_print_does_not_crash_with_final_answer():
              "answer": "[answer error: x]", "correct": False,
              "judge_failed": False})
     DQ._print_path_summary(s)
+
+
+# --- DX-2c: precise mode labels (diagnostic-only, no behavior change) -----
+
+def test_concrete_wrong_bypassed_committer():
+    # committer ready + e2e WRONG + NOT an abstain -> the c18a7dc8 mode:
+    # commit_on_abstain never fires because the answer is a concrete wrong value
+    s = DQ.build_path_summary(
+        _closure_ready_rec(),
+        e2e={"question_id": "q",
+             "answer": "You are 0 years older than when you graduated.",
+             "correct": False, "judge_failed": False,
+             "helper_hints": {"answer_pure_abstain": False}})
+    assert s["diagnosis"]["layer"] == "concrete_wrong_bypassed_committer"
+    assert s["final_answer"]["pure_abstain"] is False
+
+
+def test_committer_ready_abstain_stays_trust_gap():
+    # committer ready + e2e WRONG + IS an abstain -> still answer_or_judge_path
+    # (the abstain trust-gap is rescuable; not the bypass mode)
+    s = DQ.build_path_summary(
+        _closure_ready_rec(),
+        e2e={"question_id": "q", "answer": "The information is not enough.",
+             "correct": False, "judge_failed": False,
+             "helper_hints": {"answer_pure_abstain": True}})
+    assert s["diagnosis"]["layer"] == "answer_or_judge_path"
+
+
+def test_proof_input_turn_missing_label():
+    # bb7c3b45 mode: refusal reason says a required anchor wasn't found in the
+    # retrieved turns -> proof_input_turn_missing (deterministic, no e2e needed)
+    rec = _rec(helper_proofs={
+        "savings": {"refusal_reason": "paid_anchor_not_found_in_user_turns"}})
+    s = DQ.build_path_summary(rec)
+    assert s["diagnosis"]["layer"] == "proof_input_turn_missing"
+    assert "not found in the retrieved turns" in s["diagnosis"]["reason"]
+
+
+def test_missing_input_refusal_preferred_over_generic():
+    # when both a generic gate-miss and a missing-input refusal exist, the
+    # label picks the missing-input one (also de-noises refused[0])
+    rec = _rec(helper_proofs={
+        "savings": {"refusal_reason": "no_trigger_match"},
+        "age_interval": {"refusal_reason": "current_age_not_in_retrieved"}})
+    s = DQ.build_path_summary(rec)
+    assert s["diagnosis"]["layer"] == "proof_input_turn_missing"
+    assert "age_interval" in s["diagnosis"]["reason"]
+
+
+def test_generic_refusal_still_helper_refusal():
+    # reasons with no missing-input marker stay helper_refusal (no regression)
+    rec = _rec(helper_proofs={
+        "savings": {"refusal_reason": "no_trigger_match"},
+        "cashback": {"refusal_reason": "no_cashback_rate_in_memories"}})
+    s = DQ.build_path_summary(rec)
+    assert s["diagnosis"]["layer"] == "helper_refusal"
