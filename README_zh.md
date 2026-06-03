@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.930-brightgreen.svg)](#性能验证)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20V6.1.1-0.930%20(historical)-brightgreen.svg)](#性能验证)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **一个能从对话中学习的记忆模块——插入任何 AI Agent 即可使用。**
@@ -19,7 +19,7 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
-> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-05-10 更新）：LongMemEval-S **0.930**（deepseek-v3.2 / gpt-4o judge，n=100，V6.1.1），**与 MemMachine SOTA（0.930）持平**，推理成本约 1/10，比 Mem0 同协议基线领先 25pt。详见 [性能验证](#性能验证) 与 [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
+> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-05-10 更新）：LongMemEval-S **0.930**（deepseek-v3.2 / gpt-4o judge，n=100，V6.1.1），**曾与 MemMachine SOTA（0.930）持平**，推理成本约 1/10，比 Mem0 同协议基线领先 25pt。**此 0.930 是 V6.1.1 历史 n=100 artifact，不是 current-main 的常驻分数** —— current main 用 `regression_pack.py` + `target_pack.py` 做开发 gate（见 [性能验证](#性能验证)），full n=100 仅在 formal baseline refresh 时重跑。[release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
 
 ---
 
@@ -62,13 +62,19 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 ### LongMemEval-S（n=100，6 种 qtype 分层抽样）
 
+> ⚠️ **以下是历史 n=100 benchmark artifact，不是 current-main 常驻分数。**
+> headline **0.930 是 V6.1.1 跑分（n=100，2026-05-10）**。current main 的开发验证
+> 用 `regression_pack.py`（快速 deterministic gate，每次改动）+ `target_pack.py`
+> （curated e2e gate，关键路径改动时）；**full n=100 仅在 formal baseline refresh
+> 时重跑**，不常规跑。下表请视为"上一次 formal baseline，按版本标注"。
+
 | 系统 | Answer / Judge | 分数 | vs Mem0 同协议 |
 |---|---|---:|---:|
-| Mem0 v3（baseline）                  | gpt-4o / gpt-4o          | 0.680   | — |
-| **RadioMind（架构 v3）**             | gpt-4o / gpt-4o          | **0.830**   | **+15.0 pt** |
-| **RadioMind（v5 全架构）**           | deepseek-v3.2 / gpt-4o   | **0.920** | **+24.0 pt** |
-| **RadioMind（V6.1.1）**              | deepseek-v3.2 / gpt-4o   | **0.930** | **+25.0 pt**，≈ 1/10 推理成本 |
-| MemMachine（当前 SOTA）              | gpt-4o / gpt-4o          | 0.930   | — |
+| Mem0 v3（baseline）                       | gpt-4o / gpt-4o          | 0.680   | — |
+| RadioMind（架构 v3，历史）               | gpt-4o / gpt-4o          | 0.830   | +15.0 pt |
+| RadioMind（v5 全架构，历史）             | deepseek-v3.2 / gpt-4o   | 0.920   | +24.0 pt |
+| **RadioMind（V6.1.1 历史 n=100）**       | deepseek-v3.2 / gpt-4o   | **0.930** | **+25.0 pt**，≈ 1/10 推理成本 |
+| MemMachine（SOTA，已发布）               | gpt-4o / gpt-4o          | 0.930   | — |
 
 按 qtype 分布（deepseek-v3.2 跑分，n=100 V6.1.1）：
 

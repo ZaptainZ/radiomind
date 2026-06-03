@@ -11,9 +11,16 @@ the full design rationale see `projectBasicInfo/01_PROJECT_OVERVIEW.md`.
 
 ## TL;DR
 
-**RadioMind achieves 0.920 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
-n=100), +24 pt over Mem0's 0.680 same-protocol baseline at ≈ 1/10 the
-inference cost — within 1 pt of MemMachine SOTA (0.930).**
+**RadioMind achieved 0.920 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
+n=100) at this snapshot, +24 pt over Mem0's 0.680 same-protocol baseline at
+≈ 1/10 the inference cost — within 1 pt of MemMachine SOTA (0.930). The later
+headline is 0.930 (V6.1.1, 2026-05-10).**
+
+> ⚠️ **All benchmark figures in this file are dated n=100 artifacts**, tied to
+> the version noted in each row (this snapshot: 2026-04-26) — **not standing
+> current-main scores.** Current main is validated for development by
+> `regression_pack.py` (fast deterministic gate) + `target_pack.py` (curated
+> e2e gate); a full n=100 is re-run only on a **formal baseline refresh**.
 
 | Configuration | Result | vs Mem0 same-protocol |
 |---|---:|---:|

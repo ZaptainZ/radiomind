@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S-0.930-brightgreen.svg)](#validated-performance)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20V6.1.1-0.930%20(historical)-brightgreen.svg)](#validated-performance)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **A memory module that actually learns from conversations — plug it into any AI agent.**
@@ -19,7 +19,7 @@ print(mind.digest())               # "User: morning runner, values sleep quality
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
-> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-05-10): LongMemEval-S **0.930** (deepseek-v3.2 / gpt-4o judge, n=100, V6.1.1) — **matches MemMachine SOTA (0.930)** at ~1/10 the inference cost, +25pt over Mem0 same-protocol baseline. See [Validated performance](#validated-performance) and [release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
+> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-05-10): LongMemEval-S **0.930** (deepseek-v3.2 / gpt-4o judge, n=100, V6.1.1) — **matched MemMachine SOTA (0.930)** at ~1/10 the inference cost, +25pt over Mem0 same-protocol baseline. **This 0.930 is a historical V6.1.1 n=100 artifact, not a standing current-main score** — current main is gated by `regression_pack.py` + `target_pack.py` (see [Validated performance](#validated-performance)); a full n=100 is re-run only on a formal baseline refresh. [Release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
 
 ---
 
@@ -62,13 +62,21 @@ We benchmark RadioMind against published Mem0 results using the **same Mem0 prot
 
 ### LongMemEval-S (n=100, 6 stratified question types)
 
+> ⚠️ **These are historical n=100 benchmark artifacts, not standing current-main
+> scores.** The headline **0.930 is the V6.1.1 run (n=100, 2026-05-10)**.
+> Current main is validated for development by `regression_pack.py` (fast
+> deterministic gate, every change) + `target_pack.py` (curated e2e gate, on
+> key-path changes); a **full n=100 is re-run only on a formal baseline
+> refresh**, not continuously. Treat the numbers below as the last formal
+> baseline, dated by version.
+
 | System | Answer / Judge | Score | vs Mem0 same-protocol |
 |---|---|---:|---:|
-| Mem0 v3 (baseline)                | gpt-4o / gpt-4o        | 0.680  | — |
-| **RadioMind (architecture v3)**   | gpt-4o / gpt-4o        | **0.830**  | **+15.0 pt** |
-| **RadioMind (v5 all-arch)**       | deepseek-v3.2 / gpt-4o | **0.920**  | **+24.0 pt** |
-| **RadioMind (V6.1.1)**            | deepseek-v3.2 / gpt-4o | **0.930**  | **+25.0 pt**, ≈ 1/10 inference cost |
-| MemMachine (current SOTA)         | gpt-4o / gpt-4o        | 0.930  | — |
+| Mem0 v3 (baseline)                          | gpt-4o / gpt-4o        | 0.680  | — |
+| RadioMind (architecture v3, historical)     | gpt-4o / gpt-4o        | 0.830  | +15.0 pt |
+| RadioMind (v5 all-arch, historical)         | deepseek-v3.2 / gpt-4o | 0.920  | +24.0 pt |
+| **RadioMind (V6.1.1 historical n=100)**     | deepseek-v3.2 / gpt-4o | **0.930**  | **+25.0 pt**, ≈ 1/10 inference cost |
+| MemMachine (SOTA, published)                | gpt-4o / gpt-4o        | 0.930  | — |
 
 By question type (deepseek-v3.2 run, n=100 V6.1.1):
 
