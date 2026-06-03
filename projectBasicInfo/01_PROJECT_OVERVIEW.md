@@ -759,6 +759,35 @@ ordering 问题现在会向 answer prompt 注入 `STRUCTURED SKILL
 
 ---
 
+## Dev Experience 标准化（2026-06-02）
+
+bench optimization 线正式 **park**（剩余 LME-S tail 是多个互不相同的小机制，
+没有一个 cohort 大到值得全局改排序或继续堆 helper —— 见 cohort audit）。稳定
+的工具链固化为项目标准，完整操作手册见 **`projectBasicInfo/03_DEV_WORKFLOW.md`**。
+
+**三层 gate（按序）**
+1. `regression_pack.py` — 快速 deterministic gate（16 类，无 ingest/LLM）。**每次改动必跑，前后各一次。**
+2. `target_pack.py` — 真实 e2e 小 pack（重，**仅关键路径改动后手动授权**，不进默认 loop）。
+3. `diagnose_qid.py --e2e-result` + `path_summary` — 失败定位 debugger。
+
+**diagnose path_summary 失败标签**（DX-2a/2b/2c）：`answer_or_judge_path` /
+`concrete_wrong_bypassed_committer`（committer ready 但答具体错值，兜底不触发）/
+`proof_input_turn_missing`（数字 turn 被挤出检索，非抽取 bug）/ `helper_refusal` /
+`retrieval_gap` / `closure_ready` 等。
+
+**closure/proof 边界**：committer（cashback/age，commit_on_abstain，只兜底
+abstain）与 suppressor（role/TESG，纠正具体 overcommit）**极性相反，不合并**；
+hint-only helper（savings/person_age）**不等于** committer（无兜底）；
+"closure_view ready" **不等于** PASS，必须 fresh run 验证。
+
+**已 park 方向（勿重开）**：OrderedEventList 精度、量化 turn 检索加权、LME-S 结构
+地板家族、本地小模型、为刷 tail 分数堆 committer。详见 03 文档第 5 节。
+
+新增/相关 log（2026-06-02 集）：target-pack standard、DX-2a/2b/2c、#3
+fail-family audit、c18a7dc8/bb7c3b45 探针、quant-turn cohort audit（park）。
+
+---
+
 ## 一、愿景与定位
 
 ### 1.1 一句话定位
