@@ -161,3 +161,112 @@ def test_load_diagnose_json_roundtrip(tmp_path):
     p.write_text(json.dumps(_rec("pass")))
     data = DR.load_diagnose_json(p)
     assert data["path_summary"]["diagnosis"]["layer"] == "pass"
+
+
+# ---------------- PX-2b: richer context + self-contained summary ----------------
+
+def _full_rec(layer="concrete_wrong_bypassed_committer"):
+    """A current-style diagnose rec with question/gold/qtype + final_answer."""
+    return {
+        "qid": "qX",
+        "question": "How much cashback did I earn at TestMart?",
+        "gold": "$1.23",
+        "qtype": "single-session-user",
+        "path_summary": {
+            "qid": "qX",
+            "diagnosis": {"layer": layer, "reason": "r"},
+            "retrieval": {"gold_hits_top_200": 3, "gold_hits_top_30": 1},
+            "final_answer": {
+                "answer": "You earned $9.99 in cashback.",
+                "correct": False, "judge_failed": False,
+                "pure_abstain": False, "answer_error": False,
+            },
+        },
+    }
+
+
+def test_context_carries_question_gold_answer_verdict():
+    rep = DR.build_diagnosis_report(_full_rec(), source="diagnose-qX.json")
+    c = rep["context"]
+    assert "cashback" in c["question"]
+    assert c["gold"] == "$1.23"
+    assert c["qtype"] == "single-session-user"
+    assert "9.99" in c["answer_snippet"]
+    assert c["correct"] is False
+    assert c["judge_failed"] is False
+    assert c["answer_pure_abstain"] is False
+    assert c["verdict"] == "WRONG"
+    assert c["source_artifact"] == "diagnose-qX.json"
+
+
+def test_suggested_command_contains_qid_and_placeholder():
+    rep = DR.build_diagnosis_report(_full_rec())
+    cmd = rep["context"]["suggested_command"]
+    assert "devtools diagnose" in cmd
+    assert "--qid qX" in cmd
+    assert "<e2e-result.json>" in cmd  # placeholder when no artifact given
+
+
+def test_suggested_command_embeds_real_artifact():
+    rep = DR.build_diagnosis_report(_full_rec(),
+                                    e2e_artifact="bench/end_to_end/run.json")
+    cmd = rep["context"]["suggested_command"]
+    assert "--e2e-result bench/end_to_end/run.json" in cmd
+
+
+def test_manifest_line_explicit_override():
+    rep = DR.build_diagnosis_report(_full_rec(), manifest_line="my-line")
+    assert rep["context"]["manifest_line"] == "my-line"
+
+
+def test_manifest_line_autolookup_for_known_qid():
+    # c18a7dc8 is in target_pack.MANIFEST as the age-interval-committer line.
+    line = DR.lookup_manifest_line("c18a7dc8")
+    assert line == "age-interval-committer"
+    # and build auto-fills it when manifest_line is None
+    data = _full_rec()
+    data["qid"] = "c18a7dc8"
+    data["path_summary"]["qid"] = "c18a7dc8"
+    rep = DR.build_diagnosis_report(data)
+    assert rep["context"]["manifest_line"] == "age-interval-committer"
+
+
+def test_manifest_line_none_for_unknown_qid():
+    assert DR.lookup_manifest_line("not-a-real-qid") is None
+
+
+def test_summary_md_is_self_contained():
+    rep = DR.build_diagnosis_report(_full_rec(), source="diagnose-qX.json")
+    md = DR.render_summary_md(rep)
+    assert "**Question:**" in md and "cashback" in md
+    assert "**Gold:** $1.23" in md
+    assert "**Answer:**" in md and "9.99" in md
+    assert "**Verdict:** WRONG" in md
+    assert "## Diagnosis" in md
+    assert "## Next command" in md
+    assert "--qid qX" in md
+
+
+def test_summary_md_verdict_na_without_overlay():
+    rep = DR.build_diagnosis_report(_rec("closure_ready"))
+    md = DR.render_summary_md(rep)
+    assert "no e2e overlay" in md
+
+
+def test_refined_next_actions_point_to_fields():
+    cw = DR.LAYER_GUIDANCE["concrete_wrong_bypassed_committer"]["next_action"]
+    assert "final_answer.answer" in cw and "closure_view.committers" in cw
+    pm = DR.LAYER_GUIDANCE["proof_input_turn_missing"]["next_action"]
+    assert "helper_proofs" in pm and "retrieve_top_30_preview" in pm
+
+
+def test_legacy_rec_still_renders_without_crash():
+    # no question/gold/final_answer, no path_summary
+    rep = DR.build_diagnosis_report({"qid": "old"}, source="old.json")
+    c = rep["context"]
+    assert c["question"] is None and c["gold"] is None
+    assert c["answer_snippet"] is None and c["verdict"] is None
+    md = DR.render_summary_md(rep)  # must not crash
+    assert "# diagnose old" in md
+    assert "no e2e overlay" in md
+    assert "## Next command" in md  # suggested_command always present

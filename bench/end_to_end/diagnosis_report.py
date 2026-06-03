@@ -17,11 +17,15 @@ into a constant).
 Usage (via devtools):
   python -m bench.end_to_end.devtools report --diagnose-json <json> --out <dir>
 
+The summary.md (PX-2b) is self-contained: Question / Gold / Answer / Verdict /
+Diagnosis (layer + meaning + fix_family + do_not + next_action) / Next command.
+
 Building blocks (all pure, unit-tested in tests/test_diagnosis_report.py):
-  load_diagnose_json(path)            -> dict
-  build_diagnosis_report(data, src)   -> dict   (the diagnosis.json content)
-  render_summary_md(report)           -> str    (the summary.md content)
-  write_report(report, out_dir)       -> dict   (written file paths)
+  load_diagnose_json(path)                          -> dict
+  lookup_manifest_line(qid)                         -> str | None
+  build_diagnosis_report(data, src, manifest, art)  -> dict   (diagnosis.json)
+  render_summary_md(report)                         -> str    (summary.md)
+  write_report(report, out_dir)                     -> dict   (written paths)
 """
 from __future__ import annotations
 
@@ -54,16 +58,23 @@ LAYER_GUIDANCE: dict[str, dict[str, str]] = {
                    "never fired",
         "fix_family": "upstream hint-trust or a suppressor-shaped guard",
         "do_not": "do not edit the existing committer (it only rescues abstains)",
-        "next_action": "audit hint trust upstream, or consider a "
-                       "suppressor-shaped guard; verify with a fresh run",
+        "next_action": "in the diagnose json read final_answer.answer (the "
+                       "concrete wrong value the LLM returned) + "
+                       "closure_view.committers.<name> (was a proof ready?) to "
+                       "confirm the committer was bypassed by a concrete answer; "
+                       "then audit upstream hint-trust or add a suppressor-shaped "
+                       "guard — never the committer. Verify with a fresh run.",
     },
     "proof_input_turn_missing": {
         "meaning": "a required proof input/anchor was not found in the retrieved "
                    "turns (the evidence turn was likely out-ranked / not retrieved)",
         "fix_family": "retrieval / turn-ranking audit",
         "do_not": "do not edit the parser/regex (extraction is not the bug)",
-        "next_action": "audit retrieval granularity / ranking so the evidence "
-                       "turn reaches the window",
+        "next_action": "in the diagnose json read helper_proofs.<helper>."
+                       "refusal_reason (which anchor was missing) + "
+                       "retrieve_top_30_preview (where the gold turn ranked) to "
+                       "confirm the proof turn never reached the window; then "
+                       "audit retrieval granularity / ranking — not the parser.",
     },
     "helper_refusal": {
         "meaning": "a helper gate refused (trigger miss, etc.)",
@@ -123,12 +134,40 @@ def load_diagnose_json(path: str | Path) -> dict:
     return json.loads(Path(path).read_text())
 
 
-def build_diagnosis_report(data: dict, source: str = "") -> dict:
+def lookup_manifest_line(qid: str) -> str | None:
+    """Best-effort: map a qid to its target_pack MANIFEST line (e.g.
+    'age-interval-committer'). Returns None if target_pack/MANIFEST is
+    unavailable or the qid is not in it. Never raises."""
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import target_pack  # sits next to this file
+        meta = target_pack.MANIFEST.get(qid)
+        return meta.get("line") if isinstance(meta, dict) else None
+    except Exception:
+        return None
+
+
+def _trunc(s, n: int) -> str:
+    s = "" if s is None else str(s)
+    s = s.replace("\n", " ").strip()
+    return s if len(s) <= n else s[:n] + "…"
+
+
+def build_diagnosis_report(data: dict, source: str = "",
+                           manifest_line: str | None = None,
+                           e2e_artifact: str | None = None) -> dict:
     """Project a diagnose rec into the stable diagnosis.json schema. Pure.
 
     Handles both current recs (with path_summary) and legacy recs (without):
     a missing path_summary degrades to layer='unknown' with an explicit note,
-    never crashes.
+    never crashes. Missing question/gold/final_answer fields degrade to None
+    (omitted in the summary), never crash.
+
+    manifest_line: the target_pack MANIFEST line for this qid; if None it is
+    looked up best-effort. e2e_artifact: the e2e result path to embed in the
+    suggested diagnose command (a placeholder is used when None).
     """
     ps = data.get("path_summary") or {}
     has_ps = bool(ps)
@@ -140,10 +179,37 @@ def build_diagnosis_report(data: dict, source: str = "") -> dict:
     recognized = layer in LAYER_GUIDANCE
     g = LAYER_GUIDANCE.get(layer, LAYER_GUIDANCE["unknown"])
 
+    if manifest_line is None:
+        manifest_line = lookup_manifest_line(qid)
+
     # compact, stable context for the human summary (NOT the full diagnose rec)
     retrieval = ps.get("retrieval") or None
     fa = ps.get("final_answer") or None
-    context: dict = {"retrieval": retrieval}
+
+    # PX-2b: surface what the qid asked, what gold was, what the model answered,
+    # the verdict, and the exact next command — so the summary is self-contained.
+    art = e2e_artifact or "<e2e-result.json>"
+    suggested_command = (
+        f"python -m bench.end_to_end.devtools diagnose --qid {qid} "
+        f"--e2e-result {art}"
+    )
+
+    context: dict = {
+        "question": _trunc(data.get("question"), 300) or None,
+        "gold": _trunc(data.get("gold"), 200) or None,
+        "qtype": data.get("qtype"),
+        "manifest_line": manifest_line,
+        "source_artifact": source or None,
+        "suggested_command": suggested_command,
+        "retrieval": retrieval,
+        # answer/verdict fields below default to None when no e2e overlay
+        "answer_snippet": None,
+        "correct": None,
+        "judge_failed": None,
+        "answer_pure_abstain": None,
+        "verdict": None,
+        "flags": [],
+    }
     if fa is not None:
         flags = []
         if fa.get("answer_error"):
@@ -152,11 +218,12 @@ def build_diagnosis_report(data: dict, source: str = "") -> dict:
             flags.append("judge-failed")
         if fa.get("pure_abstain"):
             flags.append("pure-abstain")
+        context["answer_snippet"] = _trunc(fa.get("answer"), 200) or None
+        context["correct"] = bool(fa.get("correct"))
+        context["judge_failed"] = bool(fa.get("judge_failed"))
+        context["answer_pure_abstain"] = bool(fa.get("pure_abstain"))
         context["verdict"] = "correct" if fa.get("correct") else "WRONG"
         context["flags"] = flags
-    else:
-        context["verdict"] = None
-        context["flags"] = []
 
     return {
         "qid": qid,
@@ -173,16 +240,46 @@ def build_diagnosis_report(data: dict, source: str = "") -> dict:
 
 
 def render_summary_md(report: dict) -> str:
-    """Render the short human-readable summary.md from a report dict. Pure."""
+    """Render the self-contained human summary.md from a report dict. Pure.
+
+    The summary answers, top to bottom: what the qid asked (Question), what was
+    expected (Gold), what the model produced (Answer + Verdict), where it failed
+    (Diagnosis), and what to run next (Next command)."""
     qid = report.get("qid", "unknown")
     layer = report.get("layer", "unknown")
     ctx = report.get("context") or {}
     verdict = ctx.get("verdict")
+    ml = ctx.get("manifest_line")
     title_tail = verdict if verdict else layer
+    title = f"# diagnose {qid} — {title_tail}"
+    if ml:
+        title += f" ({ml})"
 
-    lines = [
-        f"# diagnose {qid} — {title_tail}",
+    lines = [title, ""]
+
+    # ---- what the qid is ----
+    if ctx.get("question"):
+        lines.append(f"**Question:** {ctx['question']}")
+    if ctx.get("qtype"):
+        lines.append(f"**Type:** {ctx['qtype']}")
+    if ctx.get("gold") is not None:
+        lines.append(f"**Gold:** {ctx['gold']}")
+    if ctx.get("answer_snippet") is not None:
+        lines.append(f"**Answer:** {ctx['answer_snippet']}")
+
+    # ---- verdict ----
+    if verdict is not None:
+        flags = ctx.get("flags") or []
+        tail = f" [{', '.join(flags)}]" if flags else ""
+        lines.append(f"**Verdict:** {verdict}{tail}")
+    else:
+        lines.append("**Verdict:** n/a (no e2e overlay — re-run diagnose with "
+                     "--e2e-result for the live outcome)")
+
+    # ---- diagnosis ----
+    lines += [
         "",
+        "## Diagnosis",
         f"**Layer:** `{layer}`",
         f"**Meaning:** {report.get('meaning', '')}",
         f"**Fix family:** {report.get('fix_family', '')}",
@@ -205,10 +302,11 @@ def render_summary_md(report: dict) -> str:
             f"- retrieval: gold {retr.get('gold_hits_top_200')}/200, "
             f"{retr.get('gold_hits_top_30')}/30",
         ]
-    if verdict is not None:
-        flags = ctx.get("flags") or []
-        tail = f" [{', '.join(flags)}]" if flags else ""
-        lines.append(f"- e2e: {verdict}{tail}")
+
+    # ---- next command ----
+    cmd = ctx.get("suggested_command")
+    if cmd:
+        lines += ["", "## Next command", "```bash", cmd, "```"]
 
     src = report.get("source")
     if src:
