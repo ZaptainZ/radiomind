@@ -1,0 +1,31 @@
+Running 100 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  stratified sample: 100 across 6 types
+  [10/100] acc=0.900  t=4460s
+  [20/100] acc=0.900  t=9177s
+  [30/100] acc=0.900  t=13905s
+  [40/100] acc=0.900  t=18558s
+  [50/100] acc=0.920  t=22892s
+  [60/100] acc=0.917  t=27489s
+  [70/100] acc=0.929  t=32042s
+  [80/100] acc=0.925  t=36169s
+  [90/100] acc=0.900  t=40838s
+  [100/100] acc=0.910  t=45269s
+
+=== LongMemEval-S (Mem0 protocol), 100 questions ===
+  Overall accuracy: 0.910
+  Reranker:         True
+  Time:             45269s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    knowledge-update               (n= 16)  acc=1.000
+    multi-session                  (n= 18)  acc=0.778
+    single-session-assistant       (n= 17)  acc=0.941
+    single-session-preference      (n= 16)  acc=0.875
+    single-session-user            (n= 16)  acc=1.000
+    temporal-reasoning             (n= 17)  acc=0.882
+
+  Saved → bench/end_to_end/lme-s-n100-2026-06-04-baseline.json
