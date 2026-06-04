@@ -270,3 +270,132 @@ def test_legacy_rec_still_renders_without_crash():
     assert "# diagnose old" in md
     assert "no e2e overlay" in md
     assert "## Next command" in md  # suggested_command always present
+
+
+# ---------------- PX-2c: batch triage index ----------------
+
+_MANIFEST = {
+    "qA": {"line": "cashback-committer", "mode": "required"},
+    "qB": {"line": "savings-hint", "mode": "required"},
+    "qC": {"line": "role-suppressor", "mode": "required"},
+    "qMISS": {"line": "missing-line", "mode": "required"},
+    "qObs": {"line": "ordered-event-list", "mode": "observe_only"},
+}
+
+
+def _artifact():
+    return {
+        "overall_accuracy": 0.6,
+        "per_query": [
+            {"question_id": "qA", "correct": True, "qtype": "x",
+             "answer": "right", "judge_failed": False,
+             "helper_hints": {"cashback": True, "answer_pure_abstain": False}},
+            {"question_id": "qB", "correct": False, "qtype": "y",
+             "answer": "The information provided is not enough.",
+             "judge_failed": False,
+             "helper_hints": {"savings": True, "answer_pure_abstain": True}},
+            {"question_id": "qC", "correct": False, "qtype": "z",
+             "answer": "You manage 12 engineers.", "judge_failed": False,
+             "helper_hints": {"answer_pure_abstain": False}},
+            {"question_id": "qObs", "correct": False, "qtype": "w",
+             "answer": "abc", "judge_failed": True,
+             "helper_hints": {"answer_pure_abstain": False}},
+            # qMISS deliberately absent from per_query
+        ],
+    }
+
+
+def test_classify_preliminary_cases():
+    f = DR.classify_preliminary
+    assert f(False, False, False, {}) == "missing"
+    assert f(True, True, False, {}) == "pass"
+    assert f(True, False, True, {}) == "judge-infra"
+    assert f(True, False, False,
+             {"savings": True, "answer_pure_abstain": True}) == "trust-gap-candidate"
+    assert f(True, False, False,
+             {"answer_pure_abstain": True}) == "abstain-no-hint"
+    assert f(True, False, False,
+             {"answer_pure_abstain": False}) == "concrete-wrong-candidate"
+    # an infra answer-error string is not a logic result
+    assert f(True, False, False, {},
+             answer="[answer error: urlopen ...]") == "answer-error"
+
+
+def test_build_triage_index_rows_and_counts():
+    idx = DR.build_triage_index(_artifact(), _MANIFEST,
+                                artifact_path="tp.json")
+    by = {r["qid"]: r for r in idx["rows"]}
+    assert by["qA"]["preliminary"] == "pass" and by["qA"]["verdict"] == "PASS"
+    assert by["qB"]["preliminary"] == "trust-gap-candidate"
+    assert by["qC"]["preliminary"] == "concrete-wrong-candidate"
+    assert by["qObs"]["preliminary"] == "judge-infra"
+    assert by["qMISS"]["preliminary"] == "missing"
+    assert by["qMISS"]["verdict"] == "MISSING"
+    # manifest line + suggested command carried per row
+    assert by["qB"]["line"] == "savings-hint"
+    assert "--qid qB" in by["qB"]["suggested_command"]
+    assert "tp.json" in by["qB"]["suggested_command"]
+    # required gate counts (qA pass; qB/qC/qMISS fail) → not all pass
+    assert idx["summary"]["required_all_pass"] is False
+    assert idx["summary"]["required_total"] == 4
+    # no diagnose_dir → no real layer
+    assert by["qB"]["real_layer"] is None
+
+
+def test_build_triage_index_enriches_real_layer(tmp_path):
+    # drop a diagnose-qB.json next to a fake artifact dir
+    dj = tmp_path / "diagnose-qB.json"
+    dj.write_text(json.dumps({
+        "qid": "qB",
+        "path_summary": {"diagnosis": {"layer": "proof_input_turn_missing"}},
+    }))
+    idx = DR.build_triage_index(_artifact(), _MANIFEST,
+                                diagnose_dir=tmp_path, artifact_path="tp.json")
+    by = {r["qid"]: r for r in idx["rows"]}
+    assert by["qB"]["real_layer"] == "proof_input_turn_missing"
+    assert by["qB"]["diagnose_json"] == str(dj)
+    # qA has no diagnose json → None
+    assert by["qA"]["real_layer"] is None
+
+
+def test_render_index_md_has_caveat_and_no_fake_layer():
+    md = DR.render_index_md(
+        DR.build_triage_index(_artifact(), _MANIFEST, artifact_path="tp.json"))
+    assert "Preliminary" in md and "not the authoritative" in md.lower()
+    assert "## Required" in md and "## Observe-only" in md
+    # red qids get a Next command block
+    assert "## Next commands" in md
+    assert "--qid qB" in md
+    # a pass qid should not appear in the red section commands
+    assert "diagnose --qid qA" not in md
+
+
+def test_write_triage_emits_index_and_json(tmp_path):
+    idx = DR.build_triage_index(_artifact(), _MANIFEST, artifact_path="tp.json")
+    paths = DR.write_triage(idx, tmp_path / "out", artifact_path="tp.json")
+    im, tj = paths["index_md"], paths["triage_json"]
+    assert im.name == "index.md" and im.exists()
+    assert tj.name == "triage.json" and tj.exists()
+    loaded = json.loads(tj.read_text())
+    assert len(loaded["rows"]) == 5
+    # no diagnose jsons on disk → no per-qid sub-reports
+    assert paths["per_qid"] == {}
+
+
+def test_write_triage_generates_per_qid_subreport(tmp_path):
+    dj = tmp_path / "diagnose-qB.json"
+    dj.write_text(json.dumps({
+        "qid": "qB", "question": "savings?", "gold": "$5",
+        "path_summary": {
+            "diagnosis": {"layer": "proof_input_turn_missing", "reason": "r"},
+            "final_answer": {"answer": "not enough", "correct": False,
+                             "judge_failed": False, "pure_abstain": True},
+        },
+    }))
+    idx = DR.build_triage_index(_artifact(), _MANIFEST,
+                                diagnose_dir=tmp_path, artifact_path="tp.json")
+    paths = DR.write_triage(idx, tmp_path / "out", artifact_path="tp.json")
+    assert "qB" in paths["per_qid"]
+    sub = tmp_path / "out" / "qB" / "summary.md"
+    assert sub.exists()
+    assert "proof_input_turn_missing" in sub.read_text()

@@ -100,10 +100,16 @@ Key invariants (learned, not negotiable):
 
 Triage flow (copy-paste):
 ```bash
-# a red target-pack qid → localize it, then write the report
+# 0. whole pack red? get a verdict-level triage index first (fast, no re-run).
+#    Preliminary labels only — the artifact has no path_summary; real layers are
+#    filled only where a diagnose-<qid>.json already exists on disk.
+python -m bench.end_to_end.devtools report --target-pack-artifact <the-run.json> --out /tmp/rm-triage
+# read /tmp/rm-triage/index.md → required/observe tables + per-red-qid next command
+
+# 1. a specific red qid → localize it, then write the single report
 python -m bench.end_to_end.devtools diagnose --qid <q> --e2e-result <the-run.json>
 python -m bench.end_to_end.devtools report --diagnose-json bench/end_to_end/diagnose-<q>.json --out /tmp/rm-report-<q>
-# read /tmp/rm-report-<q>/summary.md → it states the layer, meaning, fix family, and DO-NOT
+# read /tmp/rm-report-<q>/summary.md → Question/Gold/Answer/Verdict + layer, meaning, fix family, DO-NOT, next command
 ```
 
 1. **regression_pack red** → a behaviour regressed. The failing category names

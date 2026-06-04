@@ -325,16 +325,288 @@ def write_report(report: dict, out_dir: str | Path) -> dict:
     return {"diagnosis_json": dj, "summary_md": sm}
 
 
+# ======================= PX-2c: batch triage index =======================
+#
+# A target-pack artifact carries per_query verdicts but NO path_summary /
+# diagnosis.layer (that only exists in a diagnose-<qid>.json). So the batch
+# index gives a PRELIMINARY, verdict-level classification — NOT an authoritative
+# layer. It fills the real `layer` column only when an existing diagnose json is
+# found on disk. It never runs diagnose / ingest / a benchmark.
+
+# preliminary label -> what it means (loosely maps to a layer family, but is
+# explicitly NOT the diagnosis.layer).
+PRELIM_MEANING: dict[str, str] = {
+    "pass": "judged correct",
+    "judge-infra": "judge infra error — verdict unreliable, re-run",
+    "answer-error": "answer-LLM returned an error string (infra/transient) — "
+                    "re-run; not a logic result",
+    "trust-gap-candidate": "a hint fired but the answer abstained — likely an "
+                           "answer-LLM trust gap (run diagnose to confirm)",
+    "abstain-no-hint": "abstained with no hint fired — likely a retrieval / "
+                       "helper-refusal gap (run diagnose to confirm)",
+    "concrete-wrong-candidate": "a concrete wrong answer (not an abstain) — "
+                                "committer-bypass or wrong-value path (run "
+                                "diagnose to confirm)",
+    "missing": "required qid not present in the artifact",
+}
+
+
+def classify_preliminary(present: bool, correct: bool, judge_failed: bool,
+                         helper_hints: dict | None, answer=None) -> str:
+    """Pure verdict-level classification from a per_query record. Returns a
+    PRELIM_MEANING key. This is NOT a diagnosis.layer — it is a triage hint."""
+    if not present:
+        return "missing"
+    if correct:
+        return "pass"
+    if judge_failed:
+        return "judge-infra"
+    if answer is not None and str(answer).startswith("[answer error"):
+        return "answer-error"
+    hh = helper_hints or {}
+    abstain = bool(hh.get("answer_pure_abstain"))
+    fired = [k for k, v in hh.items() if v and k != "answer_pure_abstain"]
+    if abstain and fired:
+        return "trust-gap-candidate"
+    if abstain:
+        return "abstain-no-hint"
+    return "concrete-wrong-candidate"
+
+
+def _find_diagnose_json(diagnose_dir, qid: str):
+    """Return Path to an existing diagnose-<qid>.json under diagnose_dir, or
+    None. Read-only lookup; never runs diagnose."""
+    if not diagnose_dir:
+        return None
+    p = Path(diagnose_dir) / f"diagnose-{qid}.json"
+    return p if p.exists() else None
+
+
+def build_triage_index(artifact_data: dict, manifest: dict,
+                       diagnose_dir=None, artifact_path: str = "") -> dict:
+    """Pure-ish projection of a target-pack artifact into a triage index.
+
+    Reuses target_pack.summarize for the manifest merge + counts, then enriches
+    each row with a preliminary verdict-level label, an answer snippet, fired
+    hints, a suggested diagnose command, and (best-effort, read-only) the real
+    layer from an existing diagnose-<qid>.json. Does NOT run diagnose/ingest.
+    """
+    per_query = (artifact_data.get("per_query")
+                 or artifact_data.get("results") or [])
+    by_qid = {}
+    for rec in per_query:
+        if isinstance(rec, dict):
+            q = rec.get("question_id") or rec.get("qid")
+            if q is not None:
+                by_qid[q] = rec
+
+    # manifest merge + counts (reuse the audited summarizer)
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import target_pack
+        summ = target_pack.summarize(per_query, manifest)
+    except Exception as e:
+        summ = {"rows": [], "required_pass": 0, "required_total": 0,
+                "observe_pass": 0, "observe_total": 0,
+                "required_all_pass": False, "_error": repr(e)}
+
+    rows = []
+    for srow in summ.get("rows", []):
+        qid = srow["qid"]
+        pq = by_qid.get(qid, {})
+        present = srow["present"]
+        correct = srow["correct"]
+        judge_failed = bool(pq.get("judge_failed"))
+        hh = pq.get("helper_hints") or {}
+        fired = [k for k, v in hh.items() if v and k != "answer_pure_abstain"]
+        prelim = classify_preliminary(present, correct, judge_failed, hh,
+                                      answer=pq.get("answer"))
+        dj = _find_diagnose_json(diagnose_dir, qid)
+        real_layer = None
+        if dj is not None:
+            try:
+                d = json.loads(dj.read_text())
+                real_layer = ((d.get("path_summary") or {})
+                              .get("diagnosis") or {}).get("layer")
+            except Exception:
+                real_layer = None
+        art = artifact_path or "<artifact.json>"
+        rows.append({
+            "qid": qid,
+            "line": srow["line"],
+            "mode": srow["mode"],
+            "present": present,
+            "correct": correct,
+            "verdict": ("PASS" if correct else
+                        ("MISSING" if not present else "WRONG")),
+            "preliminary": prelim,
+            "preliminary_meaning": PRELIM_MEANING.get(prelim, ""),
+            "qtype": pq.get("qtype"),
+            "answer_snippet": _trunc(pq.get("answer"), 160) or None,
+            "hints": fired,
+            "answer_pure_abstain": bool(hh.get("answer_pure_abstain")),
+            "real_layer": real_layer,
+            "diagnose_json": str(dj) if dj is not None else None,
+            "suggested_command": (
+                f"python -m bench.end_to_end.devtools diagnose --qid {qid} "
+                f"--e2e-result {art}"),
+        })
+
+    return {
+        "artifact": artifact_path or None,
+        "summary": {
+            "required_pass": summ.get("required_pass", 0),
+            "required_total": summ.get("required_total", 0),
+            "observe_pass": summ.get("observe_pass", 0),
+            "observe_total": summ.get("observe_total", 0),
+            "required_all_pass": summ.get("required_all_pass", False),
+            "overall_accuracy": artifact_data.get("overall_accuracy"),
+        },
+        "rows": rows,
+    }
+
+
+_INDEX_CAVEAT = (
+    "> ⚠ **Preliminary, verdict-level triage.** The `preliminary` column is "
+    "NOT the authoritative `diagnosis.layer` — a target-pack artifact carries "
+    "no `path_summary`. The `layer` column is filled only where an existing "
+    "`diagnose-<qid>.json` was found on disk. To get the real layer for a red "
+    "qid, run the suggested `devtools diagnose` command, then `devtools report "
+    "--diagnose-json …`."
+)
+
+
+def _index_table(rows: list) -> list[str]:
+    out = ["| qid | line | verdict | preliminary | layer | qtype | hints |",
+           "|---|---|---|---|---|---|---|"]
+    for r in rows:
+        out.append(
+            f"| `{r['qid']}` | {r['line']} | {r['verdict']} | "
+            f"{r['preliminary']} | {r['real_layer'] or '—'} | "
+            f"{r.get('qtype') or '—'} | {', '.join(r['hints']) or '—'} |")
+    return out
+
+
+def render_index_md(index: dict) -> str:
+    """Render the batch triage index.md. Pure."""
+    s = index.get("summary") or {}
+    rows = index.get("rows") or []
+    required = [r for r in rows if r["mode"] == "required"]
+    observe = [r for r in rows if r["mode"] == "observe_only"]
+    reds = [r for r in rows if not r["correct"]]
+
+    lines = [
+        "# target-pack triage index",
+        "",
+        f"artifact: `{index.get('artifact') or '—'}`",
+        f"required {s.get('required_pass')}/{s.get('required_total')} "
+        f"| observe {s.get('observe_pass')}/{s.get('observe_total')} "
+        f"| gate {'PASS' if s.get('required_all_pass') else 'FAIL'}",
+        "",
+        _INDEX_CAVEAT,
+        "",
+        "## Required (gates the pack)",
+        *_index_table(required),
+        "",
+        "## Observe-only (never reds the pack)",
+        *_index_table(observe),
+    ]
+
+    if reds:
+        lines += ["", "## Next commands (red / missing qids)"]
+        for r in reds:
+            lines += [
+                "",
+                f"### `{r['qid']}` — {r['line']} ({r['preliminary']})",
+                f"_{r['preliminary_meaning']}_",
+            ]
+            if r["answer_snippet"]:
+                lines.append(f"- answer: {r['answer_snippet']}")
+            if r["real_layer"]:
+                lines.append(f"- known layer (from existing diagnose): "
+                             f"`{r['real_layer']}`")
+            lines += ["```bash", r["suggested_command"], "```"]
+    return "\n".join(lines) + "\n"
+
+
+def write_triage(index: dict, out_dir, artifact_path: str = "") -> dict:
+    """Write index.md + triage.json into out_dir. For any row that already has a
+    diagnose-<qid>.json on disk, also emit a per-qid <qid>/summary.md +
+    diagnosis.json (reusing the single-report pipeline). Never runs diagnose."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    idx_md = out / "index.md"
+    tj = out / "triage.json"
+    idx_md.write_text(render_index_md(index))
+    tj.write_text(json.dumps(index, indent=2, ensure_ascii=False))
+
+    per_qid = {}
+    for r in index.get("rows") or []:
+        dj = r.get("diagnose_json")
+        if not dj:
+            continue
+        try:
+            data = load_diagnose_json(dj)
+            rep = build_diagnosis_report(
+                data, source=dj, manifest_line=r.get("line"),
+                e2e_artifact=artifact_path or None)
+            paths = write_report(rep, out / r["qid"])
+            per_qid[r["qid"]] = {k: str(v) for k, v in paths.items()}
+        except Exception as e:  # one bad rec must not sink the index
+            per_qid[r["qid"]] = {"error": repr(e)}
+
+    return {"index_md": idx_md, "triage_json": tj, "per_qid": per_qid}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="Render a standard diagnosis report from an existing "
-                    "diagnose-<qid>.json. Pure projection; no re-run.",
+        description="Render a diagnosis report. Single mode (--diagnose-json) "
+                    "projects one diagnose rec; batch mode "
+                    "(--target-pack-artifact) builds a verdict-level triage "
+                    "index. Pure projection; never runs diagnose/ingest.",
     )
-    ap.add_argument("--diagnose-json", type=Path, required=True,
-                    help="An existing diagnose_qid.py output json.")
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--diagnose-json", type=Path,
+                   help="An existing diagnose_qid.py output json (single mode).")
+    g.add_argument("--target-pack-artifact", type=Path,
+                   help="An existing target-pack result json (batch triage).")
     ap.add_argument("--out", type=Path, required=True,
-                    help="Output directory for diagnosis.json + summary.md.")
+                    help="Output directory.")
+    ap.add_argument("--diagnose-dir", type=Path, default=None,
+                    help="Batch mode: dir to look for existing diagnose-<qid>."
+                         "json to enrich the index with real layers. Defaults "
+                         "to the artifact's parent directory.")
     args = ap.parse_args()
+
+    if args.target_pack_artifact:
+        try:
+            here = str(Path(__file__).resolve().parent)
+            if here not in sys.path:
+                sys.path.insert(0, here)
+            import target_pack
+            manifest = target_pack.MANIFEST
+        except Exception as e:
+            print(f"could not load target_pack.MANIFEST: {e}")
+            return 2
+        art = str(args.target_pack_artifact)
+        ddir = args.diagnose_dir or args.target_pack_artifact.parent
+        data = load_diagnose_json(args.target_pack_artifact)
+        index = build_triage_index(data, manifest, diagnose_dir=ddir,
+                                   artifact_path=art)
+        paths = write_triage(index, args.out, artifact_path=art)
+        s = index["summary"]
+        n_red = sum(1 for r in index["rows"] if not r["correct"])
+        print(f"triage: required {s['required_pass']}/{s['required_total']} "
+              f"| {n_red} red/missing | gate "
+              f"{'PASS' if s['required_all_pass'] else 'FAIL'}")
+        print(f"  wrote: {paths['index_md']}")
+        print(f"  wrote: {paths['triage_json']}")
+        if paths["per_qid"]:
+            print(f"  per-qid sub-reports: {len(paths['per_qid'])} "
+                  f"(from existing diagnose jsons)")
+        return 0
 
     data = load_diagnose_json(args.diagnose_json)
     report = build_diagnosis_report(data, source=str(args.diagnose_json))

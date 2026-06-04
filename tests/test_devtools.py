@@ -127,6 +127,28 @@ def test_report_maps_to_diagnosis_report_module():
                       "--out", "report-dir"]
 
 
+def test_report_batch_maps_to_diagnosis_report():
+    d = DT.plan(["report", "--target-pack-artifact", "target-pack.json",
+                 "--out", "rep"])
+    assert d.command == "report"
+    assert d.module == "diagnosis_report"
+    assert d.argv == ["--target-pack-artifact", "target-pack.json",
+                      "--out", "rep"]
+
+
+def test_report_batch_forwards_diagnose_dir():
+    d = DT.plan(["report", "--target-pack-artifact", "tp.json",
+                 "--out", "rep", "--diagnose-dir", "bench/end_to_end"])
+    assert d.argv == ["--target-pack-artifact", "tp.json", "--out", "rep",
+                      "--diagnose-dir", "bench/end_to_end"]
+
+
+def test_report_modes_mutually_exclusive():
+    with pytest.raises(SystemExit):
+        DT.plan(["report", "--diagnose-json", "d.json",
+                 "--target-pack-artifact", "a.json", "--out", "rep"])
+
+
 def test_unknown_command_systemexit():
     with pytest.raises(SystemExit):
         DT.plan(["not-a-command"])

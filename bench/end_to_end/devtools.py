@@ -20,9 +20,14 @@ Scope (PX-1b):
   - diagnose        : forwards argv to diagnose_qid.main() (heavy: real
                       ingest + LLM). devtools only constructs the argv; it does
                       not change diagnose logic.
-  - report          : (PX-1c) renders a standard report (diagnosis.json +
-                      summary.md) from an EXISTING diagnose-<qid>.json. Pure
-                      projection — no ingest / LLM / re-run.
+  - report          : pure projection — no ingest / LLM / re-run.
+                      single (--diagnose-json): diagnosis.json + summary.md from
+                        an existing diagnose-<qid>.json (PX-1c/2b).
+                      batch (--target-pack-artifact): a verdict-level triage
+                        index.md + triage.json from a target-pack artifact
+                        (PX-2c). The artifact has no per-qid layer, so the index
+                        is preliminary; real layers are filled only from existing
+                        diagnose jsons on disk.
 
 Design: `plan(argv)` is a PURE function (argparse → Dispatch); it imports
 nothing heavy and runs no gate, so tests can pin the dispatch/argv-construction
@@ -98,16 +103,23 @@ def _build_parser() -> argparse.ArgumentParser:
     dg.add_argument("--keep-sandbox", action="store_true")
     dg.add_argument("--out", type=Path, default=None)
 
-    # ---- report: pure projection of an existing diagnose rec (PX-1c) ----
+    # ---- report: pure projection (PX-1c single + PX-2c batch) ----
     rep = sub.add_parser(
         "report",
-        help="Render diagnosis.json + summary.md from an existing "
-             "diagnose-<qid>.json. Pure; no ingest/LLM/re-run.",
+        help="Single (--diagnose-json) → diagnosis.json + summary.md; batch "
+             "(--target-pack-artifact) → triage index.md + triage.json. Pure; "
+             "no ingest/LLM/re-run.",
     )
-    rep.add_argument("--diagnose-json", type=Path, required=True,
-                     help="An existing diagnose_qid.py output json.")
+    rg = rep.add_mutually_exclusive_group(required=True)
+    rg.add_argument("--diagnose-json", type=Path,
+                    help="An existing diagnose_qid.py output json (single mode).")
+    rg.add_argument("--target-pack-artifact", type=Path,
+                    help="An existing target-pack result json (batch triage).")
     rep.add_argument("--out", type=Path, required=True,
                      help="Output directory for the report files.")
+    rep.add_argument("--diagnose-dir", type=Path, default=None,
+                     help="Batch mode: dir of existing diagnose-<qid>.json to "
+                          "enrich the index with real layers (read-only).")
     return p
 
 
@@ -142,6 +154,12 @@ def plan(argv: list[str]) -> Dispatch:
         return Dispatch("diagnose", "diagnose_qid", fwd)
 
     if ns.command == "report":
+        if ns.target_pack_artifact is not None:
+            fwd = ["--target-pack-artifact", str(ns.target_pack_artifact),
+                   "--out", str(ns.out)]
+            if ns.diagnose_dir is not None:
+                fwd += ["--diagnose-dir", str(ns.diagnose_dir)]
+            return Dispatch("report", "diagnosis_report", fwd)
         return Dispatch("report", "diagnosis_report",
                         ["--diagnose-json", str(ns.diagnose_json),
                          "--out", str(ns.out)])
