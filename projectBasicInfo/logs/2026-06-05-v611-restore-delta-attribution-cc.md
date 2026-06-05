@@ -70,7 +70,55 @@ V8.2→V8.4 closure/helper 系列 + JAB + AnswerRetry + PX-1/PX-2。runner 由 8
 ≥2 qid 同机制 **或** 1 个明确 deterministic runner bug；可复现；窄面；target-pack 不回归；
 不靠 gold/qid hardcode。否则记录归因、不修。
 
-## 4. 进度
-- [x] Step 1 code-path diff audit（本 log §1）—— 无确定性 runner regression。
-- [ ] Step 2 repeat ×5（运行中）。
-- [ ] Step 3 stable-fail 的 prompt/evidence diff（视 Step 2 结果）。
+## 2b. Step 2 结果（4 qid × 5 current-main repeat）
+
+| qid | passes/5 | 判定 |
+|---|---|---|
+| `9ee3ecd6` | **3/5** | 真随机摇摆（数值题 borderline） |
+| `1c0ddc50` | **4/5** | 随机摇摆（主观偏好） |
+| `gpt4_194be4b3` | **5/5 PASS** | baseline 截断 = 一次性 transient，**5/5 完整列出 4 instruments，从未复现** |
+| `d3ab962e` | **5/5 PASS** | baseline abstain = 一次性 transient，**5/5 答 "8 miles"，从未复现** |
+
+**两个 smoking-gun 嫌疑全部洗清**: `gpt4_194be4b3` 截断、`d3ab962e` abstain 都不可复现
+→ 是单次 transient，**不是确定性 runner/max_tokens/gate bug，无需修**。
+
+**judge 非确定性铁证**: `9ee3ecd6` rep1/2/3 答案**逐字相同**
+（"You need to earn 100 more points."），gpt-4o judge 却返回 yes / yes / **no**。
+即 n=100 的方差里**有一部分连 answer 都没变、纯粹是 judge 抖动**。
+
+## 3. Step 3 — MOOT（无 stable regression 可 diff）
+Step 3 仅对"仍稳定 FAIL"的 qid 做 prompt/evidence diff。4 个里 0 个稳定 FAIL → 跳过。
+
+## 4. 最终归因结论
+
+**−2pt（V6.1.1 0.930 → current-main 0.910，同题集）= run-to-run 随机性，不是代码 regression。**
+三个随机源叠加:
+1. answer-LLM 采样（gpt4_194be4b3/d3ab962e 的 transient、1c0ddc50 摇摆）
+2. **judge-LLM 非确定**（9ee3ecd6 同答案被判 yes 和 no）
+3. ingest 三体 refinement 的 LLM 随机性（每次重 ingest 的 L3/meta 都不同）
+
+证据链:
+- Step 1: runner answer-path 代码对这 4 qid 与 V6.1.1 等价（strip/gate/max_tokens 未变，
+  新 helper 不 fire）→ 排除 runner answer-path regression。
+- Step 2: 4 个里 2 个 baseline-fail 是 transient（5/5 翻 PASS），另 2 个是 borderline
+  摇摆（3/5、4/5），均非稳定 regression。
+- 这 4 个 swing qid 当前期望 ≈ (0.6+0.8+1.0+1.0)/4 = **0.85**；V6.1.1 在它们上拿了
+  lucky 4/4，current baseline 拿了 unlucky 0/4 —— 单这 4 题就足以解释 −2pt。**架构未退化。**
+
+**修复门槛: 不满足**（无 ≥2 同机制 stable regression，无 deterministic runner bug）→ **不开 fix。**
+
+## 5. 对 SOTA 目标的真正杠杆（产品化方向，非本 log 执行）
+既然 −2pt 是测量/采样噪声而非架构退化，追 SOTA 的正确动作是**降方差 + 多跑取统计**，
+不是去 hardcode 这 4 题:
+1. **judge 稳定化**（最干净的赢面）: judge temperature=0 或 3-judge 多数投票——
+   9ee3ecd6 证明同一答案会被 judge 翻面，这是纯测量噪声，可消除。
+2. **answer 稳定化**: 降 answer temperature / self-consistency 多采样取众数。
+3. **报告口径**: current-main 用 n=100 ×3 的 mean±std 或 mode，而不是单次 run，
+   避免再被 lucky/unlucky 单跑误导（V6.1.1 0.930 即单跑高尾）。
+这三条都不作弊（不碰 gold/题特调），符合北极星定义，是下一条可选工作线。
+
+## 6. 进度
+- [x] Step 1 code-path diff audit —— 无确定性 runner regression。
+- [x] Step 2 repeat ×5 —— 无 stable regression；2 transient + 2 stochastic；judge 非确定确证。
+- [x] Step 3 —— moot（无 stable fail）。
+- [x] 结论: −2pt = stochastic，架构未退化，不开 fix。下一步杠杆 = 降方差（§5）。

@@ -1,0 +1,106 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 4,
+  "total_ingested_turns": 2028,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1781.6,
+  "overall_accuracy": 0.75,
+  "model_correct": 3,
+  "judged_n": 4,
+  "judge_errors": 0,
+  "raw_accuracy": 0.75,
+  "judged_accuracy": 0.75,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "multi-session": {
+      "n": 3,
+      "accuracy": 0.6667
+    },
+    "single-session-preference": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "You currently own 4 musical instruments: a Fender Stratocaster electric guitar, a Yamaha FG800 acoustic guitar, a Korg B1 piano, and a Pearl Export drum set.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ion of ownership in the correct answer are supplementary and not necessary for the question asked.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1c0ddc50",
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "Since your commute is 40 minutes each way, you can use that time for audio-based activities. You already listen to podcasts like \"How I Built This\" and true crime—consider branching into history podcasts, which you mentioned interest in. Also, use your Headspace app for a guided meditation or breathing exercise to start the day calmly. Audiobooks or language learning apps are other good fits for y",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "rect as it aligns with the user's preferences and provides relevant suggestions for their commute.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "8 miles.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": " stating the total distance as 8 miles. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need to earn 100 more points to reach the 300-point total required to redeem a free skincare product at Sephora.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "he model response is incorrect because it contradicts the core factual claim of the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
