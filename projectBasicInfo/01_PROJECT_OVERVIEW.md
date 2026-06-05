@@ -4,6 +4,22 @@
 > **更新日期**: 2026-04-15（v0.2 修复周期完成）
 > **版本**: v3 设计 / v0.2 实现
 
+## 北极星目标（Product North Star）— 产品化前提
+
+> **以 `deepseek-v3.2 (answer) + gpt-4o (judge)` 这一固定、不作弊的组合，在 LongMemEval-S
+> 上追上并保持 SOTA。这是 RadioMind 产品化的前提，不是可选项。**
+
+- **"不作弊" 的硬定义**：不 hardcode gold/qid、不针对 benchmark 题目特调、不换更强的
+  answer 模型来刷分、judge 用公开 Mem0 协议的 gpt-4o（rubric 判分，非自定义松判）。
+  分数必须来自架构与记忆质量，而非测试集过拟合。
+- **SOTA 参照**：MemMachine 公开 0.930（gpt-4o/gpt-4o）。RadioMind 历史 V6.1.1 曾
+  n=100 = 0.930（deepseek-v3.2/gpt-4o-judge），即在更便宜的 answer 模型下持平 SOTA。
+- **当前状态（2026-06-04）**：current-main clean = **0.910**，同题集低于 V6.1.1 0.930 共 −2pt。
+  这条 −2pt **必须被解释**（regression vs model variance），不允许 park —— 见
+  `logs/2026-06-0[45]-*` 的 V611-Restore / delta-attribution 工作线。
+- **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
+  采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
+
 ## 实现状态速览（v0.2，2026-04-15）
 
 v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态：

@@ -1,5 +1,12 @@
 # 0.910 delta audit — 4 regressions vs V6.1.1（只读，不修）
 
+> **⚠ SUPERSEDED（2026-06-05 同日）**: 本 log 的结论是 "PARK"。但 SOTA 是产品化前提
+> （`01_PROJECT_OVERVIEW.md` 北极星），−2pt **不允许 park，必须 attribution**。后续以
+> `2026-06-05-v611-restore-delta-attribution-cc.md`（V611-Restore 工作线）取代本结论：
+> 先做 code-path diff audit（已证 runner answer-path 对这 4 qid 与 V6.1.1 等价），再做
+> targeted repeat ×5 分离 stochastic vs regression。本 log 的逐题机制对照仍有效，仅
+> "PARK" 决定作废。
+
 > 作者: Claude Code (cc) ｜ 日期: 2026-06-05
 > 类型: **只读 audit**。不改代码、不跑新 benchmark、不开 helper。
 > 目的: 判断 current-main 0.910 vs 同题集 V6.1.1 0.930 的 4 个 regression 是否同一机制，
