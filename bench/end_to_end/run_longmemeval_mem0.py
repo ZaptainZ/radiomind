@@ -218,9 +218,14 @@ def run(
     use_refinement: bool = True,
     checkpoint_path: Path | None = None,
     qids_filter: set[str] | None = None,
+    answer_only: bool = False,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
-    if (sandbox / "data").exists():
+    # VR-2b: answer-only mode reuses an existing sandbox's store to isolate
+    # answer-path variance from ingest/refinement variance. It must NOT wipe
+    # the store and must NOT re-ingest (see the per-qid loop). Default path is
+    # unchanged: wipe + ingest as before.
+    if not answer_only and (sandbox / "data").exists():
         shutil.rmtree(sandbox / "data")
     sandbox.mkdir(parents=True, exist_ok=True)
 
@@ -447,15 +452,21 @@ def run(
                         "role": turn.get("role", "?"),
                     },
                 })
-        stats = mind.ingest_turns_raw(
-            turns, domain=domain,
-            run_aggregation=True,
-            # Three-body debate fires once per question's domain. Each
-            # adds ~1 LLM round-trip total (all 3 speakers run in parallel
-            # inside chat.refine). Worth it: upgrades raw facts into
-            # PRINCIPLE-level summaries that pyramid.search surfaces first.
-            run_refinement=use_refinement,
-        )
+        if answer_only:
+            # VR-2b: store already populated by a prior seed run with the SAME
+            # --qids order (domain = lme_{q_idx} is position-coupled). Skip
+            # ingest entirely so repeats isolate answer-path variance.
+            stats = {"ingested": 0}
+        else:
+            stats = mind.ingest_turns_raw(
+                turns, domain=domain,
+                run_aggregation=True,
+                # Three-body debate fires once per question's domain. Each
+                # adds ~1 LLM round-trip total (all 3 speakers run in parallel
+                # inside chat.refine). Worth it: upgrades raw facts into
+                # PRINCIPLE-level summaries that pyramid.search surfaces first.
+                run_refinement=use_refinement,
+            )
         overall["total_ingested_turns"] += stats["ingested"]
 
         if isinstance(gold, list):
@@ -504,6 +515,17 @@ def run(
                             seen.add(rid)
         except Exception:
             pass
+
+        # VR-2b guard: in answer-only mode an empty retrieval means the reused
+        # sandbox was NOT seeded for this domain (wrong/old --qids order, or no
+        # prior seed run). Hard-fail rather than silently "answer" from nothing
+        # — a 0-result domain would otherwise look like a stable (fake) result.
+        if answer_only and not results:
+            raise SystemExit(
+                f"answer-only: domain {domain} (qid {qid}) returned 0 results — "
+                f"the reused sandbox '{sandbox}' is not seeded for this qid. Run "
+                f"a normal seed pass with the IDENTICAL --qids order first."
+            )
 
         # Build Mem0-format search_results: memory / score / created_at
         mem_results = []
@@ -1040,6 +1062,26 @@ def run(
     }
 
 
+def _validate_answer_only(answer_only: bool, reuse_existing_sandbox: bool,
+                          qids: str) -> str | None:
+    """Pure: validate the VR-2b answer-only flag combination. Returns an error
+    string, or None if OK. answer-only requires BOTH the reuse acknowledgement
+    AND an explicit --qids set (domain = lme_{q_idx} is order-coupled, so the
+    qid set/order must match the seed run)."""
+    if not answer_only:
+        if reuse_existing_sandbox:
+            return ("--reuse-existing-sandbox has no effect without "
+                    "--answer-only")
+        return None
+    if not reuse_existing_sandbox:
+        return ("--answer-only requires --reuse-existing-sandbox (refusing to "
+                "treat a possibly-empty sandbox as a fixed store)")
+    if not (qids and qids.strip()):
+        return ("--answer-only requires --qids with the IDENTICAL order used by "
+                "the seed run (domain is position-coupled)")
+    return None
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--n", type=int, default=30)
@@ -1074,7 +1116,23 @@ def main() -> int:
                    help="Path to .jsonl checkpoint. Per-question results appended as they complete; on rerun with the same path, already-completed question_ids are skipped. Defaults to <out>.checkpoint.jsonl.")
     p.add_argument("--qids", default="",
                    help="Comma-separated qid list. When set, runs ONLY these qids and skips stratified sampling. For single-change validation against a baseline.")
+    # VR-2b: answer-only mode — reuse an existing sandbox's store, skip ingest,
+    # only re-run answer+judge (isolates answer-path variance). Both flags must
+    # be given together AND with --qids (domain = lme_{q_idx} is order-coupled).
+    p.add_argument("--answer-only", action="store_true",
+                   help="Reuse an existing seeded sandbox; skip ingest; only "
+                        "re-run answer+judge. Requires --reuse-existing-sandbox "
+                        "and --qids (identical order to the seed run).")
+    p.add_argument("--reuse-existing-sandbox", action="store_true",
+                   help="Acknowledge that --sandbox points at an already-seeded "
+                        "store that must NOT be wiped. Required with --answer-only.")
     args = p.parse_args()
+
+    err = _validate_answer_only(
+        args.answer_only, args.reuse_existing_sandbox, args.qids)
+    if err:
+        print(f"error: {err}", flush=True)
+        return 2
 
     if not DATASET.exists():
         print(f"Dataset missing at {DATASET}")
@@ -1123,6 +1181,7 @@ def main() -> int:
         use_refinement=not args.no_refinement,
         checkpoint_path=cp_path,
         qids_filter=qids_set,
+        answer_only=args.answer_only,
     )
     report["benchmark_mode"] = mode
 

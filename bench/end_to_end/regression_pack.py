@@ -78,6 +78,9 @@ PACK: dict[str, list[str]] = {
     "harness:devtools": [
         "tests/test_devtools.py",
     ],
+    "harness:vr2b-answer-only": [
+        "tests/test_vr2b_answer_only.py",
+    ],
     "diagnostic:path-summary": [
         "tests/test_path_summary.py",
     ],
