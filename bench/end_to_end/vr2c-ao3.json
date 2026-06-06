@@ -1,0 +1,150 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 6,
+  "total_ingested_turns": 0,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 191.2,
+  "overall_accuracy": 1.0,
+  "model_correct": 6,
+  "judged_n": 6,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "multi-session": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "single-session-assistant": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "single-session-preference": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "temporal-reasoning": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "You currently own 4 musical instruments: a black Fender Stratocaster electric guitar, a Yamaha FG800 acoustic guitar, a Korg B1 digital piano, and a Pearl Export drum set.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "alent list of instruments. The additional detail does not affect the correctness of the response.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1c0ddc50",
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "Since you already listen to podcasts like \"How I Built This\" and enjoy true crime and self-improvement, you could explore **history podcasts** during your 40-minute bus ride—you mentioned being interested in them. For a change of pace, use your **Headspace app** for a short guided meditation or breathing exercise. If you switch to a bike commute, you could continue with audio content but keep the ",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "nse.\n\nBased on this analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "8 miles.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ing the same total distance of 8 miles. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need to earn 100 more points.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "cally equivalent to the correct answer, as it conveys the need to reach 100 points for redemption.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "<mem_thinking>\nFirst, I need to identify the two charity events the user participated in on consecutive days. The question asks about \"two charity events in a row, on consecutive days.\"\n\nScanning memories:\n- On 2023-02-15: \"participated in 'Ride to Cure Cancer' charity bike ride and rode 40 miles on road bike\"\n- On 2023-02-15: \"volunteered at 'Books for Kids' charity book drive event at local libr",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "tion and arrives at the correct conclusion of 2 months.\n\nTherefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e9327a54",
+      "q": "I'm planning to revisit Orlando. I was wondering if you could remind me of that unique dessert shop with the giant milkshakes we talked about last time?",
+      "gold": "The Sugar Factory at Icon Park.",
+      "answer": "The Sugar Factory at Icon Park is the dessert shop known for its giant milkshakes.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "ory at Icon Park.\" Therefore, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

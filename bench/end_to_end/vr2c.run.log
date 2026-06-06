@@ -1,0 +1,181 @@
+===== SEED (full ingest) =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 1.000
+  Reranker:         True
+  Time:             2209s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=1.000
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-seed.json
+===== ANSWER-ONLY 1 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.833
+  Reranker:         True
+  Time:             173s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=0.667
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-ao1.json
+===== ANSWER-ONLY 2 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.833
+  Reranker:         True
+  Time:             187s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=0.667
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-ao2.json
+===== ANSWER-ONLY 3 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 1.000
+  Reranker:         True
+  Time:             191s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=1.000
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-ao3.json
+===== ANSWER-ONLY 4 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.667
+  Reranker:         True
+  Time:             168s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=0.667
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=0.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-ao4.json
+===== ANSWER-ONLY 5 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.833
+  Reranker:         True
+  Time:             184s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=0.667
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-ao5.json
+===== FRESH FULL 1 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.833
+  Reranker:         True
+  Time:             2236s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=0.667
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-fresh1.json
+===== FRESH FULL 2 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 1.000
+  Reranker:         True
+  Time:             2225s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=1.000
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=1.000
+    temporal-reasoning             (n=  1)  acc=1.000
+
+  Saved → bench/end_to_end/vr2c-fresh2.json
+===== FRESH FULL 3 =====
+Running 30 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  [qids-filter] kept 6/499 matching 6 requested qids
+
+=== LongMemEval-S (Mem0 protocol), 6 questions ===
+  Overall accuracy: 0.667
+  Reranker:         True
+  Time:             2363s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    multi-session                  (n=  3)  acc=1.000
+    single-session-assistant       (n=  1)  acc=1.000
+    single-session-preference      (n=  1)  acc=0.000
+    temporal-reasoning             (n=  1)  acc=0.000
+
+  Saved → bench/end_to_end/vr2c-fresh3.json
+ALL VR2C DONE

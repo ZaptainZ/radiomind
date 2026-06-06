@@ -1,0 +1,150 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 6,
+  "total_ingested_turns": 3039,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 2363.3,
+  "overall_accuracy": 0.6667,
+  "model_correct": 4,
+  "judged_n": 6,
+  "judge_errors": 0,
+  "raw_accuracy": 0.6667,
+  "judged_accuracy": 0.6667,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "multi-session": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "single-session-assistant": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "single-session-preference": {
+      "n": 1,
+      "accuracy": 0.0
+    },
+    "temporal-reasoning": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "<mem_thinking>\nThe question asks: \"How many musical instruments do I currently own?\" I need to count all musical instruments the user currently owns based on memories. I must enumerate each distinct instrument, checking for duplicates and ensuring they are currently owned (not sold or given away). I'll use the draft cardinal view as a baseline and adjust if memories contradict it.\n\nDraft cardinal ",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "actually accurate. Therefore, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1c0ddc50",
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "Since your commute is about 40 minutes each way and you already listen to \"How I Built This\" on the bus, you could use that time to dive deeper into your podcast interests. Try alternating between true crime, self-improvement, and the history podcasts you mentioned. You could also use the Headspace app for a guided meditation or breathing exercise, which fits well with your interest in mindfulness",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "s, the model response does not fully meet the user's preferences as outlined in the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "8 miles",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "al distance as 8 miles. There is no discrepancy between the correct answer and the model response.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need 100 more points.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "claim as the correct answer, even though it includes additional context. Therefore, it is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "Insufficient evidence to determine when you participated in two charity events on consecutive days.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "of months that have passed. Therefore, it does not meet the criteria for equivalence or a superset.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e9327a54",
+      "q": "I'm planning to revisit Orlando. I was wondering if you could remind me of that unique dessert shop with the giant milkshakes we talked about last time?",
+      "gold": "The Sugar Factory at Icon Park.",
+      "answer": "The Sugar Factory at Icon Park.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "Icon Park,\" which matches the correct answer exactly. There is no deviation in meaning or content.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
