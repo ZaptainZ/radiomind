@@ -87,6 +87,9 @@ PACK: dict[str, list[str]] = {
     "diagnostic:report": [
         "tests/test_diagnosis_report.py",
     ],
+    "diagnostic:stability-report": [
+        "tests/test_stability_report.py",
+    ],
 }
 
 

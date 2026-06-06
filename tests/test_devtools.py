@@ -149,6 +149,28 @@ def test_report_modes_mutually_exclusive():
                  "--target-pack-artifact", "a.json", "--out", "rep"])
 
 
+# ---------------- plan(): stability-report (VR-3b) ----------------
+
+def test_stability_report_maps():
+    d = DT.plan(["stability-report", "--artifacts", "a.json", "b.json",
+                 "--out", "rep"])
+    assert d.command == "stability-report"
+    assert d.module == "stability_report"
+    assert d.argv == ["--artifacts", "a.json", "b.json", "--out", "rep"]
+
+
+def test_stability_report_forwards_flags():
+    d = DT.plan(["stability-report", "--artifacts", "a.json", "b.json",
+                 "--out", "rep", "--same-arch", "--current", "a.json"])
+    assert "--same-arch" in d.argv
+    assert d.argv[-2:] == ["--current", "a.json"]
+
+
+def test_stability_report_requires_artifacts_and_out():
+    with pytest.raises(SystemExit):
+        DT.plan(["stability-report", "--out", "rep"])
+
+
 def test_unknown_command_systemexit():
     with pytest.raises(SystemExit):
         DT.plan(["not-a-command"])

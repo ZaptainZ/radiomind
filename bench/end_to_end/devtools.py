@@ -120,6 +120,21 @@ def _build_parser() -> argparse.ArgumentParser:
     rep.add_argument("--diagnose-dir", type=Path, default=None,
                      help="Batch mode: dir of existing diagnose-<qid>.json to "
                           "enrich the index with real layers (read-only).")
+
+    # ---- stability-report: n-run stats over same-qid artifacts (VR-3b) ----
+    st = sub.add_parser(
+        "stability-report",
+        help="Aggregate 2+ same-qid-set/order runner artifacts into mean/std + "
+             "per-qid pass-rate + unstable-qid table. Pure; no benchmark run. "
+             "Default = cross-version envelope (NOT a same-arch std).",
+    )
+    st.add_argument("--artifacts", nargs="+", required=True,
+                    help="Two+ runner result jsons (identical qid set+order).")
+    st.add_argument("--out", type=Path, required=True)
+    st.add_argument("--same-arch", action="store_true",
+                    help="Annotate as same-arch stability (NOT verified).")
+    st.add_argument("--current", default=None,
+                    help="Artifact path/name to highlight in placement.")
     return p
 
 
@@ -163,6 +178,15 @@ def plan(argv: list[str]) -> Dispatch:
         return Dispatch("report", "diagnosis_report",
                         ["--diagnose-json", str(ns.diagnose_json),
                          "--out", str(ns.out)])
+
+    if ns.command == "stability-report":
+        fwd = ["--artifacts", *[str(a) for a in ns.artifacts],
+               "--out", str(ns.out)]
+        if ns.same_arch:
+            fwd.append("--same-arch")
+        if ns.current is not None:
+            fwd += ["--current", str(ns.current)]
+        return Dispatch("stability-report", "stability_report", fwd)
 
     # argparse(required=True) makes this unreachable, but be explicit.
     raise SystemExit(2)
