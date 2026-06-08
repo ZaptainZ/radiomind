@@ -1,0 +1,1044 @@
+{
+  "runs": [
+    {
+      "label": "bench/end_to_end/lme-s-n100-2026-06-04-baseline.json",
+      "score": 0.91,
+      "reported_overall_accuracy": 0.91,
+      "answer_model": "deepseek-v3.2",
+      "judge_model": "gpt-4o",
+      "n": 100
+    },
+    {
+      "label": "bench/end_to_end/lme-s-n100-2026-06-06-run2.judge-fixed.json",
+      "score": 0.92,
+      "reported_overall_accuracy": 0.92,
+      "answer_model": "deepseek-v3.2",
+      "judge_model": "gpt-4o",
+      "n": 100
+    },
+    {
+      "label": "bench/end_to_end/lme-s-n100-2026-06-06-run3.json",
+      "score": 0.9,
+      "reported_overall_accuracy": 0.9,
+      "answer_model": "deepseek-v3.2",
+      "judge_model": "gpt-4o",
+      "n": 100
+    }
+  ],
+  "aggregate": {
+    "n_runs": 3,
+    "mean": 0.91,
+    "std": 0.01,
+    "min": 0.9,
+    "max": 0.92,
+    "median": 0.91,
+    "interpretation": "same-arch-stability"
+  },
+  "per_qid": [
+    {
+      "qid": "e9327a54",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "caf9ead2",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_93159ced_abs",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "75f70248",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "a96c20ee",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "4388e9dd",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "7e974930",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "2311e44b_abs",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "9ee3ecd6",
+      "qtype": "multi-session",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    },
+    {
+      "qid": "affe2881",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_1916e0ea",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "1568498a",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "87f22b4a",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "95bcc1c8",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "e66b632c",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "9aaed6a3",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "86f00804",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "d682f1a2",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "1c0ddc50",
+      "qtype": "single-session-preference",
+      "n_pass": 0,
+      "n_runs": 3,
+      "pass_rate": 0.0,
+      "mode_verdict": "F",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_e414231e",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "fca762bc",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "51b23612",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "71017276",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "72e3ee87",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "60036106",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "b6025781",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "70b3e69b",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_9a159967",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "gpt4_194be4b3",
+      "qtype": "multi-session",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    },
+    {
+      "qid": "031748ae_abs",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "08e075c7",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_1d4ab0c9",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_f2262a51",
+      "qtype": "multi-session",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "59524333",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "6ae235be",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "16c90bf4",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "b46e15ed",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "505af2f5",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_0a05b494",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "dccbc061",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "3ba21379",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "e5ba910e_abs",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "06f04340",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "6f9b354f",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "8cf51dda",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "8077ef71",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "09d032c9",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "3e321797",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "afdc33df",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "d851d5ba",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "778164c6",
+      "qtype": "single-session-assistant",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    },
+    {
+      "qid": "gpt4_68e94287",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_d12ceb0e",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "8a2466db",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_4edbafa2",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_8e165409",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "eaca4986",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "1b9b7252",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "ec81a493",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "9a707b82",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "c18a7dc8",
+      "qtype": "multi-session",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "b0479f84",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "89941a93",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "6ade9755",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "618f13b2",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "c5e8278d",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "4100d0a0",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "35a27287",
+      "qtype": "single-session-preference",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "b3c15d39",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "e01b8e2f",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "dc439ea3",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "29f2956b_abs",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "c7dc5443",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "2133c1b5_abs",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "f523d9fe",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "0a34ad58",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "6071bd76",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "d3ab962e",
+      "qtype": "multi-session",
+      "n_pass": 0,
+      "n_runs": 3,
+      "pass_rate": 0.0,
+      "mode_verdict": "F",
+      "stable": true
+    },
+    {
+      "qid": "d24813b1",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "2698e78f_abs",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_d6585ce8",
+      "qtype": "temporal-reasoning",
+      "n_pass": 0,
+      "n_runs": 3,
+      "pass_rate": 0.0,
+      "mode_verdict": "F",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_e414231f",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "94f70d80",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "c960da58",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "a89d7624",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_ab202e7f",
+      "qtype": "multi-session",
+      "n_pass": 0,
+      "n_runs": 3,
+      "pass_rate": 0.0,
+      "mode_verdict": "F",
+      "stable": true
+    },
+    {
+      "qid": "caf03d32",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "66f24dbb",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "d6233ab6",
+      "qtype": "single-session-preference",
+      "n_pass": 0,
+      "n_runs": 3,
+      "pass_rate": 0.0,
+      "mode_verdict": "F",
+      "stable": true
+    },
+    {
+      "qid": "95228167",
+      "qtype": "single-session-preference",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "e3fc4d6e",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "853b0a1d",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "27016adc",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "cf22b7bf",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "6aeb4375",
+      "qtype": "knowledge-update",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "25e5aa4f",
+      "qtype": "single-session-user",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "bb7c3b45",
+      "qtype": "multi-session",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "28bcfaac",
+      "qtype": "single-session-assistant",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_8279ba02",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    },
+    {
+      "qid": "gpt4_468eb064",
+      "qtype": "temporal-reasoning",
+      "n_pass": 3,
+      "n_runs": 3,
+      "pass_rate": 1.0,
+      "mode_verdict": "P",
+      "stable": true
+    }
+  ],
+  "unstable_qids": [
+    {
+      "qid": "gpt4_9a159967",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "gpt4_f2262a51",
+      "qtype": "multi-session",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "b46e15ed",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "9a707b82",
+      "qtype": "temporal-reasoning",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "c18a7dc8",
+      "qtype": "multi-session",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "35a27287",
+      "qtype": "single-session-preference",
+      "n_pass": 2,
+      "n_runs": 3,
+      "pass_rate": 0.6667,
+      "mode_verdict": "P",
+      "stable": false
+    },
+    {
+      "qid": "9ee3ecd6",
+      "qtype": "multi-session",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    },
+    {
+      "qid": "gpt4_194be4b3",
+      "qtype": "multi-session",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    },
+    {
+      "qid": "778164c6",
+      "qtype": "single-session-assistant",
+      "n_pass": 1,
+      "n_runs": 3,
+      "pass_rate": 0.3333,
+      "mode_verdict": "F",
+      "stable": false
+    }
+  ],
+  "by_qtype": {
+    "knowledge-update": 1.0,
+    "multi-session": 0.7778,
+    "single-session-assistant": 0.9608,
+    "single-session-preference": 0.8542,
+    "single-session-user": 1.0,
+    "temporal-reasoning": 0.8824
+  },
+  "family_summary": {
+    "stable_pass": 86,
+    "stable_fail": 5,
+    "unstable": 9
+  },
+  "placement": {
+    "label": "bench/end_to_end/lme-s-n100-2026-06-04-baseline.json",
+    "score": 0.91,
+    "percentile": 33.3,
+    "is_max": false,
+    "is_min": false,
+    "delta_vs_mean": 0.0,
+    "delta_vs_max": -0.01
+  }
+}

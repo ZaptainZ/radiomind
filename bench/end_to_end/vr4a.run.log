@@ -1,0 +1,65 @@
+===== RUN2 (fresh, --n 100, current-main) =====
+Running 100 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  stratified sample: 100 across 6 types
+  [10/100] acc=0.900  t=3703s
+  [20/100] acc=0.900  t=7897s
+  [30/100] acc=0.933  t=11373s
+  [40/100] acc=0.950  t=14661s
+  [50/100] acc=0.960  t=18045s
+  [60/100] acc=0.950  t=21336s
+  [70/100] acc=0.943  t=25040s
+  [80/100] acc=0.900  t=28529s
+  [90/100] acc=0.878  t=31900s
+  [100/100] acc=0.890  t=34927s
+
+=== LongMemEval-S (Mem0 protocol), 100 questions ===
+  Overall accuracy: 0.890
+  Reranker:         True
+  Time:             34927s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    knowledge-update               (n= 16)  acc=0.938
+    multi-session                  (n= 18)  acc=0.833
+    single-session-assistant       (n= 17)  acc=0.882
+    single-session-preference      (n= 16)  acc=0.750
+    single-session-user            (n= 16)  acc=1.000
+    temporal-reasoning             (n= 17)  acc=0.941
+
+  Saved → bench/end_to_end/lme-s-n100-2026-06-06-run2.json
+===== RUN3 (fresh, --n 100, current-main) =====
+Running 100 questions on LongMemEval-S cleaned; answer=deepseek-v3.2/dashscope, judge=gpt-4o/openrouter; reranker=True, temporal_math=False, agentic=False
+  init: embedder=True, reranker=True
+  [errata] skipped 1 qids with audited-bad gold: ['370a8ff4']
+  stratified sample: 100 across 6 types
+  [10/100] acc=1.000  t=3187s
+  [20/100] acc=0.950  t=6514s
+  [30/100] acc=0.900  t=10039s
+  [40/100] acc=0.900  t=29099s
+  [50/100] acc=0.920  t=32416s
+  [60/100] acc=0.917  t=35802s
+  [70/100] acc=0.914  t=39433s
+  [80/100] acc=0.912  t=42883s
+  [90/100] acc=0.889  t=46557s
+  [100/100] acc=0.900  t=49916s
+
+=== LongMemEval-S (Mem0 protocol), 100 questions ===
+  Overall accuracy: 0.900
+  Reranker:         True
+  Time:             49916s
+  Answer model:     deepseek-v3.2 (dashscope)
+  Judge model:      gpt-4o (openrouter)
+
+  By question type:
+    knowledge-update               (n= 16)  acc=1.000
+    multi-session                  (n= 18)  acc=0.722
+    single-session-assistant       (n= 17)  acc=1.000
+    single-session-preference      (n= 16)  acc=0.875
+    single-session-user            (n= 16)  acc=1.000
+    temporal-reasoning             (n= 17)  acc=0.824
+
+  Saved → bench/end_to_end/lme-s-n100-2026-06-06-run3.json
+ALL VR4A DONE
