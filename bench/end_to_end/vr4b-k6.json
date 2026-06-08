@@ -1,0 +1,320 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 15,
+  "total_ingested_turns": 0,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 508.4,
+  "overall_accuracy": 0.8667,
+  "model_correct": 13,
+  "judged_n": 15,
+  "judge_errors": 0,
+  "raw_accuracy": 0.8667,
+  "judged_accuracy": 0.8667,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "multi-session": {
+      "n": 5,
+      "accuracy": 1.0
+    },
+    "single-session-assistant": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "single-session-preference": {
+      "n": 2,
+      "accuracy": 0.5
+    },
+    "single-session-user": {
+      "n": 1,
+      "accuracy": 1.0
+    },
+    "temporal-reasoning": {
+      "n": 4,
+      "accuracy": 0.75
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "caf9ead2",
+      "q": "How long did it take to move to the new apartment?",
+      "gold": "5 hours",
+      "answer": "It took around 5 hours.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "e use of a hedging term. Therefore, the response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_f2262a51",
+      "q": "How many different doctors did I visit?",
+      "gold": "I visited three different doctors: a primary care physician, an ENT specialist, and a dermatologist.",
+      "answer": "You visited three different doctors: Dr. Patel (ENT specialist), Dr. Lee (dermatologist), and Dr. Smith (primary care physician).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "im of the correct answer, with additional details that do not contradict the original information.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "You currently own 4 musical instruments: a Fender Stratocaster electric guitar, an acoustic guitar (Yamaha FG800), a Pearl Export drum set, and a Korg B1 piano.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "e model response addresses the core factual claim of the correct answer accurately and completely.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_ab202e7f",
+      "q": "How many kitchen items did I replace or fix?",
+      "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shelves.",
+      "answer": "<mem_thinking>\nThe question asks: \"How many kitchen items did I replace or fix?\" It's a counting question. I need to enumerate each distinct kitchen item that was replaced or fixed, based on the memories. The draft cardinal view at the top provides a baseline: kitchen_items count=6 (members: kitchen shelves, kitchen mat, faucet, toaster oven, kitchen faucet, espresso machine). I must cross-check a",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "actually correct.\n\nTherefore, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "35a27287",
+      "q": "Can you recommend some interesting cultural events happening around me this weekend?",
+      "gold": "The user would prefer responses that suggest cultural events where they can practice their language skills, particularly Spanish and French. They would also appreciate if the event has a focus on language learning resources. They would not prefer events that do not provide opportunities for language practice or cultural exchange.",
+      "answer": "Based on your interests in language exchange and cultural festivals, I don't have specific event details for this weekend in my memory. To find events, use the methods we discussed: check platforms like Meetup, Conversation Exchange, or Tandem for language exchange events, and search local event calendars for cultural festivals. Your past experience volunteering at a cultural festival and attendin",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "nt of the correct answer and addresses the user's preferences. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d6233ab6",
+      "q": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+      "answer": "Given your recent focus on reconnecting with family and friends—like planning a gathering for your grandma and a dinner party to share Paris souvenirs with Rachel and Emily—attending your high school reunion could be a meaningful way to channel that nostalgic feeling into rekindling old connections.",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "Based on this analysis, the model response does not fully capture the intent of the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need to earn 100 more points.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "sses the same claim as the correct answer, even with additional context. Therefore, it is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "7 years older.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "he correct answer, which is the number of years older the person is since graduating from college.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "2 months.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "r by stating the same number of months that have passed. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_d6585ce8",
+      "q": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "gold": "The order of the concerts I attended is: 1. Billie Eilish concert at the Wells Fargo Center in Philly, 2. Free outdoor concert series in the park, 3. Music festival in Brooklyn, 4. Jazz night at a local bar, 5. Queen + Adam Lambert concert at the Prudential Center in Newark, NJ.",
+      "answer": "The concerts and musical events you attended in the past two months, from earliest to latest, are:\n1. Billie Eilish concert at Wells Fargo Center in Philadelphia (March 18)\n2. free outdoor concert series in the park (March 25)\n3. music festival in Brooklyn (April 1)\n4. jazz night at a local bar (April 8)\n5. music festival in Brooklyn (April 15)",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "rrectly lists the fifth event. The core factual claim of the correct answer is not fully addressed.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9a707b82",
+      "q": "I mentioned cooking something for my friend a couple of days ago. What was it?",
+      "gold": "a chocolate cake",
+      "answer": "You baked a chocolate cake for your friend's birthday party.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": " party does not change the correctness of the response.\n\nTherefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_9a159967",
+      "q": "Which airline did I fly with the most in March and April?",
+      "gold": "United Airlines",
+      "answer": "You flew with United Airlines the most in March and April.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "atches the correct answer in terms of meaning and intent. There is no discrepancy between the two.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "7e974930",
+      "q": "How much did I earn at the Downtown Farmers Market on my most recent visit?",
+      "gold": "$420",
+      "answer": "You earned $420 at the Downtown Farmers Market on your most recent visit.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": " core factual claim, with no discrepancies or omissions. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e9327a54",
+      "q": "I'm planning to revisit Orlando. I was wondering if you could remind me of that unique dessert shop with the giant milkshakes we talked about last time?",
+      "gold": "The Sugar Factory at Icon Park.",
+      "answer": "The Sugar Factory at Icon Park.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "ctory at Icon Park,\" which matches the correct answer exactly. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "778164c6",
+      "q": "I was looking back at our previous conversation about Caribbean dishes and I was wondering, what was the name of that Jamaican dish you recommended I try with snapper that has fruit in it?",
+      "gold": "Grilled Snapper with Mango Salsa",
+      "answer": "The dish is Grilled Snapper with Mango Salsa.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "here are no discrepancies or omissions in the response.\n\nTherefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

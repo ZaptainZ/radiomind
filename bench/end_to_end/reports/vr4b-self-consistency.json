@@ -1,0 +1,253 @@
+{
+  "summary": {
+    "k": 7,
+    "n_qids": 15,
+    "acc_baseline": 0.8,
+    "acc_judge_majority": 0.8,
+    "acc_exact_mode": 0.7333,
+    "by_role_judge_majority": {
+      "unstable": {
+        "n": 9,
+        "baseline_pass": 8,
+        "agg_pass": 8,
+        "delta": 0
+      },
+      "stable-pass": {
+        "n": 3,
+        "baseline_pass": 3,
+        "agg_pass": 3,
+        "delta": 0
+      },
+      "stable-fail": {
+        "n": 3,
+        "baseline_pass": 1,
+        "agg_pass": 1,
+        "delta": 0
+      }
+    },
+    "by_role_exact_mode": {
+      "unstable": {
+        "n": 9,
+        "baseline_pass": 8,
+        "agg_pass": 8,
+        "delta": 0
+      },
+      "stable-pass": {
+        "n": 3,
+        "baseline_pass": 3,
+        "agg_pass": 3,
+        "delta": 0
+      },
+      "stable-fail": {
+        "n": 3,
+        "baseline_pass": 1,
+        "agg_pass": 0,
+        "delta": -1
+      }
+    },
+    "judge_majority_gains": [
+      "35a27287"
+    ],
+    "judge_majority_losses": [
+      "9ee3ecd6"
+    ],
+    "judge_majority_net": 0
+  },
+  "rows": [
+    {
+      "qid": "caf9ead2",
+      "role": "stable-pass",
+      "qtype": "single-session-user",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.571,
+      "distinct_answers": 2
+    },
+    {
+      "qid": "gpt4_f2262a51",
+      "role": "unstable",
+      "qtype": "multi-session",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.429,
+      "distinct_answers": 3
+    },
+    {
+      "qid": "gpt4_194be4b3",
+      "role": "unstable",
+      "qtype": "multi-session",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.286,
+      "distinct_answers": 6
+    },
+    {
+      "qid": "gpt4_ab202e7f",
+      "role": "stable-fail",
+      "qtype": "multi-session",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 4,
+      "pass_rate": 0.571,
+      "judge_majority_correct": true,
+      "exact_mode_correct": false,
+      "exact_mode_share": 0.143,
+      "distinct_answers": 7
+    },
+    {
+      "qid": "35a27287",
+      "role": "unstable",
+      "qtype": "single-session-preference",
+      "baseline_correct": false,
+      "k": 7,
+      "k_pass": 6,
+      "pass_rate": 0.857,
+      "judge_majority_correct": true,
+      "exact_mode_correct": false,
+      "exact_mode_share": 0.143,
+      "distinct_answers": 7
+    },
+    {
+      "qid": "d6233ab6",
+      "role": "stable-fail",
+      "qtype": "single-session-preference",
+      "baseline_correct": false,
+      "k": 7,
+      "k_pass": 1,
+      "pass_rate": 0.143,
+      "judge_majority_correct": false,
+      "exact_mode_correct": false,
+      "exact_mode_share": 0.286,
+      "distinct_answers": 6
+    },
+    {
+      "qid": "9ee3ecd6",
+      "role": "unstable",
+      "qtype": "multi-session",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 3,
+      "pass_rate": 0.429,
+      "judge_majority_correct": false,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.429,
+      "distinct_answers": 5
+    },
+    {
+      "qid": "c18a7dc8",
+      "role": "unstable",
+      "qtype": "multi-session",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 5,
+      "pass_rate": 0.714,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.143,
+      "distinct_answers": 7
+    },
+    {
+      "qid": "b46e15ed",
+      "role": "unstable",
+      "qtype": "temporal-reasoning",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 6,
+      "pass_rate": 0.857,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.286,
+      "distinct_answers": 5
+    },
+    {
+      "qid": "gpt4_d6585ce8",
+      "role": "stable-fail",
+      "qtype": "temporal-reasoning",
+      "baseline_correct": false,
+      "k": 7,
+      "k_pass": 0,
+      "pass_rate": 0.0,
+      "judge_majority_correct": false,
+      "exact_mode_correct": false,
+      "exact_mode_share": 0.143,
+      "distinct_answers": 7
+    },
+    {
+      "qid": "9a707b82",
+      "role": "unstable",
+      "qtype": "temporal-reasoning",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 5,
+      "pass_rate": 0.714,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.571,
+      "distinct_answers": 3
+    },
+    {
+      "qid": "gpt4_9a159967",
+      "role": "unstable",
+      "qtype": "temporal-reasoning",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.286,
+      "distinct_answers": 5
+    },
+    {
+      "qid": "7e974930",
+      "role": "stable-pass",
+      "qtype": "knowledge-update",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.714,
+      "distinct_answers": 3
+    },
+    {
+      "qid": "e9327a54",
+      "role": "stable-pass",
+      "qtype": "single-session-assistant",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 7,
+      "pass_rate": 1.0,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.857,
+      "distinct_answers": 2
+    },
+    {
+      "qid": "778164c6",
+      "role": "unstable",
+      "qtype": "single-session-assistant",
+      "baseline_correct": true,
+      "k": 7,
+      "k_pass": 6,
+      "pass_rate": 0.857,
+      "judge_majority_correct": true,
+      "exact_mode_correct": true,
+      "exact_mode_share": 0.429,
+      "distinct_answers": 5
+    }
+  ]
+}
