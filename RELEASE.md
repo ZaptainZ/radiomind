@@ -11,22 +11,34 @@ the full design rationale see `projectBasicInfo/01_PROJECT_OVERVIEW.md`.
 
 ## TL;DR
 
-**RadioMind achieved 0.920 on LongMemEval-S (deepseek-v3.2 / gpt-4o judge,
-n=100) at this snapshot, +24 pt over Mem0's 0.680 same-protocol baseline at
-≈ 1/10 the inference cost — within 1 pt of MemMachine SOTA (0.930). The later
-headline is 0.930 (V6.1.1, 2026-05-10).**
+**RadioMind's current-main center on LongMemEval-S (deepseek-v3.2 / gpt-4o
+judge, Mem0-compatible single answer + single judge) is 0.91 ± 0.01** — a
+same-architecture 3-run central tendency (n=100 ×3, identical qid set+order,
+2026-06-08, all judge-error clean). That is **within ~2 pt of published
+MemMachine SOTA (0.930)** at ≈ 1/10 the inference cost and **+23 pt over Mem0's
+0.680 same-protocol baseline**. Earlier single runs reached a historical high of
+**0.930 (V6.1.1, 2026-05-10)**, but on the identical 100-qid sample a 9-run
+cross-version envelope is mean 0.90 / median 0.92 / max 0.93 — **0.930 is a
+lucky upper-tail run, not the current-main center.**
 
-> ⚠️ **All benchmark figures in this file are dated n=100 artifacts**, tied to
-> the version noted in each row (this snapshot: 2026-04-26) — **not standing
-> current-main scores.** Current main is validated for development by
-> `regression_pack.py` (fast deterministic gate) + `target_pack.py` (curated
-> e2e gate); a full n=100 is re-run only on a **formal baseline refresh**.
+> ⚠️ **Two distinct things.** *Standing score* = current-main 0.91 ± 0.01
+> (same-arch 3-run, honest center). *Historical highs* = single-run figures
+> below (0.83 / 0.92 / 0.93), kept for provenance, **not standing scores** and
+> not a stable center. The dominant variance is the answer LLM (non-deterministic
+> even at temperature 0); self-consistency / majority does NOT raise the center
+> (it only converges each question to its true expected value). Moving the center
+> above ~0.92 requires architecture-level gains, not measurement tricks. Daily
+> development is gated by `regression_pack.py` + `target_pack.py`; a full n=100 is
+> re-run only on a formal baseline refresh.
+
+Historical single-run highs (provenance, not standing scores):
 
 | Configuration | Result | vs Mem0 same-protocol |
 |---|---:|---:|
 | gpt-4o answer + gpt-4o judge, n=100 (architecture v3) | **0.830** | +15 pt over 0.68 |
 | deepseek-v3.2 + gpt-4o judge, n=100 v3 (legacy) | 0.860 | +18 pt |
-| **deepseek-v3.2 + gpt-4o judge, n=100 v5 (post all-arch upgrades)** | **0.920** | **+24 pt**, ≈ 1/10 cost |
+| deepseek-v3.2 + gpt-4o judge, n=100 v5 (post all-arch upgrades) | 0.920 | +24 pt, ≈ 1/10 cost |
+| deepseek-v3.2 + gpt-4o judge, n=100 V6.1.1 (lucky upper-tail) | **0.930** | +25 pt (single-run high, not the center) |
 
 Architecture investments demonstrate that the quality gain transfers to
 the weaker (cheaper) answer LLM — i.e. it is **not just prompt-tuning

@@ -14,9 +14,14 @@
   分数必须来自架构与记忆质量，而非测试集过拟合。
 - **SOTA 参照**：MemMachine 公开 0.930（gpt-4o/gpt-4o）。RadioMind 历史 V6.1.1 曾
   n=100 = 0.930（deepseek-v3.2/gpt-4o-judge），即在更便宜的 answer 模型下持平 SOTA。
-- **当前状态（2026-06-04）**：current-main clean = **0.910**，同题集低于 V6.1.1 0.930 共 −2pt。
-  这条 −2pt **必须被解释**（regression vs model variance），不允许 park —— 见
-  `logs/2026-06-0[45]-*` 的 V611-Restore / delta-attribution 工作线。
+- **当前状态（2026-06-09，已解析）**：current-main 诚实中心 = **0.91 ± 0.01**（same-arch
+  3-run，n=100 ×3，同题集同序）。同题集 V6.1.1 0.930 经 9-run envelope + 3-run repeat
+  确认为 **lucky 上沿单跑,非 current 中心**（envelope mean 0.90 / median 0.92 / max 0.93）。
+  −2pt 已归因为 **answer-LLM 采样噪声**（temp=0 仍非确定,VR-2c）+ 少量 parked 结构地板,
+  **非代码 regression**;self-consistency 已证不能抬高中心（VR-4b）。完整测量线见
+  `logs/2026-06-0[4-9]-*`（baseline / delta-attribution / VR-1~4）。
+- **下一步要超过 0.92**：只能开**架构提升线**（提升 unstable qid 的记忆/检索真实期望）,
+  需先找 ≥2 同机制 cohort（DEV_WORKFLOW §3 门槛）;不靠测量技巧 / 单题特调 / 追 lucky 单跑。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 

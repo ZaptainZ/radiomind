@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20V6.1.1-0.930%20(historical)-brightgreen.svg)](#性能验证)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20current--main-0.91%20%C2%B1%200.01-brightgreen.svg)](#性能验证)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **一个能从对话中学习的记忆模块——插入任何 AI Agent 即可使用。**
@@ -19,7 +19,12 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
-> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-05-10 更新）：LongMemEval-S **0.930**（deepseek-v3.2 / gpt-4o judge，n=100，V6.1.1），**曾与 MemMachine SOTA（0.930）持平**，推理成本约 1/10，比 Mem0 同协议基线领先 25pt。**此 0.930 是 V6.1.1 历史 n=100 artifact，不是 current-main 的常驻分数** —— current main 用 `regression_pack.py` + `target_pack.py` 做开发 gate（见 [性能验证](#性能验证)），full n=100 仅在 formal baseline refresh 时重跑。[release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
+> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-06-09 更新）：LongMemEval-S，Mem0 同协议（单 answer + 单 judge），deepseek-v3.2 / gpt-4o judge：
+> - **current-main：0.91 ± 0.01** —— 同架构 3 次跑的中心趋势（n=100 ×3，同一 qid 集+顺序，全部 judge-error clean）。这是诚实的常驻分数。
+> - **历史最高：0.930**（V6.1.1，单次跑，2026-05-10）—— 是 lucky 上沿单跑，**不是** current-main 中心；同组合在 favorable 单跑能 touch 0.93，但不构成稳定中心。
+> - **vs SOTA：** current 中心距已发布 MemMachine SOTA（0.930）约 2pt，推理成本约 1/10，比 Mem0 同协议基线（0.680）领先 23pt。
+>
+> 为什么报区间而非单点：主方差来自 answer LLM 本身（temperature 0 仍非确定），见 [性能验证](#性能验证)。[release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
 
 ---
 
@@ -62,21 +67,35 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 ### LongMemEval-S（n=100，6 种 qtype 分层抽样）
 
-> ⚠️ **以下是历史 n=100 benchmark artifact，不是 current-main 常驻分数。**
-> headline **0.930 是 V6.1.1 跑分（n=100，2026-05-10）**。current main 的开发验证
-> 用 `regression_pack.py`（快速 deterministic gate，每次改动）+ `target_pack.py`
-> （curated e2e gate，关键路径改动时）；**full n=100 仅在 formal baseline refresh
-> 时重跑**，不常规跑。下表请视为"上一次 formal baseline，按版本标注"。
+**current-main 常驻分数（诚实中心）：**
 
-| 系统 | Answer / Judge | 分数 | vs Mem0 同协议 |
-|---|---|---:|---:|
-| Mem0 v3（baseline）                       | gpt-4o / gpt-4o          | 0.680   | — |
-| RadioMind（架构 v3，历史）               | gpt-4o / gpt-4o          | 0.830   | +15.0 pt |
-| RadioMind（v5 全架构，历史）             | deepseek-v3.2 / gpt-4o   | 0.920   | +24.0 pt |
-| **RadioMind（V6.1.1 历史 n=100）**       | deepseek-v3.2 / gpt-4o   | **0.930** | **+25.0 pt**，≈ 1/10 推理成本 |
-| MemMachine（SOTA，已发布）               | gpt-4o / gpt-4o          | 0.930   | — |
+| 口径 | Answer / Judge | 分数 |
+|---|---|---:|
+| **RadioMind current-main，同架构 3 跑** | deepseek-v3.2 / gpt-4o | **0.91 ± 0.01**（min 0.90，max 0.92） |
+| MemMachine（SOTA，已发布）              | gpt-4o / gpt-4o        | 0.930 |
+| Mem0 v3（baseline）                      | gpt-4o / gpt-4o        | 0.680 |
 
-按 qtype 分布（deepseek-v3.2 跑分，n=100 V6.1.1）：
+current-main 中心是 **0.91 ± 0.01** —— 同架构 3 次跑的中心趋势（n=100 ×3，同一 qid
+集+顺序，全部 judge-error clean）。距已发布 SOTA（0.930）约 **2pt**，推理成本约 1/10，
+比 Mem0 同协议 0.680 领先 **23pt**。每次跑都是逐字 Mem0 同协议的单 answer + 单 judge；
+报区间是因为主方差来自 answer LLM（temperature 0 仍非确定 —— 已通过隔离
+answer-path / ingest / judge 三类方差验证）。
+
+> ⚠️ **历史最高 vs current 中心。** 早期单跑曾达 **0.930（V6.1.1，2026-05-10）** 和
+> 0.920（v5）。在 *同一* 100 题样本上，9 个跨版本跑的 envelope 为 mean 0.90 / median
+> 0.92 / **max 0.93** —— 即 **0.930 是 lucky 上沿单跑，不是 current-main 中心**。同一
+> deepseek-v3.2 / gpt-4o-judge 组合能在 favorable 单跑里 *touch* 0.93，但不构成稳定
+> 中心。下方历史数字保留作 provenance，标为单跑高点，非常驻分数。
+
+历史单跑高点（provenance，非常驻分数）：
+
+| 系统 | Answer / Judge | 分数 | 备注 |
+|---|---|---:|---|
+| RadioMind（架构 v3）          | gpt-4o / gpt-4o        | 0.830  | 早期 |
+| RadioMind（v5 全架构）        | deepseek-v3.2 / gpt-4o | 0.920  | 单跑 |
+| RadioMind（V6.1.1）          | deepseek-v3.2 / gpt-4o | 0.930  | **lucky 上沿单跑** |
+
+按 qtype 分布（历史 V6.1.1 单跑，deepseek-v3.2）：
 
 | qtype | n | acc |
 |---|---:|---:|
@@ -91,6 +110,12 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 （age_interval skill 的多候选 anchor trinity 选择）+ retry-consistency
 （两次 trinity 调用结果一致才信任，过滤单次 LLM 噪声）。
 knowledge-update 达到 1.000。
+
+**突破当前中心的路径：** 同架构 3 跑显示约 86% 的题是 stable-pass，约 3% 是真结构地板
+（排序 / 开放词表计数 / 主观偏好 —— 已知天花板），其余在 answer-LLM 采样上摇摆。
+降方差手段（self-consistency / majority）已测试，**不能抬高中心** —— 它只让每题收敛到
+真实期望值（lucky pass 会诚实地翻回 fail）。因此把中心推过 ~0.92 需要在 unstable 题上做
+*架构层面* 的记忆/检索质量提升，而非测量技巧或单题特调。
 
 ### LoCoMo cat 1-4（多轮对话，n=100）
 

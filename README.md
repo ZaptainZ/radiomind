@@ -1,7 +1,7 @@
 # RadioMind
 
 [![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
-[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20V6.1.1-0.930%20(historical)-brightgreen.svg)](#validated-performance)
+[![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20current--main-0.91%20%C2%B1%200.01-brightgreen.svg)](#validated-performance)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
 **A memory module that actually learns from conversations — plug it into any AI agent.**
@@ -19,7 +19,12 @@ print(mind.digest())               # "User: morning runner, values sleep quality
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
-> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-05-10): LongMemEval-S **0.930** (deepseek-v3.2 / gpt-4o judge, n=100, V6.1.1) — **matched MemMachine SOTA (0.930)** at ~1/10 the inference cost, +25pt over Mem0 same-protocol baseline. **This 0.930 is a historical V6.1.1 n=100 artifact, not a standing current-main score** — current main is gated by `regression_pack.py` + `target_pack.py` (see [Validated performance](#validated-performance)); a full n=100 is re-run only on a formal baseline refresh. [Release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
+> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-06-09): LongMemEval-S, Mem0-compatible protocol (single answer + single judge), deepseek-v3.2 / gpt-4o judge:
+> - **Current main: 0.91 ± 0.01** — same-architecture 3-run central tendency (n=100 ×3, identical qid set+order), all judge-error-clean. This is the honest standing score.
+> - **Historical high: 0.930** (V6.1.1, single run, 2026-05-10) — a lucky upper-tail run, **not** the current-main center; same combo can touch 0.93 on a favorable single run but does not hold it as a stable center.
+> - **vs SOTA:** current center is within ~2pt of published MemMachine SOTA (0.930), at ~1/10 the inference cost and +23pt over Mem0's same-protocol baseline (0.680).
+>
+> Why a band, not a point: the dominant variance is the answer LLM itself (non-deterministic even at temperature 0); see [Validated performance](#validated-performance). [Release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
 
 ---
 
@@ -62,23 +67,39 @@ We benchmark RadioMind against published Mem0 results using the **same Mem0 prot
 
 ### LongMemEval-S (n=100, 6 stratified question types)
 
-> ⚠️ **These are historical n=100 benchmark artifacts, not standing current-main
-> scores.** The headline **0.930 is the V6.1.1 run (n=100, 2026-05-10)**.
-> Current main is validated for development by `regression_pack.py` (fast
-> deterministic gate, every change) + `target_pack.py` (curated e2e gate, on
-> key-path changes); a **full n=100 is re-run only on a formal baseline
-> refresh**, not continuously. Treat the numbers below as the last formal
-> baseline, dated by version.
+**Current-main standing score (honest center):**
 
-| System | Answer / Judge | Score | vs Mem0 same-protocol |
-|---|---|---:|---:|
-| Mem0 v3 (baseline)                          | gpt-4o / gpt-4o        | 0.680  | — |
-| RadioMind (architecture v3, historical)     | gpt-4o / gpt-4o        | 0.830  | +15.0 pt |
-| RadioMind (v5 all-arch, historical)         | deepseek-v3.2 / gpt-4o | 0.920  | +24.0 pt |
-| **RadioMind (V6.1.1 historical n=100)**     | deepseek-v3.2 / gpt-4o | **0.930**  | **+25.0 pt**, ≈ 1/10 inference cost |
-| MemMachine (SOTA, published)                | gpt-4o / gpt-4o        | 0.930  | — |
+| Measure | Answer / Judge | Score |
+|---|---|---:|
+| **RadioMind current-main, same-arch 3-run** | deepseek-v3.2 / gpt-4o | **0.91 ± 0.01** (min 0.90, max 0.92) |
+| MemMachine (SOTA, published)                | gpt-4o / gpt-4o        | 0.930 |
+| Mem0 v3 (baseline)                          | gpt-4o / gpt-4o        | 0.680 |
 
-By question type (deepseek-v3.2 run, n=100 V6.1.1):
+The current-main center is **0.91 ± 0.01** — measured as a same-architecture
+3-run central tendency (n=100 ×3, identical qid set + order, all judge-error
+clean). It sits **within ~2pt of published SOTA (0.930)** at ~1/10 the inference
+cost and **+23pt over Mem0's same-protocol 0.680**. Each run is a verbatim
+Mem0-compatible single-answer + single-judge score; we report the band because
+the dominant variance is the answer LLM (non-deterministic even at temperature
+0 — verified by isolating answer-path vs ingest vs judge variance).
+
+> ⚠️ **Historical high vs current center.** Earlier single runs reached **0.930
+> (V6.1.1, 2026-05-10)** and 0.920 (v5). On the *identical* 100-qid sample a
+> 9-run cross-version envelope is mean 0.90 / median 0.92 / **max 0.93** — i.e.
+> **0.930 is a lucky upper-tail run, not the current-main center.** The same
+> deepseek-v3.2 / gpt-4o-judge combo can *touch* 0.93 on a favorable single run
+> but does not hold it as a stable center. We keep the historical figures below
+> for provenance, labeled as single-run highs, not standing scores.
+
+Historical single-run highs (provenance, not standing scores):
+
+| System | Answer / Judge | Score | note |
+|---|---|---:|---|
+| RadioMind (architecture v3)     | gpt-4o / gpt-4o        | 0.830  | early |
+| RadioMind (v5 all-arch)         | deepseek-v3.2 / gpt-4o | 0.920  | single run |
+| RadioMind (V6.1.1)              | deepseek-v3.2 / gpt-4o | 0.930  | **lucky upper-tail single run** |
+
+By question type (historical V6.1.1 single run, deepseek-v3.2):
 
 | qtype | n | acc |
 |---|---:|---:|
@@ -93,6 +114,16 @@ Multi-session aggregation moved from 0.778 → 0.833 between v5 and
 V6.1.1 via GAP-D (trinity-driven anchor selection in age_interval
 skill, with retry-consistency to suppress single-call LLM noise).
 Knowledge-update reached 1.000.
+
+**Path beyond the current center:** a same-arch 3-run shows ~86% of qids are
+stable-pass, ~3% true structural floors (ordering / open-vocab cardinality /
+subjective preference — known ceilings), and the rest swing on answer-LLM
+sampling. Variance-reduction (self-consistency / majority) was tested and
+**does not raise the center** — it only converges each question to its true
+expected value (a lucky pass honestly flips back to fail). Moving the center
+above ~0.92 therefore requires *architecture-level* gains on the unstable
+questions' memory/retrieval quality, not measurement tricks or per-question
+tuning.
 
 ### LoCoMo cat 1-4 (multi-turn dialog, n=100)
 
