@@ -1,0 +1,501 @@
+{
+  "qid": "gpt4_194be4b3",
+  "question": "How many musical instruments do I currently own?",
+  "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_3826dc55_4",
+    "answer_3826dc55_1",
+    "answer_3826dc55_2",
+    "answer_3826dc55_5",
+    "answer_3826dc55_3"
+  ],
+  "question_date": "2023/05/30 (Tue) 23:29",
+  "ingest_stats": {
+    "turns_ingested": 474,
+    "sessions": 44,
+    "turns_total": 474
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 52,
+    "gold_hits_in_top_30": 19,
+    "gold_ranks_first_10": [
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4738,
+      "content_preview": "event: had Yamaha FG800 acoustic guitar for about 8 years [date=2015-05-22]"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3916,
+      "content_preview": "event: started taking guitar lessons [date=2023-05-29]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.372,
+      "content_preview": "event: bought a new overdrive pedal from Guitar Center [date=2023-05-20]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "2bc4ae7d_t6",
+      "session_id": "2bc4ae7d",
+      "is_gold_session": false,
+      "score": 0.4906,
+      "content_preview": "[user] I'm actually curious about how to store and organize my board game collection. I've recently reorganized it and now I have 27 games, but I'm not sure if "
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3281,
+      "content_preview": "event: niece got a new student-level violin from a store in Pasadena [date=2023-04-22]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3263,
+      "content_preview": "event: finished listening to three audiobooks [date=2023-05-29]"
+    },
+    {
+      "rank": 7,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3169,
+      "content_preview": "event: attended workshop focused on Afro-Cuban rhythms [date=2023-05-25]"
+    },
+    {
+      "rank": 8,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3163,
+      "content_preview": "event: reorganized board game collection (now has 27 games) [date=2023-05-22]"
+    },
+    {
+      "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3152,
+      "content_preview": "event: need to check on silver chain to see if it needs polishing [date=2023-05-27]"
+    },
+    {
+      "rank": 10,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3028,
+      "content_preview": "event: been doing push-ups and pull-ups [date=2023-05-28]"
+    },
+    {
+      "rank": 11,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3024,
+      "content_preview": "event: changed strings on black Fender Stratocaster electric guitar [date=2023-05-01]"
+    },
+    {
+      "rank": 12,
+      "turn_id": "answer_3826dc55_3_t2",
+      "session_id": "answer_3826dc55_3",
+      "is_gold_session": true,
+      "score": 0.5339,
+      "content_preview": "[user] I'm also a bit concerned about the maintenance of my instruments, especially my piano, a Korg B1, which I've had for about 3 years. Some of the keys have"
+    },
+    {
+      "rank": 13,
+      "turn_id": "answer_3826dc55_1_t2",
+      "session_id": "answer_3826dc55_1",
+      "is_gold_session": true,
+      "score": 0.5064,
+      "content_preview": "[user] By the way, I've had my black Fender Stratocaster electric guitar for about 5 years now, and it's been my go-to instrument for playing blues and rock mus"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_3826dc55_4_t4",
+      "session_id": "answer_3826dc55_4",
+      "is_gold_session": true,
+      "score": 0.4991,
+      "content_preview": "[user] I'll definitely consider getting a professional to take a look at my piano. Another thing I've been thinking about is maybe getting a new ukulele. I've b"
+    },
+    {
+      "rank": 15,
+      "turn_id": "answer_3826dc55_3_t10",
+      "session_id": "answer_3826dc55_3",
+      "is_gold_session": true,
+      "score": 0.411,
+      "content_preview": "[user] Now that I have some tips on writing a good description, I think I'll start crafting one for my drum set listing. Do you have any advice on how to set a "
+    },
+    {
+      "rank": 16,
+      "turn_id": "answer_3826dc55_2_t6",
+      "session_id": "answer_3826dc55_2",
+      "is_gold_session": true,
+      "score": 0.4852,
+      "content_preview": "[user] I'm glad you provided some tips on using overdrive pedals effectively. By the way, I've had my acoustic guitar, a Yamaha FG800, for about 8 years, and it"
+    },
+    {
+      "rank": 17,
+      "turn_id": "answer_3826dc55_3_t8",
+      "session_id": "answer_3826dc55_3",
+      "is_gold_session": true,
+      "score": 0.3956,
+      "content_preview": "[user] Now that I have some tips on taking good photos of my drum set, I think I'll start cleaning and preparing it for the photo shoot. Do you have any advice "
+    },
+    {
+      "rank": 18,
+      "turn_id": "answer_3826dc55_4_t2",
+      "session_id": "answer_3826dc55_4",
+      "is_gold_session": true,
+      "score": 0.4644,
+      "content_preview": "[user] I'll definitely check out those options. Do you think it's worth getting a professional to take a look at my piano even if it's just for a routine mainte"
+    },
+    {
+      "rank": 19,
+      "turn_id": "answer_3826dc55_5_t7",
+      "session_id": "answer_3826dc55_5",
+      "is_gold_session": true,
+      "score": 0.3772,
+      "content_preview": "[assistant] That's great to hear that you're a guitar player! Ukuleles are an excellent addition to any musician's collection, and they're perfect for beginners"
+    },
+    {
+      "rank": 20,
+      "turn_id": "answer_3826dc55_1_t8",
+      "session_id": "answer_3826dc55_1",
+      "is_gold_session": true,
+      "score": 0.4472,
+      "content_preview": "[user] I've been thinking about getting a new guitar humidifier to help keep my acoustic guitar in good condition. Do you think it's worth investing in a high-e"
+    },
+    {
+      "rank": 21,
+      "turn_id": "answer_3826dc55_2_t4",
+      "session_id": "answer_3826dc55_2",
+      "is_gold_session": true,
+      "score": 0.3714,
+      "content_preview": "[user] I've been experimenting with different pedals and effects, and I just bought a new overdrive pedal from Guitar Center last Saturday. Do you have any reco"
+    },
+    {
+      "rank": 22,
+      "turn_id": "answer_3826dc55_5_t6",
+      "session_id": "answer_3826dc55_5",
+      "is_gold_session": true,
+      "score": 0.4421,
+      "content_preview": "[user] I'll definitely check out those online resources and apps. I think it's great that there are so many options available to help her practice and improve. "
+    },
+    {
+      "rank": 23,
+      "turn_id": "answer_3826dc55_2_t8",
+      "session_id": "answer_3826dc55_2",
+      "is_gold_session": true,
+      "score": 0.4403,
+      "content_preview": "[user] I'm thinking of trying out some acoustic-specific pedals, like the ones you mentioned. I've heard that some pedals are designed specifically for acoustic"
+    },
+    {
+      "rank": 24,
+      "turn_id": "answer_3826dc55_1_t6",
+      "session_id": "answer_3826dc55_1",
+      "is_gold_session": true,
+      "score": 0.4397,
+      "content_preview": "[user] I've been experimenting with different pedals and effects lately, and I'm thinking of getting a delay pedal to add some depth to my sound. Do you think a"
+    },
+    {
+      "rank": 25,
+      "turn_id": "answer_3826dc55_3_t0",
+      "session_id": "answer_3826dc55_3",
+      "is_gold_session": true,
+      "score": 0.4391,
+      "content_preview": "[user] I'm thinking of selling my old drum set, a 5-piece Pearl Export, which I haven't played in years. Do you know how I can determine its value or where I ca"
+    },
+    {
+      "rank": 26,
+      "turn_id": "answer_3826dc55_2_t0",
+      "session_id": "answer_3826dc55_2",
+      "is_gold_session": true,
+      "score": 0.4326,
+      "content_preview": "[user] I'm looking to learn some new techniques to improve my guitar playing. I've been focusing on blues and rock music lately, and I was wondering if you coul"
+    },
+    {
+      "rank": 27,
+      "turn_id": "answer_3826dc55_1_t9",
+      "session_id": "answer_3826dc55_1",
+      "is_gold_session": true,
+      "score": 0.356,
+      "content_preview": "[assistant] A guitar humidifier is a great investment for any acoustic guitar player! Humidifiers help maintain a healthy humidity level in your guitar, which i"
+    },
+    {
+      "rank": 28,
+      "turn_id": "answer_3826dc55_5_t8",
+      "session_id": "answer_3826dc55_5",
+      "is_gold_session": true,
+      "score": 0.4262,
+      "content_preview": "[user] Thanks for the recommendations! I think I'll start by checking out some of the models you mentioned, especially the Kala KA-15S and the Fender CP-60S. Do"
+    },
+    {
+      "rank": 29,
+      "turn_id": "answer_3826dc55_3_t11",
+      "session_id": "answer_3826dc55_3",
+      "is_gold_session": true,
+      "score": 0.3526,
+      "content_preview": "[assistant] Pricing your drum set competitively is crucial to attracting buyers and selling quickly! Here are some tips to help you determine a fair price for y"
+    },
+    {
+      "rank": 30,
+      "turn_id": "answer_3826dc55_1_t4",
+      "session_id": "answer_3826dc55_1",
+      "is_gold_session": true,
+      "score": 0.4164,
+      "content_preview": "[user] I was thinking of trying out some new effects pedals to complement my playing style. Do you think a delay pedal would be a good addition to my setup, and"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "self_anchor_probe": {},
+  "store_anchor_probe": {
+    "fact_entries_total": 474,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "495",
+        "snippet": " complete: 3-6 months\n* Cost: $495 (includes exam fee)\n* Prerequisites: Bachelor's d"
+      },
+      {
+        "amount": "0.02",
+        "snippet": "hases. This means you'll earn $0.02 for every dollar spent on groceries and $0.01 for"
+      },
+      {
+        "amount": "0.01",
+        "snippet": "dollar spent on groceries and $0.01 for every dollar spent on other categories.\n2. *"
+      },
+      {
+        "amount": "4,500",
+        "snippet": "me and expenses:\n\n**Income:** $4,500 per month\n\n**Fixed Expenses:** $3,050 (68% of you"
+      },
+      {
+        "amount": "3,050",
+        "snippet": "er month\n\n**Fixed Expenses:** $3,050 (68% of your income)\n\n* Rent: $1,800\n* Utilities:"
+      },
+      {
+        "amount": "1,800",
+        "snippet": "(68% of your income)\n\n* Rent: $1,800\n* Utilities: $150\n* Car payment: $300\n* Insurance"
+      },
+      {
+        "amount": "150",
+        "snippet": "\n\n* Rent: $1,800\n* Utilities: $150\n* Car payment: $300\n* Insurance: $200\n* Minimum c"
+      },
+      {
+        "amount": "300",
+        "snippet": "tilities: $150\n* Car payment: $300\n* Insurance: $200\n* Minimum credit card payments:"
+      },
+      {
+        "amount": "200",
+        "snippet": "ar payment: $300\n* Insurance: $200\n* Minimum credit card payments: $500\n\n**Variable "
+      },
+      {
+        "amount": "500",
+        "snippet": "Minimum credit card payments: $500\n\n**Variable Expenses:** $1,500 (33% of your incom"
+      },
+      {
+        "amount": "1,500",
+        "snippet": " $500\n\n**Variable Expenses:** $1,500 (33% of your income)\n\n* Groceries: $500\n* Dining "
+      },
+      {
+        "amount": "500",
+        "snippet": "of your income)\n\n* Groceries: $500\n* Dining out: $300\n* Entertainment: $200\n* Travel"
+      },
+      {
+        "amount": "300",
+        "snippet": "Groceries: $500\n* Dining out: $300\n* Entertainment: $200\n* Travel: $500\n* Clothing a"
+      },
+      {
+        "amount": "200",
+        "snippet": "ng out: $300\n* Entertainment: $200\n* Travel: $500\n* Clothing and accessories: unknow"
+      },
+      {
+        "amount": "500",
+        "snippet": "Entertainment: $200\n* Travel: $500\n* Clothing and accessories: unknown (we'll discus"
+      }
+    ],
+    "age_strict_in_store": [],
+    "age_loose_in_store": []
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years,",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  },
+  "closure_view": {
+    "committers": {
+      "cashback": {
+        "proof_available": false
+      },
+      "age_interval": {
+        "proof_available": false
+      }
+    },
+    "suppressors": {
+      "role": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      },
+      "temporal_endpoint": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      }
+    }
+  },
+  "path_summary": {
+    "qid": "gpt4_194be4b3",
+    "retrieval": {
+      "gold_hits_top_200": 52,
+      "gold_hits_top_30": 19
+    },
+    "deterministic_layer": {
+      "fired": [],
+      "refused": [
+        {
+          "helper": "savings",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "cashback",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "person_age",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "age_interval",
+          "reason": "skill_did_not_fire"
+        }
+      ],
+      "proofs_available": []
+    },
+    "skill_route": {
+      "temporal_precision": "silent",
+      "open_domain_specific": "silent",
+      "list_ordering": "not_probed",
+      "structured_skill": null
+    },
+    "closure_decision": {
+      "committers": {
+        "cashback": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        },
+        "age_interval": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        }
+      },
+      "suppressors": {
+        "role": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        },
+        "temporal_endpoint": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        }
+      }
+    },
+    "diagnosis": {
+      "layer": "helper_refusal",
+      "reason": "savings refused: no_trigger_match"
+    },
+    "final_answer": {
+      "answer": "You currently own",
+      "correct": false,
+      "judge_failed": false,
+      "answer_error": false,
+      "pure_abstain": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  }
+}

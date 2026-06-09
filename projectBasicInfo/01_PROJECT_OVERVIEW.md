@@ -20,8 +20,12 @@
   −2pt 已归因为 **answer-LLM 采样噪声**（temp=0 仍非确定,VR-2c）+ 少量 parked 结构地板,
   **非代码 regression**;self-consistency 已证不能抬高中心（VR-4b）。完整测量线见
   `logs/2026-06-0[4-9]-*`（baseline / delta-attribution / VR-1~4）。
-- **下一步要超过 0.92**：只能开**架构提升线**（提升 unstable qid 的记忆/检索真实期望）,
-  需先找 ≥2 同机制 cohort（DEV_WORKFLOW §3 门槛）;不靠测量技巧 / 单题特调 / 追 lucky 单跑。
+- **超过 0.92 的路径（B 线已 PARK,2026-06-09）**：B-1/B-1.5 read-only 审计未找到可窄修的
+  同机制检索/聚合簇。最大簇 counting/aggregation（14 个）经 probe 证明真因是 **answer-generation**
+  （evidence 在 top-k 但 answer 选错数/截断/over-abstain）,非检索缺口,且已证不可靠修
+  （VR-2c/4b）。结论: current-main 0.91 中心是 answer-model 能力+噪声的真实反映;**记忆侧无
+  read-only 证据支持的窄修立项**。重开 B 需新的 ≥2 同机制可修证据,或 answer 侧能力/约束变化
+  （更强/更稳 answer 模型,或数值表述 prompt 约束——属独立实验,非记忆架构提升）。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 

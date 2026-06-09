@@ -1,0 +1,508 @@
+{
+  "qid": "9ee3ecd6",
+  "question": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+  "gold": "100",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_66c23110_2",
+    "answer_66c23110_1"
+  ],
+  "question_date": "2023/05/30 (Tue) 21:46",
+  "ingest_stats": {
+    "turns_ingested": 476,
+    "sessions": 50,
+    "turns_total": 476
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 22,
+    "gold_hits_in_top_30": 15,
+    "gold_ranks_first_10": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      7,
+      8,
+      9,
+      14,
+      16
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "answer_66c23110_2_t5",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.7869,
+      "content_preview": "[assistant] The La Roche-Posay Toleriane Ultra Fluid Face Moisturizer SPF 50 is a fantastic product for combination skin.  And yes, you can earn points for purc"
+    },
+    {
+      "rank": 2,
+      "turn_id": "answer_66c23110_1_t0",
+      "session_id": "answer_66c23110_1",
+      "is_gold_session": true,
+      "score": 0.7755,
+      "content_preview": "[user] I'm looking for some advice on skincare products. I recently bought an eyeshadow palette at Sephora and earned 50 points, bringing my total to 200 points"
+    },
+    {
+      "rank": 3,
+      "turn_id": "answer_66c23110_2_t6",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.7697,
+      "content_preview": "[user] Do you know if Sephora has any current promotions or discounts on the La Roche-Posay moisturizer or any other products I might want to purchase with it? "
+    },
+    {
+      "rank": 4,
+      "turn_id": "answer_66c23110_1_t1",
+      "session_id": "answer_66c23110_1",
+      "is_gold_session": true,
+      "score": 0.7381,
+      "content_preview": "[assistant] Congratulations on earning points in the Sephora loyalty program! With 200 points, you can redeem a reward from their Rewards Bazaar. Since you've b"
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4905,
+      "content_preview": "event: bought eyeshadow palette at Sephora [date=2023-05-21]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "answer_66c23110_2_t7",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.7171,
+      "content_preview": "[assistant] Yay! Congratulations on almost reaching your 300 points goal! That's so exciting!  Sephora often runs various promotions, discounts, and offers on t"
+    },
+    {
+      "rank": 7,
+      "turn_id": "answer_66c23110_2_t1",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.5869,
+      "content_preview": "[assistant] Of course, I'd be happy to help you find a great moisturizer at Sephora. To give you the best recommendations, could you please tell me a bit more a"
+    },
+    {
+      "rank": 8,
+      "turn_id": "answer_66c23110_2_t3",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.5816,
+      "content_preview": "[assistant] Combination skin can be challenging, but don't worry, I've got you covered!  For a lightweight, non-greasy moisturizer with SPF that addresses dehyd"
+    },
+    {
+      "rank": 9,
+      "turn_id": "answer_66c23110_2_t4",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.6935,
+      "content_preview": "[user] I think I'll go with the La Roche-Posay one. Do you think I can earn points for purchasing it at Sephora?"
+    },
+    {
+      "rank": 10,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4581,
+      "content_preview": "event: expressed interest in Laneige Time Freeze Essence [date=2023-05-21]"
+    },
+    {
+      "rank": 11,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4552,
+      "content_preview": "event: considered purchasing Laneige Time Freeze Essence [date=2023-05-21]"
+    },
+    {
+      "rank": 12,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4495,
+      "content_preview": "event: expressed interest in trying Laneige Time Freeze Essence [date=2023-05-21]"
+    },
+    {
+      "rank": 13,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4435,
+      "content_preview": "event: expressed interest in exploring Laneige skincare range for anti-aging [date=2023-05-21]"
+    },
+    {
+      "rank": 14,
+      "turn_id": "answer_66c23110_2_t9",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.4977,
+      "content_preview": "[assistant] Bundle deals and sets can be an excellent way to save money and get a complete skincare routine.  As of now, I found a few bundle deals and sets ava"
+    },
+    {
+      "rank": 15,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3604,
+      "content_preview": "event: sold around $150 worth of products at seasonal artisan fair and got feedback from customers [date=2023-05-22]"
+    },
+    {
+      "rank": 16,
+      "turn_id": "answer_66c23110_2_t2",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.4364,
+      "content_preview": "[user] I have combination skin, and my main concern is dehydration. I'd prefer a lightweight, non-greasy moisturizer with SPF."
+    },
+    {
+      "rank": 17,
+      "turn_id": "answer_66c23110_2_t0",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.5031,
+      "content_preview": "[user] I'm planning to buy a new moisturizer from Sephora soon, and I was wondering if you could help me find a good one for my skin type."
+    },
+    {
+      "rank": 18,
+      "turn_id": "fd56c5bd_2_t5",
+      "session_id": "fd56c5bd_2",
+      "is_gold_session": false,
+      "score": 0.4789,
+      "content_preview": "[assistant] Travel-sized skincare products are perfect for trips, and many brands offer mini versions of their popular products. Here are some suggestions:  1. "
+    },
+    {
+      "rank": 19,
+      "turn_id": "fd56c5bd_2_t4",
+      "session_id": "fd56c5bd_2",
+      "is_gold_session": false,
+      "score": 0.4696,
+      "content_preview": "[user] I'd like to add a few more items to my skincare list. Can you suggest some travel-sized skincare products that won't take up too much space in my luggage"
+    },
+    {
+      "rank": 20,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.312,
+      "content_preview": "event: purchased IKEA shelf for $30 [date=2023-05-20]"
+    },
+    {
+      "rank": 21,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3102,
+      "content_preview": "event: got shelf from IKEA for $30 [date=2023-05-20]"
+    },
+    {
+      "rank": 22,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3093,
+      "content_preview": "event: participated in seasonal artisan fair at the community center, made around $150 in sales and got feedback from customers [date=2023-05-22]"
+    },
+    {
+      "rank": 23,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3083,
+      "content_preview": "event: acquired fast charger with phone [date=2023-05-27]"
+    },
+    {
+      "rank": 24,
+      "turn_id": "answer_66c23110_1_t6",
+      "session_id": "answer_66c23110_1",
+      "is_gold_session": true,
+      "score": 0.4574,
+      "content_preview": "[user] I'm interested in the Laneige Time Freeze Essence. Can you tell me more about how it works and how to incorporate it into my skincare routine?"
+    },
+    {
+      "rank": 25,
+      "turn_id": "answer_66c23110_2_t8",
+      "session_id": "answer_66c23110_2",
+      "is_gold_session": true,
+      "score": 0.4564,
+      "content_preview": "[user] Do you know if there are any bundle deals or sets available for the La Roche-Posay Toleriane Ultra Fluid Face Moisturizer SPF 50, maybe with a cleanser o"
+    },
+    {
+      "rank": 26,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3043,
+      "content_preview": "event: got a beautiful silver necklace from Tiffany's for sister's 30th birthday [date=2023-05-22]"
+    },
+    {
+      "rank": 27,
+      "turn_id": "40643340_1_t0",
+      "session_id": "40643340_1",
+      "is_gold_session": false,
+      "score": 0.3121,
+      "content_preview": "[user] I'm planning a birthday party for my friend and I'm looking for some gift ideas. Do you have any suggestions for a 30-year-old woman? By the way, I recen"
+    },
+    {
+      "rank": 28,
+      "turn_id": "answer_66c23110_1_t8",
+      "session_id": "answer_66c23110_1",
+      "is_gold_session": true,
+      "score": 0.4402,
+      "content_preview": "[user] I'm interested in trying out the Laneige Time Freeze Essence, but I want to make sure I'm using it correctly. Can you tell me more about how to layer it "
+    },
+    {
+      "rank": 29,
+      "turn_id": "answer_66c23110_1_t10",
+      "session_id": "answer_66c23110_1",
+      "is_gold_session": true,
+      "score": 0.4339,
+      "content_preview": "[user] I'm considering purchasing the Laneige Time Freeze Essence. Can you tell me more about the packaging and how long the product lasts?"
+    },
+    {
+      "rank": 30,
+      "turn_id": "fd56c5bd_2_t2",
+      "session_id": "fd56c5bd_2",
+      "is_gold_session": false,
+      "score": 0.4265,
+      "content_preview": "[user] Can I customize this list based on my personal style and preferences? For example, I prefer to wear dresses more often than tops and bottoms, and I'd lik"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": 30,
+      "variant_mismatch_detected": false
+    }
+  },
+  "self_anchor_probe": {},
+  "store_anchor_probe": {
+    "fact_entries_total": 476,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "45,",
+        "snippet": "use. The set is priced around $45, saving you around $10 compared to buying the prod"
+      },
+      {
+        "amount": "10",
+        "snippet": "around $45, saving you around $10 compared to buying the products separately.\n2. **"
+      },
+      {
+        "amount": "30",
+        "snippet": "moisturizer (priced at around $30) will bring you even closer to redeeming your fre"
+      },
+      {
+        "amount": "10",
+        "snippet": " 1 AC outlet\n\t* Price: Around $10-15\n2. **Eagle Creek Travel Adapter**:\n\t* Compact "
+      },
+      {
+        "amount": "15",
+        "snippet": "Output: 2.4A\n\t* Price: Around $15-20\n2. **Mophie Powerstation Mini**:\n\t* Compact si"
+      },
+      {
+        "amount": "150",
+        "snippet": "l artisan fair, I sold around $150 worth of products and got some great feedback fro"
+      },
+      {
+        "amount": "150",
+        "snippet": "riend and we each made around $150 in sales. Do you think the convention center even"
+      },
+      {
+        "amount": "150",
+        "snippet": "y center, where I made around $150 in sales and got some great feedback from custome"
+      },
+      {
+        "amount": "150",
+        "snippet": "de, or even a local jeweler. ($150-$300)\n2. **Luxury Candles or Home "
+      },
+      {
+        "amount": "300",
+        "snippet": "r even a local jeweler. ($150-$300)\n2. **Luxury Candles or Home "
+      },
+      {
+        "amount": "200,",
+        "snippet": "h birthday, which cost around $200, and it was a hit!"
+      },
+      {
+        "amount": "30,",
+        "snippet": "n a shelf I got from IKEA for $30, which has separate compartments to arrange them b"
+      },
+      {
+        "amount": "30,",
+        "snippet": "n a shelf I got from IKEA for $30, which has separate compartments to arrange them b"
+      }
+    ],
+    "age_strict_in_store": [
+      {
+        "age": 13,
+        "snippet": "ity that can engage teenagers aged 13-15. I am open to any proposal above except for op"
+      },
+      {
+        "age": 13,
+        "snippet": "nizing an event for teenagers aged 13-15 years old. The theme of the event is centered "
+      }
+    ],
+    "age_loose_in_store": [
+      {
+        "age": 13,
+        "snippet": "ity that can engage teenagers aged 13-15. I am open to any proposal above except for op"
+      },
+      {
+        "age": 13,
+        "snippet": "nizing an event for teenagers aged 13-15 years old. The theme of the event is centered "
+      }
+    ]
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "100",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  },
+  "closure_view": {
+    "committers": {
+      "cashback": {
+        "proof_available": false
+      },
+      "age_interval": {
+        "proof_available": false
+      }
+    },
+    "suppressors": {
+      "role": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      },
+      "temporal_endpoint": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      }
+    }
+  },
+  "path_summary": {
+    "qid": "9ee3ecd6",
+    "retrieval": {
+      "gold_hits_top_200": 22,
+      "gold_hits_top_30": 15
+    },
+    "deterministic_layer": {
+      "fired": [],
+      "refused": [
+        {
+          "helper": "savings",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "cashback",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "person_age",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "age_interval",
+          "reason": "skill_did_not_fire"
+        }
+      ],
+      "proofs_available": []
+    },
+    "skill_route": {
+      "temporal_precision": "silent",
+      "open_domain_specific": "silent",
+      "list_ordering": "not_probed",
+      "structured_skill": null
+    },
+    "closure_decision": {
+      "committers": {
+        "cashback": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        },
+        "age_interval": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        }
+      },
+      "suppressors": {
+        "role": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        },
+        "temporal_endpoint": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        }
+      }
+    },
+    "diagnosis": {
+      "layer": "helper_refusal",
+      "reason": "savings refused: no_trigger_match"
+    },
+    "final_answer": {
+      "answer": "You need a total of 300 points to redeem a free skincare product at Sephora.",
+      "correct": false,
+      "judge_failed": false,
+      "answer_error": false,
+      "pure_abstain": false,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  }
+}

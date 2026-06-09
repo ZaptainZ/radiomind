@@ -1,0 +1,503 @@
+{
+  "qid": "d3ab962e",
+  "question": "What is the total distance of the hikes I did on two consecutive weekends?",
+  "gold": "8 miles",
+  "qtype": "multi-session",
+  "answer_session_ids": [
+    "answer_5237bb0b_2",
+    "answer_5237bb0b_1"
+  ],
+  "question_date": "2022/09/24 (Sat) 23:49",
+  "ingest_stats": {
+    "turns_ingested": 530,
+    "sessions": 49,
+    "turns_total": 530
+  },
+  "retrieve_window": {
+    "top_k_probed": 200,
+    "gold_hits_in_top_200": 16,
+    "gold_hits_in_top_30": 1,
+    "gold_ranks_first_10": [
+      6
+    ]
+  },
+  "retrieve_top_30_preview": [
+    {
+      "rank": 1,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.5304,
+      "content_preview": "event: completed 5-mile hike at Red Rock Canyon [date=2022-09-10]"
+    },
+    {
+      "rank": 2,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4884,
+      "content_preview": "event: completed week-long backpacking trip through the John Muir Trail in the Sierra Nevada mountains with brother [date=2022-09-24]"
+    },
+    {
+      "rank": 3,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4457,
+      "content_preview": "event: took a 30-minute walk around the block [date=2022-09-23]"
+    },
+    {
+      "rank": 4,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4416,
+      "content_preview": "event: did a 3-mile loop trail at Valley of Fire State Park [date=2022-09-17]"
+    },
+    {
+      "rank": 5,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.4163,
+      "content_preview": "event: commuting by bike three times a week [date=2022-09-24]"
+    },
+    {
+      "rank": 6,
+      "turn_id": "answer_5237bb0b_1_t0",
+      "session_id": "answer_5237bb0b_1",
+      "is_gold_session": true,
+      "score": 0.4905,
+      "content_preview": "[user] I'm planning a road trip to the Grand Canyon in January and was wondering if you could suggest some good routes and accommodations along the way. I'm thi"
+    },
+    {
+      "rank": 7,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3936,
+      "content_preview": "event: suggested planning a walking group with colleagues [date=2022-09-24]"
+    },
+    {
+      "rank": 8,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3598,
+      "content_preview": "event: purchased 50mm prime lens [date=2022-06-15]"
+    },
+    {
+      "rank": 9,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.342,
+      "content_preview": "event: using 50mm prime lens a lot lately [date=2022-09-24]"
+    },
+    {
+      "rank": 10,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3399,
+      "content_preview": "event: attended niece's high school graduation ceremony [date=2022-09-17]"
+    },
+    {
+      "rank": 11,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3398,
+      "content_preview": "event: moved into new apartment near public transportation [date=2022-09-24]"
+    },
+    {
+      "rank": 12,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3362,
+      "content_preview": "event: had a doctor's appointment [date=2022-09-23]"
+    },
+    {
+      "rank": 13,
+      "turn_id": "3329e5e8_1_t4",
+      "session_id": "3329e5e8_1",
+      "is_gold_session": false,
+      "score": 0.4964,
+      "content_preview": "[user] I'm still interested in the Tahoe to Yosemite route, but I understand it may be challenging. Can I modify the route to make it easier? For example, could"
+    },
+    {
+      "rank": 14,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3334,
+      "content_preview": "event: stopped by the coffee shop on the way to work [date=2022-09-17]"
+    },
+    {
+      "rank": 15,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3256,
+      "content_preview": "event: bought a set of reusable cloth gift bags from Etsy for $25 [date=2022-09-24]"
+    },
+    {
+      "rank": 16,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.362,
+      "content_preview": "Seize opportunities to improve your living space and social life on weekends."
+    },
+    {
+      "rank": 17,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3211,
+      "content_preview": "event: started reading Provenance [date=2022-09-24]"
+    },
+    {
+      "rank": 18,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3181,
+      "content_preview": "event: got closet organized [date=2022-09-24]"
+    },
+    {
+      "rank": 19,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3179,
+      "content_preview": "event: had a meeting with a potential client [date=2022-09-23]"
+    },
+    {
+      "rank": 20,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3171,
+      "content_preview": "event: attended graduation party for neighbor's son who earned associate's degree [date=2022-09-24]"
+    },
+    {
+      "rank": 21,
+      "turn_id": "92f1ea4d_1_t2",
+      "session_id": "92f1ea4d_1",
+      "is_gold_session": false,
+      "score": 0.3889,
+      "content_preview": "[user] I have a meeting with my team on Monday at 10 am, and I need to finish a report by Friday. I enjoy reading and taking short walks, and I'd like to incorp"
+    },
+    {
+      "rank": 22,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3141,
+      "content_preview": "event: watched most of Black Mirror episodes [date=2022-09-24]"
+    },
+    {
+      "rank": 23,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3132,
+      "content_preview": "event: started writing short stories again [date=2022-09-03]"
+    },
+    {
+      "rank": 24,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3119,
+      "content_preview": "event: attended Indian music festival in Chicago [date=2022-09-17]"
+    },
+    {
+      "rank": 25,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3101,
+      "content_preview": "event: attended auction [date=2022-09-24]"
+    },
+    {
+      "rank": 26,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3099,
+      "content_preview": "event: attended a 3-day project management workshop [date=2022-03-15]"
+    },
+    {
+      "rank": 27,
+      "turn_id": "3329e5e8_1_t1",
+      "session_id": "3329e5e8_1",
+      "is_gold_session": false,
+      "score": 0.457,
+      "content_preview": "[assistant] What an exciting adventure you're planning! California offers some of the most scenic and diverse bike routes in the country. I'd be happy to help y"
+    },
+    {
+      "rank": 28,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3058,
+      "content_preview": "event: user lived in a tornado-prone area [date=2022-09-24]"
+    },
+    {
+      "rank": 29,
+      "turn_id": "3329e5e8_1_t0",
+      "session_id": "3329e5e8_1",
+      "is_gold_session": false,
+      "score": 0.4538,
+      "content_preview": "[user] I'm planning another outdoor adventure and need some guidance on the best routes for a multi-day bike trip in California. I've been doing a lot of hiking"
+    },
+    {
+      "rank": 30,
+      "turn_id": "",
+      "session_id": "",
+      "is_gold_session": false,
+      "score": 0.3036,
+      "content_preview": "event: user felt better prepared for a tornado [date=2022-09-24]"
+    }
+  ],
+  "helper_signals": {
+    "role_mismatch_guard": "",
+    "cashback_arithmetic_hint": "",
+    "savings_arithmetic_hint": "",
+    "person_age_average_hint": "",
+    "temporal_endpoint_support_guard": "",
+    "run_temporal_precision": "",
+    "run_open_domain_specific": ""
+  },
+  "helper_proofs": {
+    "savings": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "anchor": null,
+      "paid_amounts": [],
+      "retail_amounts": [],
+      "computed_saving": null
+    },
+    "cashback": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "rate": null,
+      "merchant": null,
+      "amount": null,
+      "computed_cashback": null
+    },
+    "person_age": {
+      "fired": false,
+      "refusal_reason": "no_trigger_match",
+      "kin_ages": {},
+      "missing_roles": [],
+      "ambiguous_roles": [],
+      "computed_mean": null
+    },
+    "age_interval": {
+      "fired": false,
+      "refusal_reason": "skill_did_not_fire",
+      "skill_emitted_structured": false,
+      "skill_name": null,
+      "skill_conf": null,
+      "skill_computed": null,
+      "found_age_at_event_strict": null,
+      "found_age_variant_loose": null,
+      "found_current_age": null,
+      "variant_mismatch_detected": false
+    }
+  },
+  "self_anchor_probe": {},
+  "store_anchor_probe": {
+    "fact_entries_total": 500,
+    "dollar_amounts_in_store": [
+      {
+        "amount": "7,042,031",
+        "snippet": "stant] In August 2022, we saw $7,042,031 of sales (24.6% MoM; -55.9% YoY) across 15,369 un"
+      },
+      {
+        "amount": "30",
+        "snippet": "d I got a great deal - it was $30 off. Do you have any suggestions on how to maximi"
+      },
+      {
+        "amount": "25,",
+        "snippet": "cloth gift bags from Etsy for $25, and I've been using them for all my gifts lately."
+      },
+      {
+        "amount": "1,600",
+        "snippet": " adapter)\n* **Price:** Around $1,600 (body only)\n\nThe Nikon Z6 is a popular choice amo"
+      },
+      {
+        "amount": "399",
+        "snippet": "ing room.\n\nThe price point of $399 is also well within my budget, so I think I'll ta"
+      },
+      {
+        "amount": "399",
+        "snippet": "r neutral-toned living room. ($399)\n2. **CB2's Metal and Glass Coffee Table**: This "
+      },
+      {
+        "amount": "200",
+        "snippet": "being.\n\nWithin your budget of $200-$500, you should be able to find a great coffee t"
+      },
+      {
+        "amount": "500,",
+        "snippet": ".\n\nWithin your budget of $200-$500, you should be able to find a great coffee table t"
+      },
+      {
+        "amount": "300",
+        "snippet": "options to consider:\n\n**Under $300:**\n\n1. **IKEA's LACK Coffee Table**: A minimalist"
+      },
+      {
+        "amount": "229",
+        "snippet": "able and has a sleek design. ($229)\n2. **Target's Threshold Coffee Table**: A modern"
+      },
+      {
+        "amount": "200",
+        "snippet": "d I'd like to stay within the $200-$500 range. I've also been feeling pretty accompl"
+      },
+      {
+        "amount": "500",
+        "snippet": " like to stay within the $200-$500 range. I've also been feeling pretty accomplished"
+      }
+    ],
+    "age_strict_in_store": [
+      {
+        "age": 18,
+        "snippet": " drink targeting young adults aged 18-30:\n\nTarget Audience: Young adults aged 18-30 who"
+      },
+      {
+        "age": 18,
+        "snippet": "Target Audience: Young adults aged 18-30 who lead active lifestyles, enjoy trying new p"
+      },
+      {
+        "age": 18,
+        "snippet": " drink targeting young adults aged 18-30.\"\""
+      }
+    ],
+    "age_loose_in_store": [
+      {
+        "age": 18,
+        "snippet": " drink targeting young adults aged 18-30:\n\nTarget Audience: Young adults aged 18-30 who"
+      },
+      {
+        "age": 18,
+        "snippet": "Target Audience: Young adults aged 18-30 who lead active lifestyles, enjoy trying new p"
+      },
+      {
+        "age": 18,
+        "snippet": " drink targeting young adults aged 18-30.\"\""
+      }
+    ]
+  },
+  "structured_skill_section": null,
+  "jab_what_if": {
+    "gold": "8 miles",
+    "gold_is_abstain": false,
+    "would_veto_canonical_abstain": true
+  },
+  "closure_view": {
+    "committers": {
+      "cashback": {
+        "proof_available": false
+      },
+      "age_interval": {
+        "proof_available": false
+      }
+    },
+    "suppressors": {
+      "role": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      },
+      "temporal_endpoint": {
+        "detection": null,
+        "would_suppress_sample_overcommit": false,
+        "would_bypass_canonical_abstain": true,
+        "rendered_if_suppressed": null
+      }
+    }
+  },
+  "path_summary": {
+    "qid": "d3ab962e",
+    "retrieval": {
+      "gold_hits_top_200": 16,
+      "gold_hits_top_30": 1
+    },
+    "deterministic_layer": {
+      "fired": [],
+      "refused": [
+        {
+          "helper": "savings",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "cashback",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "person_age",
+          "reason": "no_trigger_match"
+        },
+        {
+          "helper": "age_interval",
+          "reason": "skill_did_not_fire"
+        }
+      ],
+      "proofs_available": []
+    },
+    "skill_route": {
+      "temporal_precision": "silent",
+      "open_domain_specific": "silent",
+      "list_ordering": "not_probed",
+      "structured_skill": null
+    },
+    "closure_decision": {
+      "committers": {
+        "cashback": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        },
+        "age_interval": {
+          "proof_available": false,
+          "would_commit_on_abstain": null,
+          "would_overwrite_concrete": null
+        }
+      },
+      "suppressors": {
+        "role": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        },
+        "temporal_endpoint": {
+          "detected": false,
+          "would_suppress_overcommit": false
+        }
+      }
+    },
+    "diagnosis": {
+      "layer": "helper_refusal",
+      "reason": "savings refused: no_trigger_match"
+    },
+    "final_answer": {
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "judge_failed": false,
+      "answer_error": false,
+      "pure_abstain": true,
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    }
+  }
+}
