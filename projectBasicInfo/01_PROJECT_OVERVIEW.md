@@ -59,6 +59,13 @@
   全新外部证据。后续 = 产品化 backlog（LoRA 量化损失/dream 全域 pass/LoCoMo 按需 refresh/
   devtools 打磨）;下次 formal n=100 refresh 时重锚 README 数字（hygiene 批改过 answer
   prompt）。** Log `2026-06-10-s2-section-quality-audit-cc.md`。
+- **deepseek-v4-pro 新线（2026-06-10 开,独立口径,永不混入 v3.2 0.91±0.01）**: answer-only
+  ×3 归因（固定 v3.2 store,最难 14 题）= **12/12/11 vs v3.2 的 11**;c18a7dc8 稳定翻正;
+  9ee3ecd6 数值层面解决但被 judge rubric 脆性判 F（完整式答案提到总需 300,judge 误读
+  gold "100" 为总需求——不改 judge,只记归因）。full-stack v4-pro ingest 慢 12 倍不可行
+  → 新增 `--internal-model` split flag（默认=answer 模型行为不变）。n=100 split run
+  （answer=v4-pro/internal=v3.2,同 seed 同题集）进行中;跑完后判读 delta/judge 摩擦面/
+  成本,**是否升级北极星组合 = 用户决策**。Log `2026-06-10-v4pro-answer-attribution-cc.md`。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 
