@@ -1,0 +1,384 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 14,
+  "total_ingested_turns": 0,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v4-pro",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 1741.5,
+  "overall_accuracy": 0.7857,
+  "model_correct": 11,
+  "judged_n": 14,
+  "judge_errors": 0,
+  "raw_accuracy": 0.7857,
+  "judged_accuracy": 0.7857,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "multi-session": {
+      "n": 9,
+      "accuracy": 0.7778
+    },
+    "temporal-reasoning": {
+      "n": 3,
+      "accuracy": 0.6667
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_f2262a51",
+      "q": "How many different doctors did I visit?",
+      "gold": "I visited three different doctors: a primary care physician, an ENT specialist, and a dermatologist.",
+      "answer": "I visited three different doctors: Dr. Patel (ENT specialist), Dr. Lee (dermatologist), and Dr. Smith (primary care physician).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "additional details without contradicting the core claim. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 467
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_d12ceb0e",
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The average age across me (32), my mom (55), my dad (58), my grandma (75), and my grandpa (78) is 59.6.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "his analysis, the model response correctly addresses the core factual claim of the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": true,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "**5 musical instruments currently owned.**\n\nHere's the breakdown:\n- The **violin** belongs to your niece, not you — the memories explicitly say \"She just got a new student-level violin,\" so I've excluded it.\n- The **ukulele** is an ambiguous case — you've talked about wanting one but haven't confirmed buying it yet, and per the memory rules I've kept it in the count.\n- Everything else (Fender Stra",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "e correct answer. The inclusion of the ukulele without confirmation results in an incorrect count.\n</judge_thinking>\n\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 2830,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "$3,750",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "l claim. There is no discrepancy or missing information. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 3291,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "The total distance is 8 miles.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "accurately captures the core concept of the correct answer without any discrepancies or omissions.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 408
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9aaed6a3",
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "You earned $0.75 in cashback on the $75 you spent at SaveMart last Thursday (based on a 1% cashback rate).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "additional context without contradicting the core information. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "cashback_telemetry": {
+        "merchant": "SaveMart",
+        "amount_in_retrieve": true,
+        "amount": 75.0,
+        "rate_in_retrieve": null,
+        "rate_refusal": "rate_merchant_mismatch",
+        "hint_emitted": true,
+        "store_scan_used": true,
+        "hint_preview": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Memories show 1% cashback rate and $75 spent at SaveMart.\n  (rate via SelfAnchor store-scan from turn answer_353d3c6d_2_t0, scope=user_turns;merchant=SaveMart)\n"
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": true,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need to earn **100 more points**. You currently have 200 points, and 300 points are required to redeem a free skincare product.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "he correct answer, as it provides a different and incorrect number of points needed for redemption.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 421
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "bb7c3b45",
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "You saved $300 on the Jimmy Choo heels. (They retailed for $500 and you paid $200.)",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "d on this analysis, the model response correctly addresses the core concept of the savings amount.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": true,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "You are 7 years older now than when you graduated from college.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "same information using different words. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "71017276",
+      "q": "How many weeks ago did I meet up with my aunt and receive the crystal chandelier?",
+      "gold": "4",
+      "answer": "4 weeks ago. You received the crystal chandelier from your aunt on March 4, 2023. From March 4 to April 1 is exactly 28 days, which is 4 weeks.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "orrect answer and provides additional, accurate details. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "The information provided is not enough.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "rovides a definitive number. Therefore, the model response is not equivalent to the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "gpt4_8279ba02",
+      "q": "How many days ago did I buy a smoker?",
+      "gold": "10 days ago. 11 days (including the last day) is also acceptable.",
+      "answer": "10 days ago.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "There are no discrepancies or omissions in the response. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6aeb4375",
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "You've tried four different Korean restaurants in your city.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "el response.\n\nThe model response accurately reflects the core factual claim of the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 244
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "ation.\n\nThe model response fully aligns with the correct answer in terms of meaning and reasoning.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 331
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": true,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

@@ -87,6 +87,9 @@ PACK: dict[str, list[str]] = {
     "harness:rejudge-errors": [
         "tests/test_rejudge_errors.py",
     ],
+    "harness:internal-model-flag": [
+        "tests/test_internal_model_flag.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],

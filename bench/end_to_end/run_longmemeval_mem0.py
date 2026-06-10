@@ -293,6 +293,8 @@ def run(
     qids_filter: set[str] | None = None,
     answer_only: bool = False,
     dream_after_ingest: bool = False,
+    internal_model: str | None = None,
+    internal_profile: str | None = None,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     # VR-2b: answer-only mode reuses an existing sandbox's store to isolate
@@ -327,6 +329,13 @@ def run(
     # empty router (env has OPENROUTER_API_KEY but no OPENAI_API_KEY that
     # the env-probe looks for), and those paths return empty silently.
     # Uses answer_model since that credential + model is already verified.
+    # v4pro-split: --internal-model lets the ingest pipeline (hundreds of
+    # calls per question) stay on a fast/cheap model while only the final
+    # answer call uses a heavyweight one. Default (None) = answer model,
+    # byte-identical to prior behavior.
+    _int_model = internal_model or answer_model
+    _int_profile = internal_profile or answer_profile
+
     def _internal_llm(prompt: str, system: str = "") -> str:
         # Generous max_tokens: NumericAggregator batch extraction
         # returns many JSON events per call; KG extractor outputs many
@@ -334,8 +343,8 @@ def run(
         # 20-turn batches without truncation.
         return llm_call(
             prompt, config_path,
-            model=answer_model, max_tokens=2500,
-            profile=answer_profile, system=(system or None),
+            model=_int_model, max_tokens=2500,
+            profile=_int_profile, system=(system or None),
         )
 
     mind = RadioMind(llm=_internal_llm)
@@ -1132,6 +1141,11 @@ def run(
         "judge_model": judge_model,
         "answer_profile": answer_profile,
         "judge_profile": judge_profile,
+        # v4pro-split: which model powered the ingest pipeline (KG /
+        # refinement / decomposer). Equals answer_model unless
+        # --internal-model was given — artifacts must stay attributable.
+        "internal_model": _int_model,
+        "internal_profile": _int_profile,
         "elapsed_s": round(elapsed, 1),
         "overall_accuracy": round(overall["correct"] / max(1, overall["n"]), 4),
         # V8.2.2b: split-out metrics to distinguish model errors from
@@ -1241,6 +1255,15 @@ def main() -> int:
                         "(prune/merge/wander) after each question's ingest. "
                         "Probe-scale only; default off; not valid with "
                         "--answer-only.")
+    # v4pro-split: heavyweight answer model + fast internal (ingest) model.
+    # Default = answer model (behavior unchanged). Needed because deep-think
+    # models at ingest (hundreds of internal calls/question) are ~12x slower.
+    p.add_argument("--internal-model", default=None,
+                   help="Model for the ingest pipeline (KG/refinement/"
+                        "decomposer). Defaults to --answer-model.")
+    p.add_argument("--internal-profile", default=None,
+                   help="Profile for --internal-model. Defaults to "
+                        "--answer-profile.")
     args = p.parse_args()
 
     err = _validate_answer_only(
@@ -1302,6 +1325,8 @@ def main() -> int:
         qids_filter=qids_set,
         answer_only=args.answer_only,
         dream_after_ingest=args.dream_after_ingest,
+        internal_model=args.internal_model,
+        internal_profile=args.internal_profile,
     )
     report["benchmark_mode"] = mode
 
