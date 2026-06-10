@@ -49,6 +49,16 @@
   设施;重开需全域 redundancy pass + 前缀修复 + 坏 ingest 复现。顺带: prompt_sections
   首批数据显示 counting 题 decomposer **确实触发**（atomic 337/436 chars）→ S2 问题收窄
   为"触发但精度/利用",非触发缺失。Log `2026-06-10-origin-3b-dream-probe-cc.md`。
+- **S2 section-quality audit（2026-06-10）→ benchmark 线正式收口**: 14 counting qid 采集
+  （`s2-counting-telemetry.json`,11/14）。atomic 触发 7/14、cardinal 2/14（非死路径,命中时
+  注入 2830/3291 chars 且双双 PASS）;3 个 fail 全部对不上"≥2 同机制 section 缺口"门槛
+  （9ee3ecd6 = section 在场仍答 300 的 answer 噪声单题;c18a7dc8/b46e15ed = date 路由
+  by-design 不走 decomposer,真因是时间 over-abstain 瞬态）。**至此记忆侧全部杠杆审计完毕
+  并关闭: helper 堆分(B-1)/检索窄修(B-1.5)/self-consistency(VR-4b)/prompt 约束族(Origin-1a)/
+  dream(Origin-3b)/section 质量(S2)。0.91±0.01 即该组合真实水平;追 0.93 不再立项,重开需
+  全新外部证据。后续 = 产品化 backlog（LoRA 量化损失/dream 全域 pass/LoCoMo 按需 refresh/
+  devtools 打磨）;下次 formal n=100 refresh 时重锚 README 数字（hygiene 批改过 answer
+  prompt）。** Log `2026-06-10-s2-section-quality-audit-cc.md`。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 
