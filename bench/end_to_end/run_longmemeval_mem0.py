@@ -105,7 +105,7 @@ def llm_call(
     raise last_exc if last_exc is not None else RuntimeError("llm_call failed")
 
 
-def _answer_with_retry(
+def _answer_once_with_transient_retry(
     ans_prompt: str, config_path: Path, *, model: str, profile: str,
     max_tokens: int = 1500, attempts: int = 3,
 ) -> str:
@@ -131,6 +131,79 @@ def _answer_with_retry(
             if attempt < attempts - 1:
                 time.sleep(2 ** attempt)  # 1s, 2s backoff
     return last
+
+
+# Origin-1b-hygiene: words that cannot legally end an English answer.
+# Deliberately a small closed set — the detector must catch obvious
+# mid-sentence stubs ("You currently own") while NEVER flagging legal
+# short answers ("$300", "7", "8 miles", "four", canonical abstains).
+_STUB_TERMINAL_PUNCT = (".", "!", "?", '"', "'", ")", "]", "%", "”", "’")
+_STUB_DANGLING_ENDERS = frozenset({
+    "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "from",
+    "with", "and", "or", "but", "nor", "so", "as", "than", "that", "which",
+    "is", "are", "was", "were", "am", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "can",
+    "could", "should", "shall", "may", "might", "must",
+    "my", "your", "his", "her", "its", "our", "their", "whose",
+    "i", "you", "currently", "own", "owns", "owned",
+})
+
+
+def _is_truncated_stub(answer: str) -> bool:
+    """True only for obvious 200-OK truncation stubs: empty after
+    strip_thinking, or no terminal punctuation AND ending on a word that
+    cannot end a sentence (closed set above). Legal short answers without
+    punctuation ("$300", "8 miles") never match — their last token is not
+    a dangling function word."""
+    s = (answer or "").strip()
+    if not s:
+        return True
+    if s.endswith(_STUB_TERMINAL_PUNCT):
+        return False
+    last = s.split()[-1].strip(",;:").lower()
+    return last in _STUB_DANGLING_ENDERS
+
+
+def _answer_with_retry(
+    ans_prompt: str, config_path: Path, *, model: str, profile: str,
+    max_tokens: int = 1500, attempts: int = 3,
+) -> tuple[str, str | None]:
+    """Transient-error retry plus a SINGLE regeneration for 200-OK truncated
+    stubs (gpt4_194be4b3 baseline emitted 'You currently own' — the call
+    succeeded so the exception path never fired). Returns
+    (answer, retry_reason); retry_reason is 'truncated_stub' when the
+    regeneration was triggered (telemetry for attribution), else None.
+    If the regeneration is also a stub, the longer of the two is returned —
+    never a third attempt."""
+    answer = _answer_once_with_transient_retry(
+        ans_prompt, config_path, model=model, profile=profile,
+        max_tokens=max_tokens, attempts=attempts,
+    )
+    if not _is_truncated_stub(answer):
+        return answer, None
+    regen = _answer_once_with_transient_retry(
+        ans_prompt, config_path, model=model, profile=profile,
+        max_tokens=max_tokens, attempts=attempts,
+    )
+    if _is_truncated_stub(regen):
+        best = regen if len(regen.strip()) >= len(answer.strip()) else answer
+        return best, "truncated_stub"
+    return regen, "truncated_stub"
+
+
+def _prompt_sections_record(cardinal_section: str, atomic_section: str) -> dict:
+    """Origin-1b-hygiene observability: record whether the deterministic
+    cardinal view / atomic decomposition sections were injected into the
+    answer prompt (and how large). Kept SEPARATE from helper_hints — these
+    are prompt sections, not helper fires. Needed because the S2 gate
+    question (decomposer didn't fire vs fired-with-wrong-atoms) was
+    undecidable from prior artifacts."""
+    return {
+        "cardinal_present": bool(cardinal_section),
+        "cardinal_chars": len(cardinal_section or ""),
+        "atomic_present": bool(atomic_section),
+        "atomic_chars": len(atomic_section or ""),
+    }
 
 
 _THINK_PATTERN = re.compile(r"<mem_thinking>[\s\S]*?</mem_thinking>", re.IGNORECASE)
@@ -825,7 +898,7 @@ def run(
         # <mem_thinking> blocks; 800 truncated 4 of 100 in the v2 run,
         # dropping their final answer line and forcing FAIL. 1500 covers the
         # long-tail cases observed. AnswerRetry-1b: outer retry mirrors judge.
-        answer = _answer_with_retry(
+        answer, answer_retry_reason = _answer_with_retry(
             ans_prompt, config_path,
             model=answer_model, profile=answer_profile, max_tokens=1500,
         )
@@ -991,6 +1064,10 @@ def run(
             "correct": is_correct, "qtype": qtype, "verdict_tail": verdict[-120:],
             "judge_failed": judge_failed,
         }
+        if answer_retry_reason:
+            record["answer_retry_reason"] = answer_retry_reason
+        record["prompt_sections"] = _prompt_sections_record(
+            cardinal_section, atomic_section)
         if cashback_telemetry:
             record["cashback_telemetry"] = cashback_telemetry
         # TrustClosure-1a telemetry (read-only): which deterministic

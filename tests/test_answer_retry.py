@@ -35,10 +35,11 @@ def test_retries_transient_then_succeeds(monkeypatch):
         return "<mem_thinking>noise</mem_thinking>You saved $300."
 
     monkeypatch.setattr(R, "llm_call", fake_llm_call)
-    out = R._answer_with_retry("p", None, model="m", profile="pf")
+    out, reason = R._answer_with_retry("p", None, model="m", profile="pf")
     assert calls["n"] == 2                 # retried once, then succeeded
     assert "$300" in out
     assert "mem_thinking" not in out       # strip_thinking applied
+    assert reason is None                  # transient retry is not stub telemetry
 
 
 def test_succeeds_first_try_no_retry(monkeypatch):
@@ -50,8 +51,9 @@ def test_succeeds_first_try_no_retry(monkeypatch):
         return "7"
 
     monkeypatch.setattr(R, "llm_call", fake_llm_call)
-    out = R._answer_with_retry("p", None, model="m", profile="pf")
+    out, reason = R._answer_with_retry("p", None, model="m", profile="pf")
     assert calls["n"] == 1 and out == "7"
+    assert reason is None
 
 
 def test_persistent_error_surfaces_not_swallowed(monkeypatch):
@@ -63,6 +65,7 @@ def test_persistent_error_surfaces_not_swallowed(monkeypatch):
         raise urllib.error.URLError("dns down")
 
     monkeypatch.setattr(R, "llm_call", fake_llm_call)
-    out = R._answer_with_retry("p", None, model="m", profile="pf")
+    out, reason = R._answer_with_retry("p", None, model="m", profile="pf")
     assert calls["n"] == 3                  # exhausted the attempts
     assert out.startswith("[answer error")  # failure surfaced, not a fake answer
+    assert reason is None                   # '[answer error: …]' is not a stub
