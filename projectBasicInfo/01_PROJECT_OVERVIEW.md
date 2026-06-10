@@ -26,6 +26,18 @@
   （VR-2c/4b）。结论: current-main 0.91 中心是 answer-model 能力+噪声的真实反映;**记忆侧无
   read-only 证据支持的窄修立项**。重开 B 需新的 ≥2 同机制可修证据,或 answer 侧能力/约束变化
   （更强/更稳 answer 模型,或数值表述 prompt 约束——属独立实验,非记忆架构提升）。
+- **Origin 原点审计（2026-06-10）**：回到 L1-L4/方法论找未用满的机制。结论:
+  (a) **数值 prompt 约束族整族证伪**——base prompt 已含 DELTA-vs-ABSOLUTE + enumerate-then-sum,
+  模型在约束在场时仍错,不再提任何"加数值 prompt 规则"方案; (b) ⚠️ base prompt 的 DELTA 算例
+  数字源自 fail qid 9ee3ecd6 原题（200/300→100）,属"针对题目特调"边界遗留,待用户裁决去题化;
+  (c) 确认两个真缺口: 截断响应不重试（`_answer_with_retry` 只接异常）、atomic/cardinal section
+  注入与否无观测记录（S2 立项前提无法判定）——**(b)(c) 已由 Origin-1b-hygiene 修复
+  （2026-06-10 同日: DELTA 算例去题化 50/120→70、truncated-stub 单次 regen +
+  `answer_retry_reason` telemetry、per_query `prompt_sections` 观测字段,regression pack
+  21 类全绿,log `2026-06-10-origin-1b-hygiene-cc.md`）**; (d) 做梦炼化已实现但 bench 从未调用,按
+  "bench 即模拟实际使用"方向立 Origin-3b 探针候选（d3ab962e = ingest 方差决定窗口构成,
+  是唯一具体靶）; LoRA bench 不可行,HDC 经 habit→L2 镜像已间接激活。
+  Log `2026-06-10-origin-1a-3a-first-principles-audit-cc.md`。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 
