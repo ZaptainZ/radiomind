@@ -15,6 +15,7 @@ Phase 3: Dream Journal
 from __future__ import annotations
 
 import random
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -51,6 +52,23 @@ EVIDENCE: <which of the items above support this connection>
 FALSIFIER: <future observation that would disprove the connection>
 
 If nothing connects, respond: NONE"""
+
+
+# Role-tagged memory format written by turn-level ingest ("[user] ...",
+# "[assistant] ..."). Merge must preserve it; see _merge_pair.
+_ROLE_PREFIX_RE = re.compile(r"^\[(\w+)\]\s+")
+
+
+def split_role_prefix(text: str) -> tuple[str | None, str]:
+    """Split a leading "[role] " tag off a memory's content.
+
+    Returns (role, body); role is None when the content is untagged
+    (plain product-side memories), in which case body == text.
+    """
+    m = _ROLE_PREFIX_RE.match(text or "")
+    if not m:
+        return None, text
+    return m.group(1), text[m.end():]
 
 
 @dataclass
@@ -176,12 +194,29 @@ class DreamRefinement:
         return overlap / smaller > 0.6 if smaller > 0 else False
 
     def _merge_pair(self, a: MemoryEntry, b: MemoryEntry) -> str | None:
+        # DreamMergeRolePrefix-1a: role-tagged memories ("[user] ...",
+        # "[assistant] ...") must survive a merge intact. The LLM rewrite
+        # used to drop the prefix, corrupting the format that role-sensitive
+        # consumers (SelfAnchor user-turn scans, answer prompts) rely on.
+        # Two deterministic rules, no prompt-begging:
+        #   - different roles → refuse the merge (a user turn folded into an
+        #     assistant turn destroys role semantics, not redundancy)
+        #   - same role → strip the prefix before the LLM sees the texts,
+        #     re-prepend it ourselves afterwards
+        role_a, body_a = split_role_prefix(a.content)
+        role_b, body_b = split_role_prefix(b.content)
+        if role_a != role_b:
+            return None
         try:
-            prompt = MERGE_PROMPT.format(mem_a=a.content, mem_b=b.content)
+            prompt = MERGE_PROMPT.format(mem_a=body_a, mem_b=body_b)
             resp = self._llm.generate(prompt, system="You merge memories concisely.")
             merged_text = resp.text.strip()
             if not merged_text:
                 return None
+            if role_a:
+                # tolerate the LLM echoing a prefix anyway — never double it
+                _, merged_body = split_role_prefix(merged_text)
+                merged_text = f"[{role_a}] {merged_body}"
 
             a.content = merged_text
             a.hit_count = max(a.hit_count, b.hit_count)

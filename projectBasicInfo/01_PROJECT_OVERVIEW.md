@@ -43,7 +43,9 @@
   结果: 4 臂 ×5 全 PASS;d3ab962e gold 窗口逐条不变（1/30,16/200）;control 零 store 变化。
   **当前 dream 在 bench 时间尺度近中性**（decay 30 天 cutoff 不触发、redundancy 只扫每
   domain 前 10 条 FACT、wander +1 habit）——安全但够不到窗口构成。发现 dream 产品侧 bug:
-  `_merge_pair` 改写丢失 `[user]/[assistant]` 角色前缀（需另行修）。flag 保留为模拟基础
+  `_merge_pair` 改写丢失 `[user]/[assistant]` 角色前缀——**已修（DreamMergeRolePrefix-1a,
+  同日）**: 跨角色合并直接拒绝;同角色先剥前缀喂 LLM、代码确定性重挂（echo 不双写）;
+  8 单测,pack 23 类,全量 934 passed。Log `2026-06-10-dream-merge-role-prefix-1a-cc.md`。flag 保留为模拟基础
   设施;重开需全域 redundancy pass + 前缀修复 + 坏 ingest 复现。顺带: prompt_sections
   首批数据显示 counting 题 decomposer **确实触发**（atomic 337/436 chars）→ S2 问题收窄
   为"触发但精度/利用",非触发缺失。Log `2026-06-10-origin-3b-dream-probe-cc.md`。

@@ -81,6 +81,9 @@ PACK: dict[str, list[str]] = {
     "harness:origin3b-dream-flag": [
         "tests/test_origin3b_dream_flag.py",
     ],
+    "refinement:dream-merge-role-prefix": [
+        "tests/test_dream_merge_role_prefix.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],
