@@ -78,6 +78,9 @@ PACK: dict[str, list[str]] = {
     "harness:origin1b-hygiene": [
         "tests/test_origin1b_hygiene.py",
     ],
+    "harness:origin3b-dream-flag": [
+        "tests/test_origin3b_dream_flag.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],

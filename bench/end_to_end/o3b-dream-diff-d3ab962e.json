@@ -1,0 +1,197 @@
+{
+  "probe": "origin3b-dream",
+  "qid": "d3ab962e",
+  "domain": "lme_0",
+  "sandbox": "/tmp/rm-o3b-dream-d3ab",
+  "question": "What is the total distance of the hikes I did on two consecutive weekends?",
+  "gold": "8 miles",
+  "answer_session_ids": [
+    "answer_5237bb0b_2",
+    "answer_5237bb0b_1"
+  ],
+  "dream_result": {
+    "merged": 3,
+    "pruned": 0,
+    "insights": 1,
+    "duration_s": 10.31
+  },
+  "store_diff": {
+    "n_before": 605,
+    "n_after": 605,
+    "status_changed": [
+      {
+        "id": 521,
+        "before_status": "active",
+        "after_status": "archived",
+        "content": "[user] But weren't these cathedrals also used to control and manipulate the masses through fear and intimidation?"
+      },
+      {
+        "id": 527,
+        "before_status": "active",
+        "after_status": "archived",
+        "content": "[user] But didn't the church also use fear of punishment in the afterlife to control people's actions and behaviors? It seems like they were more concerned with maintaining their power than genuinely "
+      }
+    ],
+    "content_changed": [
+      {
+        "id": 523,
+        "before": "[user] But weren't these cathedrals also used to spread the church's propaganda and manipulate people's beliefs? It seems like religion was more a tool for control rather than a means of genuine spiritual connection.",
+        "after": "[user] But weren't these cathedrals also used to spread the church's propaganda, manipulate people's beliefs, and control the masses through fear and intimidation? It seems like religion was more a tool for control rather than a means of genuine spiritual connection."
+      },
+      {
+        "id": 524,
+        "before": "[assistant] It is undeniable that the church used the cathedral and other aspects of religious life to spread its message and influence people's beliefs. However, to say that religion was only used as a tool for control would be an oversimplification. For many people during the medieval period, reli",
+        "after": "While the cathedrals and religious life of the medieval period were undoubtedly used by the church to spread its message and consolidate power—a form of propaganda and social control—it is an oversimplification to view religion solely as a tool for manipulation. For many individuals, it provided a g"
+      },
+      {
+        "id": 528,
+        "before": "[assistant] It is true that the church used the fear of punishment in the afterlife to control people's actions and behaviors. The concept of eternal damnation was a powerful tool of social control during the medieval period. However, to say that the church was solely concerned with maintaining its ",
+        "after": "The church in medieval society employed the fear of eternal punishment as a tool for social control and to maintain its authority. However, its role was multifaceted; it also provided essential services like education, healthcare, and charity, and fostered community support. While emphasizing divine"
+      }
+    ],
+    "added": [],
+    "removed": []
+  },
+  "evidence_ranks_before": {
+    "total_results": 85,
+    "gold_hits": [
+      {
+        "rank": 7,
+        "turn_id": "answer_5237bb0b_1_t0"
+      },
+      {
+        "rank": 34,
+        "turn_id": "answer_5237bb0b_2_t0"
+      },
+      {
+        "rank": 38,
+        "turn_id": "answer_5237bb0b_2_t1"
+      },
+      {
+        "rank": 40,
+        "turn_id": "answer_5237bb0b_2_t11"
+      },
+      {
+        "rank": 41,
+        "turn_id": "answer_5237bb0b_2_t10"
+      },
+      {
+        "rank": 42,
+        "turn_id": "answer_5237bb0b_2_t4"
+      },
+      {
+        "rank": 44,
+        "turn_id": "answer_5237bb0b_2_t8"
+      },
+      {
+        "rank": 46,
+        "turn_id": "answer_5237bb0b_1_t10"
+      },
+      {
+        "rank": 50,
+        "turn_id": "answer_5237bb0b_1_t1"
+      },
+      {
+        "rank": 55,
+        "turn_id": "answer_5237bb0b_2_t9"
+      },
+      {
+        "rank": 57,
+        "turn_id": "answer_5237bb0b_2_t7"
+      },
+      {
+        "rank": 59,
+        "turn_id": "answer_5237bb0b_2_t6"
+      },
+      {
+        "rank": 62,
+        "turn_id": "answer_5237bb0b_1_t11"
+      },
+      {
+        "rank": 63,
+        "turn_id": "answer_5237bb0b_2_t2"
+      },
+      {
+        "rank": 72,
+        "turn_id": "answer_5237bb0b_1_t9"
+      },
+      {
+        "rank": 75,
+        "turn_id": "answer_5237bb0b_1_t2"
+      }
+    ],
+    "gold_in_top30": 1,
+    "gold_in_top200": 16
+  },
+  "evidence_ranks_after": {
+    "total_results": 85,
+    "gold_hits": [
+      {
+        "rank": 7,
+        "turn_id": "answer_5237bb0b_1_t0"
+      },
+      {
+        "rank": 34,
+        "turn_id": "answer_5237bb0b_2_t0"
+      },
+      {
+        "rank": 38,
+        "turn_id": "answer_5237bb0b_2_t1"
+      },
+      {
+        "rank": 40,
+        "turn_id": "answer_5237bb0b_2_t11"
+      },
+      {
+        "rank": 41,
+        "turn_id": "answer_5237bb0b_2_t10"
+      },
+      {
+        "rank": 42,
+        "turn_id": "answer_5237bb0b_2_t4"
+      },
+      {
+        "rank": 44,
+        "turn_id": "answer_5237bb0b_2_t8"
+      },
+      {
+        "rank": 46,
+        "turn_id": "answer_5237bb0b_1_t10"
+      },
+      {
+        "rank": 50,
+        "turn_id": "answer_5237bb0b_1_t1"
+      },
+      {
+        "rank": 55,
+        "turn_id": "answer_5237bb0b_2_t9"
+      },
+      {
+        "rank": 57,
+        "turn_id": "answer_5237bb0b_2_t7"
+      },
+      {
+        "rank": 59,
+        "turn_id": "answer_5237bb0b_2_t6"
+      },
+      {
+        "rank": 62,
+        "turn_id": "answer_5237bb0b_1_t11"
+      },
+      {
+        "rank": 63,
+        "turn_id": "answer_5237bb0b_2_t2"
+      },
+      {
+        "rank": 72,
+        "turn_id": "answer_5237bb0b_1_t9"
+      },
+      {
+        "rank": 75,
+        "turn_id": "answer_5237bb0b_1_t2"
+      }
+    ],
+    "gold_in_top30": 1,
+    "gold_in_top200": 16
+  }
+}

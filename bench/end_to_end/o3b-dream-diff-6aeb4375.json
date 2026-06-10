@@ -1,0 +1,216 @@
+{
+  "probe": "origin3b-dream",
+  "qid": "6aeb4375",
+  "domain": "lme_0",
+  "sandbox": "/tmp/rm-o3b-dream-ctrl",
+  "question": "How many Korean restaurants have I tried in my city?",
+  "gold": "four",
+  "answer_session_ids": [
+    "answer_3f9693b7_1",
+    "answer_3f9693b7_2"
+  ],
+  "dream_result": {
+    "merged": 0,
+    "pruned": 0,
+    "insights": 1,
+    "duration_s": 4.67
+  },
+  "store_diff": {
+    "n_before": 538,
+    "n_after": 538,
+    "status_changed": [],
+    "content_changed": [],
+    "added": [],
+    "removed": []
+  },
+  "evidence_ranks_before": {
+    "total_results": 52,
+    "gold_hits": [
+      {
+        "rank": 2,
+        "turn_id": "answer_3f9693b7_2_t3"
+      },
+      {
+        "rank": 3,
+        "turn_id": "answer_3f9693b7_1_t0"
+      },
+      {
+        "rank": 4,
+        "turn_id": "answer_3f9693b7_1_t11"
+      },
+      {
+        "rank": 5,
+        "turn_id": "answer_3f9693b7_1_t6"
+      },
+      {
+        "rank": 7,
+        "turn_id": "answer_3f9693b7_1_t2"
+      },
+      {
+        "rank": 9,
+        "turn_id": "answer_3f9693b7_1_t10"
+      },
+      {
+        "rank": 11,
+        "turn_id": "answer_3f9693b7_2_t0"
+      },
+      {
+        "rank": 12,
+        "turn_id": "answer_3f9693b7_2_t4"
+      },
+      {
+        "rank": 15,
+        "turn_id": "answer_3f9693b7_1_t7"
+      },
+      {
+        "rank": 16,
+        "turn_id": "answer_3f9693b7_1_t1"
+      },
+      {
+        "rank": 18,
+        "turn_id": "answer_3f9693b7_1_t3"
+      },
+      {
+        "rank": 19,
+        "turn_id": "answer_3f9693b7_2_t1"
+      },
+      {
+        "rank": 20,
+        "turn_id": "answer_3f9693b7_2_t11"
+      },
+      {
+        "rank": 24,
+        "turn_id": "answer_3f9693b7_2_t10"
+      },
+      {
+        "rank": 30,
+        "turn_id": "answer_3f9693b7_1_t4"
+      },
+      {
+        "rank": 32,
+        "turn_id": "answer_3f9693b7_2_t5"
+      },
+      {
+        "rank": 34,
+        "turn_id": "answer_3f9693b7_2_t2"
+      },
+      {
+        "rank": 35,
+        "turn_id": "answer_3f9693b7_1_t5"
+      },
+      {
+        "rank": 36,
+        "turn_id": "answer_3f9693b7_1_t9"
+      },
+      {
+        "rank": 37,
+        "turn_id": "answer_3f9693b7_1_t8"
+      },
+      {
+        "rank": 42,
+        "turn_id": "answer_3f9693b7_2_t9"
+      },
+      {
+        "rank": 50,
+        "turn_id": "answer_3f9693b7_2_t6"
+      }
+    ],
+    "gold_in_top30": 15,
+    "gold_in_top200": 22
+  },
+  "evidence_ranks_after": {
+    "total_results": 52,
+    "gold_hits": [
+      {
+        "rank": 2,
+        "turn_id": "answer_3f9693b7_2_t3"
+      },
+      {
+        "rank": 3,
+        "turn_id": "answer_3f9693b7_1_t0"
+      },
+      {
+        "rank": 4,
+        "turn_id": "answer_3f9693b7_1_t11"
+      },
+      {
+        "rank": 5,
+        "turn_id": "answer_3f9693b7_1_t6"
+      },
+      {
+        "rank": 7,
+        "turn_id": "answer_3f9693b7_1_t2"
+      },
+      {
+        "rank": 9,
+        "turn_id": "answer_3f9693b7_1_t10"
+      },
+      {
+        "rank": 11,
+        "turn_id": "answer_3f9693b7_2_t0"
+      },
+      {
+        "rank": 12,
+        "turn_id": "answer_3f9693b7_2_t4"
+      },
+      {
+        "rank": 15,
+        "turn_id": "answer_3f9693b7_1_t7"
+      },
+      {
+        "rank": 16,
+        "turn_id": "answer_3f9693b7_1_t1"
+      },
+      {
+        "rank": 18,
+        "turn_id": "answer_3f9693b7_1_t3"
+      },
+      {
+        "rank": 19,
+        "turn_id": "answer_3f9693b7_2_t1"
+      },
+      {
+        "rank": 20,
+        "turn_id": "answer_3f9693b7_2_t11"
+      },
+      {
+        "rank": 24,
+        "turn_id": "answer_3f9693b7_2_t10"
+      },
+      {
+        "rank": 30,
+        "turn_id": "answer_3f9693b7_1_t4"
+      },
+      {
+        "rank": 32,
+        "turn_id": "answer_3f9693b7_2_t5"
+      },
+      {
+        "rank": 34,
+        "turn_id": "answer_3f9693b7_2_t2"
+      },
+      {
+        "rank": 35,
+        "turn_id": "answer_3f9693b7_1_t5"
+      },
+      {
+        "rank": 36,
+        "turn_id": "answer_3f9693b7_1_t9"
+      },
+      {
+        "rank": 37,
+        "turn_id": "answer_3f9693b7_1_t8"
+      },
+      {
+        "rank": 42,
+        "turn_id": "answer_3f9693b7_2_t9"
+      },
+      {
+        "rank": 50,
+        "turn_id": "answer_3f9693b7_2_t6"
+      }
+    ],
+    "gold_in_top30": 15,
+    "gold_in_top200": 22
+  }
+}

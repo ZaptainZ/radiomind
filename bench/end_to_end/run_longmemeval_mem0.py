@@ -292,6 +292,7 @@ def run(
     checkpoint_path: Path | None = None,
     qids_filter: set[str] | None = None,
     answer_only: bool = False,
+    dream_after_ingest: bool = False,
 ) -> dict:
     os.environ["RADIOMIND_HOME"] = str(sandbox)
     # VR-2b: answer-only mode reuses an existing sandbox's store to isolate
@@ -540,6 +541,23 @@ def run(
                 # PRINCIPLE-level summaries that pyramid.search surfaces first.
                 run_refinement=use_refinement,
             )
+        dream_stats = None
+        if dream_after_ingest and not answer_only:
+            # Origin-3b (EXPERIMENTAL, default off): simulate real usage —
+            # "night" consolidation after this question's ingest.
+            # trigger_dream() walks the whole store (no domain scoping), so
+            # this is probe-scale: on multi-qid runs cost grows with the
+            # accumulated store. Failure is recorded, never fatal.
+            try:
+                _dr = mind.trigger_dream()
+                dream_stats = {
+                    "merged": _dr.merged,
+                    "pruned": _dr.pruned,
+                    "insights": len(_dr.new_insights or []),
+                    "duration_s": round(_dr.duration_s, 2),
+                }
+            except Exception as e:
+                dream_stats = {"error": str(e)[:200]}
         overall["total_ingested_turns"] += stats["ingested"]
 
         if isinstance(gold, list):
@@ -1066,6 +1084,8 @@ def run(
         }
         if answer_retry_reason:
             record["answer_retry_reason"] = answer_retry_reason
+        if dream_stats is not None:
+            record["dream_stats"] = dream_stats
         record["prompt_sections"] = _prompt_sections_record(
             cardinal_section, atomic_section)
         if cashback_telemetry:
@@ -1159,6 +1179,15 @@ def _validate_answer_only(answer_only: bool, reuse_existing_sandbox: bool,
     return None
 
 
+def _validate_dream_flag(dream_after_ingest: bool, answer_only: bool) -> str | None:
+    """Pure: Origin-3b dream flag needs an ingest to consolidate — it has no
+    effect (and would silently mislead) in answer-only replay mode."""
+    if dream_after_ingest and answer_only:
+        return ("--dream-after-ingest requires ingest; it cannot be combined "
+                "with --answer-only (the store is fixed in replay mode)")
+    return None
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--n", type=int, default=30)
@@ -1203,10 +1232,23 @@ def main() -> int:
     p.add_argument("--reuse-existing-sandbox", action="store_true",
                    help="Acknowledge that --sandbox points at an already-seeded "
                         "store that must NOT be wiped. Required with --answer-only.")
+    # Origin-3b: EXPERIMENTAL, default off. Runs mind.trigger_dream() after
+    # each question's ingest ("night" consolidation, simulating real usage).
+    # trigger_dream() has no domain scoping — intended for probe-scale runs
+    # (1-2 qids), NOT n=100. Incompatible with --answer-only.
+    p.add_argument("--dream-after-ingest", action="store_true",
+                   help="EXPERIMENTAL (Origin-3b): run dream consolidation "
+                        "(prune/merge/wander) after each question's ingest. "
+                        "Probe-scale only; default off; not valid with "
+                        "--answer-only.")
     args = p.parse_args()
 
     err = _validate_answer_only(
         args.answer_only, args.reuse_existing_sandbox, args.qids)
+    if err:
+        print(f"error: {err}", flush=True)
+        return 2
+    err = _validate_dream_flag(args.dream_after_ingest, args.answer_only)
     if err:
         print(f"error: {err}", flush=True)
         return 2
@@ -1259,6 +1301,7 @@ def main() -> int:
         checkpoint_path=cp_path,
         qids_filter=qids_set,
         answer_only=args.answer_only,
+        dream_after_ingest=args.dream_after_ingest,
     )
     report["benchmark_mode"] = mode
 

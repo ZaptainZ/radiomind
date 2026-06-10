@@ -1,0 +1,54 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 1,
+  "total_ingested_turns": 0,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v3.2",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 21.3,
+  "overall_accuracy": 1.0,
+  "model_correct": 1,
+  "judged_n": 1,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "knowledge-update": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "6aeb4375",
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "You've tried four different Korean restaurants in your city so far.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "t contradict the core claim.\n\nThe model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 510
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}
