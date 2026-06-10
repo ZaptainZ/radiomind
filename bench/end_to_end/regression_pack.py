@@ -84,6 +84,9 @@ PACK: dict[str, list[str]] = {
     "refinement:dream-merge-role-prefix": [
         "tests/test_dream_merge_role_prefix.py",
     ],
+    "harness:rejudge-errors": [
+        "tests/test_rejudge_errors.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],

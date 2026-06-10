@@ -56,6 +56,22 @@ def llm_call(prompt: str, profile_cfg: dict, model: str,
     return body["choices"][0]["message"]["content"].strip()
 
 
+def needs_rejudge(record: dict) -> bool:
+    """Select records whose verdict was a judge-infra error.
+
+    Primary signal: the `judge_failed` boolean the runner writes — immune to
+    verdict_tail truncation. (verdict_tail keeps only the LAST 120 chars, so
+    the '[judge error' prefix gets cut on long error messages: 3 SSL errors
+    in the 2026-06-06 run2 were missed by substring matching and had to be
+    rejudged one-by-one via rejudge_single_qid.py.) The substring check is
+    kept ONLY as a fallback for legacy artifacts that predate judge_failed;
+    when the field is present, it is authoritative either way."""
+    if "judge_failed" in record:
+        return bool(record["judge_failed"])
+    tail = record.get("verdict_tail", "")
+    return "[judge error" in tail or "403" in tail
+
+
 def parse_verdict(verdict: str) -> bool:
     """Match bench's _parse_judge_verdict heuristics."""
     tail = verdict.lower()[-80:]
@@ -86,8 +102,7 @@ def main():
     n_flipped_pass = 0
     n_flipped_fail = 0
     for r in data["per_query"]:
-        verdict_tail = r.get("verdict_tail", "")
-        if not ("[judge error" in verdict_tail or "403" in verdict_tail):
+        if not needs_rejudge(r):
             continue
         n_rejudged += 1
         q = r["q"]
