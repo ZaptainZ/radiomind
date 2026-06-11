@@ -1,0 +1,384 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 14,
+  "total_ingested_turns": 5656,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v4-pro",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "elapsed_s": 64818.5,
+  "overall_accuracy": 0.6429,
+  "model_correct": 9,
+  "judged_n": 10,
+  "judge_errors": 4,
+  "raw_accuracy": 0.6429,
+  "judged_accuracy": 0.9,
+  "judge_error_rate": 0.2857,
+  "by_type": {
+    "knowledge-update": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "multi-session": {
+      "n": 9,
+      "accuracy": 0.5556
+    },
+    "temporal-reasoning": {
+      "n": 3,
+      "accuracy": 0.6667
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_f2262a51",
+      "q": "How many different doctors did I visit?",
+      "gold": "I visited three different doctors: a primary care physician, an ENT specialist, and a dermatologist.",
+      "answer": "I visited **3 different doctors**:\n\n1. **Dr. Patel** – ENT specialist (diagnosed chronic sinusitis, prescribed nasal spray)\n2. **Dr. Lee** – dermatologist (follow-up appointment, biopsy on suspicious mole)\n3. **Dr. Smith** – primary care physician (diagnosed UTI, prescribed antibiotics)",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "se.\n\nBased on this analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_d12ceb0e",
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The average age of you, your parents, and your grandparents is 59.6 years.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": " of the average age, with no discrepancies or omissions. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": true,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "I currently own **4 musical instruments**:\n\n1. **Fender Stratocaster** – black electric guitar (owned ~5 years)\n2. **Yamaha FG800** – acoustic guitar (owned ~8 years)\n3. **Korg B1** – digital piano (owned ~3 years)\n4. **Pearl Export** – 5-piece drum set\n\nWhile you've been considering getting a ukulele, there's no memory confirming a purchase yet — so that doesn't add to the count. The drum set is ",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "owning 4 musical instruments, with additional context that does not contradict the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 2537,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "You raised **$3,750** for charity in total, across these verified charity events:\n- $1,000 — charity bake sale for a children's hospital\n- $250 — \"Run for Hunger\" charity run for a local food bank\n- $500 — charity fitness challenge for the American Cancer Society\n- $2,000 — raised for a local animal shelter\n\n(Note: the $5,000 music benefit concert and a duplicate mention of the $2,000 animal shelt",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ual claim and provides a detailed breakdown that aligns with the total amount raised for charity.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 3563,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "The two hikes on consecutive weekends are:\n\n- **Red Rock Canyon**: 5 miles (2022-09-10)\n- **Valley of Fire State Park**: 3 miles (2022-09-17)\n\n**Total distance: 8 miles.**",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ditional context without contradicting it.\n\nBased on this analysis, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 397
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9aaed6a3",
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "You earned $0.75 in cashback at SaveMart last Thursday (1% of $75).",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "rror attempt 3: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)>]",
+      "judge_failed": true,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 382
+      },
+      "cashback_telemetry": {
+        "merchant": "SaveMart",
+        "amount_in_retrieve": true,
+        "amount": 75.0,
+        "rate_in_retrieve": null,
+        "rate_refusal": "rate_merchant_mismatch",
+        "hint_emitted": true,
+        "store_scan_used": true,
+        "hint_preview": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Memories show 1% cashback rate and $75 spent at SaveMart.\n  (rate via SelfAnchor store-scan from turn answer_353d3c6d_2_t0, scope=user_turns;merchant=SaveMart)\n"
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": true,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "You need to earn 100 more points. You currently have 200 points, and you need a total of 300 to redeem a free skincare product.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "rror attempt 3: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)>]",
+      "judge_failed": true,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 310
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "bb7c3b45",
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "You saved $300 on the Jimmy Choo heels (paid $200, retail $500).",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "rror attempt 3: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)>]",
+      "judge_failed": true,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": true,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "7 years",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "rror attempt 3: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)>]",
+      "judge_failed": true,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "71017276",
+      "q": "How many weeks ago did I meet up with my aunt and receive the crystal chandelier?",
+      "gold": "4",
+      "answer": "The information provided is not enough. There are no memories available about meeting up with your aunt or receiving a crystal chandelier, so I can't determine when that happened.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "nswer. Therefore, the model response does not address the core factual claim of the correct answer.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "Two consecutive charity events — the '24-Hour Bike Ride' (Feb 14, 2023) and 'Books for Kids' (Feb 15, 2023) — happened on back-to-back days. From the later date (Feb 15) to today (Apr 18, 2023), just over **2 months** have passed.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "ntext without contradiction.\n\nThe model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_8279ba02",
+      "q": "How many days ago did I buy a smoker?",
+      "gold": "10 days ago. 11 days (including the last day) is also acceptable.",
+      "answer": "10 days ago.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "There are no discrepancies or omissions in the response. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6aeb4375",
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "You've mentioned trying four different Korean restaurants in your city, as of late September 2023.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "f a time qualifier that does not alter the core meaning. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 242
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "eason.\n\nThe model response fully aligns with the correct answer in terms of meaning and reasoning.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 381
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": true,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

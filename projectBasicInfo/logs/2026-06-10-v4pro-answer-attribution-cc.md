@@ -48,3 +48,21 @@ S2 sandbox（v3.2-ingest,v3.2 基线 11/14）上只换 answer 模型:
 ## 6. 不做 / 守住
 不改 judge prompt/协议（松判=作弊）。不把 v4-pro 任何数字写进 v3.2 口径。单跑 n=100
 不下中心结论（需 repeat 才能 claim 中心,先看单跑量级）。
+
+## 7. Full-stack 14 题探针结果（2026-06-11 补）
+夜间 OpenRouter SSL 故障窗口造成大量 judge_failed（默认计 FAIL）;用修复后的
+`rejudge_errors.py`（judge_failed 布尔选择,fa181fb）补判 4 条,3 条翻 PASS——工具债
+修复当天就兑现了价值。**judge-fixed 后: 12/14 = 0.857**（v3.2 同簇 11/14）。
+
+| qid | full-stack v4-pro vs v3.2 | 定性 |
+|---|---|---|
+| c18a7dc8 | F→P | answer 侧（与 AO 一致） |
+| **b46e15ed** | **F→P** | **ingest 侧贡献首个实证**: v3.2 store 上 AO 也救不动（FFF）,v4-pro ingest 把 consecutive-days 证据送进了窗口（n=1） |
+| 9ee3ecd6 | F→F | 仍是 judge rubric 脆性（数值又对: "100 more points… total of 300"） |
+| 71017276 | **P→F 回归** | **answer 端虚假缺席**: 答 "no memories available",但 store 实有 8 条 aunt/chandelier 记忆、重放检索排名 1-5——不是 ingest 丢数据（lme_9 614 条,该 domain 最大）。n=1,不立项 |
+
+结论维持: full-stack 的 ingest 侧有真实但混合的影响（b46e15ed 翻正 vs 71017276 引入
+新形态的 false-absence）,且 12 倍耗时不可产品化。主线仍是 n=100 split。
+另: 探针 sandbox 缺 lme_0-2（首次驱动被杀后 resume 跳过已完成 3 题、wipe 重建只
+ingest 剩余 domain）——已完成题的 verdict 不受影响,但该 sandbox 不能用于这 3 题的
+post-hoc 检索分析。
