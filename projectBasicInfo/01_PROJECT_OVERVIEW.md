@@ -64,8 +64,15 @@
   9ee3ecd6 数值层面解决但被 judge rubric 脆性判 F（完整式答案提到总需 300,judge 误读
   gold "100" 为总需求——不改 judge,只记归因）。full-stack v4-pro ingest 慢 12 倍不可行
   → 新增 `--internal-model` split flag（默认=answer 模型行为不变）。n=100 split run
-  （answer=v4-pro/internal=v3.2,同 seed 同题集）进行中;跑完后判读 delta/judge 摩擦面/
-  成本,**是否升级北极星组合 = 用户决策**。Log `2026-06-10-v4pro-answer-attribution-cc.md`。
+  （answer=v4-pro/internal=v3.2,同 seed 同题集）**已完成（2026-06-11）: 单跑 judge-fixed
+  = 0.91,与 v3.2 中心持平但构成位移净零**——FIX 2（含历史 0/9 的 ordering 地板
+  gpt4_d6585ce8 被打穿）vs REGRESS 3（1 真实少数 + preference/枚举的风格×rubric 摩擦税,
+  preference 0.875→0.750）;9ee3ecd6 judge 脆性持续。full-stack 14 题探针: b46e15ed 被
+  v4-pro **ingest** 翻正,71017276 出现 answer 端 false-absence 回归。判读: answer 模型
+  升级单跑无 headline 增益,差异化价值在解结构地板;**中心 claim 需再 2 跑（~35h）,
+  是否跑、是否升级北极星组合 = 用户决策（待定）**。夜间 OpenRouter SSL 故障的 31 条
+  judge_failed 全部由布尔版 rejudge 回收;rejudge 第二笔债（by_type 不重算）同日修复。
+  Log `2026-06-10-v4pro-answer-attribution-cc.md` §7-8。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 
