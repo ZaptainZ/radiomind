@@ -56,6 +56,22 @@ def llm_call(prompt: str, profile_cfg: dict, model: str,
     return body["choices"][0]["message"]["content"].strip()
 
 
+def recompute_by_type(data: dict) -> None:
+    """Rebuild the by_type aggregate from per_query. rejudge used to update
+    only the overall fields, leaving by_type stale in *.judge-fixed.json
+    (found 2026-06-11 on the v4pro n=100 artifact)."""
+    by_type: dict[str, dict] = {}
+    for r in data.get("per_query", []):
+        t = r.get("qtype", "?")
+        s = by_type.setdefault(t, {"n": 0, "correct": 0})
+        s["n"] += 1
+        s["correct"] += int(bool(r.get("correct")))
+    for s in by_type.values():
+        s["accuracy"] = round(s["correct"] / max(1, s["n"]), 4)
+    if by_type:
+        data["by_type"] = by_type
+
+
 def needs_rejudge(record: dict) -> bool:
     """Select records whose verdict was a judge-infra error.
 
@@ -157,6 +173,8 @@ def main():
         data["judge_error_rate"] = round(
             data["judge_errors"] / max(1, n), 4
         )
+
+    recompute_by_type(data)
 
     out_path = in_path.with_suffix(".judge-fixed.json")
     out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))

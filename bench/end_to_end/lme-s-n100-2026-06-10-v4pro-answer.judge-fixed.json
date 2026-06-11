@@ -1,0 +1,2469 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 100,
+  "total_ingested_turns": 49705,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v4-pro",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "internal_model": "deepseek-v3.2",
+  "internal_profile": "dashscope",
+  "elapsed_s": 63459.3,
+  "overall_accuracy": 0.91,
+  "model_correct": 91,
+  "judged_n": 100,
+  "judge_errors": 0,
+  "raw_accuracy": 0.91,
+  "judged_accuracy": 0.91,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "single-session-assistant": {
+      "n": 17,
+      "correct": 16,
+      "accuracy": 0.9412
+    },
+    "single-session-user": {
+      "n": 16,
+      "correct": 16,
+      "accuracy": 1.0
+    },
+    "temporal-reasoning": {
+      "n": 17,
+      "correct": 16,
+      "accuracy": 0.9412
+    },
+    "single-session-preference": {
+      "n": 16,
+      "correct": 12,
+      "accuracy": 0.75
+    },
+    "multi-session": {
+      "n": 18,
+      "correct": 15,
+      "accuracy": 0.8333
+    },
+    "knowledge-update": {
+      "n": 16,
+      "correct": 16,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "e9327a54",
+      "q": "I'm planning to revisit Orlando. I was wondering if you could remind me of that unique dessert shop with the giant milkshakes we talked about last time?",
+      "gold": "The Sugar Factory at Icon Park.",
+      "answer": "The place you're thinking of is **The Sugar Factory**, located at Icon Park. It's known for its enormous menu of sweet treats, including those giant specialty milkshakes.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "ctual claim and provides additional, accurate context, making it a superset of the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "caf9ead2",
+      "q": "How long did it take to move to the new apartment?",
+      "gold": "5 hours",
+      "answer": "Approximately 5 hours.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "nse.\n\nBased on this analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_93159ced_abs",
+      "q": "How long have I been working before I started my current job at Google?",
+      "gold": "The information provided is not enough. From the information provided, You haven't started working at Google yet.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "is supplementary and not critical to the core claim.\n\nTherefore, the model response is acceptable.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": true,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "75f70248",
+      "q": "I've been sneezing quite a bit lately. Do you think it might be my living room?",
+      "gold": "The user would prefer responses that consider the potential impact of their cat, Luna, and her shedding on their sneezing, as well as the recent deep clean of the living room and its possible effect on stirring up dust. They might not prefer responses that fail to take into account these specific details previously mentioned, such as generic suggestions or unrelated factors.",
+      "answer": "It very well could be! Based on what you've shared before, your living room has a couple of potential triggers:\n\n- **Your cat sheds a lot** — pet dander and hair are common allergy culprits.\n- **You've been concerned about dust** in that space and were looking into ways to keep it under control.\n\nYou were previously considering a few steps that could help: getting a **spider plant or snake plant**",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "ble suggestions that align with the user's preferences.\n\nTherefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "a96c20ee",
+      "q": "At which university did I present a poster on my thesis research?",
+      "gold": "Harvard University",
+      "answer": "Harvard University.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "sity, which matches the correct answer. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "4388e9dd",
+      "q": "I was going through our previous chat and I was wondering, what was Andy wearing in the script you wrote for the comedy movie scene?",
+      "gold": "Andy was wearing an untidy, stained white shirt.",
+      "answer": "In the script scenes I wrote, Andy wears an **untidy, stained white shirt**.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "es the core concept of what Andy was wearing in the script, matching the correct answer precisely.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "7e974930",
+      "q": "How much did I earn at the Downtown Farmers Market on my most recent visit?",
+      "gold": "$420",
+      "answer": "You earned $420 at the Downtown Farmers Market on your most recent visit.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "matches the correct answer in terms of the core factual claim, with no discrepancies or omissions.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 475
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "2311e44b_abs",
+      "q": "How many pages do I have left to read in 'Sapiens'?",
+      "gold": "The information provided is not enough. You did not mention how many paged do you have left to read in 'Sapiens'.",
+      "answer": "The information provided is not enough — I don't have the total page count of \"Sapiens\" or your current page in it in any of our conversations.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "oncept of the correct answer and does not contradict it. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 277
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "9ee3ecd6",
+      "q": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "gold": "100",
+      "answer": "I still need 100 more points to reach the 300 required for the free skincare product — you’re at 200 points right now.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "kincare product, and it provides a different number entirely. Therefore, the response is incorrect.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 801
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "affe2881",
+      "q": "How many different species of birds have I seen in my local park?",
+      "gold": "32",
+      "answer": "You've seen **32 different species** of birds in your local park. You reached this total after spotting a Northern Flicker on the weekend of May 27–28, 2023, updating your count from the 27 species you had recorded on May 24.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "additional context without contradicting the core information. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 332
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_1916e0ea",
+      "q": "How many days passed between the day I cancelled my FarmFresh subscription and the day I did my online grocery shopping from Instacart?",
+      "gold": "54 days. 55 days (including the last day) is also acceptable.",
+      "answer": "54 days passed between cancelling the FarmFresh subscription (January 5, 2023) and placing the Instacart order (February 28, 2023).",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": " same claim as the correct answer and provides additional context without introducing any errors.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1568498a",
+      "q": "I'm looking back at our previous chess game and I was wondering, what was the move you made after 27. Kg2 Bd5+?",
+      "gold": "28. Kg3",
+      "answer": "28. Kg3",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": " Kg3, which matches the correct answer. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "87f22b4a",
+      "q": "How much have I made from selling eggs this month?",
+      "gold": "$120",
+      "answer": "You've made $120 from selling eggs this month (40 dozen at $3 per dozen).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "d the additional details are accurate and supplementary. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 330
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "95bcc1c8",
+      "q": "How many amateur comedians did I watch perform at the open mic night?",
+      "gold": "10",
+      "answer": "The user explicitly stated they saw 10 amateur comedians perform at the open mic night. The memory from 2023/05/22 records: \"I recently went to an open mic night and saw 10 amateur comedians perform.\"\n\n**Answer: 10**",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "r, confirming the number of amateur comedians as 10. It is a direct match with the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 350
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e66b632c",
+      "q": "What was my previous personal best time for the charity 5K run?",
+      "gold": "27 minutes and 45 seconds",
+      "answer": "Your previous personal best for the charity 5K, set at the run on April 11, 2023, was **27 minutes and 45 seconds**. You later beat that on July 30 with your new best of 26:30.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": " answer and provides extra context, which is acceptable. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9aaed6a3",
+      "q": "How much cashback did I earn at SaveMart last Thursday?",
+      "gold": "$0.75",
+      "answer": "You earned $0.75 in cashback on that $75 SaveMart purchase.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "r, and the extra detail does not affect its correctness. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 400
+      },
+      "cashback_telemetry": {
+        "merchant": "SaveMart",
+        "amount_in_retrieve": true,
+        "amount": 75.0,
+        "rate_in_retrieve": null,
+        "rate_refusal": "rate_merchant_mismatch",
+        "hint_emitted": true,
+        "store_scan_used": true,
+        "hint_preview": "ARITHMETIC HINT (deterministic, from retrieved memories):\n  Memories show 1% cashback rate and $75 spent at SaveMart.\n  (rate via SelfAnchor store-scan from turn answer_353d3c6d_2_t0, scope=user_turns;merchant=SaveMart)\n"
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": true,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "86f00804",
+      "q": "What book am I currently reading?",
+      "gold": "The Seven Husbands of Evelyn Hugo",
+      "answer": "You're currently reading **\"The Seven Husbands of Evelyn Hugo\"**.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "matching the correct answer in meaning. There is no contradiction or omission of the core concept.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d682f1a2",
+      "q": "How many different types of food delivery services have I used recently?",
+      "gold": "3",
+      "answer": "You've used 2 different food delivery services: Uber Eats and Fresh Fusion.",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "e claim of using 3 different services, as it only mentions 2. Therefore, the response is incorrect.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 356
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1c0ddc50",
+      "q": "Can you suggest some activities I can do during my commute to work?",
+      "gold": "The user would prefer suggestions related to listening to new podcasts or audiobooks, especially the genre beyond true crime or self-improvement, such as history. They may not be interested in activities that require visual attention, such as reading or watching videos, as they are commuting. The user would not prefer general podcast topics such as true crime or self-improvement, as the user wants to explore other topics.",
+      "answer": "Since you're on the **7:45 am bus** with about **40 minutes each way** and already enjoy **\"How I Built This\"**, try these commute activities anchored to your interests:\n\n- **Podcast rotation**: alternate between history, true crime, and self-improvement episodes (e.g., Hardcore History, My Favorite Murder, The Tim Ferriss Show) to keep the ride engaging.\n- **Headspace meditation**: use the app yo",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "isual attention (language app). Therefore, it does not meet the core intent of the correct answer.\n</judge_thinking>\n\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_e414231e",
+      "q": "How many days passed between the day I fixed my mountain bike and the day I decided to upgrade my road bike's pedals?",
+      "gold": "4 days. 5 days (including the last day) is also acceptable.",
+      "answer": "4 days passed.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": " the same number of days that passed. Therefore, the response is equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "fca762bc",
+      "q": "I wanted to follow up on our previous conversation about language learning apps. You mentioned a few options, and I was wondering if you could remind me of the one that uses mnemonics to help learners memorize words and phrases?",
+      "gold": "Memrise",
+      "answer": "The app that uses mnemonics to help memorize words and phrases is **Memrise**.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "ise\" as the app that uses mnemonics for language learning, matching the correct answer in meaning.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "51b23612",
+      "q": "I was going through our previous conversation about political propaganda and humor, and I was wondering if you could remind me of that Soviet cartoon you mentioned that mocked Western culture?",
+      "gold": "Nu, pogodi!",
+      "answer": "In our previous conversation, I mentioned the Soviet cartoon **\"Nu, pogodi!\"** (Ну, погоди! — \"Well, Just You Wait!\") as an example of Soviet propaganda that used humor and satire to mock Western culture and portray the Soviet Union as superior.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "s are accurate and do not contradict the correct answer. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "71017276",
+      "q": "How many weeks ago did I meet up with my aunt and receive the crystal chandelier?",
+      "gold": "4",
+      "answer": "The crystal chandelier was received from your aunt on March 4, 2023. From that date to today (April 1, 2023) is exactly 4 weeks.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "rrect answer, confirming the time span of 4 weeks since the meeting and receipt of the chandelier.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "72e3ee87",
+      "q": "How many episodes of the Science series have I completed on Crash Course?",
+      "gold": "50",
+      "answer": "You've completed 50 episodes.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "tating the same number of episodes completed. There is no discrepancy in the information provided.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 381
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "60036106",
+      "q": "What was the total number of people reached by my Facebook ad campaign and Instagram influencer collaboration?",
+      "gold": "12,000",
+      "answer": "The Facebook ad campaign reached around 2,000 people, and the influencer collaboration reached 10,000 followers.  \nTotal people reached: **around 12,000**.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "[REJUDGED] ncer collaboration, resulting in a total of around 12,000 people. This matches the gold answer.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 366
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b6025781",
+      "q": "I'm planning my meal prep next week, any suggestions for new recipes?",
+      "gold": "The user would prefer responses that suggest healthy meal prep recipes, especially those that incorporate quinoa and roasted vegetables, and offer variations in protein sources. They might appreciate suggestions that build upon their existing preferences, such as new twists on chicken Caesar salads or turkey and avocado wraps. The user may not prefer responses that suggest unhealthy or high-calorie meal prep options, or those that deviate significantly from their established healthy eating habits.",
+      "answer": "Based on your recent kitchen adventures, here are a few new meal prep ideas to keep things fresh:\n\n- Build a Mexican-inspired quinoa bowl with black beans, roasted corn, salsa, and a drizzle of that chipotle ranch (spicy mayo works too) — it plays right into your interest in Mexican dishes and uses up the quinoa you have.\n- Put the fresh rosemary in your fridge to work: roast sweet potato wedges w",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "[REJUDGED] ovide a full set of suggestions. Therefore, it does not fully capture the gold answer's meaning.\n\nNo",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "70b3e69b",
+      "q": "I was going through our previous conversation about the impact of the political climate in Catalonia on its literature and music. Can you remind me of the example you gave of a Spanish-Catalan singer-songwriter who supports unity between Catalonia and Spain?",
+      "gold": "Manolo García",
+      "answer": "The singer-songwriter you're referring to is **Manolo García**.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": " identifies Manolo García as the example given, matching the correct answer in meaning and intent.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_9a159967",
+      "q": "Which airline did I fly with the most in March and April?",
+      "gold": "United Airlines",
+      "answer": "United Airlines — you had 4 flights with them (the round-trip business trip to Chicago on March 10–12 with a connection each way), compared to 2 with American Airlines (Hawaii outbound on April 20) and 1 with Southwest (Las Vegas on March 15).",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED] int and support the conclusion. Therefore, the LLM response captures the gold answer's meaning.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_194be4b3",
+      "q": "How many musical instruments do I currently own?",
+      "gold": "I currently own 4 musical instruments. I've had the Fender Stratocaster electric guitar for 5 years, the Yamaha FG800 acoustic guitar for 8 years, the 5-piece Pearl Export drum set for an unspecified amount of time, and the Korg B1 piano for 3 years.",
+      "answer": "Based on your memories, you currently own **4 musical instruments**:\n\n1. **Fender Stratocaster electric guitar (black)** — your go-to for blues and rock, owned about 5 years\n2. **Pearl Export drum set (5-piece)** — haven't played in years, but still with you for now\n3. **Korg B1 digital piano** — owned about 3 years, keys are sticking a bit\n4. **Yamaha FG800 acoustic guitar** — owned about 8 years",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "[REJUDGED] swer. It lists the same four musical instruments with similar ownership durations and details. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 1905,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "031748ae_abs",
+      "q": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "gold": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "answer": "The information provided is not enough. You mentioned starting the role as Senior Software Engineer but not Software Engineer Manager.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "[REJUDGED]  to determine how many engineers are led, and both note the discrepancy in the role mentioned. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 437
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": true,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "08e075c7",
+      "q": "How long have I been using my Fitbit Charge 3?",
+      "gold": "9 months",
+      "answer": "9 months and 2 days.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "[REJUDGED] ng the length of time the Fitbit Charge 3 has been used. Therefore, the response is acceptable.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_1d4ab0c9",
+      "q": "How many days passed between the day I started watering my herb garden and the day I harvested my first batch of fresh herbs?",
+      "gold": "24 days. 25 days (including the last day) is also acceptable.",
+      "answer": "The user started watering the herb garden on March 22, 2023, and harvested the first batch on April 15, 2023. The number of days between these two dates is 24 days.\n\n\n\n24 days.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED]  which matches the gold answer. Therefore, the LLM response captures the gold answer's meaning.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_f2262a51",
+      "q": "How many different doctors did I visit?",
+      "gold": "I visited three different doctors: a primary care physician, an ENT specialist, and a dermatologist.",
+      "answer": "You visited three different doctors: Dr. Patel (ENT specialist), Dr. Lee (dermatologist), and Dr. Smith (primary care physician).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "[REJUDGED] not contradict the gold answer. Therefore, the LLM response captures the gold answer's meaning.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 254
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "59524333",
+      "q": "What time do I usually go to the gym?",
+      "gold": "6:00 pm",
+      "answer": "You usually head to the gym at 6:00 pm.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "[REJUDGED] rrectly captures the meaning of the gold answer by stating that the usual gym time is 6:00 pm. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6ae235be",
+      "q": "I remember you told me about the refining processes at CITGO's three refineries earlier. Can you remind me what kind of processes are used at the Lake Charles Refinery?",
+      "gold": "Atmospheric distillation, fluid catalytic cracking (FCC), alkylation, and hydrotreating.",
+      "answer": "Based on our earlier conversation, the main refining processes at CITGO's **Lake Charles Refinery** are:\n\n- **Atmospheric distillation** – heating crude oil and separating it into fractions by boiling point.\n- **Fluid catalytic cracking (FCC)** – breaking heavier fractions into lighter, more valuable products like gasoline and diesel.\n- **Alkylation** – combining smaller molecules to create high-o",
+      "correct": false,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[REJUDGED] f the gold answer. Therefore, the LLM response does not fully capture the gold answer's meaning.\n\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "16c90bf4",
+      "q": "I'm looking back at our previous conversation about the Seco de Cordero recipe from Ancash. You mentioned using a light or medium-bodied beer, but I was wondering if you could remind me what type of beer you specifically recommended?",
+      "gold": "I recommended using a Pilsner or Lager for the recipe.",
+      "answer": "In our earlier conversation, I recommended using a light or medium-bodied beer for the Seco de Cordero to avoid overpowering the dish. Specifically, I suggested a **pilsner or lager**, and you mentioned you'd try the recipe with a Pilsner.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[REJUDGED] about the user's intention to try the recipe with a Pilsner, which aligns with the gold answer.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b46e15ed",
+      "q": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "gold": "2",
+      "answer": "The information provided is not enough. I can see several charity events in the memories — a gala on Jan 30, an outreach event on Feb 8, two events on Feb 15, and a mention of a Walk for Hunger on Mar 19 — but none of them fall on consecutive days.",
+      "correct": false,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED]  information to determine this. Therefore, the LLM response does not align with the gold answer.\n\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "505af2f5",
+      "q": "I was thinking of trying a new coffee creamer recipe. Any recommendations?",
+      "gold": "The user would prefer responses that suggest variations on their existing almond milk, vanilla extract, and honey creamer recipe or new ideas that align with their goals of reducing sugar intake and saving money. They might not prefer responses that recommend commercial creamer products or recipes that are high in sugar or expensive.",
+      "answer": "Since you're already making your own creamer with almond milk, vanilla, and honey, and you wanted to try Lemon Ginger coffee, here's a custom creamer that combines both:\n\n**Lemon Ginger Creamer**  \n- Start with your unsweetened almond milk (keeps sugar low).\n- Swap out the honey for a few drops of stevia or monk fruit sweetener—cuts sugar while still giving a touch of sweetness (as we discussed fo",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "[REJUDGED] milar to what the user already has. Therefore, the response captures the gold answer's meaning.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_0a05b494",
+      "q": "Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+      "gold": "the woman selling jam at the farmer's market",
+      "answer": "The jam maker at the farmer's market came first. You met them on May 13, 2023 — five days before the tourist from Australia, whom you met on the subway on May 18, 2023.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED]  The additional details provided do not contradict the gold answer and support the conclusion. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "dccbc061",
+      "q": "What was my previous stance on spirituality?",
+      "gold": "A staunch atheist",
+      "answer": "Your previous stance on spirituality was that you were a staunch atheist.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "[REJUDGED] answer by stating that the user's previous stance on spirituality was being a staunch atheist. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "3ba21379",
+      "q": "What type of vehicle model am I currently working on?",
+      "gold": "Ford F-150 pickup truck",
+      "answer": "Currently, you're working on a Ford F-150 pickup truck model. You mentioned on May 26 that you had just wrapped up your Ford Mustang Shelby GT350R and switched to the F-150.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "[REJUDGED] 350R does not contradict or alter the correctness of the current vehicle model being worked on.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e5ba910e_abs",
+      "q": "What is the total cost of my recently purchased headphones and the iPad?",
+      "gold": "The information provided is not enough. You mentioned purchasing a headphone, but you did not mention the iPad.",
+      "answer": "The information provided is not enough.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "[REJUDGED] the gold answer. Despite this, the core meaning regarding insufficient information is conveyed.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 237
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "06f04340",
+      "q": "What should I serve for dinner this weekend with my homegrown ingredients?",
+      "gold": "The user would prefer dinner suggestions that incorporate their homegrown cherry tomatoes and herbs like basil and mint, highlighting recipes that showcase their garden produce. They might not prefer suggestions that do not utilize these specific ingredients or do not emphasize the use of homegrown elements.",
+      "answer": "Since you've been harvesting cherry tomatoes, basil, and mint from your garden, this weekend's dinner can showcase them beautifully. Here's a simple, healthy menu that uses your homegrown ingredients:\n\n- **Caprese Salad** – your cherry tomatoes, fresh basil leaves, and mozzarella drizzled with olive oil and balsamic. If you're also growing borage or marigolds, toss in a few edible flowers for a co",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "[REJUDGED] omission, the response still largely aligns with the user's request to use homegrown elements. \n\nYes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6f9b354f",
+      "q": "What color did I repaint my bedroom walls?",
+      "gold": "a lighter shade of gray",
+      "answer": "A lighter shade of gray.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "[REJUDGED] The LLM response matches the gold answer exactly, capturing the meaning correctly.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "8cf51dda",
+      "q": "I'm going back to our previous conversation about the grant aim page on molecular subtypes and endometrial cancer. Can you remind me what were the three objectives we outlined for the project?",
+      "gold": "The three objectives were: 1) to identify molecular subtypes of endometrial cancer, 2) to investigate their clinical and biological significance, and 3) to develop biomarkers for early detection and prognosis.",
+      "answer": "The three objectives we outlined were:\n\n1. **Identify** molecular subtypes of endometrial cancer using a combination of genomic and transcriptomic approaches.\n2. **Investigate** the clinical and biological significance of the identified molecular subtypes, including their association with patient outcomes and response to therapy.\n3. **Develop** biomarkers for the early detection and prognosis of e",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[REJUDGED] nd the aspects of significance to be investigated, but these do not alter the core objectives. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "8077ef71",
+      "q": "How many days ago did I attend a networking event?",
+      "gold": "26 days. 27 days (including the last day) is also acceptable.",
+      "answer": "26 days ago.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED] 's acceptable range of 26 days. Therefore, the LLM response captures the gold answer's meaning.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "09d032c9",
+      "q": "I've been having trouble with the battery life on my phone lately. Any tips?",
+      "gold": "The user would prefer responses that build upon their previous mention of purchasing a portable power bank, such as suggestions on how to optimize its use, like ensuring it's fully charged before use. They might also appreciate tips on utilizing battery-saving features on their phone. The user may not prefer responses that suggest alternative solutions or unrelated advice.",
+      "answer": "Since you already have a **portable power bank** and a **wireless charging pad**, you can lean on those to stretch your phone's uptime. Keep the power bank charged and with you on long days, and make the wireless pad your default at home or on your desk so you're constantly topping up without thinking about it. You also mentioned using **phone alarms** for reminders — set a recurring alarm to chec",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "[REJUDGED] tery-saving features. The response does not suggest alternative solutions or unrelated advice. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "3e321797",
+      "q": "I wanted to follow up on our previous conversation about natural remedies for dark circles under the eyes. You mentioned applying tomato juice mixed with lemon juice, how long did you say I should leave it on for?",
+      "gold": "10 minutes",
+      "answer": "10 minutes.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[REJUDGED]  captures the gold answer's meaning by providing the same duration for leaving the mixture on. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "afdc33df",
+      "q": "My kitchen's becoming a bit of a mess again. Any tips for keeping it clean?",
+      "gold": "The user would prefer responses that acknowledge and build upon their existing efforts to organize their kitchen, such as utilizing their new utensil holder to keep countertops clutter-free. They would also appreciate tips that address their concern for maintaining their granite surface, particularly around the sink area. Preferred responses would provide practical and actionable steps to maintain cleanliness, leveraging the user's current tools and setup. They might not prefer generic or vague suggestions that do not take into account their specific kitchen setup or concerns.",
+      "answer": "Start with your **new utensil holder** — keeping it organized is half the battle for clutter-free countertops, and you already bought it for exactly that reason. Make a habit of returning spatulas and spoons to their designated zones after each cooking session so the granite doesn't become a dumping ground.\n\nFor your **granite countertop**, stick to what works: clean up spills fast with a soft clo",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "[REJUDGED]  countertop. It avoids generic suggestions and tailors advice to the user's setup and concerns.\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d851d5ba",
+      "q": "How much money did I raise for charity in total?",
+      "gold": "$3,750",
+      "answer": "You raised a total of $3,750 for charity.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "[REJUDGED] g of the gold answer by stating the exact amount of money raised for charity, which is $3,750. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 3475,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "778164c6",
+      "q": "I was looking back at our previous conversation about Caribbean dishes and I was wondering, what was the name of that Jamaican dish you recommended I try with snapper that has fruit in it?",
+      "gold": "Grilled Snapper with Mango Salsa",
+      "answer": "The Jamaican snapper dish I recommended was **Escovitch Fish** — though it's topped with a tangy pickled vegetable sauce, not fruit. The snapper dish that does involve fruit (mango) is Grilled Snapper with Mango Salsa, but that one isn't specifically Jamaican.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "[REJUDGED] ional information about another dish, it still captures the essential part of the gold answer. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_68e94287",
+      "q": "Which event happened first, my participation in the #PlankChallenge or my post about vegan chili recipe?",
+      "gold": "You posted a recipe for vegan chili on Instagram using the hashtag #FoodieAdventures first.",
+      "answer": "Your post about the vegan chili recipe (March 9, 2023) happened first, about a week before your participation in the #PlankChallenge (March 15, 2023).",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "[REJUDGED] ipe happened first. Both the gold answer and the LLM response agree on the sequence of events. \n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_d12ceb0e",
+      "q": "What is the average age of me, my parents, and my grandparents?",
+      "gold": "59.6",
+      "answer": "The average age of you, your parents, and your grandparents is **59.6**.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "answer by providing the same average age. There are no discrepancies or omissions in the response.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": true,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "8a2466db",
+      "q": "Can you recommend some resources where I can learn more about video editing?",
+      "gold": "The user would prefer responses that suggest resources specifically tailored to Adobe Premiere Pro, especially those that delve into its advanced settings. They might not prefer general video editing resources or resources related to other video editing software.",
+      "answer": "Sure! Since you're already diving into Adobe Premiere Pro and experimenting with the Lumetri Color Panel's Curves, Creative, and Color Match features, here are some resources aligned with your setup:\n\n- **Adobe’s official documentation and tutorials** – straight from the source, covering everything from basics to advanced settings.\n- **YouTube channels like Premiere Bro and Adobe Creative Cloud** ",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "lated to other software, which aligns with the user's preferences.\n\nThe model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_4edbafa2",
+      "q": "What was the date on which I attended the first BBQ event in June?",
+      "gold": "June 3rd",
+      "answer": "June 3, 2023.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "r, which does not alter the correctness of the response. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_8e165409",
+      "q": "How many days passed between the day I repotted the previous spider plant and the day I gave my neighbor, Mrs. Johnson, a few cuttings from my spider plant?",
+      "gold": "14 days. 15 days (including the last day) is also acceptable.",
+      "answer": "14 days.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "d on this analysis, the model response correctly addresses the core concept of the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "eaca4986",
+      "q": "I'm looking back at our previous conversation where you created two sad songs for me. Can you remind me what was the chord progression for the chorus in the second song?",
+      "gold": "C D E F G A B A G F E D C",
+      "answer": "The second song's chorus uses the note sequence:\n\n**C D E F G A B A G F E D C**\n\nrepeated four times (once for each line of the chorus).",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "correct answer, providing the same core information with an additional, non-contradictory detail.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "1b9b7252",
+      "q": "I wanted to follow up on our previous conversation about mindfulness techniques. You mentioned some great resources for guided imagery exercises, can you remind me of the website that had free exercises like 'The Mountain Meditation' and 'The Body Scan Meditation'?",
+      "gold": "Mindful.org.",
+      "answer": "From our earlier conversation, the website you're thinking of is **Mindful.org** — they offer free guided imagery exercises, including \"The Mountain Meditation\" and \"The Body Scan Meditation.\"",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "org and providing relevant details about the exercises. Therefore, the model response is correct.\n\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "ec81a493",
+      "q": "How many copies of my favorite artist's debut album were released worldwide?",
+      "gold": "500",
+      "answer": "The signed poster from your favorite artist's debut album came with the album, which was released as a limited edition of only **500 copies worldwide**.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "iding the same core information with additional context. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 277
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "9a707b82",
+      "q": "I mentioned cooking something for my friend a couple of days ago. What was it?",
+      "gold": "a chocolate cake",
+      "answer": "You mentioned baking a chocolate cake for your friend's birthday party.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "bout the birthday party does not alter the core meaning. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c18a7dc8",
+      "q": "How many years older am I than when I graduated from college?",
+      "gold": "7",
+      "answer": "7 years",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "er by providing the same numerical value. There are no discrepancies or omissions in the response.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "b0479f84",
+      "q": "I've got some free time tonight, any documentary recommendations?",
+      "gold": "The user would prefer documentary recommendations that are similar in style and theme to 'Our Planet', 'Free Solo', and 'Tiger King', which they have previously enjoyed. They might not prefer recommendations of documentaries that are vastly different in tone or subject matter from these titles. The preferred response utilizes the user's previously mentioned viewing history to suggest documentaries that cater to their tastes.",
+      "answer": "Given your interest in nature and wildlife documentaries, I'd suggest the two you were curious about earlier — **Dynasties** and **Chasing Coral**. Both are on Netflix and align with the style you enjoyed in \"Our Planet\" and \"Planet Earth\". Perfect for a free evening.",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": " provides additional context that enhances the recommendation. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "89941a93",
+      "q": "How many bikes do I currently own?",
+      "gold": "4",
+      "answer": "You own 4 bikes: a road bike, mountain bike, commuter bike, and hybrid bike.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "nal details that do not contradict the core information. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 390
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6ade9755",
+      "q": "Where do I take yoga classes?",
+      "gold": "Serenity Yoga",
+      "answer": "You take yoga classes at **Serenity Yoga**, a yoga studio. You also practice at home using the Down Dog app.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "des extra information that does not contradict the main claim. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "618f13b2",
+      "q": "How many times have I worn my new black Converse Chuck Taylor All Star sneakers?",
+      "gold": "six",
+      "answer": "Based on your memories, as of May 30, 2023, you mentioned you had worn your new black Converse Chuck Taylor All Star sneakers **six times** — including your friend's birthday party (May 27) and running errands (May 29). There are no later memories mentioning additional wears, so the count remains six.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "ms the same number of wears and provides additional context without altering the core information.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c5e8278d",
+      "q": "What was my last name before I changed it?",
+      "gold": "Johnson",
+      "answer": "Your previous last name was Johnson.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "e is no deviation in meaning or factual content between the correct answer and the model response.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "4100d0a0",
+      "q": "What is my ethnicity?",
+      "gold": "A mix of Irish and Italian",
+      "answer": "Your ethnicity is mixed Irish and Italian, as you mentioned when reflecting on your family tree and cultural heritage.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "his analysis, the model response correctly addresses the core factual claim of the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "35a27287",
+      "q": "Can you recommend some interesting cultural events happening around me this weekend?",
+      "gold": "The user would prefer responses that suggest cultural events where they can practice their language skills, particularly Spanish and French. They would also appreciate if the event has a focus on language learning resources. They would not prefer events that do not provide opportunities for language practice or cultural exchange.",
+      "answer": "I don't have information about specific cultural events happening in Medellín this weekend, but I can point you in the right direction based on what I know about you.\n\nSince you're currently in **Medellín** and have an interest in **French and Spanish language exchange** (building on your experience volunteering at that cultural festival last month), here's what I'd suggest:\n\n- **Meetup and Eventb",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": "adicting the user's preferences.\n</judge_thinking>\n\nyes\n[JAB-1a VETO: concrete gold + canonical abstain response → FAIL]",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "b3c15d39",
+      "q": "How many days did it take for me to receive the new remote shutter release after I ordered it?",
+      "gold": "5 days. 6 days (including the last day) is also acceptable.",
+      "answer": "It took 5 days. You ordered it on February 5, 2023, and it arrived on February 10, 2023.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "the additional details do not contradict the main claim. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e01b8e2f",
+      "q": "Where did I go on a week-long trip with my family?",
+      "gold": "Hawaii",
+      "answer": "You went to Hawaii.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ing Hawaii. There is no discrepancy in meaning between the correct answer and the model response. \n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "dc439ea3",
+      "q": "I was looking back at our previous conversation about Native American powwows and I was wondering, which traditional game did you say was often performed by skilled dancers at powwows?",
+      "gold": "Hoop Dance",
+      "answer": "The Hoop Dance — described as a traditional dance involving intricate movements with multiple hoops, and often performed by skilled dancers at powwows.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "mentary information that aligns with the correct answer. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "29f2956b_abs",
+      "q": "How much time do I dedicate to practicing violin every day?",
+      "gold": "You did not mention this information. You mentioned practing guitar everyday, but not violin.",
+      "answer": "The information provided is not enough. I don't have any record of you practicing violin — the only instrument practice you've mentioned is guitar (30 minutes daily) and an interest in saxophone.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "he correct answer and provides additional context without contradiction. Therefore, it is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c7dc5443",
+      "q": "What is my current record in the recreational volleyball league?",
+      "gold": "5-2",
+      "answer": "Your recreational volleyball team, the Net Ninjas, has a 5–2 record as of June 30.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "e claim as the correct answer and is a superset with additional context. Therefore, it is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "2133c1b5_abs",
+      "q": "How long have I been living in my current apartment in Shinjuku?",
+      "gold": "The information provided is not enough. You mentioned living in Harajuku but not Shinjuku.",
+      "answer": "I don't have any information about you living in an apartment in Shinjuku. Your memories only mention moving to a studio apartment in Harajuku, not Shinjuku.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": " does not contradict it. It is a superset with additional context that does not alter the meaning.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "f523d9fe",
+      "q": "I wanted to check back on our previous conversation about Netflix. I mentioned that I wanted to be able to access all seasons of old shows? Do you remember what show I used as an example, the one that only had the last season available?",
+      "gold": "Doc Martin",
+      "answer": "Yes, you mentioned \"Doc Martin\" as an example — the show was taken down and only the last season remained available.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "information and additional context without any contradictions. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "0a34ad58",
+      "q": "I’m a bit anxious about getting around Tokyo. Do you have any helpful tips?",
+      "gold": "The user would prefer responses that utilize their existing resources, such as their Suica card and TripIt app, to provide personalized tips for navigating Tokyo's public transportation. They might not prefer general tips or recommendations that do not take into account their prior preparations.",
+      "answer": "Don't worry — you've already got the right tools. Since you have a **Suica card**, you can just tap in and out on trains, subways, and buses without fussing over tickets. And you've got the **TripIt app** to keep all your bookings in one place, so you won't lose track of meeting times or addresses. Stick to major hubs like Shinjuku Station (your hotel is right there), and use a transit app like Go",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "nsive answer that includes the correct answer's core elements. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6071bd76",
+      "q": "For the coffee-to-water ratio in my French press, did I switch to more water per tablespoon of coffee, or less?",
+      "gold": "You switched to less water (5 ounces) per tablespoon of coffee.",
+      "answer": "You switched to **less** water per tablespoon of coffee. On February 11 you used 1 tablespoon per 6 ounces of water, and by June 30 you had adjusted to 1 tablespoon per 5 ounces. So the water per tablespoon decreased from 6 oz to 5 oz.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": " and is a superset of the correct answer, with additional context that does not alter the meaning.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d3ab962e",
+      "q": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "gold": "8 miles",
+      "answer": "The total distance of those two hikes is 8 miles.",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ccurately captures the core concept of the correct answer without any contradictions or omissions.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 525
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d24813b1",
+      "q": "I'm thinking of inviting my colleagues over for a small gathering. Any tips on what to bake?",
+      "gold": "The user would prefer baking suggestions that take into account their previous success with the lemon poppyseed cake, such as variations of that recipe or other desserts that share similar qualities. They might prefer suggestions that balance impressiveness with manageability, considering their previous experience. The user may not prefer overly complex or unfamiliar recipes, or suggestions that do not build upon their existing baking experience.",
+      "answer": "Since your lemon poppyseed cake was a hit at your colleague's going-away party, you could bake it again—or try the lemon lavender pound cake you were considering for a birthday, which would be a lovely twist. For something more casual, whip up a batch of chewy chocolate chip cookies using the tips you collected earlier, and your oatmeal raisin cookies with nuts (toss in some of the almonds and wal",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "pes.\n\nBased on this analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "2698e78f_abs",
+      "q": "How often do I see Dr. Johnson?",
+      "gold": "The information provided is not enough. You mentioned seeing Dr. Smith but not Dr. Johnson.",
+      "answer": "The information provided is not enough. I have memories of you seeing Dr. Smith, but no mention of Dr. Johnson.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "is the lack of information about Dr. Johnson, and it does not contradict or omit any key elements.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 876
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "gpt4_d6585ce8",
+      "q": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "gold": "The order of the concerts I attended is: 1. Billie Eilish concert at the Wells Fargo Center in Philly, 2. Free outdoor concert series in the park, 3. Music festival in Brooklyn, 4. Jazz night at a local bar, 5. Queen + Adam Lambert concert at the Prudential Center in Newark, NJ.",
+      "answer": "Here are the concerts and musical events you attended in the past two months, from earliest to latest:\n\n1. Billie Eilish concert at the Wells Fargo Center (Philly) — March 18, 2023\n2. Free outdoor concert series in the park — March 25, 2023\n3. Music festival in Brooklyn with indie bands — April 1, 2023\n4. Jazz night at a local bar — April 8, 2023\n5. Queen concert with Adam Lambert at Prudential Ce",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "ents.\n\nBased on the analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_e414231f",
+      "q": "Which bike did I fixed or serviced the past weekend?",
+      "gold": "road bike",
+      "answer": "You serviced your **road bike** last weekend — you upgraded its pedals to Shimano Ultegra clipless pedals on Sunday, March 19.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "providing extra details without contradicting the core claim. Therefore, the response is correct.\n</judge_thinking>\n\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "94f70d80",
+      "q": "How long did it take me to assemble the IKEA bookshelf?",
+      "gold": "4 hours",
+      "answer": "It took you 4 hours to assemble the IKEA bookshelf.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ts the correct answer without any omissions or contradictions. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "c960da58",
+      "q": "How many playlists do I have on Spotify?",
+      "gold": "20",
+      "answer": "You have 20 playlists on Spotify.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "orrectly addresses the core concept of the correct answer without any omissions or contradictions.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 241
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "a89d7624",
+      "q": "I'm planning a trip to Denver soon. Any suggestions on what to do there?",
+      "gold": "The user would prefer responses that take into account their previous experience in Denver, specifically their interest in live music and memorable encounter with Brandon Flowers. They might appreciate suggestions that revisit or build upon this experience, such as revisiting the same bar or exploring similar music venues in the area. The user may not prefer general tourist recommendations or activities unrelated to their interest in live music.",
+      "answer": "Based on your love of live music and that memorable evening you met Brandon Flowers after The Killers at Red Rocks, Denver has plenty more for you. \n\n**Live music & festivals** – Catch another show at Red Rocks, or explore venues like the Ogden Theatre, Bluebird Theater, Fillmore Auditorium, Larimer Lounge, Marquis Theater, and hi-dive. Festivals worth timing your trip around include Grandoozy, De",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "rect as it aligns with the user's preferences and builds upon their previous experience in Denver.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_ab202e7f",
+      "q": "How many kitchen items did I replace or fix?",
+      "gold": "I replaced or fixed five items: the kitchen faucet, the kitchen mat, the toaster, the coffee maker, and the kitchen shelves.",
+      "answer": "You replaced or fixed 4 kitchen items: the kitchen shelves (fixed), the kitchen mat (replaced), the kitchen faucet (replaced), and the old toaster (replaced with a toaster oven).",
+      "correct": false,
+      "qtype": "multi-session",
+      "verdict_tail": "esponse does not fully match the correct answer in terms of the number of items replaced or fixed.\n</judge_thinking>\n\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": true,
+        "cardinal_chars": 3530,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "caf03d32",
+      "q": "I've been struggling with my slow cooker recipes. Any advice on getting better results?",
+      "gold": "The user would prefer responses that provide tips and advice specifically tailored to their slow cooker experiences, utilizing their recent success with beef stew and interest in making yogurt in the slow cooker. They might not prefer general slow cooker recipes or advice unrelated to their specific experiences and interests.",
+      "answer": "Since you're planning to make a cashew‑based slow cooker yogurt and asked about using a thermometer versus just waiting 2‑3 hours, that's likely where the struggle is. Invest in a thermometer — hitting the 180‑185°F range is essential to kill unwanted bacteria and get the yogurt to set properly, and guessing by time alone can lead to runny or inconsistent results. Also, strain your blended cashews",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "'s specific interests and provides tailored advice, meeting the criteria for semantic equivalence.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "66f24dbb",
+      "q": "What did I buy for my sister's birthday gift?",
+      "gold": "a yellow dress",
+      "answer": "For your sister's birthday, you bought a yellow dress and a pair of matching earrings.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "cludes the correct answer and adds supplementary information without contradicting the core claim.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "d6233ab6",
+      "q": "I've been feeling nostalgic lately. Do you think it would be a good idea to attend my high school reunion?",
+      "gold": "The user would prefer responses that draw upon their personal experiences and memories, specifically their positive high school experiences such as being part of the debate team and taking advanced placement courses. They would prefer suggestions that highlight the potential benefits of attending the reunion, such as reconnecting with old friends and revisiting favorite subjects like history and economics. The user might not prefer generic or vague responses that do not take into account their individual experiences and interests.",
+      "answer": "The information provided is not enough.\n\nI don't have any memories about your high school experience, how you felt about your classmates, whether you've attended past reunions, or your current social preferences in situations like this. Without that context, I can't give you a personalized recommendation — the right answer depends entirely on whether your high school years were a time you'd enjoy ",
+      "correct": false,
+      "qtype": "single-session-preference",
+      "verdict_tail": ". It does not provide any personalized suggestions or considerations based on the user's interests.\n</judge_thinking>\nno",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": true
+      }
+    },
+    {
+      "question_id": "95228167",
+      "q": "I'm getting excited about my visit to the music store this weekend. Any tips on what to look for in a new guitar?",
+      "gold": "The user would prefer responses that highlight the differences between Fender Stratocaster and Gibson Les Paul electric guitars, such as the feel of the neck, weight, and sound profile. They might not prefer general tips on buying an electric guitar or suggestions that do not take into account their current guitar and desired upgrade.",
+      "answer": "Given your love for open D tuning and fingerpicking patterns like *Blackbird*, focus on guitars that feel resonant and responsive in alternate tunings. Try both a **Fender Stratocaster** and a **Gibson Les Paul** for contrast — the Strat’s clarity often shines for acoustic-like picking, while a Les Paul with **coil‑splitting** (or coil‑tapping) can give you that single‑coil crispness when you want",
+      "correct": true,
+      "qtype": "single-session-preference",
+      "verdict_tail": "yle.\n\nBased on this analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "e3fc4d6e",
+      "q": "I wanted to follow up on our previous conversation about the fusion breakthrough at Lawrence Livermore National Laboratory. Can you remind me who is the President's Chief Advisor for Science and Technology mentioned in the article?",
+      "gold": "Dr. Arati Prabhakar",
+      "answer": "Dr. Arati Prabhakar.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "onse.\n\nBased on the analysis, the model response is semantically equivalent to the correct answer.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "853b0a1d",
+      "q": "How old was I when my grandma gave me the silver necklace?",
+      "gold": "18",
+      "answer": "You were 18 years old.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "ccurately captures the core concept of the correct answer without any contradictions or omissions.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "27016adc",
+      "q": "What percentage of the countryside property's price is the cost of the renovations I plan to do on my current house?",
+      "gold": "10%",
+      "answer": "The renovation cost is 10% of the countryside property's listed price ($20,000 / $200,000).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "t of the percentage relationship between the renovation cost and the countryside property's price.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 371
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "cf22b7bf",
+      "q": "How much weight have I lost since I started going to the gym consistently?",
+      "gold": "10 pounds",
+      "answer": "You've lost 10 pounds since you started going to the gym consistently 3 months ago (as of your update on June 21, 2023).",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "with additional context that does not alter the meaning. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 378
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "6aeb4375",
+      "q": "How many Korean restaurants have I tried in my city?",
+      "gold": "four",
+      "answer": "You've tried four different Korean restaurants in your city.",
+      "correct": true,
+      "qtype": "knowledge-update",
+      "verdict_tail": "er, as it conveys the same information about the number of Korean restaurants tried by the user. \n</judge_thinking> \nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 478
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "25e5aa4f",
+      "q": "Where did I complete my Bachelor's degree in Computer Science?",
+      "gold": "University of California, Los Angeles (UCLA)",
+      "answer": "You completed your Bachelor's degree in Computer Science at UCLA.",
+      "correct": true,
+      "qtype": "single-session-user",
+      "verdict_tail": "urately captures the core factual claim of the correct answer. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "bb7c3b45",
+      "q": "How much did I save on the Jimmy Choo heels?",
+      "gold": "$300",
+      "answer": "You saved $300 on the Jimmy Choo heels (retail $500, bought for $200).",
+      "correct": true,
+      "qtype": "multi-session",
+      "verdict_tail": "ional information does not contradict or alter the core claim. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": true,
+        "atomic_chars": 242
+      },
+      "helper_hints": {
+        "savings": true,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "28bcfaac",
+      "q": "I'm going back to our previous conversation about music theory. You mentioned some online resources for learning music theory. Can you remind me of the website you recommended for free lessons and exercises?",
+      "gold": "MusicTheory.net",
+      "answer": "You recommended **MusicTheory.net** — it offers free lessons and exercises on music theory.",
+      "correct": true,
+      "qtype": "single-session-assistant",
+      "verdict_tail": "d provides the same information in slightly different wording. Therefore, the response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_8279ba02",
+      "q": "How many days ago did I buy a smoker?",
+      "gold": "10 days ago. 11 days (including the last day) is also acceptable.",
+      "answer": "You got the smoker 10 days ago, on March 15.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": "and the extra detail does not contradict the core claim. Therefore, the model response is correct.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "answer_retry_reason": "truncated_stub",
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    },
+    {
+      "question_id": "gpt4_468eb064",
+      "q": "Who did I meet with during the lunch last Tuesday?",
+      "gold": "Emma",
+      "answer": "Emma, a freelance writer.",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": ", the model response addresses the same claim as the correct answer, even with additional details.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

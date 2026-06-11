@@ -68,3 +68,21 @@ def test_legacy_clean_not_selected():
 def test_parse_verdict_yes_no():
     assert R.parse_verdict("The response matches the gold. yes")
     assert not R.parse_verdict("The response misses the date. no")
+
+
+# ---------------- by_type recompute (2026-06-11 debt) ----------------
+
+def test_recompute_by_type_from_per_query():
+    data = {"per_query": [
+        {"qtype": "a", "correct": True}, {"qtype": "a", "correct": False},
+        {"qtype": "b", "correct": True},
+    ], "by_type": {"a": {"n": 99, "accuracy": 0.0}}}  # stale
+    R.recompute_by_type(data)
+    assert data["by_type"]["a"] == {"n": 2, "correct": 1, "accuracy": 0.5}
+    assert data["by_type"]["b"]["accuracy"] == 1.0
+
+
+def test_recompute_by_type_empty_no_clobber():
+    data = {"per_query": [], "by_type": {"keep": {"n": 1}}}
+    R.recompute_by_type(data)
+    assert data["by_type"] == {"keep": {"n": 1}}  # nothing to rebuild from

@@ -66,3 +66,33 @@ S2 sandbox（v3.2-ingest,v3.2 基线 11/14）上只换 answer 模型:
 另: 探针 sandbox 缺 lme_0-2（首次驱动被杀后 resume 跳过已完成 3 题、wipe 重建只
 ingest 剩余 domain）——已完成题的 verdict 不受影响,但该 sandbox 不能用于这 3 题的
 post-hoc 检索分析。
+
+## 8. n=100 split run 结果（2026-06-11,单跑,judge-fixed）
+
+**overall = 0.91（91/100,同题集同序,elapsed 17.6h）——与 v3.2 中心 0.91±0.01 持平,
+但构成发生位移,净零。** 27 条 SSL judge_failed 全部由布尔版 rejudge 补判（24 翻 PASS,
+0 反转）;顺手发现并修复 rejudge 第二笔债: **不重算 by_type**（`recompute_by_type` +
+2 单测,两个 judge-fixed artifact 已离线修正,pack 26 类全绿）。
+
+### Per-qid flip vs v3.2 三跑
+- **FIX 2（均 v3.2 0/3）**: `gpt4_d6585ce8`——**历史 0/9 的 ordering 结构地板被打穿**
+  （完整带日期排序,judge 判语义等价）;`d3ab962e`（本次 ingest 运气好 + answer 稳）。
+- **REGRESS 3（均 v3.2 3/3）**: `d682f1a2` 真实少数（2 vs gold 3）;`b6025781`
+  preference judge 弹性摩擦（quinoa+烤蔬菜建议在场仍判"不够全"）;`6ae235be` 枚举
+  完整性（按炼厂分组叙述,4 工艺没列全）。
+- 9ee3ecd6 judge 脆性持续（数值第 4 次答对仍判 no）;floors 1c0ddc50/gpt4_ab202e7f/
+  d6233ab6 仍 fail;b46e15ed/35a27287 摇摆侧落 F。
+
+### by_type 位移（vs v3.2 06-04 基线）
+temporal 0.88→**0.941**,multi-session 0.778→**0.833**,ku/ssu 持平 1.00;
+**preference 0.875→0.750**——v4-pro 完整式答题风格与主观题 judge rubric 的摩擦税。
+
+### 判读
+1. answer 模型升级在该协议下**单跑无 headline 增益**: 地板解锁(+2)被风格摩擦(-2~3)
+   抵消。AO 实验的数值稳定增益是真的,但被 preference/枚举侧的新摩擦吃掉。
+2. v4-pro 的差异化价值在**能解结构地板**（ordering;full-stack 下还有 b46e15ed
+   ingest 缺口）——这是 v3.2 永远摸不到的分,但单跑不构成中心 claim。
+3. judge 摩擦面估计 ~2-3 题（9ee3ecd6 确定,b6025781 大概率,6ae235be 部分）——
+   不改 judge（松判=作弊）,如实记录。
+4. **若要 v4-pro 中心 claim 需再 2 跑（~35h）;是否值得、是否升级北极星组合 =
+   用户决策。** 成本: 17.6h/跑,单价 ¥12/24 per M（v3.2 的数倍）。
