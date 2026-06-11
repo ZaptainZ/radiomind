@@ -1,0 +1,56 @@
+{
+  "benchmark": "LongMemEval-S (cleaned) — Mem0 protocol",
+  "protocol": "mem0 prompts; haystack = ~47.7 sessions/q",
+  "n_questions": 1,
+  "total_ingested_turns": 491,
+  "reranker_enabled": true,
+  "temporal_math": true,
+  "agentic": false,
+  "answer_model": "deepseek-v4-pro",
+  "judge_model": "gpt-4o",
+  "answer_profile": "dashscope",
+  "judge_profile": "openrouter",
+  "internal_model": "deepseek-v3.2",
+  "internal_profile": "dashscope",
+  "elapsed_s": 591.5,
+  "overall_accuracy": 1.0,
+  "model_correct": 1,
+  "judged_n": 1,
+  "judge_errors": 0,
+  "raw_accuracy": 1.0,
+  "judged_accuracy": 1.0,
+  "judge_error_rate": 0.0,
+  "by_type": {
+    "temporal-reasoning": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "question_id": "gpt4_d6585ce8",
+      "q": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "gold": "The order of the concerts I attended is: 1. Billie Eilish concert at the Wells Fargo Center in Philly, 2. Free outdoor concert series in the park, 3. Music festival in Brooklyn, 4. Jazz night at a local bar, 5. Queen + Adam Lambert concert at the Prudential Center in Newark, NJ.",
+      "answer": "Here are the concerts and musical events you attended in the past two months, from earliest to latest:\n\n1. **Billie Eilish concert at Wells Fargo Center** – March 18, 2023  \n2. **Free outdoor concert series in the park** – March 25, 2023  \n3. **Music festival in Brooklyn (with friends, featuring indie bands)** – April 1, 2023  \n4. **Jazz night at a local bar** and **Billie Eilish show in Philly** ",
+      "correct": true,
+      "qtype": "temporal-reasoning",
+      "verdict_tail": ", the model response captures the core intent of the correct answer, even with additional details.\n</judge_thinking>\nyes",
+      "judge_failed": false,
+      "prompt_sections": {
+        "cardinal_present": false,
+        "cardinal_chars": 0,
+        "atomic_present": false,
+        "atomic_chars": 0
+      },
+      "helper_hints": {
+        "savings": false,
+        "person_age": false,
+        "cashback": false,
+        "role_guard": false,
+        "temporal_endpoint": false,
+        "answer_pure_abstain": false
+      }
+    }
+  ],
+  "benchmark_mode": "a2a-practice"
+}

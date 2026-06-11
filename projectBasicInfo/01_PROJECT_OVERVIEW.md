@@ -69,10 +69,17 @@
   gpt4_d6585ce8 被打穿）vs REGRESS 3（1 真实少数 + preference/枚举的风格×rubric 摩擦税,
   preference 0.875→0.750）;9ee3ecd6 judge 脆性持续。full-stack 14 题探针: b46e15ed 被
   v4-pro **ingest** 翻正,71017276 出现 answer 端 false-absence 回归。判读: answer 模型
-  升级单跑无 headline 增益,差异化价值在解结构地板;**中心 claim 需再 2 跑（~35h）,
-  是否跑、是否升级北极星组合 = 用户决策（待定）**。夜间 OpenRouter SSL 故障的 31 条
+  升级单跑无 headline 增益,差异化价值在解结构地板。夜间 OpenRouter SSL 故障的 31 条
   judge_failed 全部由布尔版 rejudge 回收;rejudge 第二笔债（by_type 不重算）同日修复。
-  Log `2026-06-10-v4pro-answer-attribution-cc.md` §7-8。
+  **用户裁决（2026-06-11,终态）: 北极星组合维持 v3.2 不变;不跑 v4-pro repeat;v4-pro
+  归档为"地板可解性证据"。** 后续 HybridRoute-1a（v3.2 主用 + ordering 路由 v4-pro）
+  只读审计: 现成 ListOrderingSkill trigger 是完美路由器（全集恰中 7 题 cohort,0 FP）,
+  oracle 模拟 +1——但稳定性核验证伪收益: 同一 fresh store 上 v4-pro PFP（含深度思考
+  吃光 max_tokens 的空答案新形态）、**v3.2 也 2/3 过** → ordering"地板"实为 ingest
+  依赖的联合随机,期望路由增益分数级非稳定 +1 → **HybridRoute PARK**（重开需 7 题
+  cohort 双模型 ≥3 跑证稳定边际 + 空答案缓解）。Log
+  `2026-06-10-v4pro-answer-attribution-cc.md` §7-8、
+  `2026-06-11-hybridroute-1a-routing-audit-cc.md`。
 - **纪律**：分数波动先做 attribution（same-set-same-order + per-qid flip + repeat 区分
   采样噪声），不 blind 追分、不靠加 helper 堆分。修复门槛见 `03_DEV_WORKFLOW.md` §3。
 
