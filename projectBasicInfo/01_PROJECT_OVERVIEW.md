@@ -139,6 +139,11 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
 **完整 LoRA 部署链路跑通**
 - mlx_lm.fuse (988MB) → convert_hf_to_gguf q8_0 (531MB) → ollama create → ollama generate 真返回
 - 诚实发现：GGUF q8_0 二次量化 roundtrip 损失 LoRA 信号，部署版生成质量明显弱于 MLX-direct
+  > **2026-06-12 审计 1a 更新**：损失定位为 fuse+q8_0 复合（f16 从未实测=核心待验问题）；
+  > 4 月 adapter 全部丢失（只落过 /tmp），任何 A/B 需先重训（~5 分钟）；MLX-direct "+23%"
+  > 是 token-overlap 口径，LLM-judge 口径为平局（双指标并报纪律）；"换大 base"缓解在
+  > 82 例数据量下已证伪（Qwen3-4B LoRA 输给自身 base 2-7-1）。4 臂最小 A/B 设计待批，
+  > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md`
 - 缓解：用 `--outtype f16`、更大 base、更多数据
 
 **审计基础设施**
