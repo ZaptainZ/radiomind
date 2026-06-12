@@ -148,10 +148,15 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > `modelfile_content()` 纯函数（ChatML TEMPLATE + stop ×3 + num_predict 512）接入
   > export_to_ollama；产品 Modelfile smoke 1.28s 干净终止；CLI train/deploy 升级为
   > **[SUPPORTED, OPT-IN]**（gate 保留: 4B 级仍输 + 燃料门槛）。**部署链路线闭环
-  > （1a→1b→1c）。** 待开: LoRAFuel-1a 只读审计（14 天零命中过期清空习惯 = LoRA
-  > 无燃料，过期策略 vs 燃料供给，产品决策）。
+  > （1a→1b→1c）。**
+  > **LoRAFuel-1a（同日,又一翻案）**: live store 0 habits 真因是**生成断流**而非 14 天
+  > 过期——`prune_stale` 全代码库零调用 = 死代码从未跑过（此前"被过期清空"归因为误,
+  > erratum 在档）;产品日常路径从不自动炼化（trigger_chat 仅手动 CLI,stop_hook 仅
+  > 文字建议）;HDC hit 记账为噪声且 PRINCIPLE 镜像命中不回流;无已消费标记。1b 候选
+  > 待批: ①train --prepare-habits ②消费记录 ③接通 prune_stale（须带记账修复,单独
+  > 接通有害）④镜像命中回流(2期)。
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
-  > + `2026-06-12-lora-1c-modelfile-fix-cc.md`
+  > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
 - 缓解：用 `--outtype f16`、更大 base、更多数据
 
 **审计基础设施**
