@@ -13,7 +13,7 @@ import shutil
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,10 @@ class TrainResult:
     duration_s: float = 0.0
     train_examples: int = 0
     error: str = ""
+    # LoRAFuel-1b: which habits the training data consumed (observational,
+    # threaded from DataGenReport by mind.train; also persisted to
+    # train_meta.json next to the adapter).
+    habit_ids: list = field(default_factory=list)
 
 
 @dataclass

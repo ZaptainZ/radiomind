@@ -491,7 +491,12 @@ _LORA_ENABLED = _os.environ.get("RADIOMIND_ENABLE_LORA", "").lower() in ("1", "t
 @click.option("--model", default=None, help="MLX model to fine-tune (e.g. mlx-community/Qwen2.5-0.5B-Instruct-4bit)")
 @click.option("--iters", default=None, type=int, help="Training iterations (default: 500)")
 @click.option("--data-only", is_flag=True, help="Only generate training data, don't train.")
-def train(model: str | None, iters: int | None, data_only: bool) -> None:
+@click.option("--prepare-habits/--no-prepare-habits", "prepare", default=True,
+              help="When the habit store is below the training threshold, "
+                   "auto-run chat refinement over the largest domains to top "
+                   "up fuel first (LoRAFuel-1b). No-op when fuel is sufficient.")
+def train(model: str | None, iters: int | None, data_only: bool,
+          prepare: bool) -> None:
     """[SUPPORTED, OPT-IN] LoRA fine-tuning — set RADIOMIND_ENABLE_LORA=1.
 
     \b
@@ -507,6 +512,38 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
         click.echo("Evidence: bench/lora_ab/lora1b-pass-*.json (4-arm A/B).")
         raise SystemExit(1)
     mind = _get_mind()
+
+    # LoRAFuel-1b: top up the habit store before data generation. The
+    # 1a audit found nothing in the daily path ever mints habits, so a
+    # fresh store always hit the >=MIN_HABITS guard. Conservative: only
+    # fires when fuel is short; bounded domain count; --no-prepare-habits
+    # opts out entirely.
+    if prepare:
+        from radiomind.training.data_gen import MIN_HABITS
+        from radiomind.training.fuel import prepare_habits
+
+        domains = [
+            d["name"] for d in mind._store.list_domains() if d.get("name")
+        ]  # already ordered by memory_count DESC
+        prep = prepare_habits(
+            mind._habits, domains, lambda dom: mind.trigger_chat(domain=dom),
+            min_count=MIN_HABITS,
+        )
+        if prep.triggered:
+            per_dom = ", ".join(f"{d}(+{n})" for d, n in prep.domains_refined)
+            click.echo(
+                f"prepare-habits: {prep.before} → {prep.after} habits "
+                f"(need >= {prep.min_needed}); refined {len(prep.domains_refined)} "
+                f"domain(s): {per_dom}"
+            )
+            if not prep.reached:
+                click.echo(click.style(
+                    f"prepare-habits failed: {prep.reason}", fg="yellow"))
+        else:
+            click.echo(
+                f"prepare-habits: skipped — {prep.before} habits already "
+                f">= {prep.min_needed}"
+            )
 
     if data_only:
         report, path = mind.generate_training_data_with_report()
@@ -525,6 +562,7 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
             f"dropped_pii={report.dropped_pii}, dropped_dup={report.dropped_dup}, "
             f"dropped_short={report.dropped_short}"
         )
+        click.echo(f"  habit_ids={','.join(report.habit_ids)}")
         mind.shutdown()
         return
 

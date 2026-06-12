@@ -2394,19 +2394,43 @@ class RadioMind:
     def train(self, **kwargs) -> "TrainResult":
         """Run LoRA fine-tuning on accumulated knowledge."""
         self._check_init()
-        from radiomind.training.lora import TrainConfig, train_lora
+        from radiomind.training.lora import TrainConfig, TrainResult, train_lora
 
-        count, data_path = self.generate_training_data()
-        if count == 0:
-            from radiomind.training.lora import TrainResult
-            return TrainResult(success=False, error="No training data. Ingest conversations first.")
+        report, data_path = self.generate_training_data_with_report()
+        if report.refused or report.train_count == 0:
+            return TrainResult(
+                success=False,
+                error=report.refused_reason
+                or "No training data. Ingest conversations first.",
+            )
 
         tc = TrainConfig.from_config(self.config)
         for k, v in kwargs.items():
             if hasattr(tc, k):
                 setattr(tc, k, v)
 
-        return train_lora(Path(data_path), tc)
+        result = train_lora(Path(data_path), tc)
+        # LoRAFuel-1b: record which habits this adapter consumed —
+        # observational groundwork for shelf-life/incremental policy.
+        result.habit_ids = list(report.habit_ids)
+        if result.success and result.adapter_path:
+            try:
+                import json as _json
+                import time as _time
+                meta = {
+                    "habit_ids": result.habit_ids,
+                    "train_examples": report.train_count,
+                    "valid_examples": report.valid_count,
+                    "model": result.model,
+                    "iterations": result.iterations,
+                    "finished_at": _time.time(),
+                }
+                (Path(result.adapter_path) / "train_meta.json").write_text(
+                    _json.dumps(meta, ensure_ascii=False, indent=2)
+                )
+            except Exception:
+                pass  # metadata is observational; never fail a good train
+        return result
 
     # --- Meta ---
 

@@ -82,6 +82,19 @@ class DataGenReport:
     domains_used: int
     refused: bool = False
     refused_reason: str = ""
+    # LoRAFuel-1b: which habits this training set consumed (observational
+    # only — groundwork for future shelf-life/incremental-training policy).
+    habit_ids: list = None  # type: ignore[assignment]
+
+    def __post_init__(self):
+        if self.habit_ids is None:
+            self.habit_ids = []
+
+
+def habit_id(h) -> str:
+    """Stable observational id for a habit (the HDC store has no id
+    column): sha1 of the description, 12 hex chars."""
+    return hashlib.sha1(h.description.encode("utf-8")).hexdigest()[:12]
 
 
 class TrainingDataGenerator:
@@ -142,6 +155,7 @@ class TrainingDataGenerator:
         # Each habit gets MULTIPLE distinct (Q, A) phrasings so the model
         # learns to recognize and emit the same fact from different angles.
         habits_used = 0
+        consumed_habit_ids: list[str] = []
         for i, h in enumerate(all_habits):
             clean = self._sanitize(h.description)
             if not self._ok_answer(clean):
@@ -152,6 +166,7 @@ class TrainingDataGenerator:
             for q, a in variants:
                 raw_examples.append((q, a, f"habit-specific:{id(h)}:{hash(q)}"))
             habits_used += 1
+            consumed_habit_ids.append(habit_id(h))
 
         # --- Global aggregate examples (teach overall personality) ------
         for h in all_habits[:30]:
@@ -290,6 +305,7 @@ class TrainingDataGenerator:
                 dropped_pii=dropped_pii, dropped_dup=dropped_dup, dropped_short=dropped_short,
                 habits_used=habits_used, domains_used=len(domains),
                 refused=True, refused_reason=refused_reason,
+                habit_ids=consumed_habit_ids,
             )
 
         # --- Shuffle + 80/20 split --------------------------------------
@@ -318,6 +334,7 @@ class TrainingDataGenerator:
             dropped_short=dropped_short,
             habits_used=habits_used,
             domains_used=len(domains),
+            habit_ids=consumed_habit_ids,
         )
 
     @staticmethod
