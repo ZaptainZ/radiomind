@@ -144,10 +144,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > 无终止裸补全（实测单请求 17k+ tokens 失控解码），4 月"超时+漂移"全部重新归因。
   > 干净四臂（28 题个人留出集）: base .1535 / MLX+adapter .1767（judge 20W/7L/1T）/
   > f16 .1760 / **q8_0 .1909——连 q8_0 部署都 ≈ MLX-direct**。adapter 价值在新数据
-  > （114/28 例，EVIDENCE 习惯）下 judge 口径也成立。**待批 LoRA-1c**: 修 Modelfile
-  > （TEMPLATE/stop/num_predict）+ 单测。产品决策项: live store 习惯被 14 天零命中
-  > 过期清空（0 条）= LoRA 无燃料，过期策略 vs 燃料供给需裁决。
+  > （114/28 例，EVIDENCE 习惯）下 judge 口径也成立。**LoRA-1c 已修（fc98209）**:
+  > `modelfile_content()` 纯函数（ChatML TEMPLATE + stop ×3 + num_predict 512）接入
+  > export_to_ollama；产品 Modelfile smoke 1.28s 干净终止；CLI train/deploy 升级为
+  > **[SUPPORTED, OPT-IN]**（gate 保留: 4B 级仍输 + 燃料门槛）。**部署链路线闭环
+  > （1a→1b→1c）。** 待开: LoRAFuel-1a 只读审计（14 天零命中过期清空习惯 = LoRA
+  > 无燃料，过期策略 vs 燃料供给，产品决策）。
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
+  > + `2026-06-12-lora-1c-modelfile-fix-cc.md`
 - 缓解：用 `--outtype f16`、更大 base、更多数据
 
 **审计基础设施**
