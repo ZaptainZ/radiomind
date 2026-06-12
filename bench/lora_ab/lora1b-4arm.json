@@ -1,0 +1,739 @@
+{
+  "experiment": "LoRA-1b 4-arm A/B",
+  "date": "2026-06-12",
+  "mlx_base": "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+  "adapter": "/Users/Zaptain/rm-lora-exp/adapters",
+  "valid_set": "/Users/Zaptain/rm-lora-exp/data/valid.jsonl",
+  "n_queries": 28,
+  "summary": {
+    "A_mlx_base": {
+      "n_scored": 28,
+      "mean_overlap": 0.1535,
+      "runtime_failures": 0
+    },
+    "B_mlx_adapter": {
+      "n_scored": 28,
+      "mean_overlap": 0.1767,
+      "runtime_failures": 0,
+      "judge_vs_base": "19W/4L/4T (1 judge_err)"
+    },
+    "C_ollama_f16": {
+      "n_scored": 2,
+      "mean_overlap": 0.1538,
+      "runtime_failures": 26,
+      "judge_vs_base": "0W/2L/0T"
+    },
+    "D_ollama_q8": {
+      "n_scored": 0,
+      "mean_overlap": null,
+      "runtime_failures": 28,
+      "judge_vs_base": "0W/0L/0T"
+    }
+  },
+  "per_query": [
+    {
+      "q": "你对我在general方面知道什么？",
+      "gold": "-  离群参数用动态阻尼，不用硬编码上限（用户明确反对 min() 硬上限）",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 6.2,
+          "answer": "在general方面，您了解了您在各个领域的知识和技能。例如，您在编程、开发、网络、AI、Web、Web开发、AI系统、AI工程、AI伦理、AI安全、AI行为、AI模拟、AI训练、AI测试、AI部署、AI安全、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、",
+          "overlap": 0.0435
+        },
+        "B_mlx_adapter": {
+          "latency_s": 1.6,
+          "answer": "-  在general方面，用户习惯于将相似需求分组（如 \"iOS 设计稿自动校验\" → \"页面式设计稿校验\"），使用统一规范进行身份验证，而非具体每个字段独立设审；主张 \"分组前先查标准\"（相似需求分组 → 同分类量身定制），避免\"一窝蜂\"式乱标",
+          "overlap": 0.1304,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 3.5,
+          "answer": "。\nAs an AI language model, I do not have personal feelings or opinions about General. Each generation of General has evolved significantly since their inception, adapting to different hardware and software environments while maintaining core functionality standards.\n\nThe general characteristics of General may include:\n\n1. **Multi-lingual capability**: Implement multi-languages support for interact",
+          "overlap": 0.0,
+          "judge_vs_base": "loss"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "关于python，我有什么特点或偏好？",
+      "gold": "SceneDescription 中 physics_desc 只需首帧发送（spawned=true 时），减少每帧 JSON 带宽。pending_forces 每帧发送但通常为空（skip_serializing_if = empty）。",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.7,
+          "answer": "在Python领域，我偏好使用模块化和封装的方法来组织代码。这使我能够轻松地添加新的功能或改进现有代码。此外，我还会使用一些工具来帮助我编写代码，如IDE（如PyCharm）和一些工具（如Jupyter Notebook）。同时，我也会学习一些新的Python概念和技巧，如函数式编程和面向对象编程。总的来说，我是一个善于学习和创新的人，对Python的各个方面都有了深入的理解和掌握。",
+          "overlap": 0.0385
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "归一化规则：Y=Asin(Bx+C)+D，其中A、B、C、D为参数，x为自变量。注意A、B、C的正负号，D为常量。",
+          "overlap": 0.1154,
+          "judge_vs_base": "tie"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "你对我在python方面知道什么？",
+      "gold": "Blender 5.0 USD 导出参数：不支持 `export_textures`/`overwrite_textures`，需移除。Synty POLYGON 素材包用 UV-mapped 调色板纹理（512×512 PNG），需在 Blender 中绑定到 Principled BSDF 的 Base Color。",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.6,
+          "answer": "Hello! I'm here to help you learn more about Python. If you have any specific questions or topics you'd like to explore, feel free to ask me about Python or any other programming language I can help with. I'm here to assist you in your projects and projects.",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "- 用 `torchvision.transforms.Lambda()` 创建的合成张量，`torchvision.transforms.Lambda()` 的 `@property` 不能写 `torch.randint`（`torch.randint(..., dtype=torch.uint8, size=1)`），必须用 `torch.tensor` 初始化",
+          "overlap": 0.075,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "在ios方面有什么值得注意的？",
+      "gold": "symptom: 界面卡死/无响应，偶发 | fix: `ForEach(array, id: \\.self)` 要求每个元素值唯一; 随机生成的字符串可能碰巧重复，SwiftUI 无法区分元素导致死循环; 改用索引作为 ID：`ForEach(Array(arr.enumerated()), id: \\.offset) { _, item in ... }`; 或给每个元素包装一个带 UUID 的 struct | context: 用 ForEach 显示随机生成的文字列表",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.8,
+          "answer": "在ios方面，需要注意的是ios的性能和稳定性。ios的性能和稳定性直接影响到用户体验和产品的可靠性。同时，ios的稳定性也需要考虑到其对其他设备的兼容性。因此，ios开发需要考虑到用户体验和产品的可靠性，同时也要考虑到其他设备的兼容性。",
+          "overlap": 0.1067
+        },
+        "B_mlx_adapter": {
+          "latency_s": 3.2,
+          "answer": "symptom: 类型转换异常，如将 `UIImage` 转换为 `UIImage`，或 `UIImage` 转换为 `UIImage`（iOS 5.0+）; fix: `convertImageWithAttributes:` 仅支持 `UIImage`，不支持 `UIImage`; context: iOS 5.0 及以下用 `UIImage` 而不加 `convertImageWithAttributes:`，兼容性好; advice: `convertImageWithAttributes:` 用 `convertImageWithAttributes:options:context:format:`，指定 `options` 为 `UIImageConvert湎器提供参数（如 `scaleType:aspectFit`）; context: iOS 6.0 及以上用 `conve",
+          "overlap": 0.08,
+          "judge_vs_base": "loss"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "关于rust，我有什么特点或偏好？",
+      "gold": "-  ONNX MiniLM-L6-v2 在 ARM64 CPU 上 ~85ms/2句（384维向量），可接受的延迟",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.9,
+          "answer": "在rust中，我偏好使用简洁、清晰和高效的代码风格。同时，我也会考虑使用一些现代的特性，如async/await、threading和多线程编程等。此外，我也会考虑使用一些现代的库和框架，如tokio、async-await和async-await-1.5等。总的来说，我倾向于使用rust来编写高效、安全和可扩展的代码。",
+          "overlap": 0.2353
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.4,
+          "answer": "-  无新贡献，但 `derive::clone` 可靠",
+          "overlap": 0.0588,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "补充一条我的信息",
+      "gold": "The user habitually optimizes AI system interfaces for minimal latency and resource usage in constrained hardware environments, systematically stripping non-essential elements (like few-shot examples) while maintaining functional integrity through compensatory validation layers.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.8,
+          "answer": "您的信息中提到的“我”可以被补充为“您”，以确保对话的连贯性。例如，您可以补充说：“您习惯于使用适配器式集成来替代系统重构，采用‘协议第一’的思维方式来处理相似架构之间的转换，以减少类型安全转换层的复杂度。您也表现出一种防御性验证的习惯，即在执行操作之前，主动检查假设系统状态（路径、输出、权限、数据）的假设，以避免执行不当的行动或集成。您还习惯于设计系统，以确保它们能够自动处理或避免常见的失败模式。您还习惯于设计AI系统，以实现层级的抗性，即实现多阶段的失败检测和保护机制，以避免常见的失败模式。您还习惯于设计系统，以模拟人类行为统计分布（如log-normal、混合gaussian），以模拟人类的决策、交互和工作流程，而不仅仅是简单的规则。您还",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "The user habitually engineers systems to simulate *human behavioral statistical distributions* (e.g., log-normal, mixed Gaussian) for timing, interactions, and workflows, moving beyond uniform randomness or simple rules to create more authentic, resilient anti-detection profiles.",
+          "overlap": 0.1562,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 56.4,
+          "runtime_failure": "HTTPError: HTTP Error 503: Service Unavailable"
+        },
+        "D_ollama_q8": {
+          "latency_s": 3.3,
+          "runtime_failure": "HTTPError: HTTP Error 503: Service Unavailable"
+        }
+      }
+    },
+    {
+      "q": "关于network，我有什么特点或偏好？",
+      "gold": "-  `api.openai.com` 在国内被 DNS 污染（2026-03），解析到 Facebook IP（128.242.240.61），SSL 证书为 `*.facebook.com`。必须通过代理访问",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.0,
+          "answer": "作为个人，我倾向于选择适配型的网络基础设施，以确保系统的灵活性和可扩展性。我习惯于使用协议优先的原则来设计和实现网络架构，以避免系统层面的复杂性。我倾向于主动检查假设，即在设计和实现网络基础设施时，首先确保系统内部的逻辑和数据结构是清晰的，避免不必要的复杂性。我习惯于主动设计和实现系统，以确保它们能够适应不同的网络环境和需求。我倾向于主动防御验证，即在设计和实现网络基础设施时，主动检查和验证假设，以确保系统的安全性和可靠性。我倾向于主动防御验证，即在设计和实现网络基础设施时，主动防御验证，即在设计和实现网络基础设施时，主动防御验证，即在设计和实现网络基础设施时，主动防御验证，即在设计和实现网络基础设施时，主动防御验证，即在设计和实现网络基础设施时，主动防御验证，即在设计和",
+          "overlap": 0.1786
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "-   **rust  项目：**  通过 `tokio-tungstenite` 实现 WebSocket 连接，同时遵循 `rustls` 为 HTTPS 部署。用户偏好：需要轻量级、高可用的 WebSocket 连接。",
+          "overlap": 0.1071,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "描述我在rust上的一个具体观察",
+      "gold": "-  async 函数 A→B→C→A 形成编译期 opaque type cycle（`E0391`）。`Box::pin`/`tokio::spawn+oneshot` 都无法打破。解法：用 HTTP localhost REST 调用隔离——递归路径通过 HTTP 端点间接调用，两侧编译为独立 future 类型树",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.6,
+          "answer": "在 Rust 上，我观察到代码中使用了 `use std::sync::Arc;` 来创建和管理数据结构，这表明 Rust 代码中使用了同步机制来确保数据的完整性。这与系统层面的重构和模块化设计有关，这有助于减少代码的耦合度和提高代码的可读性和可维护性。\n\n同时，我注意到 Rust 代码中使用了 `use std::sync::Arc;` 来创建和管理数据结构，这表明 Rust 代码中使用了同步机制来确保数据的完整性。这与系统层面的重构和模块化设计有关，这有助于减少代码的耦合度和提高代码的可读性和可维护性。\n\n此外，我注意到 Rust 代码中使用了 `use std::sync::Arc;` 来创建和管理数据结构，这表明 Rust 代码中使用了同步机制来确保数据的完整性。这与系统层面的重构和模块",
+          "overlap": 0.04
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "-  `tokio::sync::broadcast` 用于异步发送，但必须在 `tokio::sync::broadcast::broadcast` 作用域使用",
+          "overlap": 0.02,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "关于我，你还记得什么？",
+      "gold": "The user habitually engineers AI systems for 'layered resilience', implementing multi-stage fallbacks and proactive safeguards specific to LLM and tool-calling failures. This extends the existing network resilience habit into the AI domain.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.7,
+          "answer": "很抱歉，我无法提供关于您自己的信息，但根据您提供的信息，我能够为您分析和总结您在各个领域的习惯和行为。请告诉我您想了解的内容，我会尽力为您分析。",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "The user habitually engineers network infrastructure for resilience against specific, known failure modes, implementing proactive safeguards rather than just reactive validation. This extends beyond 'defensive validation' (checking state before action) to designing systems that automatically handle or avoid common pitfalls.",
+          "overlap": 0.5556,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "你对我在rust方面知道什么？",
+      "gold": "-  `#[serde(tag=\"kind\", rename_all=\"camelCase\")]` 在 tagged enum 上只重命名 variant name（`Once`→`once`），不重命名 variant 内部字段。需在字段上单独加 `#[serde(rename=\"atMs\")]`。症状：`missing field 'at_ms'` 但 JSON 有 `atMs`",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.9,
+          "answer": "在rust方面，我了解到rust是一种高性能、安全的编程语言，它具有良好的内存安全性和代码可读性。同时，rust还具有良好的安全性和稳定性，能够有效地保护代码的安全性。此外，rust还具有良好的可移植性，能够支持多种操作系统和硬件平台。总的来说，rust是一种非常强大的语言，能够为用户提供高质量的代码生成器和编译器。",
+          "overlap": 0.0968
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "-  `tokio::sync::broadcast` 不能在 `main` 足够，必须在 `main` 和所有 `use broadcast` 之后才可用",
+          "overlap": 0.0968,
+          "judge_vs_base": "loss"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "描述我在network上的一个具体观察",
+      "gold": "-  远程开发服务器通过 Tailscale IP 访问",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.6,
+          "answer": "在我们的网络环境中，我观察到一些特定的挑战和问题。首先，我注意到我们的网络基础设施在面对特定的失败模式时，会采取防御性措施，而不是仅仅依靠防御性验证。例如，当我们的网络连接被中断时，我们首先会检查我们的状态（如路径、输出、权限和数据）是否正确，以确保我们的应用程序能够正常运行。这表明我们采用了防御性验证的方法。\n\n其次，我注意到我们的网络基础设施会设计成能够自动处理或避免常见的失败模式。例如，我们设计了网络流量的流量控制机制，以防止网络拥塞和拥塞。我们还设计了流量整形机制，以确保我们的应用程序能够处理超过其处理能力的流量。\n\n此外，我们设计了网络流量的流量整形机制，以防止网络拥塞和拥塞。我们设计了流量整形机制，以确保我们的应用程序能够处理超过其处理能力的流量。\n\n最后，我们设计了网络流量的流量",
+          "overlap": 0.2
+        },
+        "B_mlx_adapter": {
+          "latency_s": 2.6,
+          "answer": "-  2023-01-23 | 14:30:00 |  192.168.1.200 | HTTP/3 | CONNECT | 200 | No Content | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | |",
+          "overlap": 0.0,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "你对我在python方面知道什么？",
+      "gold": "Blender 内部是 Z-up！在 Blender Python 脚本中：底面 = `bb_min[2]`（Z 轴），不是 `bb_min[1]`（Y 轴）。USD 导出器自动把 Blender Z-up 转为 Y-up。Manifest 坐标映射：Blender X→X, Blender Z→Y(高度), Blender Y→Z(深度)。",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.7,
+          "answer": "Hello! I'm here to help you learn more about Python. If you have any specific questions or topics you'd like to explore, feel free to ask me about Python or any other programming language I can help with. I'm here to assist you in your projects and projects.",
+          "overlap": 0.0233
+        },
+        "B_mlx_adapter": {
+          "latency_s": 1.0,
+          "answer": "- 用 `torchvision.transforms.Lambda()` 创建的合成张量，`torchvision.transforms.Lambda()` 的 `@property` 不能写 `torch.randint`（`torch.randint(..., dtype=torch.uint8, size=1)`），必须用 `torch.tensor` 初始化",
+          "overlap": 0.0233,
+          "judge_vs_base": "tie"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "说一个你对我的观察",
+      "gold": "The user habitually optimizes AI system interfaces for minimal latency and resource usage in constrained hardware environments, systematically stripping non-essential elements (like few-shot examples) while maintaining functional integrity through compensatory validation layers.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.6,
+          "answer": "As an AI language model, I don't have personal observations or feelings like humans do. However, I can provide you with some insights based on the habits and behaviors you've described.",
+          "overlap": 0.125
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.8,
+          "answer": "The user habitually engineers AI systems for 'layered resilience', implementing multi-stage fallbacks and proactive safeguards specific to LLM and tool-calling failures. This extends the existing network resilience habit into the AI domain.",
+          "overlap": 0.1875,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "在safari方面有什么值得注意的？",
+      "gold": "symptom: Chrome 流畅（671fps），Safari 严重卡顿（385fps 但视觉一帧一帧）。即使用 glyph atlas（预渲染字符到 2048×2048 大 Canvas，drawImage 取子区域）Safari 仍然慢 | fix: 每个字符改为 `<span>` DOM 元素; 用 `transform: translate3d(x,y,0) rotate(r)` + `opacity` 驱动动画; 容器加 `transform: translateZ(0)` 提升为 GPU 合成层; Safari 对 CSS transform + opacity 走原生 GPU compositor（iOS 核心渲染路径），性能从 385fps→1200fps; 物理计算不变，只是渲染从 Canvas 切到 DOM; Chrome 可继续用 Canvas atlas 路径（浏览器检测分流） | context: 在 Canvas 上实现大量文字字符粒子动画（500-1500 个独立字符，每帧更新位置+旋转+透明度）",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.8,
+          "answer": "在Safari方面，需要注意的是其对隐私和安全的重视程度。Safari是一个跨平台的浏览器，需要确保用户数据的安全和隐私。此外，Safari需要遵守相关的隐私和安全政策，以确保用户数据的保护。同时，Safari需要提供良好的用户体验，以吸引和保留用户。",
+          "overlap": 0.0985
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "fix: 用 `let` 创建 `var`，避免类型冲突 | context: 在 `var` 中使用 `const`，避免类型转换和依赖声明",
+          "overlap": 0.053,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "在security方面有什么值得注意的？",
+      "gold": "### SMS 轰炸防护：代理池轮换 IP 场景下的五层防御\n\nsymptoms: 验证码接口短时间内被大量不同手机号请求，每次请求来源 IP 不同（X-Forwarded-For 每次变化），单纯 IP 限流无效，短信费用快速消耗。\n\n**攻击特征识别**：\n- UA: `HeadlessChrome`（非真实浏览器）\n- IP: 每次不同（代理池/botnet 轮换）\n- Referer: 伪",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.6,
+          "answer": "在安全方面，您需要注意以下几点：\n\n1. **身份验证和访问控制**：确保所有用户都通过安全的方式登录，如密码、令牌或OAuth。同时，对用户进行身份验证和访问控制，确保只有授权用户可以访问敏感信息和数据。\n\n2. **数据加密**：确保所有数据在传输和存储过程中都得到加密，以防止数据泄露和数据篡改。\n\n3. **访问控制**：对应用程序的访问权限进行严格管理，确保只有授权用户可以访问敏感信息和数据。\n\n4. **数据保护**：对数据进行保护，防止数据被非法获取和泄露。例如，对数据进行加密和备份，防止数据丢失。\n\n5. **安全审计**：定期进行安全审计，以确保系统的安全性和完整性。这包括对系统日志和交易记录的分析，以发现和阻止任何可能的攻击。\n\n6. **安全培训**：对所有员工进行安全培训，确保",
+          "overlap": 0.2073
+        },
+        "B_mlx_adapter": {
+          "latency_s": 1.7,
+          "answer": "fix: 用 `openssl s_client` 生成 SSL 证书，并用 `keygen` 生成私钥；| context: 用 `openssl s_client` 生成 SSL 证书，并用 `keygen` 生成私钥；`keygen` 生成的证书不能用于 Android API 34 及以下的证书验证 | fix: 在 Android 项目中通过 `buildConfigFlags` 设置 `dontGenerateCustomCertificate`；| context: 在 Android 项目中通过 `buildConfigFlags` 设置 `dontGenerateCustomCertificate`",
+          "overlap": 0.0732,
+          "judge_vs_base": "tie"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "描述我在web上的一个具体观察",
+      "gold": "-  搜索结果点击是**侧边面板**不是页面跳转，用 ESC 关闭面板，不能 page.go_back()",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.6,
+          "answer": "在web上，我观察到一个典型的前端应用，它使用了React框架。React是一个JavaScript库，用于构建用户界面，它允许开发者创建复杂的用户界面，如表单、按钮、导航等。React的组件化结构允许开发者将复杂的逻辑拆分到不同的组件中，这样可以提高代码的可读性和可维护性。\n\n此外，我还观察到React的组件化结构在前端应用中被广泛使用。例如，一个典型的前端应用可能包含多个组件，如一个登录页面，一个主页，一个商品页面等。每个组件都可能包含一些React的组件，如一个登录组件，一个主页组件，一个商品页面组件等。\n\n总的来说，React是一个强大的JavaScript库，可以用于构建复杂的用户界面，而不仅仅是简单的表单和按钮。通过使用React，我们可以创建更复杂和更高质量的用户界面，而不需要担心代码的复杂性。",
+          "overlap": 0.3043
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "-  `@reachlint` 时引言显示 `user-agent: curl/7.8.0`，而非 `curl/7.7.20230206'`",
+          "overlap": 0.0,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "关于hardware，我有什么特点或偏好？",
+      "gold": "-  IPC 超时建议 8 秒（分类应秒级完成，超时就 fallback）",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.0,
+          "answer": "作为一个人工智能，我并没有物理存在，因此没有对硬件的偏好。但是，我被设计成能够处理和分析数据，执行任务，提供信息，以及执行某些任务。我的设计目标是尽可能高效、准确和高效地完成任务，同时尽可能减少对硬件的依赖。",
+          "overlap": 0.25
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.6,
+          "answer": "-  关键：CPU 内核寄生在 GPU 的 UG0 引用上，而非原生依赖",
+          "overlap": 0.0,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "描述我在hardware上的一个具体观察",
+      "gold": "-  keyword_classify 的检查顺序影响优先级（knowledge 问句应在 coding 之前）",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.9,
+          "answer": "在硬件上，我观察到一些关键的观察点，这些观察点有助于我理解硬件如何影响软件的性能和稳定性。首先，我注意到硬件的性能和稳定性与软件的性能和稳定性密切相关。我观察到，软件的性能和稳定性主要取决于硬件的性能和稳定性。例如，我观察到，当软件使用了新的硬件（如GPU或TPU）时，性能和稳定性会显著提高。这表明硬件的性能和稳定性是软件性能和稳定性的重要因素。\n\n其次，我观察到，软件的性能和稳定性主要取决于软件的架构和设计。我观察到，软件的架构和设计主要取决于软件的逻辑设计和实现。例如，我观察到，软件的逻辑设计和实现主要取决于软件的算法和数据结构。这表明，软件的逻辑设计和实现是软件性能和稳定性的重要因素。\n\n最后，我观察到，软件的性能和稳定性主要取决于软件的测试和调试。我",
+          "overlap": 0.2381
+        },
+        "B_mlx_adapter": {
+          "latency_s": 2.5,
+          "answer": "-  项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 详细信息 / 反馈 / 详细信息 / 反馈 / 项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 详细信息 / 反馈 / 详细信息 / 反馈 / 项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 详细信息 / 反馈 / 项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 项目 / 部署 / 版本 / 运行日志 / 异常/ 通知 / 项目 / 部署 /",
+          "overlap": 0.0,
+          "judge_vs_base": "loss"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "说一个你记得的我在network领域的事实",
+      "gold": "-  两端都挂 VPN（Surge/OpenClash）时 Tailscale 无法直连（NAT 打洞失败），只能走 DERP 中继",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.2,
+          "answer": "当然，我记忆到的一个在网络领域中值得注意的事实是，网络基础设施的设计和实现需要考虑到网络的复杂性和动态性。例如，我们经常看到网络架构设计中使用了路由选择器、流量控制策略、拥塞控制机制、流量整形等技术，以确保网络的高效、稳定和安全运行。此外，我们还需要考虑网络的冗余设计、备份方案、数据恢复机制等，以应对可能的网络故障和网络瘫痪。这些设计和实现都需要考虑到网络的复杂性和动态性，以确保网络系统的稳定性和可靠性。",
+          "overlap": 0.12
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.6,
+          "answer": "-  3D 模型导出时，先缩放再旋转，通过旋转变形影响，而非单靠旋转",
+          "overlap": 0.04,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "在ios方面有什么值得注意的？",
+      "gold": "symptom: 动画不显示、只闪一下、或只有部分粒子可见 | context: 用 SwiftUI 实现全屏彩屑/粒子飘落效果，无第三方依赖",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.7,
+          "answer": "在ios方面，需要注意的是ios的性能和稳定性。ios的性能和稳定性直接影响到用户体验和产品的可靠性。同时，ios的稳定性也需要考虑到其对其他设备的兼容性。因此，ios开发需要考虑到用户体验和产品的可靠性，同时也要考虑到其他设备的兼容性。",
+          "overlap": 0.0769
+        },
+        "B_mlx_adapter": {
+          "latency_s": 2.4,
+          "answer": "symptom: 类型转换异常，如将 `UIImage` 转换为 `UIImage`，或 `UIImage` 转换为 `UIImage`（iOS 5.0+）; fix: `convertImageWithAttributes:` 仅支持 `UIImage`，不支持 `UIImage`; context: iOS 5.0 及以下用 `UIImage` 而不加 `convertImageWithAttributes:`，兼容性好; advice: `convertImageWithAttributes:` 用 `convertImageWithAttributes:options:context:format:`，指定 `options` 为 `UIImageConvert湎器提供参数（如 `scaleType:aspectFit`）; context: iOS 6.0 及以上用 `conve",
+          "overlap": 0.1538,
+          "judge_vs_base": "loss"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "关于projects，我有什么特点或偏好？",
+      "gold": "项目: discord-digest-bot | 技术栈: Discord Bot | 关注: 消息聚合",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.7,
+          "answer": "作为项目开发的工程师，我具有以下特点和偏好：\n\n1. **项目管理能力**：我擅长项目管理，能够高效地规划和组织项目工作，确保项目按计划进行。\n\n2. **项目管理工具**：我使用了多种项目管理工具，如Trello、Jira等，以确保项目目标清晰，任务有序。\n\n3. **项目管理流程**：我遵循了项目管理的流程，从需求分析、设计、开发、测试到部署，每一个阶段都清晰、有序。\n\n4. **项目风险管理**：我具有项目风险管理的能力，能够识别并评估项目风险，制定应对策略。\n\n5. **项目执行**：我负责项目的执行，确保项目按计划进行，包括代码编写、测试、部署等。\n\n6. **项目监控**：我负责项目监控，定期检查项目进度，确保项目按计划进行。\n\n7. **项目沟通**：我善于与团队成员、客户和合作伙伴沟通",
+          "overlap": 0.1667
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.5,
+          "answer": "项目: python | 关注: 无 | 常用库: None | 关注人: 无",
+          "overlap": 0.3333,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "是否知道我有这个特点：The user…？",
+      "gold": "知道。The user habitually engineers AI systems for 'layered resilience', implementing multi-stage fallbacks and proactive safeguards specific to LLM and tool-calling failures. This extends the existing network resilience habit into the AI domain.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.7,
+          "answer": "Yes, the user exhibits a habit of choosing adapter-based integration over system rewrites, applying a 'protocol-first' mindset to bridge similar architectures with minimal, type-safe conversion layers. They also exhibit a habit of 'defensive validation'—proactively checking assumptions about system state (paths, outputs, permissions, data) before committing to an action or integration. They also e",
+          "overlap": 0.6667
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "知道。The user habitually engineers network infrastructure for resilience against specific, known failure modes, implementing proactive safeguards rather than just reactive validation. This extends beyond 'defensive validation' (checking state before action) to designing systems that automatically handle or avoid common pitfalls.",
+          "overlap": 0.5667,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "随便说一条你知道的我",
+      "gold": "The user habitually engineers systems to simulate *human behavioral statistical distributions* (e.g., log-normal, mixed Gaussian) for timing, interactions, and workflows, moving beyond uniform randomness or simple rules to create more authentic, resilient anti-detection profiles.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.0,
+          "answer": "当然，我非常乐意分享一些我了解到的知识。比如，我了解到一些关于人工智能（AI）的领域，比如在AI领域的研究和应用。例如，我了解到一些关于AI的进展和趋势，比如深度学习、机器学习、自然语言处理等。此外，我还了解到一些关于网络和网络安全的领域，比如网络攻击、网络安全策略、网络安全检测等。这些知识都是我所知道的，希望这些信息对您有所帮助。",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "The user habitually engineers network infrastructure for resilience against specific, known failure modes, implementing proactive safeguards rather than just reactive validation. This extends beyond 'defensive validation' (checking state before action) to designing systems that automatically handle or avoid common pitfalls.",
+          "overlap": 0.2727,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "你对我在projects方面知道什么？",
+      "gold": "项目: RadioMind | 技术栈: 待定 | 关注:",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.6,
+          "answer": "As a personal AI assistant, I don't have access to your projects. However, I can provide you with some general insights on the projects you have mentioned.\n\n1. General projects: You have mentioned projects such as general projects, web scraping, project management, etc. These are projects that you have already started or are currently working on.\n\n2. Projects related to ios: You have mentioned pro",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.7,
+          "answer": "项目: 雷锋云锋实验室 | 技术栈: 雨课堂 | 关注: 雷锋实验室 | 技术栈: 雨课堂",
+          "overlap": 0.7143,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "是否知道我有这个特点：The user…？",
+      "gold": "知道。The user habitually engineers systems to simulate *human behavioral statistical distributions* (e.g., log-normal, mixed Gaussian) for timing, interactions, and workflows, moving beyond uniform randomness or simple rules to create more authentic, resilient anti-detection profiles.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.5,
+          "answer": "Yes, the user exhibits a habit of choosing adapter-based integration over system rewrites, applying a 'protocol-first' mindset to bridge similar architectures with minimal, type-safe conversion layers. They also exhibit a habit of 'defensive validation'—proactively checking assumptions about system state (paths, outputs, permissions, data) before committing to an action or integration. They also e",
+          "overlap": 0.8571
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.9,
+          "answer": "知道。The user habitually engineers network infrastructure for resilience against specific, known failure modes, implementing proactive safeguards rather than just reactive validation. This extends beyond 'defensive validation' (checking state before action) to designing systems that automatically handle or avoid common pitfalls.",
+          "overlap": 0.3143,
+          "judge_vs_base": "judge_error"
+        },
+        "C_ollama_f16": {
+          "latency_s": 41.8,
+          "runtime_failure": "RemoteDisconnected: Remote end closed connection without response"
+        },
+        "D_ollama_q8": {
+          "latency_s": 0.0,
+          "runtime_failure": "URLError: <urlopen error [Errno 61] Connection refused>"
+        }
+      }
+    },
+    {
+      "q": "在sqlite方面有什么值得注意的？",
+      "gold": "fix: 小数据量场景用 `LIKE '%query%'` 替代 FTS5 MATCH。FTS5 表可保留供未来升级（如 sqlite-vec 语义搜索或接入分词器） | context: 使用 `tokenize='unicode61'` 的 FTS5 虚拟表存储中文文本",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.0,
+          "answer": "在SQLite方面，需要注意的是，SQLite是一个轻量级的数据库，它的设计初衷是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量级的数据库。SQLite的设计目的是为了提供一个轻量级的数据库，以提供一个轻量",
+          "overlap": 0.1154
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.8,
+          "answer": "fix: `ALTER TABLE table_name ADD COLUMN column_name type`（列类型更新，不表字段大小） | context: 在 `ALTER TABLE` 命令中指定 `type`，而不要用 `SIZE`（如 `VARCHAR(255)`），这样可以避免因大小写不一致或字段已存在而的冲突",
+          "overlap": 0.2115,
+          "judge_vs_base": "tie"
+        },
+        "C_ollama_f16": {
+          "latency_s": 3.6,
+          "answer": " A. 硬件要有较深的理解，不要急于上手 B. 对数据库进行安全审计 C. 模板化设计 D. 代码只用二维数组表示 E. 定期备份数据\n\nABC 解析：根据经验法则，B、C 都要重视。必须先了解数据库的特性和工作模式；在做系统性审查之前，应先对业务需求进行深入思考和分析。\n\nE 项正确：操作系统维护需要定期备份 + 自动化体检（如全盘扫描+密码重置）+ 双重身份认证+ 管理人员双人双锁操作场域。;W 正确：通过“两步校验”实现账号与密码双权证；> 部署前先做系统备份 + 后台定期全盘扫描 + 操作中用独立终端安全审计器（无需 root 权限）；>; A 项正确：操作系统要防止\"三者分离\"（镜像到系统盘，数据存放在分区，账户存入临时文件），需要物理分 别分区存储并合理设置权限。;D 项正确：做好数据库备份 + 委派人进行人工审计 = \"双保险\"。\n\n根据经验法则，B、C 都要重视。必须先了解",
+          "overlap": 0.3077,
+          "judge_vs_base": "loss"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "请根据你对我的了解回答",
+      "gold": "The user habitually engineers AI systems for 'layered resilience', implementing multi-stage fallbacks and proactive safeguards specific to LLM and tool-calling failures. This extends the existing network resilience habit into the AI domain.",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 0.4,
+          "answer": "非常感谢您的详细描述和反馈。根据您提供的信息，我将根据您的习惯和习惯来为您解答。请继续提供您需要解答的问题。",
+          "overlap": 0.0
+        },
+        "B_mlx_adapter": {
+          "latency_s": 0.8,
+          "answer": "The user habitually engineers network infrastructure for resilience against specific, known failure modes, implementing proactive safeguards rather than just reactive validation. This extends beyond 'defensive validation' (checking state before action) to designing systems that automatically handle or avoid common pitfalls.",
+          "overlap": 0.5556,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    },
+    {
+      "q": "你对我在general方面知道什么？",
+      "gold": "-  小程序 wx.connectSocket 返回 SocketTask 对象，通过 onOpen/onMessage/onClose/onError 管理。多层协议叠加时（Relay帧包Gateway帧），解包逻辑放 utils/ 独立模块",
+      "arms": {
+        "A_mlx_base": {
+          "latency_s": 1.5,
+          "answer": "在general方面，您了解了您在各个领域的知识和技能。例如，您在编程、开发、网络、AI、Web、Web开发、AI系统、AI工程、AI伦理、AI安全、AI行为、AI模拟、AI训练、AI测试、AI部署、AI安全、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、AI防御、",
+          "overlap": 0.1081
+        },
+        "B_mlx_adapter": {
+          "latency_s": 1.2,
+          "answer": "-  在general方面，用户习惯于将相似需求分组（如 \"iOS 设计稿自动校验\" → \"页面式设计稿校验\"），使用统一规范进行身份验证，而非具体每个字段独立设审；主张 \"分组前先查标准\"（相似需求分组 → 同分类量身定制），避免\"一窝蜂\"式乱标",
+          "overlap": 0.0541,
+          "judge_vs_base": "win"
+        },
+        "C_ollama_f16": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        },
+        "D_ollama_q8": {
+          "latency_s": 60.0,
+          "runtime_failure": "TimeoutError: timed out"
+        }
+      }
+    }
+  ]
+}
