@@ -157,11 +157,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > 达阈即停）+ CLI `--prepare-habits`（默认开）+ 消费记录（habit_ids →
   > DataGenReport/TrainResult + train_meta.json）。E2E smoke（宿主注入）: 空 store
   > 0→5 → 108/26 数据 → ids 全记录;复跑不重复炼化。**燃料闭环成立。**
-  > prune_stale/镜像回流按裁决未动。排障挖出产品缺陷候选 **LLMRouter-1a**:
-  > config router 只构建 ollama/openai 后端（[llm.dashscope] 等形同虚设,
-  > default_backend=dashscope 静默落死 openai 端点 = CLI 炼化静默 0 产出之因）;
-  > ollama 探活只查 daemon 不查模型,空 ollama 劫持解析链;另 live config
-  > default_backend=openai 指向死 TokenPlan（用户配置项）。
+  > prune_stale/镜像回流按裁决未动。排障挖出产品缺陷 **LLMRouter-1a（audit+设计已
+  > 交付 2026-06-13,a3dbb41,实现待批）**: 缺陷 A=config router 只硬编码构建
+  > ollama/openai（[llm.dashscope] 等形同虚设,= CLI 炼化静默 0 产出根因）;
+  > 缺陷 B=双标探活（llm_auto P3 已查模型,config 层 OllamaBackend.is_available 只
+  > ping daemon,空 ollama 在 P4 劫持）;缺陷 C=generate() 静默兜底 + "配置即可用"
+  > → 落到死 TokenPlan。最小修复设计（通用 profile 构建/模型检查/兜底警告/配置
+  > 建议）+ 测试方案见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md`;另 live
+  > config default_backend=openai 指向死端点（用户配置项）。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
