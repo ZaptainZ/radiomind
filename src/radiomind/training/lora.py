@@ -292,6 +292,49 @@ def train_lora(
         )
 
 
+# LoRA-1c: chat templates + stop tokens per base-model family. A bare
+# `FROM model.gguf` Modelfile turns /api/generate into UNTERMINATED raw
+# completion — the 1b probe caught a single request decoding 17k+ tokens
+# at full speed, which the April A/B had misread as "q8_0 quantization
+# loss + timeouts". The template/stop discipline is what makes the
+# deployed model answer-and-stop.
+_CHATML_TEMPLATE = (
+    'TEMPLATE """{{ if .System }}<|im_start|>system\n'
+    "{{ .System }}<|im_end|>\n"
+    "{{ end }}<|im_start|>user\n"
+    "{{ .Prompt }}<|im_end|>\n"
+    '<|im_start|>assistant\n"""\n'
+    "PARAMETER stop <|im_end|>\n"
+    "PARAMETER stop <|im_start|>\n"
+    "PARAMETER stop <|endoftext|>\n"
+)
+
+
+def modelfile_content(
+    gguf_path: Path | str,
+    mlx_base_model: str = "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+    num_predict: int = 512,
+) -> str:
+    """Build the Ollama Modelfile for a fused-GGUF personal model.
+
+    Pure — unit-testable without ollama. Template/stop are chosen by base
+    family; the supported training recipe uses Qwen (ChatML). Unknown
+    bases also get ChatML (every base this pipeline has ever fused is
+    ChatML-family) — if a non-ChatML base is ever added, extend the
+    family map here FIRST or the deployed model will regress to raw
+    completion.
+    """
+    template = _CHATML_TEMPLATE  # qwen/chatml family; sole supported recipe
+    return (
+        f"FROM {gguf_path}\n"
+        f"{template}"
+        f"PARAMETER num_predict {num_predict}\n"
+        f"PARAMETER temperature 0.7\n"
+        f"SYSTEM You are a personal AI assistant for this user, "
+        f"fine-tuned on their habits.\n"
+    )
+
+
 def export_to_ollama(
     adapter_path: Path,
     base_model: str = "qwen2.5:0.5b",
@@ -381,11 +424,7 @@ def export_to_ollama(
     # new base. Ollama's ADAPTER directive expects GGUF-format LoRA which
     # MLX doesn't emit, so we bake it in instead.
     modelfile = adapter_path.parent / "Modelfile"
-    modelfile.write_text(
-        f"FROM {gguf_path}\n"
-        f"PARAMETER temperature 0.7\n"
-        f"SYSTEM You are a personal AI assistant for this user, fine-tuned on their habits.\n"
-    )
+    modelfile.write_text(modelfile_content(gguf_path, mlx_base_model))
 
     # Step 4: register with Ollama
     if not shutil.which("ollama"):

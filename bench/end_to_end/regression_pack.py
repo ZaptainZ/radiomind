@@ -90,6 +90,9 @@ PACK: dict[str, list[str]] = {
     "harness:internal-model-flag": [
         "tests/test_internal_model_flag.py",
     ],
+    "training:lora-modelfile": [
+        "tests/test_lora_modelfile.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],

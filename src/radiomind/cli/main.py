@@ -472,15 +472,17 @@ def status() -> None:
     mind.shutdown()
 
 
-# --- LoRA path: experimental / internal, hidden by default ----------------
-# Our April 2026 evaluation showed that on a 4B base with 283 training
-# samples, LoRA hurts quality (qwen-max judge: -49% coherence vs base).
-# On a 0.5B base it gives a modest +18% overlap gain, but the 4B base
-# alone beats 0.5B+LoRA by a much larger margin. Until we solve
-# (a) >= 1000 sample training, (b) rank/config tuning for bigger bases,
-# and (c) the Qwen-Instruct tool_call template leakage, LoRA stays
-# gated behind RADIOMIND_ENABLE_LORA=1 so regular users don't foot-gun.
-# Details: bench/lora_ab/*.json
+# --- LoRA path: supported but opt-in (RADIOMIND_ENABLE_LORA=1) -------------
+# 2026-06-12 LoRA-1b 4-arm A/B (bench/lora_ab/lora1b-pass-*.json): on the
+# 0.5B Qwen recipe the adapter beats base under BOTH token-overlap and
+# LLM-judge (20W/7L/1T), and the Ollama deploy path preserves quality even
+# at q8_0 once the Modelfile carries TEMPLATE/stop/num_predict — the April
+# "GGUF roundtrip loses LoRA signal" finding was re-attributed to the bare
+# Modelfile (unterminated raw completion, 17k-token runaways read as
+# timeouts). Stays opt-in (not default-on) because: (a) 4B-class bases
+# still lose at current data scale (llm-judge-qwen3-4b.json), (b) training
+# requires >=5 live habits which the 14-day zero-hit expiry can wipe
+# (fuel-supply policy pending — LoRAFuel-1a).
 import os as _os
 _LORA_ENABLED = _os.environ.get("RADIOMIND_ENABLE_LORA", "").lower() in ("1", "true", "yes")
 
@@ -490,18 +492,19 @@ _LORA_ENABLED = _os.environ.get("RADIOMIND_ENABLE_LORA", "").lower() in ("1", "t
 @click.option("--iters", default=None, type=int, help="Training iterations (default: 500)")
 @click.option("--data-only", is_flag=True, help="Only generate training data, don't train.")
 def train(model: str | None, iters: int | None, data_only: bool) -> None:
-    """[EXPERIMENTAL] LoRA fine-tuning — set RADIOMIND_ENABLE_LORA=1 to enable.
+    """[SUPPORTED, OPT-IN] LoRA fine-tuning — set RADIOMIND_ENABLE_LORA=1.
 
     \b
-    Status: internal experiment. April 2026 benchmarks showed LoRA at
-    current data scale (283 samples) hurts quality on 4B-class bases.
-    See bench/lora_ab/ for numbers. Prefer `push-habits` + strong host
-    AI (Plan C) for personalization until LoRA pipeline is mature.
+    Status (2026-06-12 4-arm A/B): supported on the 0.5B Qwen recipe —
+    adapter beats base under token-overlap AND LLM-judge, and the Ollama
+    deploy path preserves quality (bench/lora_ab/lora1b-pass-*.json).
+    Opt-in because 4B-class bases still lose at current data scale, and
+    training needs >=5 live habits (check `radiomind status` first).
     """
     if not _LORA_ENABLED:
-        click.echo("LoRA training is gated as experimental.")
+        click.echo("LoRA is supported but opt-in.")
         click.echo("To enable: export RADIOMIND_ENABLE_LORA=1")
-        click.echo("See: bench/lora_ab/llm-judge-qwen3-4b.json for why it's gated.")
+        click.echo("Evidence: bench/lora_ab/lora1b-pass-*.json (4-arm A/B).")
         raise SystemExit(1)
     mind = _get_mind()
 
@@ -571,14 +574,16 @@ def train(model: str | None, iters: int | None, data_only: bool) -> None:
 @click.option("--llama-cpp-convert", default="",
               help="Path to llama.cpp convert_hf_to_gguf.py (or set $LLAMA_CPP_CONVERT).")
 def deploy(base: str, name: str, mlx_base: str, llama_cpp_convert: str) -> None:
-    """[EXPERIMENTAL] Fuse + GGUF-convert + register LoRA with Ollama.
+    """[SUPPORTED, OPT-IN] Fuse + GGUF-convert + register LoRA with Ollama.
 
-    Gated: requires RADIOMIND_ENABLE_LORA=1. Also note: Ollama GGUF deploy
-    measurably degrades LoRA quality (4-bit → FP16 → q8_0 roundtrip).
-    See bench/lora_ab/deploy-roundtrip-finding.json.
+    Gated: requires RADIOMIND_ENABLE_LORA=1. The April "GGUF roundtrip
+    degrades quality" finding was re-attributed by the 2026-06-12 4-arm
+    A/B: the real defect was a bare Modelfile (no TEMPLATE/stop ->
+    unterminated raw completion). With the template fix, q8_0 deploy is
+    on par with MLX-direct. See bench/lora_ab/lora1b-pass-q8.json.
     """
     if not _LORA_ENABLED:
-        click.echo("LoRA deploy is gated as experimental.")
+        click.echo("LoRA deploy is supported but opt-in.")
         click.echo("To enable: export RADIOMIND_ENABLE_LORA=1")
         raise SystemExit(1)
     from radiomind.training.lora import export_to_ollama
