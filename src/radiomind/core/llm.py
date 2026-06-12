@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from radiomind.core.config import Config
 
@@ -17,6 +20,22 @@ from radiomind.core.config import Config
 # (indefinite SSL handshake hang to localhost:6152). Every LLM + API
 # call should go direct unless the user explicitly sets HTTPS_PROXY.
 _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def ollama_ready(host: str, timeout: int = 5) -> bool:
+    """Shared Ollama liveness probe: the daemon answers /api/tags AND has
+    at least one model pulled. Both the auto-detect path (llm_auto P3) and
+    the config-router path use THIS function — the two probes drifted once
+    (LLMRouter-1a defect B: an installed-but-empty ollama outranked the
+    configured cloud backend and 404'd every call) and must not drift again.
+    """
+    try:
+        req = urllib.request.Request(f"{host.rstrip('/')}/api/tags")
+        with _NO_PROXY_OPENER.open(req, timeout=timeout) as r:
+            data = json.loads(r.read())
+        return bool(data.get("models"))
+    except Exception:
+        return False
 
 
 @dataclass
@@ -87,16 +106,14 @@ class OllamaBackend(LLMBackend):
         )
 
     def is_available(self) -> bool:
-        try:
-            req = urllib.request.Request(f"{self.host}/api/tags")
-            with _NO_PROXY_OPENER.open(req, timeout=5):
-                return True
-        except Exception:
-            return False
+        # LLMRouter-1b Fix B: a daemon with zero models cannot serve —
+        # shared probe, see ollama_ready.
+        return ollama_ready(self.host)
 
 
 class OpenAICompatBackend(LLMBackend):
-    def __init__(self, base_url: str, api_key: str, default_model: str = "deepseek-chat"):
+    def __init__(self, base_url: str, api_key: str, default_model: str = "deepseek-chat",
+                 timeout: int = 45):
         self.base_url = base_url.rstrip("/")
         if self.base_url.endswith("/v1"):
             self._endpoint = f"{self.base_url}/chat/completions"
@@ -104,6 +121,12 @@ class OpenAICompatBackend(LLMBackend):
             self._endpoint = f"{self.base_url}/v1/chat/completions"
         self.api_key = api_key
         self.default_model = default_model
+        # LLMRouter-1b: per-profile override via [llm.<name>] timeout = N.
+        # The 45s default was sized for short benchmark-era calls; long
+        # refinement generations (multi-stance debate JSON) legitimately
+        # exceed it — a too-tight cap here silently kills every chat
+        # refinement via trinity's exception-swallowing _call_llm.
+        self.timeout = timeout
 
     def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
         model = model or self.default_model
@@ -124,12 +147,9 @@ class OpenAICompatBackend(LLMBackend):
                 "Authorization": f"Bearer {self.api_key}",
             },
         )
-        # Per-call timeout capped at 45s. Prior 120s timeout meant a single
-        # stuck DashScope call could block the whole benchmark pipeline for
-        # minutes at a time; 45s is well above p99 call latency (<3s) yet
-        # short enough to recover from a stale SSL handshake without wasting
-        # a full ingest cycle.
-        with _NO_PROXY_OPENER.open(req, timeout=45) as resp:
+        # Default 45s (short-call sizing, see __init__); profiles serving
+        # refinement-class long generations set [llm.<name>] timeout higher.
+        with _NO_PROXY_OPENER.open(req, timeout=self.timeout) as resp:
             result = json.loads(resp.read())
 
         duration = time.time() - t0
@@ -191,10 +211,14 @@ class CallableBackend(LLMBackend):
 class LLMRouter:
     """Routes LLM calls based on config. Falls back gracefully."""
 
+    # llm.* keys that are NOT OpenAI-compatible profile sections
+    _RESERVED_LLM_KEYS = ("ollama", "openai", "models", "default_backend")
+
     def __init__(self, config: Config):
         self.config = config
         self.usage = LLMUsageTracker()
         self._backends: dict[str, LLMBackend] = {}
+        self._warned_fallback: set[str] = set()
         self._init_backends()
 
     def _init_backends(self) -> None:
@@ -212,6 +236,24 @@ class LLMRouter:
                 api_key=openai_cfg["api_key"],
                 default_model=openai_cfg.get("model", "deepseek-chat"),
             )
+
+        # LLMRouter-1b Fix A: every other [llm.<name>] section that carries
+        # base_url + api_key is an OpenAI-compatible profile (dashscope,
+        # openrouter, openai_direct, ...). Before this, only the two
+        # hardcoded sections above were ever built — 1a defect A:
+        # default_backend = "dashscope" silently fell back to whatever
+        # _find_available picked (on this machine, a dead endpoint).
+        llm_cfg = self.config.get("llm", {}) or {}
+        for name, sec in llm_cfg.items():
+            if name in self._RESERVED_LLM_KEYS or name in self._backends:
+                continue
+            if isinstance(sec, dict) and sec.get("base_url") and sec.get("api_key"):
+                self._backends[name] = OpenAICompatBackend(
+                    base_url=sec["base_url"],
+                    api_key=sec["api_key"],
+                    default_model=sec.get("model", ""),
+                    timeout=int(sec.get("timeout", 45)),
+                )
 
     def set_external(self, fn: LLMCallable, name: str = "external") -> None:
         """Inject an external LLM callable as the primary backend."""
@@ -239,10 +281,20 @@ class LLMRouter:
         be = self._backends.get(backend_name)
 
         if be is None or not be.is_available():
-            be = self._find_available()
-            if be is None:
+            found = self._find_available()
+            if found is None:
                 raise RuntimeError(
                     "No LLM backend available. Configure llm.openai in ~/.radiomind/config.toml"
+                )
+            fb_name, be = found
+            # LLMRouter-1b Fix C: never reroute silently — 1a defect C: the
+            # dead TokenPlan endpoint absorbed every refinement call without
+            # a trace. Warn once per requested backend per router instance.
+            if backend_name not in self._warned_fallback:
+                self._warned_fallback.add(backend_name)
+                logger.warning(
+                    "llm backend '%s' unavailable or not configured; "
+                    "falling back to '%s'", backend_name, fb_name,
                 )
 
         resp = be.generate(prompt, system=system, model=model)
@@ -255,8 +307,8 @@ class LLMRouter:
     def available_backends(self) -> list[str]:
         return [name for name, b in self._backends.items() if b.is_available()]
 
-    def _find_available(self) -> LLMBackend | None:
-        for be in self._backends.values():
+    def _find_available(self) -> tuple[str, LLMBackend] | None:
+        for name, be in self._backends.items():
             if be.is_available():
-                return be
+                return name, be
         return None

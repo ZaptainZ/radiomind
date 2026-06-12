@@ -120,29 +120,15 @@ def _from_ollama() -> LLMBackend | None:
     """Prefer local Ollama when available AND has at least one model installed.
 
     Pre-2026-04-19 this returned a backend as long as the Ollama server
-    responded on /api/tags. But that endpoint answers 200 even when the
-    user installed Ollama and never pulled a model — resulting in every
-    subsequent generate() call erroring with 404. That silently routed
-    RadioMind past its config.toml OpenAI backend and broke three-body,
-    KG extraction, and aggregation. Now we also check the model list.
+    responded on /api/tags — an installed-but-empty ollama then 404'd every
+    call. The model check was added here, but the config-router path kept
+    its own daemon-only probe and the two drifted (LLMRouter-1a defect B).
+    LLMRouter-1b: both paths now share the single `ollama_ready` probe.
     """
-    import json
-    import urllib.request
+    from radiomind.core.llm import ollama_ready
 
     backend = OllamaBackend()
-    if not backend.is_available():
-        return None
-
-    # Additional model-present check
-    try:
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        req = urllib.request.Request(f"{backend.host}/api/tags")
-        with opener.open(req, timeout=3) as r:
-            data = json.loads(r.read())
-        models = data.get("models", [])
-        if not models:
-            return None
-    except Exception:
+    if not ollama_ready(backend.host, timeout=3):
         return None
     return backend
 

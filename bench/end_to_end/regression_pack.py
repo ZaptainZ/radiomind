@@ -96,6 +96,9 @@ PACK: dict[str, list[str]] = {
     "training:lorafuel-prepare": [
         "tests/test_lorafuel_prepare.py",
     ],
+    "core:llm-router": [
+        "tests/test_llm_router.py",
+    ],
     "harness:devtools": [
         "tests/test_devtools.py",
     ],
