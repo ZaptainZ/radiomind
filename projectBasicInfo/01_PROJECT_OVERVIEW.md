@@ -157,14 +157,17 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > 达阈即停）+ CLI `--prepare-habits`（默认开）+ 消费记录（habit_ids →
   > DataGenReport/TrainResult + train_meta.json）。E2E smoke（宿主注入）: 空 store
   > 0→5 → 108/26 数据 → ids 全记录;复跑不重复炼化。**燃料闭环成立。**
-  > prune_stale/镜像回流按裁决未动。排障挖出产品缺陷 **LLMRouter-1a（audit+设计已
-  > 交付 2026-06-13,a3dbb41,实现待批）**: 缺陷 A=config router 只硬编码构建
-  > ollama/openai（[llm.dashscope] 等形同虚设,= CLI 炼化静默 0 产出根因）;
-  > 缺陷 B=双标探活（llm_auto P3 已查模型,config 层 OllamaBackend.is_available 只
-  > ping daemon,空 ollama 在 P4 劫持）;缺陷 C=generate() 静默兜底 + "配置即可用"
-  > → 落到死 TokenPlan。最小修复设计（通用 profile 构建/模型检查/兜底警告/配置
-  > 建议）+ 测试方案见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md`;另 live
-  > config default_backend=openai 指向死端点（用户配置项）。
+  > prune_stale/镜像回流按裁决未动。排障挖出产品缺陷 **LLMRouter——已修复闭环
+  > （1a 审计 a3dbb41 → 1b 落地 8fb0205,2026-06-13）**: Fix A 通用 profile 构建
+  > （[llm.dashscope]/[llm.openrouter] 等可路由,现有 ollama/openai 原样）;Fix B
+  > 共享 `ollama_ready()` 探针（双标探活根除）;Fix C 兜底 logging.warning;
+  > **Fix E（排障追加）: 后端 45s 硬超时按短调用设计杀死炼化级长生成,改 per-profile
+  > `timeout=N` 可配（默认 45 不变）**;Fix D 本机 config 已同步（备份在档:
+  > default→dashscope,死 openai 段标 DEPRECATED,dashscope timeout=120）。
+  > 16 单测 + pack `core:llm-router`（29 类）+ 980 全过;**CLI train smoke 无宿主
+  > 注入复现 LoRAFuel 完成标准（0→5 → 108/27 → habit_ids;R2 跳过）**。遗留候选:
+  > trinity._call_llm 裸 except 无日志、max_tokens 不可配、cost-tier 模型名耦合。
+  > 见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md` + `2026-06-13-llmrouter-1b-fix-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
