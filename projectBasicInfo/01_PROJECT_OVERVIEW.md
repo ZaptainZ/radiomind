@@ -152,9 +152,17 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > **LoRAFuel-1a（同日,又一翻案）**: live store 0 habits 真因是**生成断流**而非 14 天
   > 过期——`prune_stale` 全代码库零调用 = 死代码从未跑过（此前"被过期清空"归因为误,
   > erratum 在档）;产品日常路径从不自动炼化（trigger_chat 仅手动 CLI,stop_hook 仅
-  > 文字建议）;HDC hit 记账为噪声且 PRINCIPLE 镜像命中不回流;无已消费标记。1b 候选
-  > 待批: ①train --prepare-habits ②消费记录 ③接通 prune_stale（须带记账修复,单独
-  > 接通有害）④镜像命中回流(2期)。
+  > 文字建议）;HDC hit 记账为噪声且 PRINCIPLE 镜像命中不回流;无已消费标记。
+  > **LoRAFuel-1b 已落地（db7d16f）**: `fuel.prepare_habits()`（燃料不足时按域体量炼化,
+  > 达阈即停）+ CLI `--prepare-habits`（默认开）+ 消费记录（habit_ids →
+  > DataGenReport/TrainResult + train_meta.json）。E2E smoke（宿主注入）: 空 store
+  > 0→5 → 108/26 数据 → ids 全记录;复跑不重复炼化。**燃料闭环成立。**
+  > prune_stale/镜像回流按裁决未动。排障挖出产品缺陷候选 **LLMRouter-1a**:
+  > config router 只构建 ollama/openai 后端（[llm.dashscope] 等形同虚设,
+  > default_backend=dashscope 静默落死 openai 端点 = CLI 炼化静默 0 产出之因）;
+  > ollama 探活只查 daemon 不查模型,空 ollama 劫持解析链;另 live config
+  > default_backend=openai 指向死 TokenPlan（用户配置项）。
+  > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
 - 缓解：用 `--outtype f16`、更大 base、更多数据
