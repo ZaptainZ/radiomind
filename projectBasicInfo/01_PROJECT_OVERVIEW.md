@@ -287,6 +287,17 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   保守行为,绝不取宽松;无任何宿主能力也本地可用。** **1c 第一刀(极窄): provider 三个后台默认翻
   OFF + 纯 readiness_report() + 保守默认单测先行**,不做导入 UI/订阅/向量/工具扩展。
   见 `logs/2026-06-13-personal-onboarding-1b-contract-cc.md`。
+- **PersonalOnboarding-1c（2026-06-13,94a0260,首个 runtime 改动,仅 provider onboarding 面）
+  → 安全默认落地**: 新 `src/radiomind/adapters/onboarding.py`（纯数据: HostCapabilities/
+  AuthorizationState/ReadinessReport + readiness_report() 纯投影）。hermes.py initialize 加性收
+  capabilities+authorized_scopes（dataclass/dict/iterable,未知丢弃）;`_auto_dream` 默认 True→False;
+  **三后台副作用 deny-by-default**（sync_turn ingest=ingest_new_turns、10 轮 trigger_chat 加门
+  background_refinement、on_session_end dream=dream_after_session、on_memory_write 镜像=
+  import_existing_memory）;新增 readiness() 方法。**旧调用不崩但默认不再跑后台副作用（须显式
+  授权,不 implicit True）;前台 tool 不门控,只门控后台自动。** 13 单测 + test_hermes 拆
+  denied/after-grant,pack 36 类,1056 全过。**PersonalOnboarding 线安全默认已与产品原则一致。**
+  下一步 PowerUserOnboarding-1a（CLI/API/MCP 命令图 gap,只读）。见
+  `logs/2026-06-13-personal-onboarding-1c-authz-gating-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
