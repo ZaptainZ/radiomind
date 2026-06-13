@@ -206,6 +206,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   pack 33 类,1022 全过。**单域=带护栏的安全降级。** gate 语义化/扩 DOMAIN_KEYWORDS/修
   work⊂network 子串留 SmallUserReadiness-1c。见
   `logs/2026-06-13-small-user-readiness-1b-narrow-adapter-cc.md`。
+- **SmallUserReadiness-1c（2026-06-13,7e49ecb）→ domain classifier 确定性修复（gate 不碰）**:
+  detect_domain ASCII 关键词改 `\bkw\b` 词边界（work 不再命中 network/workflow/workout）,
+  CJK 保留子串;扩 5 最小技术域 software/ios/rust/networking/ai（刻意窄）。8 样本 re-trace:
+  **domain_count 1→2**（software+networking 真实分类,告别 1a 误判 work）。12 单测,pack 34 类,
+  1034 全过无回归。**结论: domain 层已修,下一个也是最后一个冷启动瓶颈是 L1 gate 8→3
+  保留率（3 assistant 硬过滤 + 2 user 习惯陈述不匹配 16 正则白名单）,根因在 gate regex 召回。**
+  gate 语义化留 SmallUserReadiness-1d/单独审计。见
+  `logs/2026-06-13-small-user-readiness-1c-domain-classifier-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
