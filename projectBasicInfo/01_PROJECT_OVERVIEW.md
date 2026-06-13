@@ -279,6 +279,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   违反 04 §1.4"所有副作用需宿主代请求授权"。** Hermes provider tool 集（4）窄于 MCP（18）。
   **1b 先做: HostCapabilities 接口草案 + 用它门控 provider 后台副作用（默认未授权不跑）**,
   仍只接口草案不实现。见 `logs/2026-06-13-personal-onboarding-1a-audit-cc.md`。
+- **PersonalOnboarding-1b 契约草案（2026-06-13,纯文档）→ `05_HOST_AGENT_CAPABILITIES_CONTRACT.md`**:
+  HostCapabilities（14 字段,保守默认,能力≠动作）+ AuthorizationScopes（10 scope,deny-by-default,
+  各带触发/文案/未授权降级/可撤销）+ Hermes 当前行为合规映射（三处不合规: auto-ingest /
+  10 轮 trigger_chat / auto_dream 默认 True → 应全改 no-op until granted）+ 初始化流程 +
+  ReadinessReport（7 字段,privacy_status 兼隐私账本）。**治理原则: 未声明能力/未授权 scope =
+  保守行为,绝不取宽松;无任何宿主能力也本地可用。** **1c 第一刀(极窄): provider 三个后台默认翻
+  OFF + 纯 readiness_report() + 保守默认单测先行**,不做导入 UI/订阅/向量/工具扩展。
+  见 `logs/2026-06-13-personal-onboarding-1b-contract-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
