@@ -169,7 +169,11 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > ~~trinity._call_llm 裸 except 无日志~~（**TrinityErrorVisibility-1a 已修 06-13,
   > a18152c**: 5 个 refinement LLM 吞错点加 logging.warning 含 stage/exc/backend/
   > prompt_len,控制流不变;10 单测,pack 30 类,990 全过;顺带修复昨日 Fix D 改坏
-  > live config 的 str.replace 误命中注释 bug）、max_tokens 不可配、cost-tier 模型名耦合。
+  > live config 的 str.replace 误命中注释 bug）、~~max_tokens 不可配~~（**OpenAICompatOptions-1b
+  > 已修 06-13, 17798fe**: max_tokens 透传 ABC+4 backend，call>per-profile>省略，ollama→
+  > num_predict，默认 None 全兼容，26 router 测试+1000 全过；timeout 审计确认已测）、
+  > **cost-tier×provider 耦合已审计锁定未修**（全局模型映射 vs provider-specific 名，
+  > test 锁定 verbatim 行为，真修复待 scope 评估）。
   > 见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md` + `2026-06-13-llmrouter-1b-fix-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
