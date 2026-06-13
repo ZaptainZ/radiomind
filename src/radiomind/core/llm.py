@@ -63,7 +63,8 @@ class LLMUsageTracker:
 
 class LLMBackend(ABC):
     @abstractmethod
-    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+    def generate(self, prompt: str, system: str = "", model: str = "",
+                 max_tokens: int | None = None) -> LLMResponse:
         ...
 
     @abstractmethod
@@ -76,7 +77,8 @@ class OllamaBackend(LLMBackend):
         self.host = host.rstrip("/")
         self.default_model = default_model
 
-    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+    def generate(self, prompt: str, system: str = "", model: str = "",
+                 max_tokens: int | None = None) -> LLMResponse:
         model = model or self.default_model
         body = {
             "model": model,
@@ -85,6 +87,9 @@ class OllamaBackend(LLMBackend):
         }
         if system:
             body["system"] = system
+        # OpenAICompatOptions-1b: Ollama caps completion via options.num_predict.
+        if max_tokens is not None:
+            body["options"] = {"num_predict": max_tokens}
 
         t0 = time.time()
         data = json.dumps(body).encode()
@@ -113,7 +118,7 @@ class OllamaBackend(LLMBackend):
 
 class OpenAICompatBackend(LLMBackend):
     def __init__(self, base_url: str, api_key: str, default_model: str = "deepseek-chat",
-                 timeout: int = 45):
+                 timeout: int = 45, max_tokens: int | None = None):
         self.base_url = base_url.rstrip("/")
         if self.base_url.endswith("/v1"):
             self._endpoint = f"{self.base_url}/chat/completions"
@@ -127,8 +132,15 @@ class OpenAICompatBackend(LLMBackend):
         # exceed it — a too-tight cap here silently kills every chat
         # refinement via trinity's exception-swallowing _call_llm.
         self.timeout = timeout
+        # OpenAICompatOptions-1b: per-profile default completion cap via
+        # [llm.<name>] max_tokens = N. None ⇒ omit the field ⇒ provider's
+        # own default (current behavior). The truncation analogue of the
+        # timeout fix: a small provider default silently clips long
+        # refinement JSON instead of timing it out.
+        self.max_tokens = max_tokens
 
-    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+    def generate(self, prompt: str, system: str = "", model: str = "",
+                 max_tokens: int | None = None) -> LLMResponse:
         model = model or self.default_model
         messages = []
         if system:
@@ -136,6 +148,10 @@ class OpenAICompatBackend(LLMBackend):
         messages.append({"role": "user", "content": prompt})
 
         body = {"model": model, "messages": messages, "stream": False}
+        # Call-site override wins; else per-profile default; else omit.
+        effective_max = max_tokens if max_tokens is not None else self.max_tokens
+        if effective_max is not None:
+            body["max_tokens"] = effective_max
 
         t0 = time.time()
         data = json.dumps(body).encode()
@@ -195,7 +211,11 @@ class CallableBackend(LLMBackend):
         self._fn = fn
         self._name = name
 
-    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+    def generate(self, prompt: str, system: str = "", model: str = "",
+                 max_tokens: int | None = None) -> LLMResponse:
+        # OpenAICompatOptions-1b: the wrapped callable is (prompt, system)
+        # only — max_tokens cannot be threaded through it, so it is
+        # accepted-and-ignored here (host frameworks size their own calls).
         t0 = time.time()
         text = self._fn(prompt, system)
         return LLMResponse(
@@ -235,6 +255,8 @@ class LLMRouter:
                 base_url=openai_cfg["base_url"],
                 api_key=openai_cfg["api_key"],
                 default_model=openai_cfg.get("model", "deepseek-chat"),
+                timeout=int(openai_cfg.get("timeout", 45)),
+                max_tokens=openai_cfg.get("max_tokens"),
             )
 
         # LLMRouter-1b Fix A: every other [llm.<name>] section that carries
@@ -253,6 +275,7 @@ class LLMRouter:
                     api_key=sec["api_key"],
                     default_model=sec.get("model", ""),
                     timeout=int(sec.get("timeout", 45)),
+                    max_tokens=sec.get("max_tokens"),
                 )
 
     def set_external(self, fn: LLMCallable, name: str = "external") -> None:
@@ -267,6 +290,7 @@ class LLMRouter:
         model: str = "",
         backend: str = "",
         cost_tier: str = "",
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         # Resolve model from cost tier if no explicit model given
         if not model and cost_tier:
@@ -297,7 +321,9 @@ class LLMRouter:
                     "falling back to '%s'", backend_name, fb_name,
                 )
 
-        resp = be.generate(prompt, system=system, model=model)
+        # max_tokens None ⇒ backend uses its per-profile default (or omits).
+        resp = be.generate(prompt, system=system, model=model,
+                           max_tokens=max_tokens)
         self.usage.record(resp)
         return resp
 

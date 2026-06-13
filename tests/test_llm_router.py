@@ -187,3 +187,118 @@ def test_profile_timeout_default_45():
         "dashscope": {"base_url": "https://ds.example/v1", "api_key": "k"},
     }))
     assert r._backends["dashscope"].timeout == 45
+
+
+# ---------------- OpenAICompatOptions-1b: max_tokens 可控 ----------------
+
+class _BodyCapturingOpener:
+    """Captures the request JSON body so tests can assert max_tokens."""
+    def __init__(self, response):
+        self.response = response
+        self.last_body = None
+
+    def open(self, req, timeout=0):
+        self.last_body = json.loads(req.data.decode())
+        return _FakeResp(json.dumps(self.response).encode())
+
+
+_OK_CHAT = {"choices": [{"message": {"content": "hi"}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+
+
+def _backend(**kw):
+    return OpenAICompatBackend(base_url="https://x/v1", api_key="k", **kw)
+
+
+def test_max_tokens_omitted_by_default(monkeypatch):
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    _backend().generate("p")
+    assert "max_tokens" not in op.last_body  # current behavior unchanged
+
+
+def test_max_tokens_call_passthrough(monkeypatch):
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    _backend().generate("p", max_tokens=2048)
+    assert op.last_body["max_tokens"] == 2048
+
+
+def test_max_tokens_profile_default(monkeypatch):
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    _backend(max_tokens=1500).generate("p")
+    assert op.last_body["max_tokens"] == 1500
+
+
+def test_max_tokens_call_overrides_profile(monkeypatch):
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    _backend(max_tokens=1500).generate("p", max_tokens=64)
+    assert op.last_body["max_tokens"] == 64
+
+
+def test_profile_max_tokens_built_from_config():
+    r = LLMRouter(_config({
+        "dashscope": {"base_url": "https://ds/v1", "api_key": "k",
+                      "max_tokens": 2048},
+    }))
+    assert r._backends["dashscope"].max_tokens == 2048
+
+
+def test_profile_max_tokens_default_none():
+    r = LLMRouter(_config({
+        "dashscope": {"base_url": "https://ds/v1", "api_key": "k"},
+    }))
+    assert r._backends["dashscope"].max_tokens is None
+
+
+def test_router_threads_max_tokens_to_backend(monkeypatch):
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    r = LLMRouter(_config({
+        "default_backend": "ds",
+        "ds": {"base_url": "https://ds/v1", "api_key": "k", "model": "m"},
+    }))
+    r.generate("p", max_tokens=999)
+    assert op.last_body["max_tokens"] == 999
+
+
+def test_ollama_max_tokens_maps_to_num_predict(monkeypatch):
+    op = _BodyCapturingOpener({"response": "hi", "prompt_eval_count": 1,
+                               "eval_count": 1})
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    OllamaBackend().generate("p", max_tokens=256)
+    assert op.last_body["options"] == {"num_predict": 256}
+
+
+def test_callable_backend_ignores_max_tokens():
+    seen = {}
+
+    def fn(p, s=""):
+        seen["called"] = True
+        return "ok"
+
+    be = CallableBackend(fn)
+    out = be.generate("p", max_tokens=10)  # must not raise
+    assert out.text == "ok" and seen["called"]
+
+
+# ---------------- cost-tier × provider 耦合（审计锁定，不修复） ----------------
+
+def test_cost_tier_model_sent_verbatim_to_any_backend(monkeypatch):
+    # AUDIT LOCK (OpenAICompatOptions-1a): llm.models.<tier> is a single
+    # GLOBAL mapping, but model names are provider-specific. The router
+    # sends the resolved model string to WHATEVER backend is selected —
+    # so calling backend='openrouter' with a qwen tier name would ship a
+    # qwen model id to openrouter. Documented, NOT fixed (per ruling).
+    op = _BodyCapturingOpener(_OK_CHAT)
+    monkeypatch.setattr(llm_mod, "_NO_PROXY_OPENER", op)
+    r = LLMRouter(_config({
+        "default_backend": "openrouter",
+        "models": {"economy": "qwen-turbo"},
+        "openrouter": {"base_url": "https://or/v1", "api_key": "k"},
+    }))
+    r.config.set("refinement.cost_mode", "economy")
+    r.generate("p")  # no explicit model → resolves to qwen-turbo
+    assert op.last_body["model"] == "qwen-turbo"  # sent verbatim to openrouter

@@ -22,7 +22,8 @@ class MockLLMBackend(LLMBackend):
         self._default = "INSIGHT: user values consistency\nCONFIDENCE: 0.7"
         self.calls: list[str] = []
 
-    def generate(self, prompt: str, system: str = "", model: str = "") -> LLMResponse:
+    def generate(self, prompt: str, system: str = "", model: str = "",
+                 max_tokens: int | None = None) -> LLMResponse:
         self.calls.append(prompt[:100])
         for key, resp in self._responses.items():
             if key.lower() in prompt.lower():
