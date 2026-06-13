@@ -214,6 +214,15 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   保留率（3 assistant 硬过滤 + 2 user 习惯陈述不匹配 16 正则白名单）,根因在 gate regex 召回。**
   gate 语义化留 SmallUserReadiness-1d/单独审计。见
   `logs/2026-06-13-small-user-readiness-1c-domain-classifier-cc.md`。
+- **SmallUserReadiness-1d gate 审计（2026-06-13,f84f0e4,只读）**: 17 条 pattern;gap 是英文
+  覆盖（仅 7 类,无 location/occupation/possession/event,固定小动词集→"I add/validate/build"
+  全不匹配）。assistant 硬过滤=正确保留。8 样本: 3 assistant drop 合理 + user 侧 2 条
+  habit-worthy（#5/#6）regex-miss → **≥2 门槛达成**。**关键: live store 无法量化召回——
+  745 条 99% 第三人称知识（绕 gate 入库），仅 1/745 第一人称,RadioMind 至今无第一人称
+  习惯语料。** 判定 8→3=部分合理(assistant)+部分过严(英文动词 gap)。建议 1e **仅选项 A**:
+  泛化限定词锚定（at every/for any/whenever/by default）的高精度英文 pattern,救 #5/#6 不误收
+  "I think it's raining",纯 regex 无 LLM（B/C LLM 二段待真实语料）。见
+  `logs/2026-06-13-small-user-readiness-1d-gate-audit-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
