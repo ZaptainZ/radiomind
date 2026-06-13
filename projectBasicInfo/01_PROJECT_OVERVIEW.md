@@ -223,6 +223,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   泛化限定词锚定（at every/for any/whenever/by default）的高精度英文 pattern,救 #5/#6 不误收
   "I think it's raining",纯 regex 无 LLM（B/C LLM 二段待真实语料）。见
   `logs/2026-06-13-small-user-readiness-1d-gate-audit-cc.md`。
+- **SmallUserReadiness-1e（2026-06-13,d68491b）→ 线收口**: gate.py 加 2 条 `practice`
+  pattern,**泛化限定词锚定**（for any/at every/whenever…,两种语序）救回 #5/#6,
+  "I add salt to taste"/"I validate the form once" 不误收（"I think it's raining" 仍由既有
+  opinion pattern 抓,scope 外）。**端到端 CLI: ingest 8→5 memories（原 3）,domains 1→3
+  （software/networking/ai）**,assistant 仍硬过滤。剩余 refuse 只因数据量非 gate 漏召。
+  7 单测,pack 35 类,1041 全过。**SmallUserReadiness 三阻断点全清: domain(1c)+单域硬拒
+  (1b narrow)+gate 英文召回(1e);剩数据量本身非系统缺陷;LLM 二段待真实第一人称语料。**
+  见 `logs/2026-06-13-small-user-readiness-1e-gate-patterns-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
