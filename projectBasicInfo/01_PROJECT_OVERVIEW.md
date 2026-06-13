@@ -307,6 +307,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   （前台显式调用 vs 后台自动副作用,不门控前台）。**1b = 纯文档**（修 MCP 数+枚举 / 加统一 CLI 参考 /
   点明 .advanced）,不开 MCPOnboarding 单独线（无功能缺口）。见
   `logs/2026-06-13-poweruser-onboarding-1a-audit-cc.md`。
+- **PowerUserOnboarding-1b（2026-06-13,纯文档）→ 硬核入口文档对齐**: MCP 计数低报修正
+  （README/README_zh "9" + api-ref "8" → 能力分类 + 17 注 as of date）;api-reference MCP 段
+  重写为**完整 17 tool 四组分类表**（retrieval/write/refinement/habits,带 LLM?/writes? + 前台 vs
+  后台 callout + train/deploy CLI-only 说明）;新增 **CLI command reference**（21 命令 + 副作用类）;
+  README "Use" 补 Python `.advanced` dream/train 路径。全仓 grep 旧计数 0 残留,零代码。
+  **三入口公开文档全部对齐: RadioHeader(编程)/Personal Agent(provider 安全默认)/Power User
+  (CLI/Python/MCP)。** 后续候选: radiomind onboard / ManagedRetrieval 订阅 / RadioHeaderMind-1b
+  (RadioHeader repo)。见 `logs/2026-06-13-poweruser-onboarding-1b-docs-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`

@@ -387,7 +387,16 @@ mind.add(messages)                    # feed conversations in
 results = mind.search("query")       # get relevant memories back
 system_prompt = mind.digest()        # inject user context (~250 tokens)
 mind.refine()                        # distill habits (automatic)
+
+# Power users — deeper operations live on the advanced handle:
+adv = mind.advanced                   # full RadioMind engine
+adv.trigger_dream()                   # SHY prune + DMN wander
+adv.train()                           # LoRA fine-tune (or CLI: radiomind train)
 ```
+
+The 4-method Simple API above covers most agents. `dream`, `train`/`deploy`,
+and other subsystems are on `mind.advanced` (the full `RadioMind` class) or the
+CLI — see the [API Reference](docs/api-reference.md).
 
 That's the entire API. Domain detection, privacy tagging, habit encoding, memory pruning — all automatic.
 
@@ -414,7 +423,10 @@ mind = radiomind.connect(llm=anthropic_client)
 | **REST** | `radiomind serve --port 8730` | Any language, remote access |
 | **CLI** | `radiomind search "query"` | Scripts, cron, automation |
 
-9 MCP tools, 6 REST endpoints, 20+ CLI commands. See [Integration Guide](docs/integration.md).
+A full MCP tool surface (retrieval, memory write, refinement, habits — 17 tools
+as of 2026-06-13), REST endpoints, and 20+ CLI commands. See the
+[API Reference](docs/api-reference.md) for the complete tool list and the CLI
+command reference, and the [Integration Guide](docs/integration.md) for setup.
 
 ---
 

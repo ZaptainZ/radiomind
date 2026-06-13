@@ -148,6 +148,38 @@ mind.initialize()
 
 ---
 
+## CLI command reference
+
+Every command works as `radiomind <cmd>` or `python -m radiomind <cmd>`.
+Side-effect class tells you what a command touches before you run it.
+
+| Command | Purpose | Side-effect class | Needs LLM |
+|---|---|---|---|
+| `init` | create the data directory | writes-local (no config file) | — |
+| `doctor` | health check (deps, LLM, integration) | read-only | — |
+| `status` | memory/habit/domain stats | read-only | — |
+| `config [key] [value]` | view or set config | writes-config | — |
+| `search <query>` | pyramid + habit search | read-only | optional |
+| `ingest <file.jsonl>` | ingest conversation turns | writes-local | optional |
+| `learn <text>` | add external knowledge | writes-local | — |
+| `chat [-d domain]` | three-body refinement | writes-local + calls-LLM | ✅ |
+| `dream` | SHY prune + DMN wander | writes-local + calls-LLM | ✅ |
+| `refine-step <step>` | host-driven refinement step | writes-local | host |
+| `train [--prepare-habits]` | LoRA fine-tune (opt-in: `RADIOMIND_ENABLE_LORA=1`) | trains-deploys | ✅ |
+| `deploy` | fuse + GGUF + register with Ollama (opt-in) | trains-deploys + external | — |
+| `serve [--port]` | REST server | starts-server | per call |
+| `mcp-server` | MCP stdio server | starts-server | per call |
+| `setup` / `setup-restore` | install / restore host hooks (backed up) | writes-host | — |
+| `embed-backfill` | backfill vectors | writes-local + calls-embedding | — |
+| `push-habits` | push habits to host native memory | writes-host | — |
+| `learn` / `migrate-radioheader` / `rh-search` / `rh-consolidate` | RadioHeader bridge | mixed | — |
+
+Side-effect classes: **read-only** (safe) · **writes-local** (local store) ·
+**writes-config / writes-host** · **calls-LLM / calls-embedding** (text may leave
+the machine if the backend is remote) · **trains-deploys** · **starts-server**.
+
+---
+
 ## REST API
 
 Start with `radiomind serve --port 8730`. OpenAPI docs at `/docs`.
@@ -167,18 +199,52 @@ Auth: `Authorization: Bearer <token>` (optional, set in config.toml).
 
 ## MCP Tools
 
-Start with `radiomind mcp-server`. 8 tools for Claude Desktop/Cursor/VS Code.
+Start with `radiomind mcp-server` (stdio) for Claude Desktop / Cursor / VS Code.
+The full tool surface (as of 2026-06-13) — grouped by capability. `LLM` = the
+call needs an LLM backend; `writes` = it writes the local memory store.
 
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `radiomind_search` | `query, domain?` | Pyramid search |
-| `radiomind_ingest` | `messages[]` | Ingest conversation |
-| `radiomind_learn` | `text` | Add external knowledge |
-| `radiomind_habits` | `query` | Query HDC habits |
-| `radiomind_digest` | `token_budget?` | Context digest |
-| `radiomind_status` | — | Memory statistics |
-| `radiomind_chat` | `domain?` | Three-body debate |
-| `radiomind_dream` | — | Dream refinement |
+**Retrieval / read**
+| Tool | Purpose | LLM | writes |
+|---|---|---|---|
+| `radiomind_search` | pyramid search (principles→patterns→facts) + HDC habits | — | — |
+| `radiomind_habits` | query L3 habit memories | — | — |
+| `radiomind_digest` | compressed user-context digest for system-prompt injection | — | — |
+| `radiomind_status` | memory stats (levels, domains, habits, LLM usage) | — | — |
+| `radiomind_get_memory` | fetch one memory by id | — | — |
+| `radiomind_list_memories` | list by scope (user/agent/session) | — | — |
+| `radiomind_memory_history` | audit trail for a memory | — | — |
+
+**Memory write**
+| Tool | Purpose | LLM | writes |
+|---|---|---|---|
+| `radiomind_ingest` | ingest a conversation (extract facts, detect domains) | optional | ✅ |
+| `radiomind_learn` | add external knowledge into L2 facts | — | ✅ |
+| `radiomind_update_memory` | edit content/metadata (audited) | — | ✅ |
+| `radiomind_delete_memory` | delete one memory by id (audited) | — | ✅ |
+| `radiomind_delete_scope` | delete ALL memories in a scope (audited) | — | ✅ |
+
+**Refinement**
+| Tool | Purpose | LLM | writes |
+|---|---|---|---|
+| `radiomind_chat` | three-body debate → distilled insights | ✅ | ✅ |
+| `radiomind_dream` | SHY pruning + DMN wandering | ✅ | ✅ |
+| `radiomind_refine_step` | host-driven step refinement (host AI does the thinking) | host | ✅ |
+
+**Habits → host**
+| Tool | Purpose | LLM | writes |
+|---|---|---|---|
+| `radiomind_push_habits` | push confirmed habits to the host's native memory | — | host files |
+| `radiomind_reject_habit` | mark a habit incorrect / not applicable | — | ✅ |
+
+> **Front-stage vs background.** These MCP tools are explicit
+> client/user-initiated calls (like CLI commands), so they are **not** gated by
+> the Hermes provider's authorization scopes — that gating applies only to the
+> provider's *automatic background* side effects (auto-ingest per turn,
+> background refinement, dream-after-session). Tools marked `writes`/`LLM`
+> still touch the local store or call an LLM when invoked — see the columns.
+>
+> LoRA `train` / `deploy` are **CLI-only** (`radiomind train` / `deploy`), not
+> exposed over MCP.
 
 ---
 

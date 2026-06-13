@@ -404,7 +404,9 @@ mind = radiomind.connect(llm=anthropic_client)
 | **REST** | `radiomind serve --port 8730` | 任何语言、远程调用 |
 | **CLI** | `radiomind search "query"` | 脚本、定时任务、自动化 |
 
-9 个 MCP 工具，6 个 REST 端点，20+ CLI 命令。详见[集成指南](docs/integration.md)。
+完整 MCP 工具面（检索 / 记忆写入 / 炼化 / 习惯——截至 2026-06-13 共 17 个）、REST 端点、
+20+ CLI 命令。完整工具列表与 CLI 命令参考见 [API Reference](docs/api-reference.md)，接入设置见
+[集成指南](docs/integration.md)。
 
 ---
 
