@@ -231,6 +231,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   7 单测,pack 35 类,1041 全过。**SmallUserReadiness 三阻断点全清: domain(1c)+单域硬拒
   (1b narrow)+gate 英文召回(1e);剩数据量本身非系统缺陷;LLM 二段待真实第一人称语料。**
   见 `logs/2026-06-13-small-user-readiness-1e-gate-patterns-cc.md`。
+- **CLIProductSmoke-2a 端到端复测（2026-06-13,3eabdca）→ 冷启动 readiness 确认**: 24 条真实
+  第一人称 memories（3 主题）从干净 sandbox: doctor 读数干净 → ingest **24→22**（2 assistant
+  丢,22 user 全留）→ **domains 4**（ios/rust/software/work）→ search FTS scored → prepare-habits
+  **0→5 habits → Train 40/Valid 10, domains_used=4 → refused=False narrow=False = FULL adapter**。
+  对比修复前 8-样本（3/8 kept,1 误判 domain,全 refuse）: domain(1c)+单域(1b)+gate(1e) 三修复
+  组合把"明显信号被漏→冷启动失败"转为"信号保全→达标即训练"。产品化整套组合有效。下一步
+  更大方向待定（安装 UX / LoRAFuel 默认策略 / Dream 全域 redundancy / LoCoMo refresh）。
+  见 `logs/2026-06-13-cli-product-smoke-2a-readiness-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
