@@ -315,6 +315,30 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   **三入口公开文档全部对齐: RadioHeader(编程)/Personal Agent(provider 安全默认)/Power User
   (CLI/Python/MCP)。** 后续候选: radiomind onboard / ManagedRetrieval 订阅 / RadioHeaderMind-1b
   (RadioHeader repo)。见 `logs/2026-06-13-poweruser-onboarding-1b-docs-cc.md`。
+- **RadioHeaderMind-1b backend contract 审计（2026-06-13,只读,审计 ~/bin/radioheader CLI）**:
+  验证 RadioHeader→RadioMind delegation 与准备文档一致——search→`radiomind rh-search`（读）/
+  consolidate→`radiomind rh-consolidate`（dream=LLM+mutation+digest 改写），均带 native fallback
+  （fts-search.py / attn-consolidate.py），`radiomind_available` 检测,CLI/file 兼容非正式 abstraction。
+  **关键授权发现: RadioHeader 的 RadioMind-backed 副作用全是前台显式（radioheader search/
+  consolidate），hook（SessionStart load-rules / Stop echo 提醒）不自动调 consolidate,
+  .consolidate-counter 仅计数无自动触发——天然符合 1c 原则,无"装上就自动 LLM/mutation"隐患。**
+  判定: **CLI delegation 对 v1 基本足够,formal abstraction 非必需**;唯一增值缺口=RadioHeader
+  SessionStart 注入静态 context-digest.md,不拉 RadioMind live digest。最小 v1 接口草案（read-
+  oriented: search/health/context_digest/consolidate(dry_run),不迁 Echo writes,保留 fallback）
+  + 授权边界（consolidate 若未来自动触发须 deny-by-default）。**RadioHeader 须续 owning
+  rules/hooks/Echo/源文件/fallback;RadioMind 仅 optional backend 非 replacement。** 下一步
+  RadioHeaderMind-1c **在 RadioHeader repo 侧立项**,本仓零改动。见
+  `logs/2026-06-13-radioheadermind-1b-backend-contract-audit-cc.md`。
+- **RadioHeader backend prep（2026-06-13,Codex,只读了解 + RadioMind 侧文档）**:
+  `projectBasicInfo/06_RADIOHEADER_BACKEND_PREP.md` 固化当前 RadioHeader 承接事实:
+  现状是 **CLI/file compatibility** 而非正式 backend abstraction。RadioHeader 仍 owns
+  rules/hooks/Echo/topics/shortwave/context-digest;检测到 `radiomind` 时仅把
+  `search` 委托到 `radiomind rh-search`,把 `consolidate` 委托到 `radiomind rh-consolidate`,
+  失败则回退 native FTS/attn-consolidate。RadioMind 侧应保持 `migrate-radioheader` /
+  `rh-search` / `rh-consolidate` 兼容。最终目标已写成待办:编程 Agent 入口仍是
+  RadioHeader,RadioMind 只作为可选记忆/检索后端,不替代 RadioHeader 的 rules/hooks/Echo
+  层;真正的 backend contract 审计与实现必须以后在 RadioHeader/RadioHead 项目单独做,本仓不
+  跨仓修改。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
