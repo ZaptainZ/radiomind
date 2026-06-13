@@ -35,6 +35,13 @@ EXTRACTION_PATTERNS: list[tuple[str, str]] = [
     # Habits and routines
     (r"我(?:每天|通常|一般|经常|总是)\s*(.+)", "routine"),
     (r"(?:i (?:usually|always|often|every day))\s+(.+)", "routine"),
+    # SmallUserReadiness-1e: present-tense practice statements whose verb is
+    # outside the routine whitelist ("I add / I validate / I build …"), but
+    # which carry a GENERALIZATION QUALIFIER making them durable habits, not
+    # one-off events. Anchored on the qualifier (either order) for precision:
+    # "I add salt to taste" / "I think it's raining" have no qualifier → skip.
+    (r"\b(?:for any|for every|at every|in every|whenever)\b.*\bi\s+\w+", "practice"),
+    (r"\bi\s+\w+.*\b(?:for any|for every|at every|in every|whenever)\b", "practice"),
     # Experiences and events
     (r"(?:今天|昨天|上周|最近)我?\s*(.{10,})", "event"),
     # Opinions and beliefs

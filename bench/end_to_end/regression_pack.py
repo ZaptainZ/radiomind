@@ -108,6 +108,9 @@ PACK: dict[str, list[str]] = {
     "core:domain-detect": [
         "tests/test_domain_detect.py",
     ],
+    "core:gate-practice": [
+        "tests/test_gate_practice_patterns.py",
+    ],
     "refinement:trinity-error-visibility": [
         "tests/test_trinity_error_visibility.py",
     ],
