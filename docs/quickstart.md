@@ -52,13 +52,17 @@ RadioMind automatically:
 ## Step 3: Search
 
 ```python
-results = mind.search("exercise")
+results = mind.search("running")     # keyword match — works out of the box
 for r in results:
     print(f"[{r.level}/{r.domain}] {r.content}")
-# [fact/health] I like running every morning
+# [fact/...] I like running every morning
 ```
 
 Search uses pyramid retrieval: principles → patterns → facts, plus HDC habit matching.
+
+> Out of the box, search is keyword (FTS) — use words that appear in the memory.
+> For semantic recall (e.g. matching `"exercise"` to `"running"`), install the
+> embedding extra: `pip install 'radiomind[embedding]'`.
 
 ## Step 4: Get context digest
 
@@ -176,7 +180,7 @@ Everything above works from the command line too (use `radiomind` or
 radiomind init
 radiomind onboard                     # first-run route/config guidance
 radiomind ingest conversation.jsonl   # one {"role","content"} JSON object per line
-radiomind search "exercise"
+radiomind search "running"            # keyword match (FTS); add [embedding] for semantic
 radiomind status
 radiomind doctor                      # health check — flags any missing dependency
 ```

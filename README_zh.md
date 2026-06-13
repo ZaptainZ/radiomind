@@ -11,11 +11,14 @@ import radiomind
 
 mind = radiomind.connect()
 mind.add([{"role": "user", "content": "我每天跑步，睡眠质量明显提升了"}])
-mind.search("健康习惯")          # 几周后仍能找到
-print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
+mind.search("跑步")              # 几周后仍能找到
+print(mind.digest())             # 注入系统提示的紧凑上下文
 ```
 
 4 个方法，零配置。你的 Agent 记住一切，且越用越聪明。
+
+> 关键词检索开箱即用。语义检索（如用「锻炼」匹配「跑步」）需安装 embedding 扩展：
+> `pip install 'radiomind[embedding]'`。
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 

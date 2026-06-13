@@ -10,12 +10,16 @@
 import radiomind
 
 mind = radiomind.connect()
-mind.add([{"role": "user", "content": "I run every morning and sleep much better since"}])
-mind.search("health habits")       # finds it, even weeks later
-print(mind.digest())               # "User: morning runner, values sleep quality"
+mind.add([{"role": "user", "content": "I like running every morning"}])
+mind.search("running")             # finds it, even weeks later
+print(mind.digest())               # compact context for your system prompt
 ```
 
 4 methods. Zero config. Your agent remembers everything and gets smarter over time.
+
+> Keyword search works out of the box. For semantic recall (e.g. matching
+> "exercise" to "running"), add the embedding extra:
+> `pip install 'radiomind[embedding]'`.
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
