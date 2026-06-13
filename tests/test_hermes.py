@@ -53,14 +53,30 @@ class TestProviderLifecycle:
         result = provider.prefetch("test query")
         assert isinstance(result, str)
 
-    def test_sync_turn(self, provider):
-        # sync_turn is non-blocking (daemon thread)
+    def test_sync_turn_denied_by_default(self, provider):
+        # PersonalOnboarding-1c: no ingest without the ingest_new_turns scope
+        provider.sync_turn("hello", "hi there")
+        import time
+        time.sleep(0.3)
+        assert provider._turn_count == 0
+
+    def test_sync_turn_after_grant(self, provider):
+        from radiomind.adapters.onboarding import AuthorizationState
+        provider._authz = AuthorizationState.from_iterable(["ingest_new_turns"])
         provider.sync_turn("hello", "hi there")
         import time
         time.sleep(0.5)  # wait for thread
         assert provider._turn_count == 1
 
-    def test_on_memory_write(self, provider):
+    def test_on_memory_write_denied_by_default(self, provider):
+        before = provider._mind.stats()["total_active"]
+        provider.on_memory_write("append", "MEMORY.md", "user prefers dark mode")
+        # no import_existing_memory grant → no mirror write
+        assert provider._mind.stats()["total_active"] == before
+
+    def test_on_memory_write_after_grant(self, provider):
+        from radiomind.adapters.onboarding import AuthorizationState
+        provider._authz = AuthorizationState.from_iterable(["import_existing_memory"])
         provider.on_memory_write("append", "MEMORY.md", "user prefers dark mode")
         stats = provider._mind.stats()
         assert stats["total_active"] > 0

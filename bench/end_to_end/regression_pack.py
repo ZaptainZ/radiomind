@@ -111,6 +111,9 @@ PACK: dict[str, list[str]] = {
     "core:gate-practice": [
         "tests/test_gate_practice_patterns.py",
     ],
+    "adapter:personal-onboarding": [
+        "tests/test_personal_onboarding.py",
+    ],
     "refinement:trinity-error-visibility": [
         "tests/test_trinity_error_visibility.py",
     ],

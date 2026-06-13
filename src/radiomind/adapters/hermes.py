@@ -13,13 +13,21 @@ built-in MEMORY.md/USER.md doesn't have.
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from pathlib import Path
 from typing import Any
 
+from radiomind.adapters.onboarding import (
+    AuthorizationState,
+    HostCapabilities,
+    readiness_report,
+)
 from radiomind.core.config import Config
 from radiomind.core.mind import RadioMind
 from radiomind.core.types import Message
+
+logger = logging.getLogger(__name__)
 
 
 PROVIDER_NAME = "radiomind"
@@ -103,8 +111,12 @@ class RadioMindProvider:
         self._mind: RadioMind | None = None
         self._turn_count = 0
         self._lock = threading.Lock()
-        self._auto_dream = True
+        # PersonalOnboarding-1c: background side effects are deny-by-default.
+        # _auto_dream stays False until dream_after_session is granted.
+        self._auto_dream = False
         self._hermes_home: Path | None = None
+        self._capabilities = HostCapabilities()
+        self._authz = AuthorizationState()
 
     # --- Required Methods ---
 
@@ -118,6 +130,29 @@ class RadioMindProvider:
     def initialize(self, session_id: str, **kwargs) -> None:
         hermes_home = kwargs.get("hermes_home", "")
         self._hermes_home = Path(hermes_home) if hermes_home else None
+
+        # PersonalOnboarding-1c: accept host capabilities + granted scopes
+        # (additive; absent = most conservative). Accept either a
+        # HostCapabilities / AuthorizationState instance or a plain mapping/
+        # iterable, so hosts that only know dicts still work.
+        caps = kwargs.get("capabilities")
+        if isinstance(caps, HostCapabilities):
+            self._capabilities = caps
+        elif isinstance(caps, dict):
+            known = {f for f in HostCapabilities().__dataclass_fields__}
+            self._capabilities = HostCapabilities(
+                **{k: v for k, v in caps.items() if k in known})
+        else:
+            self._capabilities = HostCapabilities()
+
+        scopes = kwargs.get("authorized_scopes")
+        if isinstance(scopes, AuthorizationState):
+            self._authz = scopes
+        else:
+            self._authz = AuthorizationState.from_iterable(scopes)
+
+        # dream_after_session grant flips the auto-dream default on.
+        self._auto_dream = self._authz.has("dream_after_session")
 
         cfg = Config.load()
         llm_fn = kwargs.get("llm")
@@ -203,9 +238,19 @@ class RadioMindProvider:
         return "\n".join(parts) if parts else ""
 
     def sync_turn(self, user_msg: str, assistant_msg: str) -> None:
-        """Sync conversation turn to RadioMind (must be non-blocking)."""
+        """Sync conversation turn to RadioMind (must be non-blocking).
+
+        PersonalOnboarding-1c: deny-by-default. No auto-write unless
+        `ingest_new_turns` is granted; no background refinement unless
+        `background_refinement` is also granted.
+        """
         if self._mind is None:
             return
+        if not self._authz.has("ingest_new_turns"):
+            logger.debug("sync_turn skipped_by_authorization (ingest_new_turns)")
+            return
+
+        refine_ok = self._authz.has("background_refinement")
 
         def _sync():
             with self._lock:
@@ -216,8 +261,9 @@ class RadioMindProvider:
                 self._mind.ingest(messages)
                 self._turn_count += 1
 
-            # Trigger chat refinement every 10 turns (outside lock)
-            if self._turn_count % 10 == 0 and self._mind._llm.is_available():
+            # Background refinement every 10 turns — only when authorized.
+            if (refine_ok and self._turn_count % 10 == 0
+                    and self._mind._llm.is_available()):
                 try:
                     self._mind.trigger_chat()
                 except Exception:
@@ -227,8 +273,14 @@ class RadioMindProvider:
         thread.start()
 
     def on_session_end(self, messages: list[dict]) -> None:
-        """Run dream refinement on session end."""
+        """Run dream refinement on session end.
+
+        PersonalOnboarding-1c: no-op unless `dream_after_session` is granted
+        (_auto_dream is set from that grant at init; default off).
+        """
         if self._mind is None or not self._auto_dream:
+            if self._mind is not None:
+                logger.debug("on_session_end skipped_by_authorization (dream_after_session)")
             return
 
         if self._mind._llm.is_available():
@@ -238,11 +290,34 @@ class RadioMindProvider:
                 pass
 
     def on_memory_write(self, action: str, target: str, content: str) -> None:
-        """Mirror Hermes built-in memory writes to RadioMind."""
+        """Mirror Hermes built-in memory writes to RadioMind.
+
+        PersonalOnboarding-1c: mirroring host memory is an ongoing import —
+        gated on `import_existing_memory`. No silent mirror by default.
+        """
         if self._mind is None:
+            return
+        if not self._authz.has("import_existing_memory"):
+            logger.debug("on_memory_write skipped_by_authorization (import_existing_memory)")
             return
 
         self._mind.learn(f"[hermes/{target}] {content}")
+
+    def readiness(self) -> dict:
+        """PersonalOnboarding-1c: project current capabilities + grants +
+        state into a readiness report (pure — no IO/LLM/store writes)."""
+        habit_count = example_count = 0
+        llm_available = False
+        if self._mind is not None:
+            llm_available = self._mind.is_llm_available()
+            habits = self._mind._habits.all_habits() if self._mind._habits else []
+            habit_count = sum(
+                1 for h in habits if h.status.value != "archived")
+        return readiness_report(
+            self._capabilities, self._authz,
+            llm_available=llm_available,
+            habit_count=habit_count, example_count=example_count,
+        ).to_dict()
 
     def shutdown(self) -> None:
         if self._mind:
