@@ -156,6 +156,7 @@ Side-effect class tells you what a command touches before you run it.
 | Command | Purpose | Side-effect class | Needs LLM |
 |---|---|---|---|
 | `init` | create the data directory | writes-local (no config file) | — |
+| `onboard` | first-run route/config guidance; optional config template writer | read-only by default; writes-config with `--write-config-template` | — |
 | `doctor` | health check (deps, LLM, integration) | read-only | — |
 | `status` | memory/habit/domain stats | read-only | — |
 | `config [key] [value]` | view or set config | writes-config | — |

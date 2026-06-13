@@ -313,8 +313,13 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   后台 callout + train/deploy CLI-only 说明）;新增 **CLI command reference**（21 命令 + 副作用类）;
   README "Use" 补 Python `.advanced` dream/train 路径。全仓 grep 旧计数 0 残留,零代码。
   **三入口公开文档全部对齐: RadioHeader(编程)/Personal Agent(provider 安全默认)/Power User
-  (CLI/Python/MCP)。** 后续候选: radiomind onboard / ManagedRetrieval 订阅 / RadioHeaderMind-1b
-  (RadioHeader repo)。见 `logs/2026-06-13-poweruser-onboarding-1b-docs-cc.md`。
+  (CLI/Python/MCP)。** 见 `logs/2026-06-13-poweruser-onboarding-1b-docs-cc.md`。
+- **PowerUserOnboarding-1c / OnboardUX（2026-06-13,Codex,runtime+docs）→ `radiomind onboard`**:
+  新增可选首跑引导命令,默认只读,报告三入口路线、home/config/db/memory、env/config LLM、RadioHeader
+  检测、LoRA opt-in 与 managed retrieval=future/not configured;推荐 host LLM first。`--write-config-template`
+  才写注释版 `config.toml` 模板,默认询问、`--force` 才覆盖;`init` 保持轻量并提示下一步
+  `radiomind onboard`。README/README_zh/quickstart/API command reference 已同步。ManagedRetrieval 订阅仍延后。
+  见 `logs/2026-06-13-onboard-ux-1c-codex.md`。
 - **RadioHeaderMind-1b backend contract 审计（2026-06-13,只读,审计 ~/bin/radioheader CLI）**:
   验证 RadioHeader→RadioMind delegation 与准备文档一致——search→`radiomind rh-search`（读）/
   consolidate→`radiomind rh-consolidate`（dream=LLM+mutation+digest 改写），均带 native fallback

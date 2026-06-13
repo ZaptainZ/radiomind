@@ -5,9 +5,18 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
-from radiomind.cli.main import _render_backends, _render_train_gap
+from click.testing import CliRunner
+
+from radiomind.cli.main import (
+    _config_template,
+    _render_backends,
+    _render_onboard,
+    _render_train_gap,
+    cli,
+)
 from radiomind.core.config import Config
 from radiomind.core.llm import LLMRouter
 from radiomind.training.data_gen import DataGenReport
@@ -122,3 +131,77 @@ def test_doctor_path_check_not_a_warning():
     # F4: the running entry always works → PASS, never WARN
     assert "current entry works" in src
     assert 'add("PASS", "radiomind CLI"' in src
+
+
+# ---------------- onboard: optional first-run guide ----------------
+
+def test_onboard_report_is_read_only(monkeypatch, tmp_path):
+    home = tmp_path / ".radiomind"
+    monkeypatch.setenv("RADIOMIND_HOME", str(home))
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["onboard"])
+
+    assert result.exit_code == 0
+    assert "RadioMind onboarding" in result.output
+    assert "Coding agents" in result.output
+    assert "RadioHeader" in result.output
+    assert "config LLM:  none" in result.output
+    assert "managed retrieval: future / not configured" in result.output
+    assert not (home / "config.toml").exists()
+
+
+def test_onboard_config_template_is_valid_toml(tmp_path):
+    text = _config_template(tmp_path / "rm-home")
+    parsed = tomllib.loads(text)
+    assert parsed["llm"]["default_backend"] == "dashscope"
+    assert parsed["llm"]["dashscope"]["timeout"] == 120
+    assert parsed["llm"]["openrouter"]["base_url"].endswith("/api/v1")
+    assert parsed["llm"]["openai"]["deprecated"] is True
+
+
+def test_onboard_write_config_template(monkeypatch, tmp_path):
+    home = tmp_path / "rm-home"
+    monkeypatch.setenv("RADIOMIND_HOME", str(home))
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["onboard", "--write-config-template", "--yes"])
+
+    cfg = home / "config.toml"
+    assert result.exit_code == 0
+    assert cfg.exists()
+    assert "Wrote config template" in result.output
+    assert tomllib.loads(cfg.read_text())["llm"]["default_backend"] == "dashscope"
+
+
+def test_onboard_write_refuses_overwrite(monkeypatch, tmp_path):
+    home = tmp_path / "rm-home"
+    home.mkdir()
+    (home / "config.toml").write_text("[general]\nhome = \"x\"\n")
+    monkeypatch.setenv("RADIOMIND_HOME", str(home))
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["onboard", "--write-config-template", "--yes"])
+
+    assert result.exit_code != 0
+    assert "Use --force" in result.output
+
+
+def test_onboard_render_recommends_host_llm_before_config():
+    lines = _render_onboard({
+        "home": "/tmp/rm",
+        "config_path": "/tmp/rm/config.toml",
+        "config_exists": False,
+        "db_path": "/tmp/rm/data/radiomind.db",
+        "db_exists": False,
+        "memory_count": None,
+        "env_llm_keys": [],
+        "config_llm_profiles": [],
+        "radioheader_detected": False,
+        "lora_enabled": False,
+        "managed_retrieval": "future / not configured",
+    })
+    body = "\n".join(lines)
+    assert "prefer a host LLM first" in body
+    assert "managed retrieval: future / not configured" in body
+    assert "radiomind learn" in body

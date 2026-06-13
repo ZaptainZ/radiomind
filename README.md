@@ -349,6 +349,7 @@ Install RadioMind as my persistent memory module:
    - If pip fails with "externally-managed": python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind && add to PATH
 2. Activate: radiomind setup
 3. Verify: radiomind status   (or: python -m radiomind status, if the script isn't on PATH)
+4. Optional guidance: radiomind onboard
 RadioMind auto-detects an LLM from a host client, an API-key env var, or a local Ollama with a model pulled — set one of those (no config file needed). With none, it runs in pure-memory mode.
 ```
 
@@ -366,6 +367,7 @@ Both entry points work after install — use `python -m radiomind` when the
 ```bash
 radiomind --help
 python -m radiomind --help
+radiomind onboard   # first-run route/config guidance
 ```
 
 ```bash

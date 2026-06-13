@@ -174,6 +174,7 @@ Everything above works from the command line too (use `radiomind` or
 
 ```bash
 radiomind init
+radiomind onboard                     # first-run route/config guidance
 radiomind ingest conversation.jsonl   # one {"role","content"} JSON object per line
 radiomind search "exercise"
 radiomind status

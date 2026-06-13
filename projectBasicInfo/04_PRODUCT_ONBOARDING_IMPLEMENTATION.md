@@ -242,19 +242,19 @@ mind = radiomind.connect(llm=host_llm)
 - Confirm `python -m radiomind` parity.
 - No code changes.
 
-**PowerUserOnboarding-1b — interactive onboarding design**
+**PowerUserOnboarding-1c — interactive onboarding command**
 
-Design one optional command:
+Implemented one optional command:
 
 ```bash
 radiomind onboard
 ```
 
-It should not be mandatory. It should:
+It is not mandatory. It:
 
 - detect config;
 - report available LLM/retrieval/train capabilities;
-- ask before writing config;
+- asks before writing config;
 - recommend host LLM first;
 - mention managed retrieval as "future / not configured" until product exists.
 
