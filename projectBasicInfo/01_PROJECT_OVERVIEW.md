@@ -180,7 +180,16 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   LoRA（已端到端证明）;小数据量撞 data_gen 三重合取门槛（≥5 habits/≥2 domains/≥30
   examples），但卡点已明确不静默。** 6 个 UX 发现 F1-F6（refuse 不可操作 / ingest gate
   激进+domain 稀疏 / 无 embedder 问句检索静默空 / doctor PATH 误报 / `python -m` 不可用 /
-  死 openai 列首）。CLIProductSmoke-1b UX 修补候选已排序待立项。
+  死 openai 列首）。
+- **CLIProductSmoke-1b（2026-06-13,dcfe9bd,5 项纯 UX 修补,F2 不碰）**: F1 refuse 打印
+  habits/domains/examples have/need[ok|short]+下一步+"DATA-VOLUME 非 LLM/router 故障"
+  （门槛不变,加 DataGenReport.distinct_examples 观测字段）;F3 search 空且真无 embedder
+  才提示 FTS-only+安装引导（澄清 1a 误判: dashscope key 在时 DashScopeEmbedder 自动激活,
+  非 None,1a"无 embedder"不准）;F4 doctor PATH 恒 PASS 显示 current entry;F5
+  `src/radiomind/__main__.py` → `python -m radiomind` 可用;F6 router `backend_status()`
+  default-first/deprecated-last,doctor+status 共用,live openai 已加 `deprecated=true`。
+  11 单测,pack 31 类,1011 全过,re-smoke 5 点改善。**F2（gate 激进+domain 稀疏）属架构,
+  留 SmallUserReadiness-1a。** 见 `logs/2026-06-13-cli-product-smoke-1b-cc.md`。
   见 `logs/2026-06-13-cli-product-smoke-1a-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
