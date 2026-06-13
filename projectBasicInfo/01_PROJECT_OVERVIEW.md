@@ -188,9 +188,15 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   非 None,1a"无 embedder"不准）;F4 doctor PATH 恒 PASS 显示 current entry;F5
   `src/radiomind/__main__.py` → `python -m radiomind` 可用;F6 router `backend_status()`
   default-first/deprecated-last,doctor+status 共用,live openai 已加 `deprecated=true`。
-  11 单测,pack 31 类,1011 全过,re-smoke 5 点改善。**F2（gate 激进+domain 稀疏）属架构,
-  留 SmallUserReadiness-1a。** 见 `logs/2026-06-13-cli-product-smoke-1b-cc.md`。
-  见 `logs/2026-06-13-cli-product-smoke-1a-cc.md`。
+  11 单测,pack 31 类,1011 全过,re-smoke 5 点改善。
+  见 `logs/2026-06-13-cli-product-smoke-1b-cc.md`、`logs/2026-06-13-cli-product-smoke-1a-cc.md`。
+- **SmallUserReadiness-1a 审计（2026-06-13,687784e,只读）→ F2 判定"过严阻断非合理保护"**:
+  失败链路 8 msg → gate 丢 3 assistant + 2 user（习惯陈述不匹配 16 正则白名单）→ 3 kept →
+  detect_domain 子串匹配 2 条落空 domain（5 生活域零技术覆盖）+ 唯一"work"是子串误判
+  （"work"⊂"network"）→ 1 domain → 1 habit → 11 examples → 三门槛**同源失败**（gate 白名单
+  +域盲,非独立信号）。最小策略候选（未实现）: refuse 文案强化 / 单域 narrow_adapter+只读
+  多样性前验[1b] / detect_domain 修子串+扩技术域[独立线] / gate 语义化[远期]。本轮纯审计,
+  未改 gate/classifier/阈值。见 `logs/2026-06-13-small-user-readiness-1a-audit-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
