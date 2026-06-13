@@ -335,11 +335,33 @@ Scope:
 
 Open **RadioHeaderMind-1b** in the RadioHeader repo.
 
+Final target:
+
+- Programming agents should enter through RadioHeader.
+- RadioHeader should own rules, hooks, Echo, project onboarding, and behavior
+  contracts.
+- RadioMind should be available underneath as an optional memory/retrieval
+  backend, not as a replacement for RadioHeader.
+- RadioHeader must preserve native fallback behavior and explicit authorization
+  boundaries before calling any RadioMind operation with cost, LLM calls, or
+  mutation.
+
 Scope:
 
-- Define backend contract.
+- First do a read-only backend-contract audit in RadioHeader.
+- Treat the current integration as CLI/file compatibility, not as an already
+  formal backend abstraction.
+- Verify current `radioheader search` -> `radiomind rh-search` and
+  `radioheader consolidate` -> `radiomind rh-consolidate` delegation before
+  proposing any new interface.
+- Define a backend contract only if the RadioHeader repo audit proves it is
+  needed.
 - Do not migrate memory yet.
 - Do not change RadioMind.
+
+RadioMind-side prep is captured in
+`projectBasicInfo/06_RADIOHEADER_BACKEND_PREP.md`. RadioHeader repo changes
+must happen in the RadioHeader/RadioHead project, not from this repo.
 
 ## 7. Done Criteria For This Productization Track
 
@@ -348,7 +370,7 @@ This track is complete when:
 1. Public docs route the three user types correctly.
 2. Personal-agent onboarding has a host-capability and authorization design.
 3. Power-user CLI/API/MCP path is documented and internally consistent.
-4. RadioHeader integration has a backend-contract design, ready for work in the
+4. RadioMind-side docs capture the RadioHeader-first final target and a scoped
+   RadioHeader-side backend-contract audit task, ready to open in the
    RadioHeader repo.
 5. Managed retrieval is explicitly deferred, with privacy questions captured.
-
