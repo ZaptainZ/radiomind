@@ -26,6 +26,7 @@ live alongside, not in place of, the source turns.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from dataclasses import dataclass, field
@@ -33,7 +34,10 @@ from typing import Any
 
 from radiomind.core.llm import LLMRouter
 from radiomind.core.types import MemoryEntry, MemoryLevel, SearchResult
+from radiomind.refinement.trinity import _describe_llm
 from radiomind.storage.database import MemoryStore
+
+logger = logging.getLogger(__name__)
 
 
 DECOMPOSE_PROMPT = """You are extracting atomic facts from retrieved conversation turns so that an aggregation question can be answered precisely.
@@ -147,7 +151,14 @@ class QueryDecomposer:
                 prompt, system="You are an atomic fact extractor. Output valid JSON only."
             )
             raw = resp.text or ""
-        except Exception:
+        except Exception as e:
+            # TrinityErrorVisibility-1a: control flow unchanged (empty atom
+            # list), but a failed decomposer call must not vanish silently.
+            logger.warning(
+                "decompose LLM call failed [stage=decompose backend=%s]: "
+                "%s: %s (prompt_len=%d) — returning no atoms",
+                _describe_llm(self._llm), type(e).__name__, e, len(prompt or ""),
+            )
             return []
 
         atoms = self._parse_atoms(raw)[:max_atoms_out]

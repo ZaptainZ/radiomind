@@ -48,8 +48,25 @@ those keys alongside the standard schema.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+def _describe_llm(llm: Any) -> str:
+    """Best-effort backend/model label for diagnostics. Never raises."""
+    try:
+        cfg = getattr(llm, "config", None)
+        if cfg is not None and hasattr(cfg, "get"):
+            default = cfg.get("llm.default_backend")
+            if default:
+                return str(default)
+        name = getattr(llm, "name", None) or getattr(llm, "default_model", None)
+        return str(name) if name else type(llm).__name__
+    except Exception:
+        return "unknown"
 
 
 # Agent role library. Each role is an "agent 侧写" — telling the LLM
@@ -217,8 +234,14 @@ def _format_extra(extra_schema: str) -> tuple[str, str]:
     )
 
 
-def _call_llm(prompt: str, llm: Any) -> str:
-    """Invoke either an llm with .generate(prompt, system) or a callable."""
+def _call_llm(prompt: str, llm: Any, stage: str = "debate") -> str:
+    """Invoke either an llm with .generate(prompt, system) or a callable.
+
+    TrinityErrorVisibility-1a: still returns "" on failure (control flow
+    unchanged — callers treat empty as 'no result'), but logs a warning
+    first. A silent return here is exactly what hid the 45s-timeout in the
+    LLMRouter-1b debugging; a debate that yields nothing must say WHY.
+    """
     try:
         if hasattr(llm, "generate"):
             raw = getattr(
@@ -227,17 +250,30 @@ def _call_llm(prompt: str, llm: Any) -> str:
             ) or ""
         else:
             raw = llm(prompt, "Output only strict JSON.")
-    except Exception:
+    except Exception as e:
+        logger.warning(
+            "trinity LLM call failed [stage=%s backend=%s]: %s: %s "
+            "(prompt_len=%d) — returning empty (debate yields no result)",
+            stage, _describe_llm(llm), type(e).__name__, e, len(prompt or ""),
+        )
         return ""
     return raw or ""
 
 
-def _parse_json(raw: str) -> dict | None:
+def _parse_json(raw: str, stage: str = "debate") -> dict | None:
     cleaned = re.sub(r"^```(?:json|JSON)?\s*\n?", "", (raw or "").strip())
     cleaned = re.sub(r"\n?```\s*$", "", cleaned).strip()
     try:
         obj = json.loads(cleaned)
-    except Exception:
+    except Exception as e:
+        # Distinguish 'LLM errored' (empty raw, already warned in _call_llm)
+        # from 'LLM returned non-JSON junk' — the latter is silent otherwise.
+        if cleaned:
+            logger.warning(
+                "trinity JSON parse failed [stage=%s]: %s (raw_len=%d, "
+                "head=%r) — returning None", stage, type(e).__name__,
+                len(cleaned), cleaned[:80],
+            )
         return None
     if not isinstance(obj, dict):
         return None
@@ -366,8 +402,8 @@ def debate(
         extra_schema_block=extra_schema_block,
         stance_template_block=stance_block,
     )
-    raw = _call_llm(prompt_r1, llm)
-    result = _parse_json(raw)
+    raw = _call_llm(prompt_r1, llm, stage=f"{agent_role}/round1")
+    result = _parse_json(raw, stage=f"{agent_role}/round1")
     if result is None:
         return None
 
@@ -410,8 +446,8 @@ def debate(
             extra_schema_block=extra_schema_block,
             stance_template_block=stance_block,
         )
-        raw_n = _call_llm(prompt_rN, llm)
-        new_result = _parse_json(raw_n)
+        raw_n = _call_llm(prompt_rN, llm, stage=f"{agent_role}/round{round_idx}")
+        new_result = _parse_json(raw_n, stage=f"{agent_role}/round{round_idx}")
         if new_result is not None:
             result = new_result
             # Optional: also recurse on the new round's weak stances.

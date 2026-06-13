@@ -14,6 +14,7 @@ Phase 3: Dream Journal
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 import time
@@ -21,8 +22,11 @@ from dataclasses import dataclass, field
 
 from radiomind.core.llm import LLMRouter
 from radiomind.core.types import Habit, MemoryEntry, MemoryLevel, MemoryStatus, RefinementResult
+from radiomind.refinement.trinity import _describe_llm
 from radiomind.storage.database import MemoryStore
 from radiomind.storage.hdc import HabitStore
+
+logger = logging.getLogger(__name__)
 
 MERGE_PROMPT = """These two memories seem redundant or overlapping:
 1. {mem_a}
@@ -223,7 +227,14 @@ class DreamRefinement:
             self._store.update(a)
             self._store.archive(b.id)
             return merged_text
-        except Exception:
+        except Exception as e:
+            # TrinityErrorVisibility-1a: merge skipped on failure (unchanged),
+            # but log so a dropped merge isn't invisible.
+            logger.warning(
+                "dream merge LLM call failed [stage=dream/merge backend=%s]: "
+                "%s: %s — skipping merge", _describe_llm(self._llm),
+                type(e).__name__, e,
+            )
             return None
 
     # --- Phase 2: Wandering ---
@@ -257,8 +268,14 @@ class DreamRefinement:
 
             insights = self._parse_insights(resp.text)
             journal.insights.extend(insights)
-        except Exception:
-            pass
+        except Exception as e:
+            # TrinityErrorVisibility-1a: wander is best-effort (unchanged),
+            # but a failed pass should still leave a trace.
+            logger.warning(
+                "dream wander LLM call failed [stage=dream/wander backend=%s]: "
+                "%s: %s — no wandering insights this pass",
+                _describe_llm(self._llm), type(e).__name__, e,
+            )
 
     def _parse_insights(self, text: str) -> list[Habit]:
         if text.strip().upper().startswith("NONE") or "\nNONE" in text.upper():
