@@ -175,6 +175,13 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > **cost-tier×provider 耦合已审计锁定未修**（全局模型映射 vs provider-specific 名，
   > test 锁定 verbatim 行为，真修复待 scope 评估）。
   > 见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md` + `2026-06-13-llmrouter-1b-fix-cc.md`。
+- **CLIProductSmoke-1a（2026-06-13,35d7215,只读端到端 smoke）**: 空环境走 init→doctor→
+  ingest→train --prepare-habits→deploy→search。**核心: 数据充足时真实用户可从空到可用
+  LoRA（已端到端证明）;小数据量撞 data_gen 三重合取门槛（≥5 habits/≥2 domains/≥30
+  examples），但卡点已明确不静默。** 6 个 UX 发现 F1-F6（refuse 不可操作 / ingest gate
+  激进+domain 稀疏 / 无 embedder 问句检索静默空 / doctor PATH 误报 / `python -m` 不可用 /
+  死 openai 列首）。CLIProductSmoke-1b UX 修补候选已排序待立项。
+  见 `logs/2026-06-13-cli-product-smoke-1a-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
