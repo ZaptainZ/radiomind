@@ -33,6 +33,9 @@ class TrainResult:
     # threaded from DataGenReport by mind.train; also persisted to
     # train_meta.json next to the adapter).
     habit_ids: list = field(default_factory=list)
+    # SmallUserReadiness-1b: single-domain adapter — only fits the current
+    # topic, not a generalized personality. Threaded to train_meta.json.
+    narrow_adapter: bool = False
 
 
 @dataclass

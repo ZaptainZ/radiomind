@@ -624,6 +624,11 @@ def train(model: str | None, iters: int | None, data_only: bool,
             f"dropped_short={report.dropped_short}"
         )
         click.echo(f"  habit_ids={','.join(report.habit_ids)}")
+        if report.narrow_adapter:
+            click.echo(click.style(
+                "  NARROW adapter: single-domain — fits this one topic, not a "
+                "generalized personality. Add other topics for a full profile.",
+                fg="yellow"))
         mind.shutdown()
         return
 
@@ -657,6 +662,10 @@ def train(model: str | None, iters: int | None, data_only: bool,
         click.echo(f"Training complete in {result.duration_s:.1f}s")
         click.echo(f"  Model: {result.model}")
         click.echo(f"  Adapter: {result.adapter_path}")
+        if result.narrow_adapter:
+            click.echo(click.style(
+                "  NARROW adapter: trained on a single domain — fits this one "
+                "topic, not a generalized personality.", fg="yellow"))
         click.echo(f"\nTo load in Ollama:")
         click.echo(f"  radiomind deploy")
     else:

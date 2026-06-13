@@ -2413,6 +2413,8 @@ class RadioMind:
         # LoRAFuel-1b: record which habits this adapter consumed —
         # observational groundwork for shelf-life/incremental policy.
         result.habit_ids = list(report.habit_ids)
+        # SmallUserReadiness-1b: carry the narrow-adapter flag through.
+        result.narrow_adapter = bool(report.narrow_adapter)
         if result.success and result.adapter_path:
             try:
                 import json as _json
@@ -2423,6 +2425,8 @@ class RadioMind:
                     "valid_examples": report.valid_count,
                     "model": result.model,
                     "iterations": result.iterations,
+                    "narrow_adapter": result.narrow_adapter,
+                    "domain_count": report.domains_used,
                     "finished_at": _time.time(),
                 }
                 (Path(result.adapter_path) / "train_meta.json").write_text(

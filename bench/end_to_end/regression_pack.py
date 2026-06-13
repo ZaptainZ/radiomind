@@ -102,6 +102,9 @@ PACK: dict[str, list[str]] = {
     "cli:product-ux": [
         "tests/test_cli_product_ux.py",
     ],
+    "training:diversity-narrow": [
+        "tests/test_diversity_narrow.py",
+    ],
     "refinement:trinity-error-visibility": [
         "tests/test_trinity_error_visibility.py",
     ],

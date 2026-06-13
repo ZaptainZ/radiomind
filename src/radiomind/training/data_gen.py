@@ -85,6 +85,9 @@ class DataGenReport:
     # CLIProductSmoke-1b (F1): distinct usable examples produced, so the CLI
     # can show the gap (e.g. 18/30) without parsing refused_reason.
     distinct_examples: int = 0
+    # SmallUserReadiness-1b: a diverse single-domain store trains a NARROW
+    # adapter (bypasses the >=2-domains guard) instead of a hard refuse.
+    narrow_adapter: bool = False
     # LoRAFuel-1b: which habits this training set consumed (observational
     # only — groundwork for future shelf-life/incremental-training policy).
     habit_ids: list = None  # type: ignore[assignment]
@@ -159,6 +162,11 @@ class TrainingDataGenerator:
         # learns to recognize and emit the same fact from different angles.
         habits_used = 0
         consumed_habit_ids: list[str] = []
+        # SmallUserReadiness-1b: collect the DISTINCT SOURCE statements (habit
+        # descriptions + facts) — diversity is measured on these, NOT on the
+        # augmented examples (per-habit paraphrase variants are near-dups by
+        # construction and would falsely look monotonous).
+        source_texts: list[str] = []
         for i, h in enumerate(all_habits):
             clean = self._sanitize(h.description)
             if not self._ok_answer(clean):
@@ -170,6 +178,7 @@ class TrainingDataGenerator:
                 raw_examples.append((q, a, f"habit-specific:{id(h)}:{hash(q)}"))
             habits_used += 1
             consumed_habit_ids.append(habit_id(h))
+            source_texts.append(clean)
 
         # --- Global aggregate examples (teach overall personality) ------
         for h in all_habits[:30]:
@@ -268,6 +277,7 @@ class TrainingDataGenerator:
                 q = q_tmpl.format(domain=dom)
                 raw_examples.append((q, clean, f"fact:{f.id}"))
                 fact_count_by_domain[dom] = fact_count_by_domain.get(dom, 0) + 1
+                source_texts.append(clean)
 
         # --- Dedup + quality gates --------------------------------------
         dropped_pii = 0
@@ -291,7 +301,14 @@ class TrainingDataGenerator:
             clean_examples.append(self._format_example(system_prompt, q, a))
 
         # --- Refuse if below thresholds ---------------------------------
+        # SmallUserReadiness-1b: examples + habits guards are unconditional.
+        # The >=2-domains guard is RELAXED for a single domain that is
+        # diverse enough — train a NARROW adapter instead of hard-refusing
+        # (1a found the domain guard structurally blocks single-topic users).
+        from radiomind.training.diversity import diversity_report, narrow_training_ok
+
         refused_reason = ""
+        narrow_adapter = False
         if len(clean_examples) < MIN_DISTINCT_EXAMPLES:
             refused_reason = (
                 f"need >= {MIN_DISTINCT_EXAMPLES} unique examples, "
@@ -300,7 +317,22 @@ class TrainingDataGenerator:
         elif habits_used < MIN_HABITS:
             refused_reason = f"need >= {MIN_HABITS} habits with content, have {habits_used}"
         elif len(domains) < MIN_DOMAINS:
-            refused_reason = f"need >= {MIN_DOMAINS} domains, have {len(domains)}"
+            if len(domains) == 1:
+                # diversity over DISTINCT SOURCES, not augmented examples
+                ok, why = narrow_training_ok(
+                    diversity_report(source_texts, habits_used))
+                if ok:
+                    narrow_adapter = True  # allow: diverse single domain
+                else:
+                    refused_reason = (
+                        f"only 1 domain and {why} — add memories on another "
+                        f"topic, or more varied ones in this domain"
+                    )
+            else:
+                refused_reason = (
+                    f"need >= {MIN_DOMAINS} domains, have {len(domains)} — "
+                    f"add memories on a different topic"
+                )
 
         if refused_reason:
             return DataGenReport(
@@ -339,6 +371,7 @@ class TrainingDataGenerator:
             habits_used=habits_used,
             domains_used=len(domains),
             distinct_examples=len(clean_examples),
+            narrow_adapter=narrow_adapter,
             habit_ids=consumed_habit_ids,
         )
 
