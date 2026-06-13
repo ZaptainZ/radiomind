@@ -197,6 +197,15 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   +域盲,非独立信号）。最小策略候选（未实现）: refuse 文案强化 / 单域 narrow_adapter+只读
   多样性前验[1b] / detect_domain 修子串+扩技术域[独立线] / gate 语义化[远期]。本轮纯审计,
   未改 gate/classifier/阈值。见 `logs/2026-06-13-small-user-readiness-1a-audit-cc.md`。
+- **SmallUserReadiness-1b（2026-06-13,e972db9）→ 单域多样性前验 + narrow_adapter**:
+  `≥2 domains` guard 对**恰好 1 domain 且 examples/habits 已达标**时放宽——多样性前验
+  （`training/diversity.py`: near-dup≤50% 且词汇量≥12）过线 → `narrow_adapter=True` 训练,
+  否则 refuse 说明单调。examples(≥30)/habits(≥5) **无条件不变**,multi-domain 路径逐字不变。
+  贯通 DataGenReport→TrainResult→train_meta.json+CLI 标 narrow。关键: 多样性测**源文本**
+  非增强样本（变体天然 81% near-dup）;弃 lead-token 改词汇量。11 单测（含 2 集成）,
+  pack 33 类,1022 全过。**单域=带护栏的安全降级。** gate 语义化/扩 DOMAIN_KEYWORDS/修
+  work⊂network 子串留 SmallUserReadiness-1c。见
+  `logs/2026-06-13-small-user-readiness-1b-narrow-adapter-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
