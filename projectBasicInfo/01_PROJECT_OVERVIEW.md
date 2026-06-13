@@ -239,6 +239,16 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   组合把"明显信号被漏→冷启动失败"转为"信号保全→达标即训练"。产品化整套组合有效。下一步
   更大方向待定（安装 UX / LoRAFuel 默认策略 / Dream 全域 redundancy / LoCoMo refresh）。
   见 `logs/2026-06-13-cli-product-smoke-2a-readiness-cc.md`。
+- **InstallUX-1a 审计（2026-06-13,52bf428,只读）→ 打包健康无阻断,短板全在文档滞后**:
+  `where=["src"]` 仅 src/radiomind 进包（bench/tests/devtools 不入用户环境）、entry point +
+  `__main__.py` 使 `radiomind` 与 `python -m radiomind` 发布可用、src 无 bundled 数据依赖
+  （无需 package-data）。误导级（doc 滞后能力）: M1 quickstart 手动配置仍只给 `[llm.openai]`+
+  死端点 default（1b 多 profile `[llm.dashscope]` 未文档化）;M2 "zero config" 需限定为
+  "设一个 API key 环境变量"（init 不写 config.toml）;M3 `python -m radiomind`(1b F5) 未文档化。
+  可优化: O1 无"冷启动到 LoRA"文档序列（2a 已证）/O2 init 可 scaffold config/O3 extras all 漏
+  server/O4 "5min" 对训练设错预期。**15 分钟路径: 到 first-memory+search 成立;到 trained
+  LoRA 不成立（opt-in,需设预期)。** 建议 InstallUX-1b = 纯文档（M1/M2/M3/O1）+ 可选 init
+  scaffold（O2）;安装机制本身就绪不动。见 `logs/2026-06-13-install-ux-1a-audit-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
