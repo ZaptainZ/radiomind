@@ -28,6 +28,21 @@ print(mind.digest())               # "User: morning runner, values sleep quality
 
 ---
 
+## Which entry should I use?
+
+RadioMind is a memory **engine**. How you install it depends on what you're building:
+
+| If you're a… | Install / use | RadioMind's role |
+|---|---|---|
+| **Coding-agent user** (Claude Code, Codex, Cursor, Windsurf) | **[RadioHeader](https://github.com/ZaptainZ/radioheader)** — *recommended* | RadioHeader owns the coding behavior contracts (search-before-you-code, Echo lessons, project logs/rules); RadioMind is its memory backend. Don't wire raw RadioMind into a coding agent yourself. |
+| **Personal-agent user** (Hermes, OpenClaw, future RadioHand) | RadioMind as the memory provider | Long-term personal memory engine behind your agent. |
+| **Power user** (Python / CLI / MCP) | RadioMind native API | Direct control over store, search, refine, dream, train, deploy. |
+
+> Coding agents should reach for **RadioHeader first** — it's the behavior layer
+> built on top of this engine. The rest of this README covers RadioMind as the
+> engine (personal-agent and power-user paths). Product onboarding plan:
+> `projectBasicInfo/04_PRODUCT_ONBOARDING_IMPLEMENTATION.md`.
+
 ## What it does
 
 Most AI memory systems store text and retrieve it. RadioMind goes further — it **distills conversations into habits**:

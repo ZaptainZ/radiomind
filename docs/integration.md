@@ -2,6 +2,13 @@
 
 RadioMind provides 5 integration methods. Pick the one that fits your stack.
 
+> **Coding-agent users start elsewhere.** If you use Claude Code, Codex,
+> Cursor, or Windsurf for projects, install **[RadioHeader](https://github.com/ZaptainZ/radioheader)** —
+> it's the coding behavior layer (search-before-you-code, Echo, project
+> rules/logs) and uses RadioMind as its memory backend. The methods below are
+> for **personal-agent** and **power-user** integration of the RadioMind engine
+> directly. See the README's "Which entry should I use?" for the full routing.
+
 ## Method 1: Python API (simplest)
 
 For Python agents, frameworks, or scripts.

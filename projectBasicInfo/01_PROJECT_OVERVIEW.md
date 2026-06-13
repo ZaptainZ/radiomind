@@ -257,6 +257,20 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   "5 分钟"限定 install→add→search。全仓 grep 无 footgun 残留,零代码。**安装文档现与
   1b/1e/2a 能力一致。** 留 O2（init config scaffold）/O3 extras。
   见 `logs/2026-06-13-install-ux-1b-docs-cc.md`。
+- **Product Onboarding implementation plan（2026-06-13,Codex,纯文档）**:
+  `projectBasicInfo/04_PRODUCT_ONBOARDING_IMPLEMENTATION.md` 固化三入口产品路线:
+  个人 Agent（Hermes/OpenClaw/RadioHand）直接用 RadioMind memory provider;编程 Agent
+  （Codex/Claude Code/Cursor）推荐走 **RadioHeader**, RadioMind 作为其持久记忆后端;硬核用户走
+  RadioMind CLI/Python/MCP。原则: 通用 LLM 订阅暂不做,优先复用宿主 LLM;向量/重排托管订阅
+  延后单独设计;所有导入/写配置/外部服务/训练/删除合并均需宿主代用户授权。该文档给出
+  CC 实施顺序: RadioHeaderMind-1a（先文档路由）→ PersonalOnboarding-1a →
+  PowerUserOnboarding-1a → RadioHeader repo 后续 backend contract。
+- **RadioHeaderMind-1a（2026-06-13,纯文档）→ 三入口路由已上线**: README + README_zh 顶部
+  新增"Which entry should I use? / 我该用哪个入口"路由表（编程 Agent→RadioHeader 推荐 /
+  个人 Agent→RadioMind provider / 硬核→CLI-API-MCP）;integration.md + quickstart 顶部加
+  "编程 Agent 请先用 RadioHeader"指引。**编程 Agent 用户不再被首要导向裸 RadioMind;
+  power-user quickstart 不变。** 零 runtime,未改 RadioHeader repo,未做订阅/向量托管。
+  见 `logs/2026-06-13-radioheadermind-1a-positioning-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`

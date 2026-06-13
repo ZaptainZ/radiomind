@@ -28,6 +28,20 @@ print(mind.digest())             # "User: 每天跑步, 重视睡眠质量"
 
 ---
 
+## 我该用哪个入口？
+
+RadioMind 是记忆**引擎**。怎么装取决于你在做什么：
+
+| 你是… | 安装 / 使用 | RadioMind 的角色 |
+|---|---|---|
+| **编程 Agent 用户**（Claude Code / Codex / Cursor / Windsurf） | **[RadioHeader](https://github.com/ZaptainZ/radioheader)** — *推荐* | RadioHeader 负责编程行为契约（写代码前先搜经验、Echo 沉淀、项目日志/规则），RadioMind 是它的记忆后端。不建议自己把裸 RadioMind 接进编程 Agent。 |
+| **个人 Agent 用户**（Hermes / OpenClaw / 未来 RadioHand） | RadioMind 作为记忆 provider | 你的 Agent 背后的长期个人记忆引擎。 |
+| **硬核用户**（Python / CLI / MCP） | RadioMind 原生 API | 直接控制存储、检索、炼化、做梦、训练、部署。 |
+
+> 编程 Agent 请**优先用 RadioHeader**——它是构建在本引擎之上的行为层。本 README 其余部分
+> 介绍 RadioMind 作为引擎（个人 Agent 与硬核用户路径）。产品上手方案见
+> `projectBasicInfo/04_PRODUCT_ONBOARDING_IMPLEMENTATION.md`。
+
 ## 它做什么
 
 大多数 AI 记忆系统只是存文本、搜文本。RadioMind 更进一步——它**把对话提炼成习惯**：

@@ -1,5 +1,10 @@
 # Quickstart — 5 minutes to your first memory
 
+> **Coding-agent user?** (Claude Code / Codex / Cursor / Windsurf) install
+> **[RadioHeader](https://github.com/ZaptainZ/radioheader)** instead — it uses
+> RadioMind as its backend. This quickstart is for personal-agent and
+> power-user use of the engine directly.
+
 > The 5-minute path is **install → add → search → digest**. Training a
 > personal LoRA adapter is an opt-in advanced path (more data + the MLX
 > extra + time) — see [Advanced: cold-start to a personal LoRA](#advanced-cold-start-to-a-personal-lora).
