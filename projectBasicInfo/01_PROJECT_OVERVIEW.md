@@ -166,7 +166,10 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   > default→dashscope,死 openai 段标 DEPRECATED,dashscope timeout=120）。
   > 16 单测 + pack `core:llm-router`（29 类）+ 980 全过;**CLI train smoke 无宿主
   > 注入复现 LoRAFuel 完成标准（0→5 → 108/27 → habit_ids;R2 跳过）**。遗留候选:
-  > trinity._call_llm 裸 except 无日志、max_tokens 不可配、cost-tier 模型名耦合。
+  > ~~trinity._call_llm 裸 except 无日志~~（**TrinityErrorVisibility-1a 已修 06-13,
+  > a18152c**: 5 个 refinement LLM 吞错点加 logging.warning 含 stage/exc/backend/
+  > prompt_len,控制流不变;10 单测,pack 30 类,990 全过;顺带修复昨日 Fix D 改坏
+  > live config 的 str.replace 误命中注释 bug）、max_tokens 不可配、cost-tier 模型名耦合。
   > 见 `logs/2026-06-13-llmrouter-1a-audit-design-cc.md` + `2026-06-13-llmrouter-1b-fix-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
