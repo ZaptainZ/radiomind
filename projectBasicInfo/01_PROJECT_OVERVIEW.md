@@ -249,6 +249,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   server/O4 "5min" 对训练设错预期。**15 分钟路径: 到 first-memory+search 成立;到 trained
   LoRA 不成立（opt-in,需设预期)。** 建议 InstallUX-1b = 纯文档（M1/M2/M3/O1）+ 可选 init
   scaffold（O2）;安装机制本身就绪不动。见 `logs/2026-06-13-install-ux-1a-audit-cc.md`。
+- **InstallUX-1b（2026-06-13,54a8478,纯文档）→ 安装/包装线收口**: README/README_zh/quickstart
+  改: 死 openai 默认清除 → `default_backend="dashscope"` + `[llm.dashscope]`/`[llm.openrouter]`
+  （openai 标 OPTIONAL,暴露 1b 多 profile）;"zero config" 限定为"宿主LLM/API-key env/已拉模型
+  ollama 三设一,init 不写 config,都没有=纯记忆";`python -m radiomind` fallback 三处;新增
+  "冷启动到 LoRA"进阶节（opt-in,门槛表 ≥5 habits/≥30 examples/≥2 domains 或单域 narrow）;
+  "5 分钟"限定 install→add→search。全仓 grep 无 footgun 残留,零代码。**安装文档现与
+  1b/1e/2a 能力一致。** 留 O2（init config scaffold）/O3 extras。
+  见 `logs/2026-06-13-install-ux-1b-docs-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
