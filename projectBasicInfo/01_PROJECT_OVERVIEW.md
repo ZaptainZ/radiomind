@@ -298,6 +298,15 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   denied/after-grant,pack 36 类,1056 全过。**PersonalOnboarding 线安全默认已与产品原则一致。**
   下一步 PowerUserOnboarding-1a（CLI/API/MCP 命令图 gap,只读）。见
   `logs/2026-06-13-personal-onboarding-1c-authz-gating-cc.md`。
+- **PowerUserOnboarding-1a 审计（2026-06-13,只读）→ 主要是文档 gap,非功能缺陷**: CLI 21 命令图
+  （副作用分级: read-only/writes-local/calls-LLM/trains-deploys/starts-server/writes-host）+
+  Python 三层（Simple connect/CRUD/digest/refine + Advanced RadioMind dream/train via `.advanced`
+  + trinity/attention 原语）+ MCP **17 tools 功能成熟**。**关键发现: MCP tool 数严重低报**
+  （README 9 / api-ref 8 / 实际 17）→ MISLEADING。MISSING: 无统一 CLI 参考、MCP 完整 tool 未枚举、
+  Python dream/train 走 `.advanced` 不显眼。BLOCKER 无。**MCP 无 scope 门控经判定与 1c 一致**
+  （前台显式调用 vs 后台自动副作用,不门控前台）。**1b = 纯文档**（修 MCP 数+枚举 / 加统一 CLI 参考 /
+  点明 .advanced）,不开 MCPOnboarding 单独线（无功能缺口）。见
+  `logs/2026-06-13-poweruser-onboarding-1a-audit-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
