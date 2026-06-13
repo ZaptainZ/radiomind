@@ -325,8 +325,8 @@ claude plugin add radiomind
    - pip install radiomind
    - 如果 pip 报 "externally-managed"：python3 -m venv ~/.radiomind-env && ~/.radiomind-env/bin/pip install radiomind，并添加到 PATH
 2. 激活：radiomind setup
-3. 验证：radiomind status
-RadioMind 自动从环境变量或本地 Ollama 检测 LLM，不需要配置文件。
+3. 验证：radiomind status   （或 python -m radiomind status，脚本不在 PATH 时用）
+RadioMind 自动从宿主 LLM 客户端、API key 环境变量、或已拉取模型的本地 Ollama 中检测 LLM——三者设其一即可（无需配置文件）。三者都没有时进入纯记忆模式。
 ```
 
 ### 手动安装
@@ -335,6 +335,13 @@ RadioMind 自动从环境变量或本地 Ollama 检测 LLM，不需要配置文�
 uv pip install radiomind             # 最快
 pip install radiomind                # 标准（venv/conda）
 pipx install radiomind               # 仅 CLI，自动隔离
+```
+
+安装后两个入口等价——`radiomind` 脚本不在 PATH 时（venv 内常见）用 `python -m radiomind`：
+
+```bash
+radiomind --help
+python -m radiomind --help
 ```
 
 ```bash
