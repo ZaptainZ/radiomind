@@ -64,6 +64,29 @@ DOMAIN_KEYWORDS: dict[str, list[str]] = {
         "爱好", "游戏", "音乐", "电影", "旅行", "摄影", "画画",
         "hobby", "game", "music", "movie", "travel", "photo",
     ],
+    # SmallUserReadiness-1c: minimal technical domains so developer content
+    # lands somewhere instead of domain="" (1a: tech memories were blind to
+    # the 5 lifestyle domains). Deliberately narrow — covers the 1a sample
+    # shapes, not an exhaustive taxonomy.
+    "software": [
+        "代码", "编程", "重构", "调试", "解析器", "适配器", "接口", "架构",
+        "code", "coding", "parser", "parsers", "adapter", "adapters",
+        "refactor", "debug", "interface", "library", "software",
+    ],
+    "ios": [
+        "swift", "swiftui", "xcode", "ios", "iphone", "ipad", "uikit",
+    ],
+    "rust": [
+        "rust", "cargo", "borrow", "lifetime", "serde", "tokio", "trait",
+    ],
+    "networking": [
+        "网络", "代理", "retry", "backoff", "circuit breaker", "tcp",
+        "network", "networking", "proxy", "socket", "latency",
+    ],
+    "ai": [
+        "模型", "推理", "微调", "llm", "embedding", "fallback", "prompt",
+        "inference", "fine-tune", "agent", "rag",
+    ],
 }
 
 
@@ -75,12 +98,24 @@ class ExtractionResult:
     messages_processed: int = 0
 
 
+_ASCII_KW_RE = re.compile(r"^[a-z0-9][a-z0-9 +.\-]*$")
+
+
+def _kw_matches(kw: str, text_lower: str) -> bool:
+    """SmallUserReadiness-1c: word-boundary match for ASCII keywords so
+    'work' no longer matches 'network'/'workflow'; CJK keywords have no
+    word boundaries, so they keep substring matching."""
+    if _ASCII_KW_RE.match(kw):
+        return re.search(rf"\b{re.escape(kw)}\b", text_lower) is not None
+    return kw in text_lower
+
+
 def detect_domain(text: str) -> str:
     """Detect domain from text content using keyword matching."""
     text_lower = text.lower()
     scores: dict[str, int] = {}
     for domain, keywords in DOMAIN_KEYWORDS.items():
-        score = sum(1 for kw in keywords if kw in text_lower)
+        score = sum(1 for kw in keywords if _kw_matches(kw, text_lower))
         if score > 0:
             scores[domain] = score
 

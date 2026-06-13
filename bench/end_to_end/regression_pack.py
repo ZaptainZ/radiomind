@@ -105,6 +105,9 @@ PACK: dict[str, list[str]] = {
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],
+    "core:domain-detect": [
+        "tests/test_domain_detect.py",
+    ],
     "refinement:trinity-error-visibility": [
         "tests/test_trinity_error_visibility.py",
     ],
