@@ -333,6 +333,25 @@ class LLMRouter:
     def available_backends(self) -> list[str]:
         return [name for name, b in self._backends.items() if b.is_available()]
 
+    def backend_status(self) -> list[dict]:
+        """CLIProductSmoke-1b (F6): structured backend rows for doctor/status,
+        ordered DEFAULT-FIRST then deprecated-last. `deprecated` reads an
+        optional `[llm.<name>] deprecated = true` flag (a dead endpoint kept
+        for key rotation should set it so it never appears to lead)."""
+        default = self.config.get("llm.default_backend", "")
+        llm_cfg = self.config.get("llm", {}) or {}
+        rows = []
+        for name, be in self._backends.items():
+            sec = llm_cfg.get(name) if isinstance(llm_cfg.get(name), dict) else {}
+            rows.append({
+                "name": name,
+                "is_default": name == default,
+                "available": be.is_available(),
+                "deprecated": bool(sec.get("deprecated")),
+            })
+        rows.sort(key=lambda r: (not r["is_default"], r["deprecated"], r["name"]))
+        return rows
+
     def _find_available(self) -> tuple[str, LLMBackend] | None:
         for name, be in self._backends.items():
             if be.is_available():

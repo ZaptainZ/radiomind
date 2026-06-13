@@ -99,6 +99,9 @@ PACK: dict[str, list[str]] = {
     "core:llm-router": [
         "tests/test_llm_router.py",
     ],
+    "cli:product-ux": [
+        "tests/test_cli_product_ux.py",
+    ],
     "refinement:trinity-error-visibility": [
         "tests/test_trinity_error_visibility.py",
     ],

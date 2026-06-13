@@ -82,6 +82,9 @@ class DataGenReport:
     domains_used: int
     refused: bool = False
     refused_reason: str = ""
+    # CLIProductSmoke-1b (F1): distinct usable examples produced, so the CLI
+    # can show the gap (e.g. 18/30) without parsing refused_reason.
+    distinct_examples: int = 0
     # LoRAFuel-1b: which habits this training set consumed (observational
     # only — groundwork for future shelf-life/incremental-training policy).
     habit_ids: list = None  # type: ignore[assignment]
@@ -305,6 +308,7 @@ class TrainingDataGenerator:
                 dropped_pii=dropped_pii, dropped_dup=dropped_dup, dropped_short=dropped_short,
                 habits_used=habits_used, domains_used=len(domains),
                 refused=True, refused_reason=refused_reason,
+                distinct_examples=len(clean_examples),
                 habit_ids=consumed_habit_ids,
             )
 
@@ -334,6 +338,7 @@ class TrainingDataGenerator:
             dropped_short=dropped_short,
             habits_used=habits_used,
             domains_used=len(domains),
+            distinct_examples=len(clean_examples),
             habit_ids=consumed_habit_ids,
         )
 

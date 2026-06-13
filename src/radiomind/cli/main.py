@@ -16,6 +16,48 @@ def _get_mind():
     return mind
 
 
+def _render_train_gap(report, prepared: bool) -> list[str]:
+    """CLIProductSmoke-1b (F1): turn a refused DataGenReport into an
+    actionable gap + next step, instead of a single threshold sentence."""
+    from radiomind.training.data_gen import (
+        MIN_DISTINCT_EXAMPLES, MIN_DOMAINS, MIN_HABITS,
+    )
+    lines = ["Not enough data to train yet — current vs required:"]
+    for label, have, need in (
+        ("habits", report.habits_used, MIN_HABITS),
+        ("domains", report.domains_used, MIN_DOMAINS),
+        ("examples", report.distinct_examples, MIN_DISTINCT_EXAMPLES),
+    ):
+        mark = "ok" if have >= need else "short"
+        lines.append(f"  {label:10s} {have}/{need}  [{mark}]")
+    if prepared:
+        lines.append(
+            "prepare-habits already ran — this is a DATA-VOLUME shortfall, "
+            "not an LLM/router failure.")
+    lines.append("Next: add more memories across different topics "
+                 "(`radiomind ingest <file>` or `radiomind learn \"...\"`)"
+                 + ("" if prepared else ", then `radiomind train --prepare-habits`")
+                 + ".")
+    return lines
+
+
+def _render_backends(rows: list[dict]) -> str:
+    """CLIProductSmoke-1b (F6): label backends default-first with tags.
+    e.g. 'dashscope [default], openrouter, openai [deprecated]'."""
+    parts = []
+    for r in rows:
+        tags = []
+        if r["is_default"]:
+            tags.append("default")
+        if r["deprecated"]:
+            tags.append("deprecated")
+        elif not r["available"]:
+            tags.append("unavailable")
+        suffix = f" [{', '.join(tags)}]" if tags else ""
+        parts.append(f"{r['name']}{suffix}")
+    return ", ".join(parts) or "none"
+
+
 @click.group()
 @click.version_option(__version__, prog_name="radiomind")
 def cli() -> None:
@@ -169,6 +211,17 @@ def search(query: str, domain: str | None, pyramid: bool) -> None:
 
     if not results:
         click.echo("No results found.")
+        # CLIProductSmoke-1b (F3): without an embedder, retrieval is
+        # keyword/FTS-only — natural-language questions often miss where
+        # keywords would hit. Tell the user instead of looking broken.
+        if mind._embedder is None:
+            click.echo(
+                "  note: no embedding model loaded — search is keyword (FTS) "
+                "only, so phrase questions as keywords (e.g. 'network retry' "
+                "not 'how do I handle network retries'). For semantic search: "
+                "pip install radiomind[embedding], or enable a retrieval "
+                "provider in config.toml."
+            )
     else:
         for r in results:
             level = r.entry.level.name.lower()
@@ -354,8 +407,7 @@ def doctor() -> None:
     try:
         mind = _get_mind()
         if mind.is_llm_available():
-            backends = mind._llm.available_backends()
-            add("PASS", "LLM backend", f"{', '.join(backends) or 'default'}")
+            add("PASS", "LLM backend", _render_backends(mind._llm.backend_status()))
         else:
             add("WARN", "LLM backend", "no LLM — pure-memory mode only")
 
@@ -406,9 +458,20 @@ def doctor() -> None:
         except Exception as e:
             add("WARN", "Claude Code integration", f"parse error: {e}")
 
+    # CLIProductSmoke-1b (F4): the doctor itself is running through SOME
+    # working entry point, so "not on PATH" is never a failure — only a
+    # convenience note. Distinguish global PATH from the current invocation.
+    import sys as _sys
     bin_path = _sh.which("radiomind")
-    add("PASS" if bin_path else "WARN", "radiomind CLI",
-        bin_path or "not on PATH — check your install")
+    if bin_path:
+        add("PASS", "radiomind CLI", f"on PATH — {bin_path}")
+    else:
+        entry = ("python -m radiomind"
+                 if _sys.argv and _sys.argv[0].endswith("__main__.py")
+                 else f"{_sys.executable} -m radiomind / venv script")
+        add("PASS", "radiomind CLI",
+            f"current entry works ({entry}); not on global PATH — "
+            f"add it for a bare 'radiomind' command")
 
     # Print
     from click import style
@@ -460,7 +523,9 @@ def status() -> None:
         for d in s["domains"]:
             click.echo(f"  - {d['name']} ({d['memory_count']} memories)")
     click.echo()
-    click.echo(f"LLM: {'available' if s['llm_available'] else 'unavailable'} ({', '.join(s['llm_backends']) or 'none'})")
+    llm_label = (_render_backends(mind._llm.backend_status())
+                 if s['llm_available'] and mind._llm else "none")
+    click.echo(f"LLM: {'available' if s['llm_available'] else 'unavailable'} ({llm_label})")
     click.echo(f"LLM calls: {s['llm_usage']['total_calls']} ({s['llm_usage']['total_tokens']} tokens)")
     click.echo()
 
@@ -548,12 +613,8 @@ def train(model: str | None, iters: int | None, data_only: bool,
     if data_only:
         report, path = mind.generate_training_data_with_report()
         if report.refused:
-            click.echo(click.style(f"Refused: {report.refused_reason}", fg="yellow"))
-            click.echo(
-                f"  habits_used={report.habits_used}, domains_used={report.domains_used}, "
-                f"dropped_pii={report.dropped_pii}, dropped_dup={report.dropped_dup}, "
-                f"dropped_short={report.dropped_short}"
-            )
+            for line in _render_train_gap(report, prepared=prepare):
+                click.echo(click.style(line, fg="yellow"))
             mind.shutdown()
             return
         click.echo(f"Train: {report.train_count}  Valid: {report.valid_count}  → {path}")
@@ -583,8 +644,8 @@ def train(model: str | None, iters: int | None, data_only: bool,
     click.echo("Generating training data...")
     report, data_path = mind.generate_training_data_with_report()
     if report.refused:
-        click.echo(click.style(f"Refused: {report.refused_reason}", fg="yellow"))
-        click.echo("Ingest more conversations or run consolidation first.")
+        for line in _render_train_gap(report, prepared=prepare):
+            click.echo(click.style(line, fg="yellow"))
         mind.shutdown()
         return
     click.echo(f"  Train: {report.train_count}  Valid: {report.valid_count}")
