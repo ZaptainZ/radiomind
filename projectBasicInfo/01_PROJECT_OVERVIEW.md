@@ -271,6 +271,14 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   "编程 Agent 请先用 RadioHeader"指引。**编程 Agent 用户不再被首要导向裸 RadioMind;
   power-user quickstart 不变。** 零 runtime,未改 RadioHeader repo,未做订阅/向量托管。
   见 `logs/2026-06-13-radioheadermind-1a-positioning-cc.md`。
+- **PersonalOnboarding-1a 审计（2026-06-13,只读）**: Hermes/MCP/connect 接入面盘点。地基已有
+  两块: 宿主 LLM 注入（`RadioMind(llm=fn)`/Hermes initialize,解析链 Priority 1 唯一通道）+
+  Hermes provider 生命周期。**三缺口: 宿主能力契约（无 HostCapabilities,initialize 只取 llm）、
+  授权 gate（无副作用前确认回调）、readiness 报告（无）。关键定位发现: provider 的 sync_turn
+  每轮自动写记忆 + 每 10 轮自动炼化、on_session_end auto_dream 默认 True——后台副作用默认开,
+  违反 04 §1.4"所有副作用需宿主代请求授权"。** Hermes provider tool 集（4）窄于 MCP（18）。
+  **1b 先做: HostCapabilities 接口草案 + 用它门控 provider 后台副作用（默认未授权不跑）**,
+  仍只接口草案不实现。见 `logs/2026-06-13-personal-onboarding-1a-audit-cc.md`。
   > 加 `logs/2026-06-12-lorafuel-1a-audit-cc.md` + `2026-06-12-lorafuel-1b-prepare-habits-cc.md`
   > 见 `logs/2026-06-12-lora-quant-loss-audit-1a-cc.md` + `2026-06-12-lora-1b-4arm-ab-result-cc.md`
   > + `2026-06-12-lora-1c-modelfile-fix-cc.md` + `2026-06-12-lorafuel-1a-audit-cc.md`
