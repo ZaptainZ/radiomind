@@ -511,6 +511,8 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 
 **BioLocalRetrieval-1b（2026-06-14, 已落地，本仓首个动检索路径的 runtime 改动）**：bare-install FTS-only 地板抬升。新增 `src/radiomind/storage/facet_rerank.py`（`should_rerank` 门控 + 有界 `rerank`，镜像 1a tier-B 便于离线复算）；`PyramidSearch._maybe_facet_rerank` 接入 RRF 之后，**仅当**`_embedder is None 且 _reranker is None`（FTS-only）+ 门控通过（有 number/entity 锚点、非 temporal/ordering/list/CJK）+ **关键词管道返回空**（`fused` 为空）三条同时满足才触发。do-no-harm 关键：AND-FTS 已满页时（1e043500 fused=27, gold rank 1）扩 OR+facet 会把 gold 挤到 rank 6，故只在"空"时介入=无可伤害。宽候选网用 **search_fts_or**（AND→OR 修复：自然语言问句 AND 全词命中 0 是真实 bare-install 失败模式，`mind.search` 返回 []）。运行期 OFF-vs-ON（`biolocal_probe.py --harm-check`）：改善 3（bb7c3b45/9aaed6a3/51a45a95），伤害 0。16 单测 + regression `retrieval:facet-rerank`；local ONNX / remote 路径零行为变化；HDC 仍 PARK。详见 `logs/2026-06-14-biolocal-retrieval-1b-cc.md`。
 
+**检索能力定位（RetrievalUX-1a, 2026-06-14，仅 UX/onboard/doctor/docs，零检索行为改动）**：检索阶梯统一定位 —— 裸装 = FTS+typed-facet（轻量可用）；**`[embedding]` = 推荐**默认增强（本机 ONNX MiniLM ~86MB，文本不出机）；**`[rerank]` = 高级**最佳本地质量（~2.3GB，仅在机器合适时推荐：Apple Silicon 或磁盘充足）；远端 = consent-gated BYOK，非默认、非订阅。新增纯函数模块 `src/radiomind/core/retrieval_tier.py`（`detect_retrieval_tier` + `local_reranker_recommendation` 环境检查：platform/arch/disk）；`onboard`/`doctor` 显示当前 tier 并按机器条件给安装建议（不合适时只说 "advanced reranker skipped for this machine"，不吓用户）；pyproject 补 `rerank` extra（不入 `all`）。**本轮不自动 pip install / 不自动下载 2.3GB**（如要做另开授权 gate 的 RetrievalInstall-1b）。14 单测 + regression `retrieval:tier-ux`。详见 `logs/2026-06-14-retrieval-ux-1a-cc.md`。
+
 ---
 
 ## 激活架构通道 + Skill Fallback 链条（2026-04-21/22）

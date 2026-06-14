@@ -364,11 +364,27 @@ radiomind onboard   # 首次使用路线/配置引导
 ```
 
 ```bash
-# 可选扩展
+# 检索阶梯（全部本地，按需选择）
+pip install 'radiomind[embedding]'   # 推荐 —— 本机语义检索
+                                     #   (ONNX MiniLM ~86MB；文本不出本机)
+pip install 'radiomind[rerank]'      # 高级 —— 本地最佳质量，cross-encoder
+                                     #   (~2.3GB 含 torch；Apple Silicon / 磁盘充足更合适)
+
+# 其他可选扩展
 pip install 'radiomind[server]'      # REST API (FastAPI)
 pip install 'radiomind[train]'       # LoRA 微调 (Apple Silicon MLX)
-pip install 'radiomind[embedding]'   # 向量搜索 (ONNX MiniLM)
 ```
+
+**检索分层**（运行 `radiomind onboard` / `radiomind doctor` 查看当前层级与下一步）：
+
+| 层级 | 能力 | 适用 |
+|------|------|------|
+| 裸装 | FTS 关键词 + typed-facet 兜底 | 始终可用，轻量 |
+| `+[embedding]` | 本机语义召回（推荐） | 默认的质量升级 |
+| `+[rerank]` | 本地 cross-encoder，最佳本地质量（高级） | Apple Silicon / 磁盘充足 |
+| 远端 (BYOK) | 托管 embedding/rerank，**需同意** | 跨设备 / 零本地算力 —— opt-in，非订阅 |
+
+远端检索会把文本发往第三方 API，**默认关闭**；用 `RADIOMIND_REMOTE_RETRIEVAL=1` 或 `retrieval.remote.consent=true` 开启。没有托管/订阅服务 —— 本地是推荐路径。
 
 ## 使用
 

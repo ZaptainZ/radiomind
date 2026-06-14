@@ -112,10 +112,13 @@ mind.initialize()
 | Method | Description |
 |--------|-------------|
 | `ingest(messages)` | L1 attention gate → L2 storage |
-| `search(query, domain)` | FTS5 + LIKE search |
+| `search(query, domain)` | retrieval ladder (see note) |
 | `search_pyramid(query)` | Pyramid: principles → patterns → facts |
 | `query_habits(query)` | L3 HDC habit matching |
 | `learn(text)` | Add L4 external knowledge |
+
+**Retrieval ladder** (`search` adapts to what's installed; all local unless you opt into remote):
+bare install = FTS5 + LIKE + typed-facet fallback (keyword) → `pip install 'radiomind[embedding]'` (recommended; on-device ONNX MiniLM semantic) → `pip install 'radiomind[rerank]'` (advanced; local cross-encoder, best quality, ~2.3GB) → remote embedding/rerank (BYOK, **consent-gated** via `RADIOMIND_REMOTE_RETRIEVAL=1`, off by default; no hosted/subscription service). Run `radiomind onboard` / `radiomind doctor` to see your current tier and the recommended next step.
 
 ### Refinement
 

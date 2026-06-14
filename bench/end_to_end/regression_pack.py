@@ -108,6 +108,9 @@ PACK: dict[str, list[str]] = {
     "retrieval:facet-rerank": [
         "tests/test_facet_rerank.py",
     ],
+    "retrieval:tier-ux": [
+        "tests/test_retrieval_tier.py",
+    ],
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],

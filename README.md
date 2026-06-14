@@ -375,11 +375,27 @@ radiomind onboard   # first-run route/config guidance
 ```
 
 ```bash
-# Optional extras
+# Retrieval ladder (all local; pick by need)
+pip install 'radiomind[embedding]'   # RECOMMENDED — on-device semantic search
+                                     #   (ONNX MiniLM ~86MB; text never leaves your machine)
+pip install 'radiomind[rerank]'      # ADVANCED — best local quality, cross-encoder
+                                     #   (~2.3GB incl. torch; best on Apple Silicon / ample disk)
+
+# Other optional extras
 pip install 'radiomind[server]'      # REST API (FastAPI)
 pip install 'radiomind[train]'       # LoRA fine-tuning (Apple Silicon MLX)
-pip install 'radiomind[embedding]'   # Vector search (ONNX MiniLM)
 ```
+
+**Retrieval tiers** (run `radiomind onboard` / `radiomind doctor` to see your current tier and the right next step):
+
+| Tier | What you get | When |
+|------|--------------|------|
+| Bare install | FTS keyword + typed-facet fallback | always works, lightweight |
+| `+[embedding]` | on-device semantic recall (recommended) | the default upgrade for quality |
+| `+[rerank]` | local cross-encoder, best local quality (advanced) | Apple Silicon / ample disk |
+| remote (BYOK) | hosted embedding/rerank, **consent-gated** | cross-device / zero local compute — opt-in, not a subscription |
+
+Remote retrieval sends text to a third-party API and is **off by default**; enable with `RADIOMIND_REMOTE_RETRIEVAL=1` or `retrieval.remote.consent=true`. There is no hosted/subscription service — local is the recommended path.
 
 ## Use
 

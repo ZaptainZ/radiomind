@@ -78,6 +78,29 @@ def _render_retrieval_status(st: dict) -> str:
     return line
 
 
+def _render_retrieval_tier(state: dict) -> list[str]:
+    """RetrievalUX-1a: position the local retrieval ladder for onboard/doctor.
+
+    Shows the current tier and, when below the recommended local-embedding tier,
+    nudges toward `radiomind[embedding]`. The reranker is suggested only when the
+    machine is a good fit (state['reranker_reco']); otherwise quietly skipped.
+    Remote stays a consent-gated BYOK option, never pushed as default.
+    """
+    from radiomind.core.retrieval_tier import EMBEDDING_INSTALL, EMBEDDING_NOTE
+
+    lines = [f"retrieval tier: {state['retrieval_tier']}"]
+    if not state.get("embedding_installed") and not state.get("remote_retrieval_consent"):
+        lines.append(f"  - recommended: {EMBEDDING_INSTALL}  ({EMBEDDING_NOTE})")
+    reco = state.get("reranker_reco") or {}
+    if not state.get("reranker_installed"):
+        if reco.get("recommended") and reco.get("install_command"):
+            lines.append(f"  - advanced (best local quality): {reco['install_command']}  "
+                         f"({reco['estimated_disk']})")
+        elif reco.get("reason"):
+            lines.append(f"  - {reco['reason']}")
+    return lines
+
+
 def _render_retrieval_consent(consented: bool, key_present: bool) -> str:
     """ManagedRetrieval-1b: onboard posture line (config-only, no live mind).
 
@@ -214,11 +237,19 @@ def _onboard_state() -> dict:
         remote_retrieval_key_present,
     )
 
+    from radiomind.core.retrieval_tier import (
+        detect_retrieval_tier,
+        local_reranker_recommendation,
+    )
+
     cfg = Config.load()
     cfg_path = _config_path(cfg)
     env_keys = [k for k in _LLM_ENV_VARS if os.environ.get(k)]
     rh_home = Path.home() / ".claude" / "radioheader"
     config_exists = cfg_path.exists()
+    tier = detect_retrieval_tier(cfg)
+    reranker_reco = (local_reranker_recommendation(cfg.home)
+                     if not tier["reranker_installed"] else None)
     return {
         "home": str(cfg.home),
         "config_path": str(cfg_path),
@@ -234,6 +265,10 @@ def _onboard_state() -> dict:
         "managed_retrieval": "future / not configured",
         "remote_retrieval_consent": remote_retrieval_consented(cfg),
         "remote_retrieval_key": remote_retrieval_key_present(cfg),
+        "retrieval_tier": tier["tier"],
+        "embedding_installed": tier["embedding_installed"],
+        "reranker_installed": tier["reranker_installed"],
+        "reranker_reco": reranker_reco,
     }
 
 
@@ -267,6 +302,10 @@ def _render_onboard(state: dict) -> list[str]:
             state.get("remote_retrieval_consent", False),
             state.get("remote_retrieval_key", False),
         ),
+    ]
+    if state.get("retrieval_tier"):
+        lines += ["  " + ln for ln in _render_retrieval_tier(state)]
+    lines += [
         "",
         "Recommended next steps:",
     ]
@@ -694,6 +733,30 @@ def doctor() -> None:
             add("WARN", "embedding model", "not installed — run: pip install radiomind[embedding]")
     except Exception as e:
         add("WARN", "embedding model", f"unavailable: {type(e).__name__}")
+
+    # RetrievalUX-1a: position the local retrieval ladder + conditional reranker
+    # advice. Pure detection (no model load); embedding = recommended default,
+    # reranker = advanced and only suggested when the machine is a good fit.
+    try:
+        from radiomind.core.retrieval_tier import (
+            EMBEDDING_INSTALL, detect_retrieval_tier, local_reranker_recommendation,
+        )
+        tier = detect_retrieval_tier(cfg)
+        add("PASS", "retrieval tier", tier["tier"])
+        if not tier["embedding_installed"] and not tier["remote_consented"]:
+            add("WARN", "local embedding",
+                f"recommended for higher-quality local search — {EMBEDDING_INSTALL} "
+                "(on-device ONNX MiniLM ~86MB; text stays local)")
+        if not tier["reranker_installed"]:
+            reco = local_reranker_recommendation(home)
+            if reco["recommended"] and reco["install_command"]:
+                add("PASS", "local reranker",
+                    f"advanced best-quality option — {reco['install_command']} "
+                    f"({reco['estimated_disk']})")
+            else:
+                add("PASS", "local reranker", reco["reason"])
+    except Exception as e:
+        add("WARN", "retrieval tier", f"unavailable: {type(e).__name__}")
 
     try:
         mind = _get_mind()

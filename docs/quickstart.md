@@ -60,9 +60,14 @@ for r in results:
 
 Search uses pyramid retrieval: principles → patterns → facts, plus HDC habit matching.
 
-> Out of the box, search is keyword (FTS) — use words that appear in the memory.
-> For semantic recall (e.g. matching `"exercise"` to `"running"`), install the
-> embedding extra: `pip install 'radiomind[embedding]'`.
+> **Retrieval ladder** (all local — run `radiomind onboard` to see your tier):
+> - Bare install: keyword (FTS) + typed-facet fallback — use words that appear in the memory.
+> - **Recommended:** `pip install 'radiomind[embedding]'` — on-device semantic recall
+>   (e.g. `"exercise"` → `"running"`); ONNX MiniLM ~86MB, text stays local.
+> - **Advanced:** `pip install 'radiomind[rerank]'` — local cross-encoder, best local
+>   quality (~2.3GB; best on Apple Silicon / ample disk).
+> - Remote embedding/rerank is BYOK and **consent-gated** (`RADIOMIND_REMOTE_RETRIEVAL=1`),
+>   off by default — there is no hosted/subscription service.
 
 ## Step 4: Get context digest
 

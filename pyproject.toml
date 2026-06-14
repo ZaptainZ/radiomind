@@ -30,6 +30,10 @@ ollama = ["ollama>=0.4"]
 openai = ["openai>=1.0"]
 vec = ["sqlite-vec>=0.1"]
 embedding = ["onnxruntime>=1.16", "tokenizers>=0.15"]
+# Advanced local cross-encoder reranker (~2.3GB incl. torch) — best local
+# quality, conditionally recommended (see retrieval_tier.local_reranker_recommendation).
+# Deliberately NOT in `all`: it is heavy and opt-in, not a default.
+rerank = ["sentence-transformers>=3.0"]
 server = ["fastapi>=0.115", "uvicorn>=0.34"]
 train = ["mlx>=0.22", "mlx-lm>=0.22"]
 all = ["radiomind[ollama,openai,vec,embedding,train]"]
