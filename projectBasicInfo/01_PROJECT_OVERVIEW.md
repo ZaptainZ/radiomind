@@ -507,6 +507,8 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 
 **远端检索同意门（ManagedRetrieval-1b, 2026-06-14）**：远端 embedding/rerank 会把 memory/query/candidate 原文发到第三方 API，因此**默认关，必须显式授权**——`src/radiomind/core/retrieval_consent.py` 的 `remote_retrieval_consented(config)`：env `RADIOMIND_REMOTE_RETRIEVAL`（1/0 优先）> config `retrieval.remote.consent`（默认 false）。未授权时 `mind.initialize()` 的 `_try_dashscope()` 直接返回 None（退回本地 ONNX/FTS），远端 reranker fallback 同样门控（本地 CrossEncoder 不门控）。后端类带 `is_remote` 类属性（DashScope*/OpenAICompat*=True，本地=False）。出口态在 status/doctor/onboard/search 提示可见，config 模板含 `[retrieval.remote]`。**修复 1a 发现的"有 dashscope key 即静默上传"缺口**。托管向量库/跨设备同步/计费仍 PARK。详见 `logs/2026-06-14-managed-retrieval-1a-cc.md`（设计审计）、`logs/2026-06-14-managed-retrieval-1b-cc.md`（实现）。
 
+**云端向量是否必需的实证（BioLocalRetrieval-1a, 2026-06-14, 只读离线 probe）**：对 19 个归档 LME-S qid 做 4 档检索对照（A FTS / B FTS+typed-facets / C +HDC / D 本地 on-device ONNX embedder），turn 级 gold。recall@30：A 0.147 / B 0.427 / C 0.401 / **D 0.698**。结论：**云端向量不是质量必需能力**——本地 embedder（`[embedding]` extra）即天花板，全程离线零上传，坐实 1a 的 hosted-vector PARK；远端只是便利（跨设备/零算力），保持 consent-gated。facet 重排能补 FTS→语义一半差距但**须按 query 类型门控**（对时间推理/满覆盖题反伤），HDC 无增益已弃。counting 簇地板是语义性的（5 题中 3 题仅 D 能召回进 top-30）。probe: `bench/end_to_end/biolocal_probe.py`（devtools，不入 runtime），详见 `logs/2026-06-14-biolocal-retrieval-1a-cc.md`。下一步 1b（窄）：仅在无 embedder 时对 FTS 做门控 facet 重排，抬升 bare-install 地板。
+
 ---
 
 ## 激活架构通道 + Skill Fallback 链条（2026-04-21/22）

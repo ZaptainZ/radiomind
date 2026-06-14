@@ -1,0 +1,1574 @@
+{
+  "experiment": "BioLocalRetrieval-1a",
+  "dataset": "/Users/Zaptain/Library/Caches/radiomind-data/longmemeval_s_cleaned.json",
+  "embedder_present": true,
+  "weights": {
+    "W_NUMBER": 0.4,
+    "W_ENTITY": 0.3,
+    "W_PHRASE": 0.25,
+    "W_ROLE": 0.08,
+    "W_TIME": 0.1,
+    "W_HDC": 0.35,
+    "HDC_DIM": 4096
+  },
+  "topn": 30,
+  "target_qids": [
+    "9ee3ecd6",
+    "gpt4_194be4b3",
+    "d3ab962e",
+    "c18a7dc8",
+    "b46e15ed",
+    "bb7c3b45",
+    "gpt4_d6585ce8",
+    "031748ae_abs",
+    "gpt4_93159ced_abs",
+    "gpt4_93159ced",
+    "9aaed6a3",
+    "gpt4_d12ceb0e",
+    "d851d5ba",
+    "gpt4_7abb270c"
+  ],
+  "control_qids": [
+    "e47becba",
+    "118b2229",
+    "51a45a95",
+    "58bf7951",
+    "1e043500"
+  ],
+  "elapsed_s": 430.4,
+  "results": [
+    {
+      "qid": "9ee3ecd6",
+      "question": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_66c23110_1_t0",
+        "answer_66c23110_2_t6"
+      ],
+      "pool_size": 476,
+      "turns_ingested": 476,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 40,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            40,
+            400
+          ],
+          "in_top30": false,
+          "latency_ms": 112.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            20
+          ],
+          "in_top30": true,
+          "latency_ms": 49.6,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_66c23110_2_t6",
+            "shared_numbers": [],
+            "shared_entities": [
+              "sephora"
+            ],
+            "shared_bigrams": [
+              "free skincare",
+              "skincare product"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            18
+          ],
+          "in_top30": true,
+          "latency_ms": 295.0,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            3
+          ],
+          "in_top30": true,
+          "latency_ms": 19900.4,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_194be4b3",
+      "question": "How many musical instruments do I currently own?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_3826dc55_1_t0",
+        "answer_3826dc55_2_t6",
+        "answer_3826dc55_3_t0",
+        "answer_3826dc55_4_t0"
+      ],
+      "pool_size": 474,
+      "turns_ingested": 474,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 4,
+          "best_rank": 119,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            119,
+            373,
+            414,
+            468
+          ],
+          "in_top30": false,
+          "latency_ms": 51.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 4,
+          "best_rank": 85,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            85,
+            206,
+            226,
+            252
+          ],
+          "in_top30": false,
+          "latency_ms": 47.9,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_3826dc55_4_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 4,
+          "best_rank": 223,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            223,
+            230,
+            233,
+            242
+          ],
+          "in_top30": false,
+          "latency_ms": 307.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 4,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 0.5,
+          "gold_ranks": [
+            1,
+            9,
+            48,
+            77
+          ],
+          "in_top30": true,
+          "latency_ms": 20649.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "d3ab962e",
+      "question": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_5237bb0b_1_t0",
+        "answer_5237bb0b_2_t0"
+      ],
+      "pool_size": 530,
+      "turns_ingested": 530,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 119,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            119,
+            454
+          ],
+          "in_top30": false,
+          "latency_ms": 50.1,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 67,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            67,
+            231
+          ],
+          "in_top30": false,
+          "latency_ms": 51.9,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_5237bb0b_1_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 219,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            219,
+            246
+          ],
+          "in_top30": false,
+          "latency_ms": 328.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 12,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            12,
+            29
+          ],
+          "in_top30": true,
+          "latency_ms": 22944.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "c18a7dc8",
+      "question": "How many years older am I than when I graduated from college?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_2e2085fa_1_t0",
+        "answer_2e2085fa_2_t8"
+      ],
+      "pool_size": 509,
+      "turns_ingested": 509,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 168,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            168,
+            244
+          ],
+          "in_top30": false,
+          "latency_ms": 43.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 107,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            107,
+            145
+          ],
+          "in_top30": false,
+          "latency_ms": 49.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_2e2085fa_1_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 141,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            141,
+            157
+          ],
+          "in_top30": false,
+          "latency_ms": 299.5,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 17,
+          "hits_at_30": 1,
+          "recall_at_30": 0.5,
+          "gold_ranks": [
+            17,
+            60
+          ],
+          "in_top30": true,
+          "latency_ms": 20977.7,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "b46e15ed",
+      "question": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_4bfcc250_1_t0",
+        "answer_4bfcc250_1_t6",
+        "answer_4bfcc250_2_t0",
+        "answer_4bfcc250_3_t0",
+        "answer_4bfcc250_4_t0"
+      ],
+      "pool_size": 478,
+      "turns_ingested": 478,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 5,
+          "best_rank": 6,
+          "hits_at_30": 3,
+          "recall_at_30": 0.6,
+          "gold_ranks": [
+            6,
+            12,
+            24,
+            209,
+            408
+          ],
+          "in_top30": true,
+          "latency_ms": 44.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 5,
+          "best_rank": 14,
+          "hits_at_30": 1,
+          "recall_at_30": 0.2,
+          "gold_ranks": [
+            14,
+            34,
+            40,
+            126,
+            220
+          ],
+          "in_top30": true,
+          "latency_ms": 49.4,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_4bfcc250_1_t6",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [
+              "charity events"
+            ],
+            "role_user": true,
+            "month_match": false
+          }
+        },
+        "C_hdc": {
+          "gold_total": 5,
+          "best_rank": 14,
+          "hits_at_30": 1,
+          "recall_at_30": 0.2,
+          "gold_ranks": [
+            14,
+            45,
+            82,
+            167,
+            175
+          ],
+          "in_top30": true,
+          "latency_ms": 290.4,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 5,
+          "best_rank": 25,
+          "hits_at_30": 1,
+          "recall_at_30": 0.2,
+          "gold_ranks": [
+            25,
+            43,
+            47,
+            77,
+            173
+          ],
+          "in_top30": true,
+          "latency_ms": 19593.0,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "bb7c3b45",
+      "question": "How much did I save on the Jimmy Choo heels?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_de64539a_1_t0",
+        "answer_de64539a_2_t0"
+      ],
+      "pool_size": 495,
+      "turns_ingested": 495,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 54,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            54,
+            341
+          ],
+          "in_top30": false,
+          "latency_ms": 46.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 5,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            5,
+            8
+          ],
+          "in_top30": true,
+          "latency_ms": 47.4,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_de64539a_2_t0",
+            "shared_numbers": [],
+            "shared_entities": [
+              "jimmy choo"
+            ],
+            "shared_bigrams": [
+              "choo heels",
+              "jimmy choo"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 7,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            7,
+            8
+          ],
+          "in_top30": true,
+          "latency_ms": 297.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            8
+          ],
+          "in_top30": true,
+          "latency_ms": 19573.5,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_d6585ce8",
+      "question": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_f999b05b_1_t0",
+        "answer_f999b05b_2_t0",
+        "answer_f999b05b_3_t0",
+        "answer_f999b05b_4_t0",
+        "answer_f999b05b_5_t0"
+      ],
+      "pool_size": 491,
+      "turns_ingested": 491,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 5,
+          "best_rank": 10,
+          "hits_at_30": 1,
+          "recall_at_30": 0.2,
+          "gold_ranks": [
+            10,
+            246,
+            272,
+            321,
+            481
+          ],
+          "in_top30": true,
+          "latency_ms": 46.3,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 5,
+          "best_rank": 44,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            44,
+            67,
+            174,
+            187,
+            320
+          ],
+          "in_top30": false,
+          "latency_ms": 47.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_f999b05b_1_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [
+              "from the"
+            ],
+            "role_user": true,
+            "month_match": false
+          }
+        },
+        "C_hdc": {
+          "gold_total": 5,
+          "best_rank": 42,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            42,
+            84,
+            157,
+            171,
+            356
+          ],
+          "in_top30": false,
+          "latency_ms": 306.4,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 5,
+          "best_rank": 17,
+          "hits_at_30": 2,
+          "recall_at_30": 0.4,
+          "gold_ranks": [
+            17,
+            23,
+            44,
+            45,
+            51
+          ],
+          "in_top30": true,
+          "latency_ms": 19200.8,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "031748ae_abs",
+      "question": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "question_type": "knowledge-update",
+      "gold_turns": [],
+      "pool_size": 523,
+      "turns_ingested": 523,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 47.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 48.6,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {}
+        },
+        "C_hdc": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 303.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 22120.6,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_93159ced_abs",
+      "question": "How long have I been working before I started my current job at Google?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [],
+      "pool_size": 608,
+      "turns_ingested": 608,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 53.0,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 48.7,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {}
+        },
+        "C_hdc": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 309.2,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 0,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "recall_at_30": null,
+          "gold_ranks": [],
+          "in_top30": false,
+          "latency_ms": 28080.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_93159ced",
+      "question": "How long have I been working before I started my current job at NovaTech?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_e5131a1b_1_t2",
+        "answer_e5131a1b_2_t10",
+        "answer_e5131a1b_2_t4"
+      ],
+      "pool_size": 444,
+      "turns_ingested": 444,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 3,
+          "best_rank": 192,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            192,
+            434,
+            440
+          ],
+          "in_top30": false,
+          "latency_ms": 53.5,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 3,
+          "best_rank": 3,
+          "hits_at_30": 3,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            3,
+            4,
+            18
+          ],
+          "in_top30": true,
+          "latency_ms": 51.7,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_e5131a1b_2_t10",
+            "shared_numbers": [],
+            "shared_entities": [
+              "novatech"
+            ],
+            "shared_bigrams": [
+              "been working"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 3,
+          "best_rank": 2,
+          "hits_at_30": 3,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            2,
+            3,
+            19
+          ],
+          "in_top30": true,
+          "latency_ms": 286.4,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 3,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 0.667,
+          "gold_ranks": [
+            1,
+            9,
+            85
+          ],
+          "in_top30": true,
+          "latency_ms": 20920.1,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "9aaed6a3",
+      "question": "How much cashback did I earn at SaveMart last Thursday?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_353d3c6d_1_t0",
+        "answer_353d3c6d_2_t0"
+      ],
+      "pool_size": 541,
+      "turns_ingested": 541,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 403,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            403,
+            443
+          ],
+          "in_top30": false,
+          "latency_ms": 60.1,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            19
+          ],
+          "in_top30": true,
+          "latency_ms": 54.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_353d3c6d_1_t0",
+            "shared_numbers": [],
+            "shared_entities": [
+              "savemart",
+              "thursday"
+            ],
+            "shared_bigrams": [
+              "last thursday",
+              "savemart last"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            19
+          ],
+          "in_top30": true,
+          "latency_ms": 344.7,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 14,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            14,
+            18
+          ],
+          "in_top30": true,
+          "latency_ms": 22383.1,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_d12ceb0e",
+      "question": "What is the average age of me, my parents, and my grandparents?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_2504635e_1_t0",
+        "answer_2504635e_2_t0",
+        "answer_2504635e_3_t0"
+      ],
+      "pool_size": 477,
+      "turns_ingested": 477,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 3,
+          "best_rank": 198,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            198,
+            296,
+            420
+          ],
+          "in_top30": false,
+          "latency_ms": 49.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 3,
+          "best_rank": 107,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            107,
+            156,
+            216
+          ],
+          "in_top30": false,
+          "latency_ms": 48.0,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_2504635e_1_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 3,
+          "best_rank": 91,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            91,
+            127,
+            178
+          ],
+          "in_top30": false,
+          "latency_ms": 289.0,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 3,
+          "best_rank": 1,
+          "hits_at_30": 3,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1,
+            6,
+            11
+          ],
+          "in_top30": true,
+          "latency_ms": 19370.8,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "d851d5ba",
+      "question": "How much money did I raise for charity in total?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_5cdf9bd2_1_t0",
+        "answer_5cdf9bd2_2_t6",
+        "answer_5cdf9bd2_3_t0",
+        "answer_5cdf9bd2_4_t0"
+      ],
+      "pool_size": 533,
+      "turns_ingested": 533,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 4,
+          "best_rank": 134,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            134,
+            192,
+            395,
+            445
+          ],
+          "in_top30": false,
+          "latency_ms": 55.2,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 4,
+          "best_rank": 13,
+          "hits_at_30": 1,
+          "recall_at_30": 0.25,
+          "gold_ranks": [
+            13,
+            108,
+            134,
+            229
+          ],
+          "in_top30": true,
+          "latency_ms": 49.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_5cdf9bd2_2_t6",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [
+              "for charity"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 4,
+          "best_rank": 14,
+          "hits_at_30": 1,
+          "recall_at_30": 0.25,
+          "gold_ranks": [
+            14,
+            223,
+            259,
+            288
+          ],
+          "in_top30": true,
+          "latency_ms": 312.6,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 4,
+          "best_rank": 3,
+          "hits_at_30": 4,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            3,
+            4,
+            6,
+            13
+          ],
+          "in_top30": true,
+          "latency_ms": 26123.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_7abb270c",
+      "question": "What is the order of the six museums I visited from earliest to latest?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_7093d898_1_t0",
+        "answer_7093d898_2_t6",
+        "answer_7093d898_3_t0",
+        "answer_7093d898_4_t0",
+        "answer_7093d898_5_t0",
+        "answer_7093d898_6_t0"
+      ],
+      "pool_size": 467,
+      "turns_ingested": 467,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 6,
+          "best_rank": 43,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            43,
+            165,
+            278,
+            326,
+            372,
+            406
+          ],
+          "in_top30": false,
+          "latency_ms": 51.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 6,
+          "best_rank": 26,
+          "hits_at_30": 1,
+          "recall_at_30": 0.167,
+          "gold_ranks": [
+            26,
+            112,
+            167,
+            191,
+            214,
+            231
+          ],
+          "in_top30": true,
+          "latency_ms": 72.0,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_7093d898_6_t0",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 6,
+          "best_rank": 19,
+          "hits_at_30": 1,
+          "recall_at_30": 0.167,
+          "gold_ranks": [
+            19,
+            85,
+            118,
+            198,
+            213,
+            245
+          ],
+          "in_top30": true,
+          "latency_ms": 291.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 6,
+          "best_rank": 4,
+          "hits_at_30": 3,
+          "recall_at_30": 0.5,
+          "gold_ranks": [
+            4,
+            5,
+            11,
+            31,
+            72,
+            74
+          ],
+          "in_top30": true,
+          "latency_ms": 24864.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "e47becba",
+      "question": "What degree did I graduate with?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_280352e9_t4",
+        "answer_280352e9_t5"
+      ],
+      "pool_size": 550,
+      "turns_ingested": 550,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 2,
+          "best_rank": 19,
+          "hits_at_30": 2,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            19,
+            20
+          ],
+          "in_top30": true,
+          "latency_ms": 55.4,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 2,
+          "best_rank": 10,
+          "hits_at_30": 1,
+          "recall_at_30": 0.5,
+          "gold_ranks": [
+            10,
+            283
+          ],
+          "in_top30": true,
+          "latency_ms": 48.1,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_280352e9_t4",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 2,
+          "best_rank": 143,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            143,
+            492
+          ],
+          "in_top30": false,
+          "latency_ms": 309.0,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 2,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "recall_at_30": 0.5,
+          "gold_ranks": [
+            4,
+            63
+          ],
+          "in_top30": true,
+          "latency_ms": 23515.7,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "118b2229",
+      "question": "How long is my daily commute to work?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_40a90d51_t8"
+      ],
+      "pool_size": 485,
+      "turns_ingested": 485,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 1,
+          "best_rank": 397,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            397
+          ],
+          "in_top30": false,
+          "latency_ms": 55.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 1,
+          "best_rank": 17,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            17
+          ],
+          "in_top30": true,
+          "latency_ms": 49.0,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_40a90d51_t8",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [
+              "daily commute"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 1,
+          "best_rank": 17,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            17
+          ],
+          "in_top30": true,
+          "latency_ms": 287.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 1,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            2
+          ],
+          "in_top30": true,
+          "latency_ms": 20383.4,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "51a45a95",
+      "question": "Where did I redeem a $5 coupon on coffee creamer?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_d61669c7_t4"
+      ],
+      "pool_size": 529,
+      "turns_ingested": 529,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 1,
+          "best_rank": 85,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            85
+          ],
+          "in_top30": false,
+          "latency_ms": 53.8,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 49.0,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_d61669c7_t4",
+            "shared_numbers": [
+              "5"
+            ],
+            "shared_entities": [],
+            "shared_bigrams": [
+              "coffee creamer",
+              "coupon coffee"
+            ],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 312.7,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 21524.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "58bf7951",
+      "question": "What play did I attend at the local community theater?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_355c48bb_t4"
+      ],
+      "pool_size": 616,
+      "turns_ingested": 616,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 1,
+          "best_rank": 293,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            293
+          ],
+          "in_top30": false,
+          "latency_ms": 54.1,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 1,
+          "best_rank": 151,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            151
+          ],
+          "in_top30": false,
+          "latency_ms": 48.4,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_355c48bb_t4",
+            "shared_numbers": [],
+            "shared_entities": [],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 1,
+          "best_rank": 149,
+          "hits_at_30": 0,
+          "recall_at_30": 0.0,
+          "gold_ranks": [
+            149
+          ],
+          "in_top30": false,
+          "latency_ms": 332.3,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 1,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            4
+          ],
+          "in_top30": true,
+          "latency_ms": 24694.3,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    },
+    {
+      "qid": "1e043500",
+      "question": "What is the name of the playlist I created on Spotify?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_3e012175_t2"
+      ],
+      "pool_size": 510,
+      "turns_ingested": 510,
+      "tiers": {
+        "A_fts": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 128.0,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "B_facets": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 48.9,
+          "needs_llm": false,
+          "needs_remote": false,
+          "explain_top_gold": {
+            "turn_id": "answer_3e012175_t2",
+            "shared_numbers": [],
+            "shared_entities": [
+              "spotify"
+            ],
+            "shared_bigrams": [],
+            "role_user": true,
+            "month_match": true
+          }
+        },
+        "C_hdc": {
+          "gold_total": 1,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            1
+          ],
+          "in_top30": true,
+          "latency_ms": 299.9,
+          "needs_llm": false,
+          "needs_remote": false
+        },
+        "D_local_semantic": {
+          "gold_total": 1,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "recall_at_30": 1.0,
+          "gold_ranks": [
+            2
+          ],
+          "in_top30": true,
+          "latency_ms": 21570.2,
+          "needs_llm": false,
+          "needs_remote": false,
+          "note": "on-device ONNX MiniLM-384; NOT remote"
+        }
+      }
+    }
+  ]
+}
