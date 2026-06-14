@@ -105,6 +105,9 @@ PACK: dict[str, list[str]] = {
     "retrieval:remote-consent": [
         "tests/test_managed_retrieval_consent.py",
     ],
+    "retrieval:facet-rerank": [
+        "tests/test_facet_rerank.py",
+    ],
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],

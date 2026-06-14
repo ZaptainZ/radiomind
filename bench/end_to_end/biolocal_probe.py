@@ -456,17 +456,85 @@ def _aggregate(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def harm_check(qids: list[str] | None = None, max_results: int = 30) -> int:
+    """BioLocalRetrieval-1b runtime do-no-harm + win check. For each qid, ingest
+    into a FRESH per-qid store (mimics a real single-user bare install) and run
+    the SAME `mind.search` twice — facet rerank OFF then ON — comparing the
+    best gold rank. This is the definitive 1b validation (the 1a JSON computed A
+    differently, over the full pool)."""
+    data = json.loads(DATASET.read_text())
+    by = {r["question_id"]: r for r in data}
+    qids = qids or [q for q in TARGET_QIDS if q in by]
+    from radiomind.core.mind import RadioMind
+
+    def gold_best(mind, tgt, gold, on: bool) -> tuple[int | None, bool, str]:
+        pyr = mind._pyramid
+        orig = pyr._maybe_facet_rerank
+        if not on:
+            pyr._maybe_facet_rerank = lambda q, fused, mr: fused
+        try:
+            res = mind.search(tgt["question"], domain="d",
+                              max_results=max_results, fuse_habits=False)
+        finally:
+            pyr._maybe_facet_rerank = orig
+        dbg = pyr._last_facet_debug or {}
+        best = None
+        for i, r in enumerate(res, 1):
+            if (r.entry.metadata or {}).get("turn_id", "") in gold:
+                best = i
+                break
+        return best, bool(dbg.get("used")), dbg.get("reason", "")
+
+    print(f"{'qid':16} {'type':16} {'OFF':>5} {'ON':>5} {'used':5} verdict")
+    print("-" * 78)
+    improved = harmed = 0
+    for qid in qids:
+        tgt = by[qid]
+        sb = Path(f"/tmp/rm-1bhc-{qid}")
+        os.environ["RADIOMIND_HOME"] = str(sb)
+        os.environ["RADIOMIND_REMOTE_RETRIEVAL"] = "0"
+        if sb.exists():
+            shutil.rmtree(sb)
+        mind = RadioMind(); mind.initialize()
+        _ingest_qid(mind, tgt, "d")
+        gold = _gold_turn_ids(tgt)
+        off, _, _ = gold_best(mind, tgt, gold, on=False)
+        on, used, reason = gold_best(mind, tgt, gold, on=True)
+        mind.shutdown()
+        o = off or 9999; n = on or 9999
+        verdict = ""
+        if n < o:
+            verdict = "IMPROVE"; improved += 1
+        elif n > o:
+            verdict = "HARM"; harmed += 1
+        print(f"{qid:16} {tgt.get('question_type','?')[:16]:16} "
+              f"{(off if off else '—'):>5} {(on if on else '—'):>5} "
+              f"{str(used):5} {verdict}  ({reason})")
+    print("-" * 78)
+    print(f"improved: {improved}   harmed: {harmed}")
+    return 1 if harmed else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--qids", default="", help="comma list; default = curated set")
     ap.add_argument("--out", default=str(DEFAULT_OUT))
     ap.add_argument("--sandbox", default="/tmp/rm-biolocal")
     ap.add_argument("--report", default="", help="re-print an existing result json")
+    ap.add_argument("--harm-check", action="store_true",
+                    help="1b runtime do-no-harm: mind.search rerank OFF vs ON")
     args = ap.parse_args()
 
     if args.report:
         _print_report(json.loads(Path(args.report).read_text()))
         return 0
+
+    if args.harm_check:
+        if not DATASET.exists():
+            print(f"dataset missing: {DATASET}", file=sys.stderr)
+            return 2
+        qids = [q.strip() for q in args.qids.split(",") if q.strip()] or None
+        return harm_check(qids)
 
     if not DATASET.exists():
         print(f"dataset missing: {DATASET}", file=sys.stderr)

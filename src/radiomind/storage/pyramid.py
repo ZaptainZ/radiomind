@@ -133,6 +133,7 @@ class PyramidSearch:
         self._reranker = reranker  # optional CrossEncoderReranker
         self._query_rewriter = query_rewriter  # optional QueryRewriter
         self._kg = kg  # optional KnowledgeGraph — used for temporal/entity queries
+        self._last_facet_debug: dict | None = None  # BioLocal-1b: last rerank decision
 
     def set_embedder(self, embedder) -> None:
         self._embedder = embedder
@@ -145,6 +146,54 @@ class PyramidSearch:
 
     def set_kg(self, kg) -> None:
         self._kg = kg
+
+    def _maybe_facet_rerank(self, query, fused, max_results):
+        """BioLocalRetrieval-1b: gated typed-facet rerank for the FTS-only path.
+
+        Fetches a wider FTS pool (so a low-FTS-ranked but strongly-anchored gold
+        turn is in scope), unions it with what RRF already found (LIKE/KG), then
+        applies a bounded facet bonus. Gate / scoring live in storage.facet_rerank
+        so the offline probe replays the exact runtime logic. Returns `fused`
+        unchanged when gated off."""
+        from radiomind.storage import facet_rerank as fr
+        ok, reason = fr.should_rerank(query)
+        if not ok:
+            self._last_facet_debug = {"used": False, "reason": reason}
+            return fused
+        # Do-no-harm: only intervene when the keyword pipeline returned NOTHING.
+        # The bare-install pathology is AND-FTS+LIKE retrieving zero candidates
+        # for a natural-language question (no single memory carries every term),
+        # so mind.search returns []. When the pipeline returns ANY candidates it
+        # is healthy and must not be disturbed — measurement showed widening to
+        # OR + facet rerank demotes an already-rank-1 gold turn (fused=27→rank6).
+        # Acting only on the empty case means there is literally nothing to harm.
+        if fused:
+            self._last_facet_debug = {"used": False, "reason": "fts_nonempty",
+                                      "fused": len(fused)}
+            return fused
+        # Build the WIDE candidate net with OR semantics. The default pipeline
+        # uses AND-FTS (search_fts), which returns nothing for natural-language
+        # questions where no single memory carries every query term (e.g. "how
+        # much did I save on the Jimmy Choo heels" → 0). OR recall surfaces the
+        # anchored gold turn so the facet rerank has material to promote.
+        try:
+            wide = []
+            if hasattr(self._store, "search_fts_or"):
+                wide = self._store.search_fts_or(query, limit=fr.WIDE_FETCH)
+            if not wide:
+                wide = self._store.search_fts(query, limit=fr.WIDE_FETCH)
+        except Exception:
+            wide = []
+        pool, seen = [], set()
+        for r in list(wide) + list(fused):
+            eid = r.entry.id
+            if eid in seen:
+                continue
+            seen.add(eid)
+            pool.append(r)
+        reranked, debug = fr.rerank(query, "", pool, max_results)
+        self._last_facet_debug = debug
+        return reranked
 
     def search(
         self,
@@ -281,6 +330,15 @@ class PyramidSearch:
         # it has enough candidates to actually improve ordering.
         rrf_limit = max(max_results, 20) if self._reranker is not None else max_results
         fused = self._rrf_fuse(candidates, rrf_limit)
+
+        # BioLocalRetrieval-1b: FTS-only bare-install floor lift. With no embedder
+        # AND no reranker, retrieval is keyword-only and the gold turn is often
+        # lexically diluted out of top-k. A gated, bounded, deterministic typed-
+        # facet rerank over a WIDER FTS pool recovers it (1a: recall@30
+        # 0.147→0.427). No-op when an embedder/reranker is present (those are
+        # better) or when the query is temporal/ordering/anchorless.
+        if self._embedder is None and self._reranker is None:
+            fused = self._maybe_facet_rerank(query, fused, max_results)
 
         # 5. Cross-encoder rerank (optional, high quality path).
         # Takes RRF's top-20 and re-scores with a pairwise
