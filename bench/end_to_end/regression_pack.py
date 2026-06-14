@@ -102,6 +102,9 @@ PACK: dict[str, list[str]] = {
     "cli:product-ux": [
         "tests/test_cli_product_ux.py",
     ],
+    "retrieval:remote-consent": [
+        "tests/test_managed_retrieval_consent.py",
+    ],
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],

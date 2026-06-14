@@ -185,7 +185,8 @@ v0.1 系统审计发现 7 条 P0/P1，经 P1 + P2 + P3 三轮修复后的状态�
   habits/domains/examples have/need[ok|short]+下一步+"DATA-VOLUME 非 LLM/router 故障"
   （门槛不变,加 DataGenReport.distinct_examples 观测字段）;F3 search 空且真无 embedder
   才提示 FTS-only+安装引导（澄清 1a 误判: dashscope key 在时 DashScopeEmbedder 自动激活,
-  非 None,1a"无 embedder"不准）;F4 doctor PATH 恒 PASS 显示 current entry;F5
+  非 None,1a"无 embedder"不准）**【已被 ManagedRetrieval-1b 改变: 该自动激活现需显式同意,
+  未授权时 dashscope key 不再激活远端 embedder】**;F4 doctor PATH 恒 PASS 显示 current entry;F5
   `src/radiomind/__main__.py` → `python -m radiomind` 可用;F6 router `backend_status()`
   default-first/deprecated-last,doctor+status 共用,live openai 已加 `deprecated=true`。
   11 单测,pack 31 类,1011 全过,re-smoke 5 点改善。
@@ -503,6 +504,8 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 把 embedder 和 reranker 拧到同一根配置段 `[retrieval_provider]`：一个 base_url、一个 api_key、一个 enable 开关。同一供应商（DashScope / Jina / Voyage / Cohere / OpenRouter）embedder + reranker 一起装。新增 OpenRouter provider。Reranker 作为子开关 `use_reranker`，**默认 on**（对 A2A-practice 自然，A2A-strict 模式再显式关）。prompt 做了轻量调参，让 reranker 在 long-context 不被噪声拖垮。
 
 详见 `logs/2026-04-21-retrieval-provider-unify-cc.md`、`logs/2026-04-21-embedding-rerank-decouple-cc.md`。
+
+**远端检索同意门（ManagedRetrieval-1b, 2026-06-14）**：远端 embedding/rerank 会把 memory/query/candidate 原文发到第三方 API，因此**默认关，必须显式授权**——`src/radiomind/core/retrieval_consent.py` 的 `remote_retrieval_consented(config)`：env `RADIOMIND_REMOTE_RETRIEVAL`（1/0 优先）> config `retrieval.remote.consent`（默认 false）。未授权时 `mind.initialize()` 的 `_try_dashscope()` 直接返回 None（退回本地 ONNX/FTS），远端 reranker fallback 同样门控（本地 CrossEncoder 不门控）。后端类带 `is_remote` 类属性（DashScope*/OpenAICompat*=True，本地=False）。出口态在 status/doctor/onboard/search 提示可见，config 模板含 `[retrieval.remote]`。**修复 1a 发现的"有 dashscope key 即静默上传"缺口**。托管向量库/跨设备同步/计费仍 PARK。详见 `logs/2026-06-14-managed-retrieval-1a-cc.md`（设计审计）、`logs/2026-06-14-managed-retrieval-1b-cc.md`（实现）。
 
 ---
 
@@ -1613,7 +1616,7 @@ class RadioMindHermesProvider(MemoryProvider):
 | **L3 存储 (LoRA)** | MLX (Mac) / QLoRA (Linux) | Mac 原生优化，Linux 用 CUDA |
 | **推理 (LoRA)** | Ollama + ADAPTER 指令 | 热加载 LoRA，<1s 切换 |
 | **推理 (炼化)** | Ollama (本地) / OpenAI API (云端) | 本地优先，云端可选 |
-| **检索能力模块（Embedding + Reranker）** | Embedding: DashScope text-embedding-v4 (2048维) / ONNX MiniLM (384维 离线 fallback)。Reranker: 可选 gte-rerank-v2 (DashScope) / BAAI/bge-reranker-v2-m3 (本地) | 统一 `[retrieval_provider]` 配置段：一个 key、一个 base_url、一个 enable 开关；同一供应商（DashScope/Jina/Voyage/Cohere 都打包两者）。Reranker 作为子开关 `use_reranker`，默认关（对 A2A-strict 友好） |
+| **检索能力模块（Embedding + Reranker）** | Embedding: DashScope text-embedding-v4 (2048维) / ONNX MiniLM (384维 离线 fallback)。Reranker: 可选 gte-rerank-v2 (DashScope) / BAAI/bge-reranker-v2-m3 (本地) | 统一 `[retrieval_provider]` 配置段：一个 key、一个 base_url、一个 enable 开关；同一供应商（DashScope/Jina/Voyage/Cohere 都打包两者）。Reranker 作为子开关 `use_reranker`，默认关（对 A2A-strict 友好）。**远端 embedding/rerank 默认关，需 `RADIOMIND_REMOTE_RETRIEVAL` / `retrieval.remote.consent` 显式授权（ManagedRetrieval-1b）**——未授权退回本地 ONNX/FTS |
 | **经验文件** | Markdown + YAML frontmatter | 人类可读可编辑（沿用 RadioHeader） |
 | **配置** | TOML | 所有外部依赖通过配置声明，不写死 |
 | **接口协议** | IPC (Unix socket) + MCP + Python API | 多种接入方式 |

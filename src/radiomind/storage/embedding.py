@@ -29,6 +29,8 @@ def check_embedding_available() -> tuple[bool, str]:
 class EmbeddingEncoder:
     """Encode text to 384-dim vectors using ONNX MiniLM-L6-v2."""
 
+    is_remote = False  # on-device; text never leaves the machine
+
     def __init__(self, model_dir: Path | None = None):
         self._session = None
         self._tokenizer = None

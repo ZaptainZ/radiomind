@@ -17,6 +17,8 @@ _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 class OpenAICompatReranker:
+    is_remote = True  # sends query + candidate text to a third-party rerank API
+
     def __init__(
         self,
         base_url: str,

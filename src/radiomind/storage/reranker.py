@@ -43,6 +43,8 @@ class CrossEncoderReranker:
     it. Predict API returns float scores per (query, doc) pair.
     """
 
+    is_remote = False  # on-device cross-encoder; text never leaves the machine
+
     def __init__(self, model_id: str = DEFAULT_MODEL, cache_dir: Path | None = None):
         self._model_id = model_id
         self._cache_dir = cache_dir

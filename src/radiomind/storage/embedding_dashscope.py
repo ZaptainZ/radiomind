@@ -25,6 +25,8 @@ _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 class DashScopeEmbedder:
+    is_remote = True  # sends memory text to a third-party /embeddings API
+
     def __init__(self, base_url: str, api_key: str, model: str = DEFAULT_MODEL, dim: int = DEFAULT_DIM):
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key

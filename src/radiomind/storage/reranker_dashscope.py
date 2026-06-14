@@ -23,6 +23,8 @@ _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 class DashScopeReranker:
+    is_remote = True  # sends query + candidate text to a third-party rerank API
+
     def __init__(self, api_key: str, model: str = "gte-rerank-v2"):
         self._api_key = api_key
         self._model = model

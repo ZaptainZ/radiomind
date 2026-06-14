@@ -61,6 +61,39 @@ def _render_backends(rows: list[dict]) -> str:
     return ", ".join(parts) or "none"
 
 
+def _render_retrieval_status(st: dict) -> str:
+    """ManagedRetrieval-1b: one-line retrieval-egress posture for status/doctor.
+
+    `st` = radiomind.core.retrieval_consent.retrieval_egress_status(...).
+    States the active mode and whether memory/query text leaves the device.
+    """
+    line = f"retrieval: {st['mode']}"
+    if st["remote_active"]:
+        line += " — memory/query/candidate text is sent to a third-party API"
+    elif st["remote_key_present"] and not st["remote_consented"]:
+        line += (
+            " (remote retrieval available but disabled until consent: set "
+            "RADIOMIND_REMOTE_RETRIEVAL=1 or retrieval.remote.consent=true)"
+        )
+    return line
+
+
+def _render_retrieval_consent(consented: bool, key_present: bool) -> str:
+    """ManagedRetrieval-1b: onboard posture line (config-only, no live mind).
+
+    Default is local-only; remote retrieval is opt-in and, when enabled, sends
+    memory/query/candidate text to a third-party API.
+    """
+    if consented:
+        return ("retrieval: remote embedding/rerank CONSENTED — "
+                "memory/query/candidate text will be sent to a third-party API")
+    if key_present:
+        return ("retrieval: local-only (remote embedding/rerank available but "
+                "OFF until consent: RADIOMIND_REMOTE_RETRIEVAL=1 or "
+                "retrieval.remote.consent=true)")
+    return "retrieval: local-only (no remote retrieval credentials configured)"
+
+
 _LLM_ENV_VARS = (
     "DASHSCOPE_API_KEY",
     "OPENROUTER_API_KEY",
@@ -163,11 +196,23 @@ model = "BAAI/bge-reranker-v2-m3"
 
 [retrieval.query_rewriter]
 enabled = false
+
+[retrieval.remote]
+# Remote embedding/rerank send memory text, search queries, and candidate
+# snippets to a third-party API. Default OFF — local-only. Set to true (or
+# export RADIOMIND_REMOTE_RETRIEVAL=1) to consent. Without consent, a configured
+# retrieval provider / DashScope key is NOT used for retrieval; search stays
+# local (on-device embedding if installed, otherwise keyword/FTS).
+consent = false
 """
 
 
 def _onboard_state() -> dict:
     from radiomind.core.config import Config
+    from radiomind.core.retrieval_consent import (
+        remote_retrieval_consented,
+        remote_retrieval_key_present,
+    )
 
     cfg = Config.load()
     cfg_path = _config_path(cfg)
@@ -187,6 +232,8 @@ def _onboard_state() -> dict:
         "lora_enabled": os.environ.get("RADIOMIND_ENABLE_LORA", "").lower()
         in ("1", "true", "yes"),
         "managed_retrieval": "future / not configured",
+        "remote_retrieval_consent": remote_retrieval_consented(cfg),
+        "remote_retrieval_key": remote_retrieval_key_present(cfg),
     }
 
 
@@ -216,6 +263,10 @@ def _render_onboard(state: dict) -> list[str]:
         f"  RadioHeader: {yn(state['radioheader_detected'])}",
         f"  LoRA opt-in: {yn(state['lora_enabled'])}",
         f"  managed retrieval: {state['managed_retrieval']}",
+        "  " + _render_retrieval_consent(
+            state.get("remote_retrieval_consent", False),
+            state.get("remote_retrieval_key", False),
+        ),
         "",
         "Recommended next steps:",
     ]
@@ -456,9 +507,11 @@ def search(query: str, domain: str | None, pyramid: bool) -> None:
             click.echo(
                 "  note: no embedding model loaded — search is keyword (FTS) "
                 "only, so phrase questions as keywords (e.g. 'network retry' "
-                "not 'how do I handle network retries'). For semantic search: "
-                "pip install radiomind[embedding], or enable a retrieval "
-                "provider in config.toml."
+                "not 'how do I handle network retries'). For local semantic "
+                "search: pip install radiomind[embedding]. For remote "
+                "embedding (sends text to a third-party API) configure a "
+                "retrieval provider AND consent: RADIOMIND_REMOTE_RETRIEVAL=1 "
+                "or retrieval.remote.consent=true."
             )
     else:
         for r in results:
@@ -663,6 +716,20 @@ def doctor() -> None:
                 add("WARN", "habit grounding", f"only {grounded}/{len(active)} carry evidence — run refinement with a stronger LLM")
             else:
                 add("WARN", "habit grounding", f"{grounded}/{len(active)} grounded — most habits pre-date EVIDENCE/FALSIFIER prompts")
+
+        # ManagedRetrieval-1b: surface the retrieval data-egress posture.
+        from radiomind.core.retrieval_consent import retrieval_egress_status
+        rstate = retrieval_egress_status(mind.config, mind._embedder, mind._reranker)
+        if rstate["remote_active"]:
+            add("WARN", "retrieval egress",
+                "remote embedding/rerank ENABLED — memory/query/candidate text "
+                "is sent to a third-party API")
+        elif rstate["remote_key_present"] and not rstate["remote_consented"]:
+            add("PASS", "retrieval egress",
+                f"{rstate['mode']}; remote available but disabled until consent "
+                "(RADIOMIND_REMOTE_RETRIEVAL=1 or retrieval.remote.consent=true)")
+        else:
+            add("PASS", "retrieval egress", f"{rstate['mode']} — local-only")
         mind.shutdown()
     except Exception as e:
         add("FAIL", "LLM check", str(e))
@@ -765,6 +832,11 @@ def status() -> None:
                  if s['llm_available'] and mind._llm else "none")
     click.echo(f"LLM: {'available' if s['llm_available'] else 'unavailable'} ({llm_label})")
     click.echo(f"LLM calls: {s['llm_usage']['total_calls']} ({s['llm_usage']['total_tokens']} tokens)")
+
+    # ManagedRetrieval-1b: make the retrieval data-egress posture visible.
+    from radiomind.core.retrieval_consent import retrieval_egress_status
+    rstate = retrieval_egress_status(mind.config, mind._embedder, mind._reranker)
+    click.echo(_render_retrieval_status(rstate))
     click.echo()
 
     digest = mind.get_context_digest()

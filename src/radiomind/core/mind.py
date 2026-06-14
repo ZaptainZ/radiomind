@@ -235,17 +235,19 @@ class RadioMind:
         # Load embedder FIRST so PyramidSearch can use it.
         #
         # Precedence (2026-04-19, updated per host-LLM-assumed policy):
-        #   1. DashScope text-embedding-v4 @ 2048-dim if credentials present
-        #      — cloud embedder with 2× the semantic capacity of local MiniLM
-        #   2. Local ONNX MiniLM 384-dim fallback for offline / privacy-max
-        #   3. None → FTS-only degradation
+        #   1. DashScope text-embedding-v4 @ 2048-dim — ONLY when the user has
+        #      consented to remote retrieval (ManagedRetrieval-1b); the remote
+        #      embedder sends memory text to a third-party API.
+        #   2. Local ONNX MiniLM 384-dim — on-device, no egress.
+        #   3. None → FTS-only degradation.
         #
-        # Earlier version preferred local for "privacy". That design bet was
-        # abandoned (see memory/project_host_llm_assumed.md): users already
-        # rely on host LLM for chat, so paying for a 2048-dim embedder is
-        # fully consistent with the privacy model (data stays local, only
-        # embed() output comes back). config.retrieval.embedder.prefer_local
-        # can force the old ordering for users who genuinely need offline.
+        # The remote embedder is preferred over local *when consented* (more
+        # semantic capacity), but consent is the precondition: without it,
+        # _try_dashscope() returns None and we fall to local/FTS. Earlier this
+        # path auto-enabled on any DashScope key (see
+        # projectBasicInfo/logs/2026-06-14-managed-retrieval-1a-cc.md) — that
+        # silent egress is now gated. config.retrieval.embedder.prefer_local
+        # forces local-first for users who want it even after consenting.
         self._embedder = None
         prefer_local = bool(self.config.get("retrieval.embedder.prefer_local", False))
 
@@ -261,6 +263,13 @@ class RadioMind:
               2. [embedding] — legacy dedicated section
               3. [llm.openai] — legacy piggyback when pointed at DashScope
             """
+            # ManagedRetrieval-1b: remote embedding sends memory text to a
+            # third-party API. Never auto-enable on the mere presence of a key —
+            # require explicit consent (env RADIOMIND_REMOTE_RETRIEVAL or
+            # retrieval.remote.consent). Without it, fall through to local/FTS.
+            from radiomind.core.retrieval_consent import remote_retrieval_consented
+            if not remote_retrieval_consented(self.config):
+                return None
             try:
                 # 1. Unified retrieval provider
                 rp = self.config.get("retrieval_provider", {}) or {}
@@ -349,7 +358,11 @@ class RadioMind:
                     self._reranker = r
             except Exception:
                 self._reranker = None
-            if self._reranker is None:
+            # ManagedRetrieval-1b: the local CrossEncoder above is on-device and
+            # ungated; the remote reranker fallbacks below send query+candidate
+            # text to a third-party API, so they require explicit consent.
+            from radiomind.core.retrieval_consent import remote_retrieval_consented
+            if self._reranker is None and remote_retrieval_consented(self.config):
                 try:
                     # 1. Unified retrieval provider. Dispatch by provider:
                     #    - dashscope: native /services/rerank endpoint
