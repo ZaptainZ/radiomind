@@ -513,6 +513,8 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 
 **检索能力定位（RetrievalUX-1a, 2026-06-14，仅 UX/onboard/doctor/docs，零检索行为改动）**：检索阶梯统一定位 —— 裸装 = FTS+typed-facet（轻量可用）；**`[embedding]` = 推荐**默认增强（本机 ONNX MiniLM ~86MB，文本不出机）；**`[rerank]` = 高级**最佳本地质量（~2.3GB，仅在机器合适时推荐：Apple Silicon 或磁盘充足）；远端 = consent-gated BYOK，非默认、非订阅。新增纯函数模块 `src/radiomind/core/retrieval_tier.py`（`detect_retrieval_tier` + `local_reranker_recommendation` 环境检查：platform/arch/disk）；`onboard`/`doctor` 显示当前 tier 并按机器条件给安装建议（不合适时只说 "advanced reranker skipped for this machine"，不吓用户）；pyproject 补 `rerank` extra（不入 `all`）。**本轮不自动 pip install / 不自动下载 2.3GB**（如要做另开授权 gate 的 RetrievalInstall-1b）。14 单测 + regression `retrieval:tier-ux`。详见 `logs/2026-06-14-retrieval-ux-1a-cc.md`。
 
+**轻量 reranker 替代离线 probe（RerankerAlternative-1a, 2026-06-14，只读，零 runtime 改动）**：测 4 个本地数学/几何替代（vs ONNX dense baseline，19 qid，turn 级 gold）。recall@5/10/30：dense 0.456/0.554/0.78；A hubness 0.471/0.564/0.78（边际，PARK）；B MMR 0.48/0.541/0.759（冗余 0.67→0.38 但召回略降+3 控制题受伤，PARK 条件化）；**C query-adaptive RRF 0.505/0.627/0.804，中位 rank 4→2，34ms**（最佳，8 win 含 d3ab962e 12→2 / 9aaed6a3 14→2，但伤 counting/temporal 类 c18a7dc8 17→60、gpt4_194be4b3 1→5 → **OPEN 1b runtime-prototype 审计，须门控该类**）；D graph diffusion recall@5 降（PARK）。结论：**本地 cross-encoder reranker 仍是 advanced best-quality**（未与真 reranker 头对头，未声称可替代）；C 是最有希望的轻量信号融合杠杆，门控后值得 1b 审计。probe `bench/end_to_end/reranker_alt_probe.py`（devtools，不入 runtime）。详见 `logs/2026-06-14-reranker-alternative-1a-cc.md`。
+
 ---
 
 ## 激活架构通道 + Skill Fallback 链条（2026-04-21/22）

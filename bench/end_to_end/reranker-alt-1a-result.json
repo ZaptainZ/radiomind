@@ -1,0 +1,1549 @@
+{
+  "experiment": "RerankerAlternative-1a",
+  "dataset": "/Users/Zaptain/Library/Caches/radiomind-data/longmemeval_s_cleaned.json",
+  "params": {
+    "ALPHA": 0.2,
+    "LAMBDA": 0.75,
+    "BETA": 0.5,
+    "RRF_K": 60,
+    "POOL": 150,
+    "TOPN": 30
+  },
+  "target_qids": [
+    "9ee3ecd6",
+    "gpt4_194be4b3",
+    "d3ab962e",
+    "c18a7dc8",
+    "b46e15ed",
+    "bb7c3b45",
+    "gpt4_d6585ce8",
+    "031748ae_abs",
+    "gpt4_93159ced_abs",
+    "gpt4_93159ced",
+    "9aaed6a3",
+    "gpt4_d12ceb0e",
+    "d851d5ba",
+    "gpt4_7abb270c"
+  ],
+  "control_qids": [
+    "e47becba",
+    "118b2229",
+    "51a45a95",
+    "58bf7951",
+    "1e043500"
+  ],
+  "elapsed_s": 390.4,
+  "results": [
+    {
+      "qid": "9ee3ecd6",
+      "question": "How many points do I need to earn to redeem a free skincare product at Sephora?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_66c23110_1_t0",
+        "answer_66c23110_2_t6"
+      ],
+      "pool_size": 476,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.767,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 78/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.5,
+          "latency_ms": 77.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.7,
+          "latency_ms": 50.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=anchored weights(dense/fts/facet/temporal)=(1.0, 0.6, 1.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.767,
+          "latency_ms": 62.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2789 facet nodes, 1 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_194be4b3",
+      "question": "How many musical instruments do I currently own?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_3826dc55_1_t0",
+        "answer_3826dc55_2_t6",
+        "answer_3826dc55_3_t0",
+        "answer_3826dc55_4_t0"
+      ],
+      "pool_size": 474,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.25,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 4,
+          "redundancy_top30": 0.767,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.25,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 4,
+          "redundancy_top30": 0.767,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 72/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.25,
+          "recall_at_10": 0.25,
+          "recall_at_30": 0.5,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 4,
+          "redundancy_top30": 0.533,
+          "latency_ms": 71.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.25,
+          "recall_at_10": 0.25,
+          "recall_at_30": 0.5,
+          "best_rank": 5,
+          "hits_at_30": 2,
+          "gold_total": 4,
+          "redundancy_top30": 0.767,
+          "latency_ms": 53.7,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.25,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 4,
+          "redundancy_top30": 0.767,
+          "latency_ms": 63.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 3065 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "d3ab962e",
+      "question": "What is the total distance of the hikes I did on two consecutive weekends?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_5237bb0b_1_t0",
+        "answer_5237bb0b_2_t0"
+      ],
+      "pool_size": 530,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 12,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 12,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 2.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 83/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 15,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.6,
+          "latency_ms": 72.9,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 50.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 12,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 57.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2800 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "c18a7dc8",
+      "question": "How many years older am I than when I graduated from college?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_2e2085fa_1_t0",
+        "answer_2e2085fa_2_t8"
+      ],
+      "pool_size": 509,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.5,
+          "best_rank": 17,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.5,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.5,
+          "best_rank": 24,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.5,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 75/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.5,
+          "best_rank": 15,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.1,
+          "latency_ms": 80.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.0,
+          "best_rank": 60,
+          "hits_at_30": 0,
+          "gold_total": 2,
+          "redundancy_top30": 0.5,
+          "latency_ms": 8.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.5,
+          "best_rank": 14,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.533,
+          "latency_ms": 58.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2626 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "b46e15ed",
+      "question": "How many months have passed since I participated in two charity events in a row, on consecutive days?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_4bfcc250_1_t0",
+        "answer_4bfcc250_1_t6",
+        "answer_4bfcc250_2_t0",
+        "answer_4bfcc250_3_t0",
+        "answer_4bfcc250_4_t0"
+      ],
+      "pool_size": 478,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.2,
+          "best_rank": 25,
+          "hits_at_30": 1,
+          "gold_total": 5,
+          "redundancy_top30": 0.533,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.2,
+          "best_rank": 22,
+          "hits_at_30": 1,
+          "gold_total": 5,
+          "redundancy_top30": 0.567,
+          "latency_ms": 1.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 76/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.2,
+          "recall_at_30": 0.2,
+          "best_rank": 10,
+          "hits_at_30": 1,
+          "gold_total": 5,
+          "redundancy_top30": 0.2,
+          "latency_ms": 80.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.6,
+          "best_rank": 16,
+          "hits_at_30": 3,
+          "gold_total": 5,
+          "redundancy_top30": 0.467,
+          "latency_ms": 9.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.2,
+          "best_rank": 26,
+          "hits_at_30": 1,
+          "gold_total": 5,
+          "redundancy_top30": 0.533,
+          "latency_ms": 58.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2949 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "bb7c3b45",
+      "question": "How much did I save on the Jimmy Choo heels?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_de64539a_1_t0",
+        "answer_de64539a_2_t0"
+      ],
+      "pool_size": 495,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.667,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.667,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 76/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.333,
+          "latency_ms": 80.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.633,
+          "latency_ms": 49.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=anchored weights(dense/fts/facet/temporal)=(1.0, 0.6, 1.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.7,
+          "latency_ms": 57.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2778 facet nodes, 1 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_d6585ce8",
+      "question": "What is the order of the concerts and musical events I attended in the past two months, starting from the earliest?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_f999b05b_1_t0",
+        "answer_f999b05b_2_t0",
+        "answer_f999b05b_3_t0",
+        "answer_f999b05b_4_t0",
+        "answer_f999b05b_5_t0"
+      ],
+      "pool_size": 491,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.4,
+          "best_rank": 17,
+          "hits_at_30": 2,
+          "gold_total": 5,
+          "redundancy_top30": 0.733,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.4,
+          "best_rank": 19,
+          "hits_at_30": 2,
+          "gold_total": 5,
+          "redundancy_top30": 0.767,
+          "latency_ms": 1.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 77/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.2,
+          "best_rank": 26,
+          "hits_at_30": 1,
+          "gold_total": 5,
+          "redundancy_top30": 0.533,
+          "latency_ms": 73.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.4,
+          "best_rank": 12,
+          "hits_at_30": 2,
+          "gold_total": 5,
+          "redundancy_top30": 0.6,
+          "latency_ms": 8.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 0.4,
+          "best_rank": 17,
+          "hits_at_30": 2,
+          "gold_total": 5,
+          "redundancy_top30": 0.767,
+          "latency_ms": 67.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 3345 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "031748ae_abs",
+      "question": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+      "question_type": "knowledge-update",
+      "gold_turns": [],
+      "pool_size": 523,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.633,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.633,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 81/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.267,
+          "latency_ms": 75.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.667,
+          "latency_ms": 8.9,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.633,
+          "latency_ms": 71.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2783 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_93159ced_abs",
+      "question": "How long have I been working before I started my current job at Google?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [],
+      "pool_size": 608,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.567,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.533,
+          "latency_ms": 2.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 70/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.3,
+          "latency_ms": 72.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.5,
+          "latency_ms": 8.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": null,
+          "recall_at_10": null,
+          "recall_at_30": null,
+          "best_rank": null,
+          "hits_at_30": 0,
+          "gold_total": 0,
+          "redundancy_top30": 0.6,
+          "latency_ms": 56.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2929 facet nodes, 1 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_93159ced",
+      "question": "How long have I been working before I started my current job at NovaTech?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_e5131a1b_1_t2",
+        "answer_e5131a1b_2_t10",
+        "answer_e5131a1b_2_t4"
+      ],
+      "pool_size": 444,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.733,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.667,
+          "latency_ms": 1.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 78/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.333,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.267,
+          "latency_ms": 80.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.467,
+          "latency_ms": 13.9,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.667,
+          "recall_at_10": 0.667,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.733,
+          "latency_ms": 64.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 3038 facet nodes, 1 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "9aaed6a3",
+      "question": "How much cashback did I earn at SaveMart last Thursday?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_353d3c6d_1_t0",
+        "answer_353d3c6d_2_t0"
+      ],
+      "pool_size": 541,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 14,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.9,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 17,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.9,
+          "latency_ms": 2.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 84/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 15,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.833,
+          "latency_ms": 83.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.733,
+          "latency_ms": 59.7,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=anchored weights(dense/fts/facet/temporal)=(1.0, 0.6, 1.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_30": 1.0,
+          "best_rank": 11,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.9,
+          "latency_ms": 62.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2998 facet nodes, 2 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_d12ceb0e",
+      "question": "What is the average age of me, my parents, and my grandparents?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_2504635e_1_t0",
+        "answer_2504635e_2_t0",
+        "answer_2504635e_3_t0"
+      ],
+      "pool_size": 477,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 3,
+          "gold_total": 3,
+          "redundancy_top30": 0.6,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 3,
+          "gold_total": 3,
+          "redundancy_top30": 0.633,
+          "latency_ms": 1.7,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 71/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.667,
+          "recall_at_10": 0.667,
+          "recall_at_30": 0.667,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 3,
+          "redundancy_top30": 0.2,
+          "latency_ms": 73.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 3,
+          "gold_total": 3,
+          "redundancy_top30": 0.6,
+          "latency_ms": 50.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.667,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 3,
+          "gold_total": 3,
+          "redundancy_top30": 0.6,
+          "latency_ms": 57.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2619 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "d851d5ba",
+      "question": "How much money did I raise for charity in total?",
+      "question_type": "multi-session",
+      "gold_turns": [
+        "answer_5cdf9bd2_1_t0",
+        "answer_5cdf9bd2_2_t6",
+        "answer_5cdf9bd2_3_t0",
+        "answer_5cdf9bd2_4_t0"
+      ],
+      "pool_size": 533,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.75,
+          "recall_at_30": 1.0,
+          "best_rank": 3,
+          "hits_at_30": 4,
+          "gold_total": 4,
+          "redundancy_top30": 0.833,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.75,
+          "recall_at_10": 0.75,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 4,
+          "gold_total": 4,
+          "redundancy_top30": 0.833,
+          "latency_ms": 2.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 78/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.75,
+          "recall_at_10": 0.75,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 4,
+          "gold_total": 4,
+          "redundancy_top30": 0.633,
+          "latency_ms": 72.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.75,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 4,
+          "gold_total": 4,
+          "redundancy_top30": 0.867,
+          "latency_ms": 49.9,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.75,
+          "recall_at_30": 1.0,
+          "best_rank": 4,
+          "hits_at_30": 4,
+          "gold_total": 4,
+          "redundancy_top30": 0.833,
+          "latency_ms": 57.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2949 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "gpt4_7abb270c",
+      "question": "What is the order of the six museums I visited from earliest to latest?",
+      "question_type": "temporal-reasoning",
+      "gold_turns": [
+        "answer_7093d898_1_t0",
+        "answer_7093d898_2_t6",
+        "answer_7093d898_3_t0",
+        "answer_7093d898_4_t0",
+        "answer_7093d898_5_t0",
+        "answer_7093d898_6_t0"
+      ],
+      "pool_size": 467,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.333,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 3,
+          "gold_total": 6,
+          "redundancy_top30": 0.767,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.333,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 3,
+          "gold_total": 6,
+          "redundancy_top30": 0.767,
+          "latency_ms": 1.7,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 74/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.167,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.667,
+          "best_rank": 3,
+          "hits_at_30": 4,
+          "gold_total": 6,
+          "redundancy_top30": 0.633,
+          "latency_ms": 71.5,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.167,
+          "recall_at_10": 0.333,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 3,
+          "gold_total": 6,
+          "redundancy_top30": 0.667,
+          "latency_ms": 7.4,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.167,
+          "recall_at_10": 0.333,
+          "recall_at_30": 0.5,
+          "best_rank": 3,
+          "hits_at_30": 3,
+          "gold_total": 6,
+          "redundancy_top30": 0.767,
+          "latency_ms": 59.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 3013 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "e47becba",
+      "question": "What degree did I graduate with?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_280352e9_t4",
+        "answer_280352e9_t5"
+      ],
+      "pool_size": 550,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.433,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.4,
+          "latency_ms": 2.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 72/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.067,
+          "latency_ms": 71.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 2,
+          "gold_total": 2,
+          "redundancy_top30": 0.433,
+          "latency_ms": 48.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.5,
+          "recall_at_10": 0.5,
+          "recall_at_30": 0.5,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 2,
+          "redundancy_top30": 0.433,
+          "latency_ms": 55.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2552 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "118b2229",
+      "question": "How long is my daily commute to work?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_40a90d51_t8"
+      ],
+      "pool_size": 485,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.6,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.533,
+          "latency_ms": 1.9,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 83/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 3,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.167,
+          "latency_ms": 80.7,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.467,
+          "latency_ms": 9.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=temporal_or_ordering weights(dense/fts/facet/temporal)=(1.0, 0.6, 0.0, 1.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.6,
+          "latency_ms": 55.8,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2847 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "51a45a95",
+      "question": "Where did I redeem a $5 coupon on coffee creamer?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_d61669c7_t4"
+      ],
+      "pool_size": 529,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.6,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.6,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 82/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.267,
+          "latency_ms": 80.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.467,
+          "latency_ms": 61.3,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=anchored weights(dense/fts/facet/temporal)=(1.0, 0.6, 1.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.6,
+          "latency_ms": 72.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2958 facet nodes, 1 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "58bf7951",
+      "question": "What play did I attend at the local community theater?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_355c48bb_t4"
+      ],
+      "pool_size": 616,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.7,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.7,
+          "latency_ms": 2.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 78/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 5,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.433,
+          "latency_ms": 73.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 6,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.7,
+          "latency_ms": 52.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=open weights(dense/fts/facet/temporal)=(1.4, 0.4, 0.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 0.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 6,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.7,
+          "latency_ms": 58.6,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2858 facet nodes, 0 query-activated"
+        }
+      }
+    },
+    {
+      "qid": "1e043500",
+      "question": "What is the name of the playlist I created on Spotify?",
+      "question_type": "single-session-user",
+      "gold_turns": [
+        "answer_3e012175_t2"
+      ],
+      "pool_size": 510,
+      "methods": {
+        "0_dense_baseline": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.733,
+          "latency_ms": 0.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "ONNX dense cosine ranking"
+        },
+        "A_hubness": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.733,
+          "latency_ms": 2.0,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "alpha=0.2; 72/150 candidates above-mean hubness down-weighted"
+        },
+        "B_mmr": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 4,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.3,
+          "latency_ms": 77.1,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "lambda=0.75; greedy diversity over 150 dense candidates"
+        },
+        "C_qa_rrf": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 1,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.5,
+          "latency_ms": 50.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "qtype=anchored weights(dense/fts/facet/temporal)=(1.0, 0.6, 1.2, 0.0); 3 signals"
+        },
+        "D_graph": {
+          "recall_at_5": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_30": 1.0,
+          "best_rank": 2,
+          "hits_at_30": 1,
+          "gold_total": 1,
+          "redundancy_top30": 0.733,
+          "latency_ms": 57.2,
+          "needs_model": true,
+          "needs_remote": false,
+          "explain": "beta=0.5; 2925 facet nodes, 1 query-activated"
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "0_dense_baseline": {
+      "recall@5": 0.456,
+      "recall@10": 0.554,
+      "recall@30": 0.78,
+      "median_best_rank": 4,
+      "mean_redundancy@30": 0.672,
+      "mean_latency_ms": 0.0
+    },
+    "A_hubness": {
+      "recall@5": 0.471,
+      "recall@10": 0.564,
+      "recall@30": 0.78,
+      "median_best_rank": 4,
+      "mean_redundancy@30": 0.668,
+      "mean_latency_ms": 2.026
+    },
+    "B_mmr": {
+      "recall@5": 0.48,
+      "recall@10": 0.541,
+      "recall@30": 0.759,
+      "median_best_rank": 4,
+      "mean_redundancy@30": 0.377,
+      "mean_latency_ms": 76.168
+    },
+    "C_qa_rrf": {
+      "recall@5": 0.505,
+      "recall@10": 0.627,
+      "recall@30": 0.804,
+      "median_best_rank": 2,
+      "mean_redundancy@30": 0.604,
+      "mean_latency_ms": 34.174
+    },
+    "D_graph": {
+      "recall@5": 0.407,
+      "recall@10": 0.554,
+      "recall@30": 0.78,
+      "median_best_rank": 4,
+      "mean_redundancy@30": 0.681,
+      "mean_latency_ms": 60.684
+    }
+  }
+}
