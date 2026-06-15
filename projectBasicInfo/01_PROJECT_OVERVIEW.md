@@ -515,6 +515,8 @@ FINAL n=100（gpt-4o 双向）的 11 道 LoCoMo + 17 道 LME-S 错题全量分�
 
 **轻量 reranker 替代离线 probe（RerankerAlternative-1a, 2026-06-14，只读，零 runtime 改动）**：测 4 个本地数学/几何替代（vs ONNX dense baseline，19 qid，turn 级 gold）。recall@5/10/30：dense 0.456/0.554/0.78；A hubness 0.471/0.564/0.78（边际，PARK）；B MMR 0.48/0.541/0.759（冗余 0.67→0.38 但召回略降+3 控制题受伤，PARK 条件化）；**C query-adaptive RRF 0.505/0.627/0.804，中位 rank 4→2，34ms**（最佳，8 win 含 d3ab962e 12→2 / 9aaed6a3 14→2，但伤 counting/temporal 类 c18a7dc8 17→60、gpt4_194be4b3 1→5 → **OPEN 1b runtime-prototype 审计，须门控该类**）；D graph diffusion recall@5 降（PARK）。结论：**本地 cross-encoder reranker 仍是 advanced best-quality**（未与真 reranker 头对头，未声称可替代）；C 是最有希望的轻量信号融合杠杆，门控后值得 1b 审计。probe `bench/end_to_end/reranker_alt_probe.py`（devtools，不入 runtime）。详见 `logs/2026-06-14-reranker-alternative-1a-cc.md`。
 
+**门控审计（RerankerAlternative-1b, 2026-06-15，只读）：C 的类别门控被 held-out 证伪 → C runtime PARK。** 19-qid 的 per-class 模式（anchored 2/0「安全」、open 3/3）在 59-qid held-out 上翻盘：anchored 净受伤 1/2、open 变赢家 16/3；提议的 anchored-only 门控（== BioLocal-1b `should_rerank`）在 held-out **净受伤（1 赢/2 伤）**，会上线一个净负改动。BioLocal-1b 的门控**不可迁移到 C**（regime 不同：BioLocal 救空 FTS 裸装，C 重排 dense 池）。**robust 的只有 C 整体净正且可泛化**（held-out recall@5 0.78→0.85，18 赢/8 伤；1a 8/4），但 per-class 伤害（~14%）无法按 query 类别门控。结论：**PARK C runtime**（类别门控死路）；如推进 → 1c 设计**非类别的 confidence/agreement 门控**并在**独立 held-out** 上验证（不可用本次 held-out 提 open-only，会重蹈刚被抓到的过拟合）。本地 cross-encoder reranker 仍 advanced best-quality（仍未头对头）。probe `bench/end_to_end/reranker_gate_audit.py`。详见 `logs/2026-06-15-reranker-alternative-1b-cc.md`。
+
 ---
 
 ## 激活架构通道 + Skill Fallback 链条（2026-04-21/22）
