@@ -105,6 +105,7 @@ def test_onboard_no_embedding_nudge_when_installed():
     body = "\n".join(_render_retrieval_tier(
         _state("local embedding", True, False, reco)))
     assert rt.EMBEDDING_INSTALL not in body  # already installed
+    assert "best local retrieval active" in body  # affirm instead of nudge
     assert rt.RERANKER_INSTALL in body       # still offers advanced
 
 
@@ -138,3 +139,12 @@ def test_config_template_remote_off_by_default(tmp_path):
     import tomllib
     parsed = tomllib.loads(_config_template(tmp_path / "rm"))
     assert parsed["retrieval"]["remote"]["consent"] is False
+
+
+def test_status_shows_retrieval_tier(monkeypatch, tmp_path):
+    # RetrievalUX-1a delta: `status` carries the canonical tier label.
+    monkeypatch.setenv("RADIOMIND_HOME", str(tmp_path / ".radiomind"))
+    monkeypatch.setenv("RADIOMIND_REMOTE_RETRIEVAL", "0")
+    result = CliRunner().invoke(cli, ["status"])
+    assert result.exit_code == 0
+    assert "retrieval tier:" in result.output

@@ -80,3 +80,16 @@ performed. Auto-install deferred to a future authorized 1b.
 
 See [[project_biolocal_retrieval]] (why local embedder is the quality lever),
 [[project_managed_retrieval]] (remote consent / hosted PARK).
+
+## Addendum (2026-06-15) — close the last two spec gaps
+
+A re-review of the productization spec surfaced two items the initial pass missed:
+1. **`status` now carries the canonical `retrieval tier:` line** (above the
+   existing active-egress line), consistent with onboard/doctor labels.
+2. **onboard embedding-installed state now affirms** "best local retrieval active
+   (on-device embedding)" instead of silently dropping the embedding nudge.
+
+CLI display only — no retrieval algorithm change. `tests/test_retrieval_tier.py`
+now 15 tests (added `test_status_shows_retrieval_tier` + the affirmation
+assertion); `retrieval:tier-ux` and full regression pack ALL PASS. RetrievalUX-1a
+spec is now fully covered.

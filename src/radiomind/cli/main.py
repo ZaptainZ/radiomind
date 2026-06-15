@@ -91,6 +91,8 @@ def _render_retrieval_tier(state: dict) -> list[str]:
     lines = [f"retrieval tier: {state['retrieval_tier']}"]
     if not state.get("embedding_installed") and not state.get("remote_retrieval_consent"):
         lines.append(f"  - recommended: {EMBEDDING_INSTALL}  ({EMBEDDING_NOTE})")
+    elif state.get("embedding_installed"):
+        lines.append("  - best local retrieval active (on-device embedding)")
     reco = state.get("reranker_reco") or {}
     if not state.get("reranker_installed"):
         if reco.get("recommended") and reco.get("install_command"):
@@ -897,7 +899,11 @@ def status() -> None:
     click.echo(f"LLM calls: {s['llm_usage']['total_calls']} ({s['llm_usage']['total_tokens']} tokens)")
 
     # ManagedRetrieval-1b: make the retrieval data-egress posture visible.
+    # RetrievalUX-1a: also show the canonical tier label (consistent with
+    # onboard/doctor) above the active-egress line.
     from radiomind.core.retrieval_consent import retrieval_egress_status
+    from radiomind.core.retrieval_tier import detect_retrieval_tier
+    click.echo(f"retrieval tier: {detect_retrieval_tier(mind.config)['tier']}")
     rstate = retrieval_egress_status(mind.config, mind._embedder, mind._reranker)
     click.echo(_render_retrieval_status(rstate))
     click.echo()
