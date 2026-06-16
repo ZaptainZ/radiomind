@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radiomind"
-version = "0.1.0"
+version = "0.2.1"
 description = "Bionic memory core for AI agents — the brain that grows with you."
 readme = "README.md"
 license = { text = "PolyForm-Noncommercial-1.0.0" }

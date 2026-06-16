@@ -16,7 +16,7 @@ to be ubiquitous, not buried under refinement/.
               `from radiomind import attention` then `attention.analyze(...)`.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.1"
 
 from radiomind.core.mind import RadioMind
 from radiomind.simple import SimpleRadioMind, connect

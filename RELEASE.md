@@ -9,6 +9,50 @@ the full design rationale see `projectBasicInfo/01_PROJECT_OVERVIEW.md`.
 
 ---
 
+## v0.2.1 (2026-06-16) — product-entry release
+
+First public release. The focus of this cycle was not new capability but making
+the existing one **honestly deliverable**: install works, every user entry runs,
+docs match the code, and the data-egress / quality boundaries are explicit.
+
+**Highlights**
+- **Product-entry readiness.** Clean `pip install` on a fresh venv; `radiomind
+  --help` / `python -m radiomind` / `onboard` / `doctor` / `status` and the
+  `init → learn → search` path all verified end-to-end.
+- **Retrieval tier productization.** A legible local ladder surfaced in
+  onboard/doctor/status/README: bare = FTS + typed-facet rescue; **`[embedding]`
+  = recommended** local enhancement (on-device ONNX MiniLM ~86MB, text stays
+  local); **`[rerank]` = advanced** local best-quality (~2.3GB, conditionally
+  recommended by machine fit).
+- **Remote-retrieval consent gate.** Remote embedding/rerank send text to a
+  third-party API; they are **off by default** and require explicit consent
+  (`RADIOMIND_REMOTE_RETRIEVAL=1` / `retrieval.remote.consent=true`), with the
+  egress posture always visible. No "fully private" claim covers remote mode.
+- **FTS facet rescue.** When bare-install keyword retrieval returns nothing for an
+  anchored query, a deterministic, gated typed-facet rerank lifts the floor — no
+  model, no network, do-no-harm gated (acts only when the pipeline is empty).
+- **Provider deny-by-default.** The personal-agent provider defaults to
+  `local_only`; background ingest/refine/dream are each gated on explicit
+  authorization scopes; readiness reports the next action.
+- **LoRA opt-in.** `RADIOMIND_ENABLE_LORA=1`; cold-start shows actionable
+  data-volume thresholds + next step rather than silently failing.
+- **Entry routing.** Programming-agent users → **RadioHeader first** (RadioMind is
+  the optional memory backend); personal agents → the RadioMind provider; power
+  users → CLI / Python / MCP (17 tools) directly.
+
+**Benchmark positioning (unchanged, honest):** current-main LongMemEval-S center
+**0.91 ± 0.01** (same-arch 3-run); historical **0.930** is a lucky upper-tail
+single run kept for provenance, not a standing score; LoCoMo figures are
+historical-only. See the TL;DR below.
+
+**Non-goals / parked (not in this release):** managed retrieval subscription;
+hosted vector DB; live RadioHeader digest integration; v4-pro / hybrid retrieval
+route; benchmark chasing. Lightweight reranker alternatives (query-adaptive RRF)
+were researched but their gate did not survive out-of-sample validation — parked,
+not shipped.
+
+---
+
 ## TL;DR
 
 **RadioMind's current-main center on LongMemEval-S (deepseek-v3.2 / gpt-4o

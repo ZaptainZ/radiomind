@@ -1,6 +1,6 @@
 # RadioMind
 
-[![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
+[![Release](https://img.shields.io/badge/release-v0.2.1-blue.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.1)
 [![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20current--main-0.91%20%C2%B1%200.01-brightgreen.svg)](#validated-performance)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
@@ -23,12 +23,12 @@ print(mind.digest())               # compact context for your system prompt
 
 [中文版](README_zh.md) · [Quickstart](docs/quickstart.md) · [Integration Guide](docs/integration.md) · [API Reference](docs/api-reference.md)
 
-> **v0.2.0-rc1** (pre-release, 2026-05-04 → updated 2026-06-09): LongMemEval-S, Mem0-compatible protocol (single answer + single judge), deepseek-v3.2 / gpt-4o judge:
+> **v0.2.1** (2026-06-16): LongMemEval-S, Mem0-compatible protocol (single answer + single judge), deepseek-v3.2 / gpt-4o judge:
 > - **Current main: 0.91 ± 0.01** — same-architecture 3-run central tendency (n=100 ×3, identical qid set+order), all judge-error-clean. This is the honest standing score.
 > - **Historical high: 0.930** (V6.1.1, single run, 2026-05-10) — a lucky upper-tail run, **not** the current-main center; same combo can touch 0.93 on a favorable single run but does not hold it as a stable center.
 > - **vs SOTA:** current center is within ~2pt of published MemMachine SOTA (0.930), at ~1/10 the inference cost and +23pt over Mem0's same-protocol baseline (0.680).
 >
-> Why a band, not a point: the dominant variance is the answer LLM itself (non-deterministic even at temperature 0); see [Validated performance](#validated-performance). [Release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1). Iteration ongoing — feedback welcome.
+> Why a band, not a point: the dominant variance is the answer LLM itself (non-deterministic even at temperature 0); see [Validated performance](#validated-performance). [Release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.1). Iteration ongoing — feedback welcome.
 
 ---
 

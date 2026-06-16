@@ -2,7 +2,8 @@
 
 > **文档性质**: 方向性设计文档，经多轮讨论对齐后的架构方案。
 > **更新日期**: 2026-04-15（v0.2 修复周期完成）
-> **版本**: v3 设计 / v0.2 实现
+> **版本**: v3 设计 / **v0.2.1 发布**（2026-06-16，首个公开版本，tag `v0.2.1`；pyproject/`__init__` = 0.2.1）
+> **发布状态**: product-entry release —— clean-install build smoke 全入口绿、full pytest 1120 passed、文档↔代码对齐、数据外发/质量边界明确。详见 `logs/2026-06-16-release-0.2.1-cc.md`。非目标/PARK：托管检索订阅、hosted vector DB、live RadioHeader digest、v4-pro/hybrid route、benchmark chasing。
 
 ## 北极星目标（Product North Star）— 产品化前提
 

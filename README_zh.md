@@ -1,6 +1,6 @@
 # RadioMind
 
-[![Pre-release](https://img.shields.io/badge/release-v0.2.0--rc1-orange.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)
+[![Release](https://img.shields.io/badge/release-v0.2.1-blue.svg)](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.1)
 [![LongMemEval-S](https://img.shields.io/badge/LongMemEval--S%20current--main-0.91%20%C2%B1%200.01-brightgreen.svg)](#性能验证)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 
@@ -22,12 +22,12 @@ print(mind.digest())             # 注入系统提示的紧凑上下文
 
 [English](README.md) · [Quickstart](docs/quickstart.md) · [集成指南](docs/integration.md) · [API 参考](docs/api-reference.md)
 
-> **v0.2.0-rc1**（预发布，2026-05-04 → 2026-06-09 更新）：LongMemEval-S，Mem0 同协议（单 answer + 单 judge），deepseek-v3.2 / gpt-4o judge：
+> **v0.2.1**（2026-06-16）：LongMemEval-S，Mem0 同协议（单 answer + 单 judge），deepseek-v3.2 / gpt-4o judge：
 > - **current-main：0.91 ± 0.01** —— 同架构 3 次跑的中心趋势（n=100 ×3，同一 qid 集+顺序，全部 judge-error clean）。这是诚实的常驻分数。
 > - **历史最高：0.930**（V6.1.1，单次跑，2026-05-10）—— 是 lucky 上沿单跑，**不是** current-main 中心；同组合在 favorable 单跑能 touch 0.93，但不构成稳定中心。
 > - **vs SOTA：** current 中心距已发布 MemMachine SOTA（0.930）约 2pt，推理成本约 1/10，比 Mem0 同协议基线（0.680）领先 23pt。
 >
-> 为什么报区间而非单点：主方差来自 answer LLM 本身（temperature 0 仍非确定），见 [性能验证](#性能验证)。[release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.0-rc1)。仍在迭代中，欢迎反馈。
+> 为什么报区间而非单点：主方差来自 answer LLM 本身（temperature 0 仍非确定），见 [性能验证](#性能验证)。[release notes](https://github.com/ZaptainZ/radiomind/releases/tag/v0.2.1)。仍在迭代中，欢迎反馈。
 
 ---
 
