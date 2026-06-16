@@ -328,7 +328,7 @@ pip install radiomind && radiomind setup
 
 | Platform | What it configures |
 |----------|-------------------|
-| Claude Code | Hooks (auto-save every 15 msgs + emergency save) + MCP (9 tools) |
+| Claude Code | Hooks (auto-save every 15 msgs + emergency save) + MCP (17 tools) |
 | Codex CLI | hooks.json + MCP |
 | Cursor | MCP config in `~/.cursor/mcp.json` |
 | Windsurf | Prints MCP config to paste |

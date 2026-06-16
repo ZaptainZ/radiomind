@@ -318,7 +318,7 @@ pip install radiomind && radiomind setup
 
 | 平台 | 自动配置 |
 |------|---------|
-| Claude Code | Hooks（每 15 条消息自动保存 + 压缩前紧急保存）+ MCP（9 工具） |
+| Claude Code | Hooks（每 15 条消息自动保存 + 压缩前紧急保存）+ MCP（17 工具） |
 | Codex CLI | hooks.json + MCP |
 | Cursor | MCP 配置写入 `~/.cursor/mcp.json` |
 | Windsurf | 输出 MCP 配置供粘贴 |
