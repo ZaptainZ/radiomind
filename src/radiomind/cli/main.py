@@ -1336,3 +1336,157 @@ def config(key: str | None, value: str | None) -> None:
         cfg.set(key, value)
         cfg.save()
         click.echo(f"Set {key} = {value}")
+
+
+# --- Knowledge Library (信息收集库) -------------------------------------------
+# RadioHand calls these via subprocess and parses the JSON on stdout.
+
+@cli.group("library")
+def library() -> None:
+    """信息收集库 — capture and search collected external sources."""
+
+
+@library.command("put")
+@click.option("--payload", default="", help="JSON capture payload (title/source_url/summary/tags/...).")
+@click.option("--title", default="")
+@click.option("--url", default="")
+@click.option("--summary", default="")
+@click.option("--content-hash", default="")
+@click.option("--user", default="")
+@click.option("--no-dedup", is_flag=True, default=False)
+def library_put(payload: str, title: str, url: str, summary: str, content_hash: str,
+                user: str, no_dedup: bool) -> None:
+    """Add a captured source. Returns {"id", "duplicate", "tags"} as JSON."""
+    from radiomind.storage.library import LibraryItem, content_hash as _chash
+
+    data: dict = {}
+    if payload:
+        data = json.loads(payload)
+    title = data.get("title", title)
+    url = data.get("source_url", url)
+    summary = data.get("short_summary", summary)
+    body = data.get("body", "")
+    chash = data.get("content_hash") or content_hash or (_chash(body) if body else "")
+    tags = data.get("tags", [])  # [{"name","facet","confidence","source"} | "name"]
+
+    item = LibraryItem(
+        title=title,
+        source_url=url,
+        source_domain=data.get("source_domain", ""),
+        source_type=data.get("source_type", "article"),
+        author=data.get("author", ""),
+        published_at=data.get("published_at"),
+        language=data.get("language", ""),
+        content_hash=chash,
+        short_summary=summary,
+        key_points=data.get("key_points", []),
+        why_it_matters=data.get("why_it_matters", ""),
+        useful_for=data.get("useful_for", []),
+        open_questions=data.get("open_questions", []),
+        user_id=data.get("user_id", user),
+        metadata=data.get("metadata", {}),
+    )
+    mind = _get_mind()
+    lib = mind.library
+    item_id, dup = lib.put_item(item, dedup=not no_dedup)
+    applied = []
+    if not dup:
+        for t in tags:
+            if isinstance(t, str):
+                name, facet, conf, src = t, "topic", 1.0, "llm"
+            else:
+                name, facet = t.get("name", ""), t.get("facet", "topic")
+                conf, src = float(t.get("confidence", 1.0)), t.get("source", "llm")
+            if not name:
+                continue
+            tag_id = lib.upsert_tag(name, facet)
+            lib.tag_item(item_id, tag_id, conf, src)
+            applied.append({"name": name, "facet": facet})
+    else:
+        applied = [{"name": t["name"], "facet": t["facet"]} for t in lib.item_tags(item_id)]
+    click.echo(json.dumps({"id": item_id, "duplicate": dup, "tags": applied}, ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("get")
+@click.argument("item_id", type=int)
+def library_get(item_id: int) -> None:
+    """Get one item (full digest + tags) as JSON."""
+    mind = _get_mind()
+    item = mind.library.get_item(item_id)
+    click.echo(json.dumps(item, ensure_ascii=False) if item else json.dumps({"error": "not found"}))
+    mind.shutdown()
+
+
+@library.command("search")
+@click.argument("query")
+@click.option("--tag", "-t", default="")
+@click.option("--limit", "-n", default=10)
+@click.option("--user", default="")
+def library_search(query: str, tag: str, limit: int, user: str) -> None:
+    """Search the library (FTS over title+summary). Returns a JSON list."""
+    mind = _get_mind()
+    results = mind.library.search_items(query, limit=limit, tag=tag, user_id=user)
+    click.echo(json.dumps(results, ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("list")
+@click.option("--limit", "-n", default=20)
+@click.option("--status", default="active")
+@click.option("--user", default="")
+def library_list(limit: int, status: str, user: str) -> None:
+    """List recent items as JSON."""
+    mind = _get_mind()
+    click.echo(json.dumps(mind.library.list_items(limit=limit, status=status, user_id=user), ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("tag")
+@click.argument("item_id", type=int)
+@click.argument("name")
+@click.option("--facet", default="topic")
+@click.option("--confidence", default=1.0)
+@click.option("--source", default="user")
+def library_tag(item_id: int, name: str, facet: str, confidence: float, source: str) -> None:
+    """Attach a tag to an item (user correction uses --source user)."""
+    mind = _get_mind()
+    tag_id = mind.library.upsert_tag(name, facet)
+    mind.library.tag_item(item_id, tag_id, confidence, source)
+    click.echo(json.dumps({"item_id": item_id, "tag_id": tag_id, "name": name, "facet": facet}, ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("tag-merge")
+@click.argument("alias_name")
+@click.argument("canonical_name")
+@click.option("--facet", default="topic")
+def library_tag_merge(alias_name: str, canonical_name: str, facet: str) -> None:
+    """Merge an alias tag into a canonical tag (hygiene)."""
+    mind = _get_mind()
+    canon_id = mind.library.merge_tag(alias_name, canonical_name, facet)
+    click.echo(json.dumps({"canonical_id": canon_id, "merged": alias_name, "into": canonical_name}, ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("link")
+@click.argument("subject")
+@click.argument("relation")
+@click.argument("obj")
+@click.option("--source-id", type=int, default=None, help="library_items.id this claim/relation came from")
+@click.option("--confidence", default=1.0)
+def library_link(subject: str, relation: str, obj: str, source_id: int | None, confidence: float) -> None:
+    """Add a claim/relation as a knowledge-graph triple (reuses the existing KG, no second graph)."""
+    mind = _get_mind()
+    tid = mind.kg.add_triple(subject, relation, obj, source_id=source_id, confidence=confidence)
+    click.echo(json.dumps({"triple_id": tid, "subject": subject, "relation": relation, "object": obj}, ensure_ascii=False))
+    mind.shutdown()
+
+
+@library.command("stats")
+@click.option("--user", default="")
+def library_stats(user: str) -> None:
+    """Library counts (items / active / archived / tags) as JSON."""
+    mind = _get_mind()
+    click.echo(json.dumps(mind.library.stats(user_id=user), ensure_ascii=False))
+    mind.shutdown()

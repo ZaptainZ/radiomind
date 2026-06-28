@@ -214,6 +214,7 @@ class RadioMind:
         self._kg: KnowledgeGraph | None = None
         self._numeric_agg: NumericAggregator | None = None
         self._embedder = None
+        self._library = None  # KnowledgeLibrary store (信息收集库), lazily bound to the memories conn
 
     def initialize(self, config_overrides: dict[str, Any] | None = None) -> None:
         if config_overrides:
@@ -484,6 +485,19 @@ class RadioMind:
                 except Exception:
                     pass
         self._initialized = False
+
+    @property
+    def library(self):
+        """KnowledgeLibrary store (信息收集库). Shares the memories connection (separate tables)."""
+        from radiomind.storage.library import LibraryStore
+        if self._library is None:
+            self._library = LibraryStore(self._store.conn)
+        return self._library
+
+    @property
+    def kg(self) -> KnowledgeGraph:
+        """Knowledge graph (triples + entity_aliases) — reused by the library for claims/relations."""
+        return self._kg
 
     # --- L1: Ingest ---
 

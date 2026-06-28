@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 
 _MIGRATIONS: list[tuple[int, Callable]] = []
 
@@ -111,3 +111,72 @@ def _add_tags(conn) -> None:
     if "tags" not in cols:
         conn.execute("ALTER TABLE memories ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tags ON memories(tags)")
+
+
+@register(version=5)
+def _add_knowledge_library(conn) -> None:
+    """Add the Knowledge Library (信息收集库) tables — captured external sources.
+
+    This is a SEPARATE namespace from `memories`: the library holds documents the
+    user deliberately collected (articles / papers / notes), NOT conversational
+    memory. Kept in the same DB file but distinct tables so library recall never
+    pollutes personal-memory recall.
+
+    Claims / entities / relations are NOT modelled here — they reuse the existing
+    knowledge_graph (triples + entity_aliases) so we don't grow a second KG. A
+    library claim is a triple whose source_id points at a library_items.id.
+    """
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS library_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL DEFAULT '',
+            source_url TEXT NOT NULL DEFAULT '',
+            source_domain TEXT NOT NULL DEFAULT '',
+            source_type TEXT NOT NULL DEFAULT 'article',
+            author TEXT NOT NULL DEFAULT '',
+            published_at REAL,
+            captured_at REAL NOT NULL,
+            language TEXT NOT NULL DEFAULT '',
+            content_hash TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'active',
+            short_summary TEXT NOT NULL DEFAULT '',
+            key_points TEXT NOT NULL DEFAULT '[]',
+            why_it_matters TEXT NOT NULL DEFAULT '',
+            useful_for TEXT NOT NULL DEFAULT '[]',
+            open_questions TEXT NOT NULL DEFAULT '[]',
+            user_id TEXT NOT NULL DEFAULT '',
+            metadata TEXT NOT NULL DEFAULT '{}'
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS library_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            facet TEXT NOT NULL DEFAULT 'topic',
+            aliases TEXT NOT NULL DEFAULT '[]',
+            parent_id INTEGER,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at REAL NOT NULL,
+            UNIQUE(name, facet)
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS library_item_tags (
+            item_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            confidence REAL NOT NULL DEFAULT 1.0,
+            source TEXT NOT NULL DEFAULT 'llm',
+            created_at REAL NOT NULL,
+            PRIMARY KEY (item_id, tag_id)
+        )"""
+    )
+    # Full-text over the captured document's title + summary for library search.
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS library_items_fts USING fts5("
+        "title, short_summary, content='library_items', content_rowid='id')"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_url ON library_items(source_url)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_hash ON library_items(content_hash)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_status ON library_items(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_user ON library_items(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_item_tags_tag ON library_item_tags(tag_id)")
