@@ -9,8 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from radiomind.core.types import MemoryEntry, MemoryLevel, MemoryStatus, PrivacyLevel, SearchResult
+from radiomind.storage.migrations import CURRENT_SCHEMA_VERSION
 
-SCHEMA_VERSION = 3
+# Single source of truth: the schema version is owned by the migration ledger, not a separate
+# constant that drifts (doctor/status used to read a stale 3 while migrations had reached 5).
+SCHEMA_VERSION = CURRENT_SCHEMA_VERSION
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (

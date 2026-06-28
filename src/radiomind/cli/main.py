@@ -715,12 +715,23 @@ def doctor() -> None:
     db = cfg.db_path
     if db.exists():
         try:
-            import sqlite3
-            c = sqlite3.connect(str(db))
-            v = c.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").fetchone()
-            n = c.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
-            c.close()
-            add("PASS", "database", f"schema v{v[0] if v else '?'}, {n} memories")
+            # Open via MemoryStore so pending migrations apply first — then the reported version is
+            # the true on-disk schema, not a stale constant or a pre-migration table value.
+            from radiomind.storage.database import MemoryStore
+            from radiomind.storage.migrations import CURRENT_SCHEMA_VERSION
+
+            store = MemoryStore(db)
+            store.open()
+            v = store.conn.execute(
+                "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"
+            ).fetchone()
+            n = store.conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
+            store.close()
+            ver = v[0] if v else 0
+            if ver == CURRENT_SCHEMA_VERSION:
+                add("PASS", "database", f"schema v{ver}, {n} memories")
+            else:
+                add("WARN", "database", f"schema v{ver}, code targets v{CURRENT_SCHEMA_VERSION} (migration incomplete)")
         except Exception as e:
             add("FAIL", "database", f"open failed: {e}")
     else:
