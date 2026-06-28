@@ -19,6 +19,33 @@ def _get_mind():
     return mind
 
 
+def _get_library():
+    """Lightweight library access — opens just the SQLite store, NOT the full mind.
+
+    Library ops are pure SQLite; `_get_mind()` would load the embedding model (onnxruntime) on every
+    subprocess invocation, which is slow on low-power hosts and can exceed a caller's timeout.
+    """
+    from radiomind.core.config import Config
+    from radiomind.storage.database import MemoryStore
+    from radiomind.storage.library import LibraryStore
+
+    cfg = Config.load()
+    store = MemoryStore(cfg.db_path)
+    store.open()
+    return store, LibraryStore(store.conn)
+
+
+def _get_library_kg():
+    """Open the knowledge graph directly (for `library link`) without loading the full mind."""
+    from radiomind.core.config import Config
+    from radiomind.storage.knowledge_graph import KnowledgeGraph
+
+    cfg = Config.load()
+    kg = KnowledgeGraph(cfg.db_path.parent / "knowledge.db")
+    kg.open()
+    return kg
+
+
 def _render_train_gap(report, prepared: bool) -> list[str]:
     """CLIProductSmoke-1b (F1): turn a refused DataGenReport into an
     actionable gap + next step, instead of a single threshold sentence."""
@@ -1397,8 +1424,7 @@ def library_put(payload: str, title: str, url: str, summary: str, content_hash: 
         user_id=data.get("user_id", user),
         metadata=data.get("metadata", {}),
     )
-    mind = _get_mind()
-    lib = mind.library
+    store, lib = _get_library()
     item_id, dup = lib.put_item(item, dedup=not no_dedup)
     applied = []
     if not dup:
@@ -1416,17 +1442,17 @@ def library_put(payload: str, title: str, url: str, summary: str, content_hash: 
     else:
         applied = [{"name": t["name"], "facet": t["facet"]} for t in lib.item_tags(item_id)]
     click.echo(json.dumps({"id": item_id, "duplicate": dup, "tags": applied}, ensure_ascii=False))
-    mind.shutdown()
+    store.close()
 
 
 @library.command("get")
 @click.argument("item_id", type=int)
 def library_get(item_id: int) -> None:
     """Get one item (full digest + tags) as JSON."""
-    mind = _get_mind()
-    item = mind.library.get_item(item_id)
+    store, lib = _get_library()
+    item = lib.get_item(item_id)
     click.echo(json.dumps(item, ensure_ascii=False) if item else json.dumps({"error": "not found"}))
-    mind.shutdown()
+    store.close()
 
 
 @library.command("search")
@@ -1436,10 +1462,10 @@ def library_get(item_id: int) -> None:
 @click.option("--user", default="")
 def library_search(query: str, tag: str, limit: int, user: str) -> None:
     """Search the library (FTS over title+summary). Returns a JSON list."""
-    mind = _get_mind()
-    results = mind.library.search_items(query, limit=limit, tag=tag, user_id=user)
+    store, lib = _get_library()
+    results = lib.search_items(query, limit=limit, tag=tag, user_id=user)
     click.echo(json.dumps(results, ensure_ascii=False))
-    mind.shutdown()
+    store.close()
 
 
 @library.command("list")
@@ -1448,9 +1474,9 @@ def library_search(query: str, tag: str, limit: int, user: str) -> None:
 @click.option("--user", default="")
 def library_list(limit: int, status: str, user: str) -> None:
     """List recent items as JSON."""
-    mind = _get_mind()
-    click.echo(json.dumps(mind.library.list_items(limit=limit, status=status, user_id=user), ensure_ascii=False))
-    mind.shutdown()
+    store, lib = _get_library()
+    click.echo(json.dumps(lib.list_items(limit=limit, status=status, user_id=user), ensure_ascii=False))
+    store.close()
 
 
 @library.command("tag")
@@ -1461,11 +1487,11 @@ def library_list(limit: int, status: str, user: str) -> None:
 @click.option("--source", default="user")
 def library_tag(item_id: int, name: str, facet: str, confidence: float, source: str) -> None:
     """Attach a tag to an item (user correction uses --source user)."""
-    mind = _get_mind()
-    tag_id = mind.library.upsert_tag(name, facet)
-    mind.library.tag_item(item_id, tag_id, confidence, source)
+    store, lib = _get_library()
+    tag_id = lib.upsert_tag(name, facet)
+    lib.tag_item(item_id, tag_id, confidence, source)
     click.echo(json.dumps({"item_id": item_id, "tag_id": tag_id, "name": name, "facet": facet}, ensure_ascii=False))
-    mind.shutdown()
+    store.close()
 
 
 @library.command("tag-merge")
@@ -1474,10 +1500,10 @@ def library_tag(item_id: int, name: str, facet: str, confidence: float, source: 
 @click.option("--facet", default="topic")
 def library_tag_merge(alias_name: str, canonical_name: str, facet: str) -> None:
     """Merge an alias tag into a canonical tag (hygiene)."""
-    mind = _get_mind()
-    canon_id = mind.library.merge_tag(alias_name, canonical_name, facet)
+    store, lib = _get_library()
+    canon_id = lib.merge_tag(alias_name, canonical_name, facet)
     click.echo(json.dumps({"canonical_id": canon_id, "merged": alias_name, "into": canonical_name}, ensure_ascii=False))
-    mind.shutdown()
+    store.close()
 
 
 @library.command("link")
@@ -1488,16 +1514,16 @@ def library_tag_merge(alias_name: str, canonical_name: str, facet: str) -> None:
 @click.option("--confidence", default=1.0)
 def library_link(subject: str, relation: str, obj: str, source_id: int | None, confidence: float) -> None:
     """Add a claim/relation as a knowledge-graph triple (reuses the existing KG, no second graph)."""
-    mind = _get_mind()
-    tid = mind.kg.add_triple(subject, relation, obj, source_id=source_id, confidence=confidence)
+    kg = _get_library_kg()
+    tid = kg.add_triple(subject, relation, obj, source_id=source_id, confidence=confidence)
     click.echo(json.dumps({"triple_id": tid, "subject": subject, "relation": relation, "object": obj}, ensure_ascii=False))
-    mind.shutdown()
+    kg.close()
 
 
 @library.command("stats")
 @click.option("--user", default="")
 def library_stats(user: str) -> None:
     """Library counts (items / active / archived / tags) as JSON."""
-    mind = _get_mind()
-    click.echo(json.dumps(mind.library.stats(user_id=user), ensure_ascii=False))
-    mind.shutdown()
+    store, lib = _get_library()
+    click.echo(json.dumps(lib.stats(user_id=user), ensure_ascii=False))
+    store.close()
