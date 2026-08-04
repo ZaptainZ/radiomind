@@ -1671,3 +1671,185 @@ def lifelog_stats(user: str) -> None:
     store, ll = _get_lifelog()
     click.echo(json.dumps(ll.stats(user_id=user), ensure_ascii=False))
     store.close()
+
+
+# --- consolidation (蒸馏升格) -------------------------------------------------
+# Life log → durable memory. Host-thinks: `prepare` hands out the prompt, the
+# caller's LLM answers, `apply` writes the result. `auto` does both when this
+# host happens to have an LLM (the bare CLI on R76S does not).
+
+@lifelog.group("consolidate")
+def lifelog_consolidate() -> None:
+    """蒸馏升格 — distil recent days into L2 facts / habits / KG triples."""
+
+
+def _consolidate_writers():
+    """Habit store + knowledge graph, opened without the full mind."""
+    from radiomind.core.config import Config
+    from radiomind.storage.hdc import HabitStore
+    from radiomind.storage.knowledge_graph import KnowledgeGraph
+
+    cfg = Config.load()
+    habits = HabitStore(cfg.home / "data" / "hdc", dim=cfg.get("hdc.dim", 10000))
+    habits.open()
+    kg = KnowledgeGraph(cfg.db_path.parent / "knowledge.db")
+    kg.open()
+    return habits, kg
+
+
+def _consolidate_llm(timeout: int = 0):
+    """Any reachable LLM: env keys → config.toml backends → local Ollama.
+
+    Distilling a day of material through a reasoning model runs for minutes, well
+    past the 45s a backend defaults to, so the caller's timeout is pushed down.
+    """
+    from radiomind.core.config import Config
+    from radiomind.core.llm import LLMRouter
+    from radiomind.core.llm_auto import _from_env, _from_ollama
+
+    def _stretch(obj):
+        if obj is None or not timeout:
+            return obj
+        for backend in [obj, *getattr(obj, "_backends", {}).values()]:
+            if hasattr(backend, "timeout"):
+                backend.timeout = timeout
+        return obj
+
+    env_backend = _from_env()
+    if env_backend:
+        return _stretch(env_backend)
+    router = LLMRouter(Config.load())
+    if router.is_available():
+        return _stretch(router)
+    return _stretch(_from_ollama())
+
+
+def _prepare_payload(ll, store, days, since, until, force, user, max_episodes, domain):
+    from radiomind.refinement import lifelog_consolidate as lc
+
+    ctx = lc.build_context(ll, store=store, days=days, user_id=user, since=since,
+                           until=until, force=force, max_episodes=max_episodes, domain=domain)
+    payload = {
+        "dates": ctx["dates"],
+        "n_days": len(ctx["dates"]),
+        "n_episodes": len(ctx["episodes"]),
+        "n_existing_facts": len(ctx["existing_facts"]),
+        "domain": domain,
+        "system": lc.SYSTEM,
+        "prompt": lc.build_prompt(ctx) if ctx["dates"] else "",
+    }
+    if not ctx["dates"]:
+        payload["note"] = "no un-consolidated day profiles in range (use --force to redo)"
+    return payload
+
+
+@lifelog_consolidate.command("prepare")
+@click.option("--days", "-n", default=7, help="How many recent day profiles to distil.")
+@click.option("--since", default="", help="Earliest date (YYYY-MM-DD).")
+@click.option("--until", default="", help="Latest date (YYYY-MM-DD).")
+@click.option("--force", is_flag=True, help="Include days already consolidated.")
+@click.option("--max-episodes", default=200, help="Cap on episodes pulled into the prompt.")
+@click.option("--domain", default="lifelog", help="Memory domain distilled facts land in.")
+@click.option("--user", default="")
+def lifelog_consolidate_prepare(days: int, since: str, until: str, force: bool,
+                                max_episodes: int, domain: str, user: str) -> None:
+    """Build the distillation prompt. Returns {"dates","prompt","system",...} as JSON —
+    the caller runs its own LLM on `prompt`, then passes the reply to `apply`."""
+    store, ll = _get_lifelog()
+    payload = _prepare_payload(ll, store, days, since, until, force, user, max_episodes, domain)
+    click.echo(json.dumps(payload, ensure_ascii=False))
+    store.close()
+
+
+@lifelog_consolidate.command("apply")
+@click.option("--response", default="", help="The LLM's reply to the prepare prompt (JSON).")
+@click.option("--response-file", default="", help="Read the reply from a file instead.")
+@click.option("--dates", default="", help="Comma-separated dates from prepare — marks them consolidated.")
+@click.option("--domain", default="lifelog")
+@click.option("--min-confidence", default=0.5, help="Drop facts below this confidence.")
+@click.option("--dry-run", is_flag=True, help="Parse and report, write nothing.")
+@click.option("--user", default="")
+def lifelog_consolidate_apply(response: str, response_file: str, dates: str, domain: str,
+                              min_confidence: float, dry_run: bool, user: str) -> None:
+    """Write a distillation result: facts → L2 memories, habits → habit store,
+    entities → knowledge graph. Returns a JSON summary."""
+    from radiomind.refinement import lifelog_consolidate as lc
+
+    text = Path(response_file).read_text() if response_file else response
+    try:
+        result = lc.parse_response(text)
+    except ValueError as exc:
+        click.echo(json.dumps({"error": str(exc)}, ensure_ascii=False))
+        raise SystemExit(1)
+
+    store, ll = _get_lifelog()
+    habits, kg = (None, None) if dry_run else _consolidate_writers()
+    summary = lc.apply_result(
+        result, store=store, ll=ll, habits=habits, kg=kg,
+        dates=[d.strip() for d in dates.split(",") if d.strip()],
+        user_id=user, domain=domain, min_confidence=min_confidence, dry_run=dry_run,
+    )
+    click.echo(json.dumps(summary, ensure_ascii=False))
+    if habits:
+        habits.close()
+    if kg:
+        kg.close()
+    store.close()
+
+
+@lifelog_consolidate.command("auto")
+@click.option("--days", "-n", default=7)
+@click.option("--since", default="")
+@click.option("--until", default="")
+@click.option("--force", is_flag=True)
+@click.option("--max-episodes", default=200)
+@click.option("--domain", default="lifelog")
+@click.option("--min-confidence", default=0.5)
+@click.option("--model", default="", help="Override the model for this call.")
+@click.option("--timeout", default=300, help="Seconds to wait for the LLM (reasoning models are slow).")
+@click.option("--dry-run", is_flag=True)
+@click.option("--user", default="")
+def lifelog_consolidate_auto(days: int, since: str, until: str, force: bool, max_episodes: int,
+                             domain: str, min_confidence: float, model: str, timeout: int,
+                             dry_run: bool, user: str) -> None:
+    """Prepare → call this host's LLM → apply, in one shot. Fails cleanly with
+    {"error": "no LLM"} on a pure-memory host; use prepare/apply there."""
+    from radiomind.refinement import lifelog_consolidate as lc
+
+    store, ll = _get_lifelog()
+    payload = _prepare_payload(ll, store, days, since, until, force, user, max_episodes, domain)
+    if not payload["dates"]:
+        click.echo(json.dumps(payload, ensure_ascii=False))
+        store.close()
+        return
+
+    llm = _consolidate_llm(timeout=timeout)
+    if llm is None:
+        click.echo(json.dumps(
+            {"error": "no LLM available on this host — use `consolidate prepare` + `apply`",
+             "dates": payload["dates"]}, ensure_ascii=False))
+        store.close()
+        raise SystemExit(1)
+
+    resp = llm.generate(payload["prompt"], system=lc.SYSTEM, model=model)
+    try:
+        result = lc.parse_response(resp.text)
+    except ValueError as exc:
+        click.echo(json.dumps({"error": f"LLM reply not parseable: {exc}", "raw": resp.text[:500]},
+                              ensure_ascii=False))
+        store.close()
+        raise SystemExit(1)
+
+    habits, kg = (None, None) if dry_run else _consolidate_writers()
+    summary = lc.apply_result(
+        result, store=store, ll=ll, habits=habits, kg=kg, dates=payload["dates"],
+        user_id=user, domain=domain, min_confidence=min_confidence, dry_run=dry_run,
+    )
+    summary["model"] = resp.model
+    summary["tokens"] = resp.tokens_prompt + resp.tokens_completion
+    click.echo(json.dumps(summary, ensure_ascii=False))
+    if habits:
+        habits.close()
+    if kg:
+        kg.close()
+    store.close()

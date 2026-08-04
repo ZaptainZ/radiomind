@@ -138,6 +138,28 @@ class LifelogStore:
             out.append(d)
         return out
 
+    def episodes_for_dates(self, dates: list[str], user_id: str = "", limit: int = 200) -> list[dict[str, Any]]:
+        """Episodes across several dates, oldest first — the raw evidence a
+        consolidation pass reads under each day profile."""
+        if not dates:
+            return []
+        where = ["status='active'", f"date IN ({','.join('?' * len(dates))})"]
+        params: list[Any] = list(dates)
+        if user_id:
+            where.append("user_id=?"); params.append(user_id)
+        rows = self._conn.execute(
+            f"SELECT id, date, start_clock, end_clock, activity, participants, topics, media, summary "
+            f"FROM lifelog_episodes WHERE {' AND '.join(where)} ORDER BY date, start_clock LIMIT ?",
+            (*params, limit),
+        ).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            for jf in ("participants", "topics", "media"):
+                d[jf] = json.loads(d.get(jf) or "[]")
+            out.append(d)
+        return out
+
     def search_episodes(self, query: str, limit: int = 10, date: str = "",
                         person: str = "", user_id: str = "") -> list[dict[str, Any]]:
         """FTS over activity+summary+topics; falls back to LIKE. Optional date/person filters."""
@@ -213,6 +235,54 @@ class LifelogStore:
         )
         self._conn.commit()
         return cur.lastrowid, False
+
+    def recent_days(self, limit: int = 7, user_id: str = "", since: str = "", until: str = "",
+                    include_consolidated: bool = False) -> list[dict[str, Any]]:
+        """Most recent day profiles, newest first. Skips already-consolidated days
+        unless asked — consolidation is the only caller and must not re-distil."""
+        where = ["status='active'"]
+        params: list[Any] = []
+        if user_id:
+            where.append("user_id=?"); params.append(user_id)
+        if since:
+            where.append("date>=?"); params.append(since)
+        if until:
+            where.append("date<=?"); params.append(until)
+        rows = self._conn.execute(
+            f"SELECT * FROM lifelog_day_profiles WHERE {' AND '.join(where)} "
+            f"ORDER BY date DESC LIMIT ?", (*params, max(limit, 1) * 4),
+        ).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            for jf in ("people", "topics", "activities", "highlights"):
+                d[jf] = json.loads(d.get(jf) or "[]")
+            d["metadata"] = json.loads(d.get("metadata") or "{}")
+            if not include_consolidated and d["metadata"].get("consolidated_at"):
+                continue
+            out.append(d)
+            if len(out) >= limit:
+                break
+        return out
+
+    def mark_consolidated(self, date: str, user_id: str = "", info: dict[str, Any] | None = None) -> bool:
+        """Stamp a day profile as distilled so the next run skips it."""
+        row = self._conn.execute(
+            "SELECT id, metadata FROM lifelog_day_profiles WHERE date=? AND user_id=?",
+            (date, user_id),
+        ).fetchone()
+        if not row:
+            return False
+        meta = json.loads(row[1] or "{}")
+        meta["consolidated_at"] = time.time()
+        if info:
+            meta["consolidated"] = info
+        self._conn.execute(
+            "UPDATE lifelog_day_profiles SET metadata=? WHERE id=?",
+            (json.dumps(meta, ensure_ascii=False), row[0]),
+        )
+        self._conn.commit()
+        return True
 
     def get_day(self, date: str, user_id: str = "") -> dict[str, Any] | None:
         row = self._conn.execute(
