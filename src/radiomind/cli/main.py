@@ -46,6 +46,19 @@ def _get_library_kg():
     return kg
 
 
+def _get_lifelog():
+    """Lightweight life-log access — opens just the SQLite store, NOT the full mind
+    (same reasoning as `_get_library`: avoid loading the embedding model per call)."""
+    from radiomind.core.config import Config
+    from radiomind.storage.database import MemoryStore
+    from radiomind.storage.lifelog import LifelogStore
+
+    cfg = Config.load()
+    store = MemoryStore(cfg.db_path)
+    store.open()
+    return store, LifelogStore(store.conn)
+
+
 def _render_train_gap(report, prepared: bool) -> list[str]:
     """CLIProductSmoke-1b (F1): turn a refused DataGenReport into an
     actionable gap + next step, instead of a single threshold sentence."""
@@ -1526,4 +1539,135 @@ def library_stats(user: str) -> None:
     """Library counts (items / active / archived / tags) as JSON."""
     store, lib = _get_library()
     click.echo(json.dumps(lib.stats(user_id=user), ensure_ascii=False))
+    store.close()
+
+
+# --- Life Log (生活日志) ------------------------------------------------------
+# Time-anchored episodes + day profiles from the ambient-audio pipeline.
+# RadioHand calls these via subprocess and parses the JSON on stdout.
+
+@cli.group("lifelog")
+def lifelog() -> None:
+    """生活日志 — time-anchored episodes + day profiles from ambient audio."""
+
+
+def _put_episode(ll, data: dict, user: str):
+    from radiomind.storage.lifelog import LifelogEpisode
+    ep = LifelogEpisode(
+        date=data.get("date", ""), start_clock=data.get("start", data.get("start_clock", "")),
+        end_clock=data.get("end", data.get("end_clock", "")), activity=data.get("activity", ""),
+        participants=data.get("participants", []), topics=data.get("topics", []),
+        media=data.get("media", []), summary=data.get("summary", ""),
+        user_id=data.get("user_id", user), metadata=data.get("metadata", {}),
+    )
+    return ll.put_episode(ep)
+
+
+def _put_day(ll, data: dict, user: str):
+    from radiomind.storage.lifelog import DayProfile
+    day = DayProfile(
+        date=data.get("date", ""), narrative=data.get("narrative", ""),
+        people=data.get("people", []), topics=data.get("topics", []),
+        activities=data.get("activities", []), highlights=data.get("highlights", []),
+        user_id=data.get("user_id", user), metadata=data.get("metadata", {}),
+    )
+    return ll.put_day(day)
+
+
+@lifelog.command("put")
+@click.option("--payload", default="", help="JSON episode (date/start/end/activity/participants/topics/media/summary).")
+@click.option("--user", default="")
+def lifelog_put(payload: str, user: str) -> None:
+    """Add one episode. Returns {"id", "duplicate"} as JSON."""
+    store, ll = _get_lifelog()
+    eid, dup = _put_episode(ll, json.loads(payload) if payload else {}, user)
+    click.echo(json.dumps({"id": eid, "duplicate": dup}, ensure_ascii=False))
+    store.close()
+
+
+@lifelog.command("put-day")
+@click.option("--payload", default="", help="JSON day profile (date/narrative/people/topics/activities/highlights).")
+@click.option("--user", default="")
+def lifelog_put_day(payload: str, user: str) -> None:
+    """Upsert a day profile. Returns {"id", "updated"} as JSON."""
+    store, ll = _get_lifelog()
+    did, upd = _put_day(ll, json.loads(payload) if payload else {}, user)
+    click.echo(json.dumps({"id": did, "updated": upd}, ensure_ascii=False))
+    store.close()
+
+
+@lifelog.command("put-rollup")
+@click.option("--payload", default="", help="Full rollup JSON {date, episodes[], day_profile{}}.")
+@click.option("--user", default="")
+def lifelog_put_rollup(payload: str, user: str) -> None:
+    """Ingest a whole day's rollup (all episodes + day profile) in one call — the
+    entry point RadioHand uses. Returns {"date","episodes":[ids],"day":id} as JSON."""
+    store, ll = _get_lifelog()
+    data = json.loads(payload) if payload else {}
+    date = data.get("date", "")
+    ep_ids = []
+    for ep in data.get("episodes", []):
+        ep.setdefault("date", date)
+        eid, dup = _put_episode(ll, ep, user)
+        ep_ids.append({"id": eid, "duplicate": dup})
+    day_id = None
+    if data.get("day_profile"):
+        dp = dict(data["day_profile"]); dp.setdefault("date", date)
+        day_id, _ = _put_day(ll, dp, user)
+    click.echo(json.dumps({"date": date, "episodes": ep_ids, "day": day_id}, ensure_ascii=False))
+    store.close()
+
+
+@lifelog.command("search")
+@click.argument("query")
+@click.option("--date", "-d", default="")
+@click.option("--person", "-p", default="")
+@click.option("--limit", "-n", default=10)
+@click.option("--user", default="")
+def lifelog_search(query: str, date: str, person: str, limit: int, user: str) -> None:
+    """Search episodes (FTS over activity+summary+topics). Returns a JSON list.
+    This is the retrieval bridge — RadioHand injects relevant episodes into chat."""
+    store, ll = _get_lifelog()
+    click.echo(json.dumps(ll.search_episodes(query, limit=limit, date=date, person=person, user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@lifelog.command("get")
+@click.argument("episode_id", type=int)
+def lifelog_get(episode_id: int) -> None:
+    """Get one episode as JSON."""
+    store, ll = _get_lifelog()
+    ep = ll.get_episode(episode_id)
+    click.echo(json.dumps(ep, ensure_ascii=False) if ep else json.dumps({"error": "not found"}))
+    store.close()
+
+
+@lifelog.command("list")
+@click.option("--date", "-d", default="")
+@click.option("--limit", "-n", default=50)
+@click.option("--user", default="")
+def lifelog_list(date: str, limit: int, user: str) -> None:
+    """List episodes (optionally for one date) as JSON."""
+    store, ll = _get_lifelog()
+    click.echo(json.dumps(ll.list_episodes(date=date, limit=limit, user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@lifelog.command("day")
+@click.argument("date")
+@click.option("--user", default="")
+def lifelog_day(date: str, user: str) -> None:
+    """Get one day's profile as JSON."""
+    store, ll = _get_lifelog()
+    day = ll.get_day(date, user_id=user)
+    click.echo(json.dumps(day, ensure_ascii=False) if day else json.dumps({"error": "not found"}))
+    store.close()
+
+
+@lifelog.command("stats")
+@click.option("--user", default="")
+def lifelog_stats(user: str) -> None:
+    """Life-log counts (episodes / day_profiles / days_covered) as JSON."""
+    store, ll = _get_lifelog()
+    click.echo(json.dumps(ll.stats(user_id=user), ensure_ascii=False))
     store.close()
