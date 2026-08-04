@@ -32,3 +32,9 @@ episode/day-profile JSON schema 见 HackWare `radiohand-integration-log.md §3`�
    day/stats），仿 library 用轻量 `_get_lifelog()`（只开 SQLite 不加载 mind，避免 30s embedding 加载）。
 2. RadioHand 侧最小 capture（收 rollup → `radiomind lifelog put`）+ query。
 3. 部署 R76S：rsync+重装，先备份 db、schema 5→6、对 git 版本（防降级）。
+
+## 追加：CLI（commit 见下）
+`cli/main.py` 加 `_get_lifelog()`（轻量 SQLite）+ `lifelog` 组：put / **put-rollup**（一次灌整份
+rollup=episodes+day，RadioHand 入口）/ search（=检索桥，注入对话）/ get / list / day / stats。
+端到端验证（真实 rollup_260803）：4 episodes+1 day 入库；search 戒指/复仇者/面包 命中（话题词可搜）；
+py_compile 过。两座桥：桥一(检索注入)=lifelog search 就绪；桥二(蒸馏升格)待做=lifelog consolidate。
