@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 6
 
 _MIGRATIONS: list[tuple[int, Callable]] = []
 
@@ -180,3 +180,63 @@ def _add_knowledge_library(conn) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_status ON library_items(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_user ON library_items(user_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_lib_item_tags_tag ON library_item_tags(tag_id)")
+
+
+@register(version=6)
+def _add_lifelog(conn) -> None:
+    """Add the Life Log (生活日志) tables — time-anchored episodes + day profiles
+    derived from the user's ambient audio.
+
+    A THIRD namespace, separate from `memories` (conversation) and `library`
+    (collected documents): distinct tables so life-log recall never pollutes
+    personal-memory or library recall. People reuse the knowledge_graph.
+
+    FTS covers activity + summary + topics (WIDER than library's title+summary) so
+    "when did I talk about X" finds episodes by topic, not only by summary text.
+    """
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS lifelog_episodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL DEFAULT '',
+            start_clock TEXT NOT NULL DEFAULT '',
+            end_clock TEXT NOT NULL DEFAULT '',
+            activity TEXT NOT NULL DEFAULT '',
+            participants TEXT NOT NULL DEFAULT '[]',
+            topics TEXT NOT NULL DEFAULT '[]',
+            topics_text TEXT NOT NULL DEFAULT '',
+            media TEXT NOT NULL DEFAULT '[]',
+            summary TEXT NOT NULL DEFAULT '',
+            content_hash TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'active',
+            user_id TEXT NOT NULL DEFAULT '',
+            created_at REAL NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS lifelog_day_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL DEFAULT '',
+            narrative TEXT NOT NULL DEFAULT '',
+            people TEXT NOT NULL DEFAULT '[]',
+            topics TEXT NOT NULL DEFAULT '[]',
+            activities TEXT NOT NULL DEFAULT '[]',
+            highlights TEXT NOT NULL DEFAULT '[]',
+            status TEXT NOT NULL DEFAULT 'active',
+            user_id TEXT NOT NULL DEFAULT '',
+            created_at REAL NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        )"""
+    )
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS lifelog_episodes_fts USING fts5("
+        "activity, summary, topics_text, content='lifelog_episodes', content_rowid='id')"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ll_ep_date ON lifelog_episodes(date)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ll_ep_status ON lifelog_episodes(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ll_ep_user ON lifelog_episodes(user_id)")
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_ll_ep_natural "
+        "ON lifelog_episodes(user_id, date, start_clock)"
+    )
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ll_day_natural ON lifelog_day_profiles(user_id, date)")
