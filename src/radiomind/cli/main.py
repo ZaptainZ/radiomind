@@ -59,6 +59,19 @@ def _get_lifelog():
     return store, LifelogStore(store.conn)
 
 
+def _get_speakers():
+    """Lightweight speaker-gallery access (same reasoning as `_get_library`).
+    Match thresholds come from config so they can be recalibrated without a code change."""
+    from radiomind.core.config import Config
+    from radiomind.storage.database import MemoryStore
+    from radiomind.storage.speakers import MatchPolicy, SpeakerStore
+
+    cfg = Config.load()
+    store = MemoryStore(cfg.db_path)
+    store.open()
+    return store, SpeakerStore(store.conn, policy=MatchPolicy.from_config(cfg))
+
+
 def _render_train_gap(report, prepared: bool) -> list[str]:
     """CLIProductSmoke-1b (F1): turn a refused DataGenReport into an
     actionable gap + next step, instead of a single threshold sentence."""
@@ -1852,4 +1865,230 @@ def lifelog_consolidate_auto(days: int, since: str, until: str, force: bool, max
         habits.close()
     if kg:
         kg.close()
+    store.close()
+
+
+# --- Speakers (声纹身份) ------------------------------------------------------
+# The audio tool is stateless: it extracts turns + embeddings and forgets them.
+# Identity and accumulation live here. RadioHand calls these via subprocess.
+
+@cli.group("speakers")
+def speakers() -> None:
+    """声纹身份 — resolve voices to stable people and accumulate who recurs."""
+
+
+def _load_payload(payload: str, payload_file: str) -> dict:
+    """Turn payloads carry hundreds of base64 vectors — a file avoids ARG_MAX."""
+    if payload_file:
+        return json.loads(Path(payload_file).read_text())
+    return json.loads(payload) if payload else {}
+
+
+def _parse_turns(data: dict, user: str) -> list:
+    from radiomind.storage.speakers import SpeakerTurn, decode_embedding
+
+    tz = data.get("tz", "")
+    model_id = data.get("model_id", "")
+    out = []
+    for t in data.get("turns", []):
+        emb = t.get("embedding")
+        out.append(SpeakerTurn(
+            started_at=float(t.get("started_at", 0)), ended_at=float(t.get("ended_at", 0)),
+            date=t.get("date", ""), tz=t.get("tz", tz),
+            embedding=decode_embedding(emb) if emb is not None else None,
+            model_id=t.get("model_id", model_id), speech_s=float(t.get("speech_s", 0)),
+            quality=float(t.get("quality", 0)),
+            region_type=t.get("region_type", "conversation"),
+            source_file=t.get("source_file", data.get("source_file", "")),
+            user_id=t.get("user_id", user), metadata=t.get("metadata", {}),
+        ))
+    return out
+
+
+def _emit(obj, out_file: str) -> None:
+    """Hand truncates a subprocess's stdout at 64KB, so bulk detail goes to a file
+    and stdout keeps the summary."""
+    text = json.dumps(obj, ensure_ascii=False)
+    if out_file:
+        Path(out_file).write_text(text)
+        click.echo(json.dumps({"out_file": out_file, "bytes": len(text)}, ensure_ascii=False))
+    else:
+        click.echo(text)
+
+
+@speakers.command("put-turns")
+@click.option("--payload", default="", help="JSON {model_id, tz, turns:[{started_at, speech_s, embedding(base64), ...}]}.")
+@click.option("--payload-file", default="", help="Read that JSON from a file (preferred for a full day).")
+@click.option("--out-file", default="", help="Write the full per-turn detail here instead of stdout.")
+@click.option("--dry-run", is_flag=True, help="Resolve and report, store nothing.")
+@click.option("--user", default="")
+def speakers_put_turns(payload: str, payload_file: str, out_file: str, dry_run: bool, user: str) -> None:
+    """Store turns and resolve them to speakers in one call. Returns a summary."""
+    from radiomind.storage.speakers import ModelMismatch
+
+    store, sp = _get_speakers()
+    data = _load_payload(payload, payload_file)
+    try:
+        summary = sp.put_turns(_parse_turns(data, user), user_id=user,
+                               model_id=data.get("model_id", ""), dry_run=dry_run)
+    except ModelMismatch as exc:
+        click.echo(json.dumps({"error": "model_mismatch", "detail": str(exc)}, ensure_ascii=False))
+        store.close()
+        raise SystemExit(1)
+    _emit(summary, out_file)
+    store.close()
+
+
+@speakers.command("resolve")
+@click.option("--payload", default="")
+@click.option("--payload-file", default="")
+@click.option("--out-file", default="")
+@click.option("--user", default="")
+def speakers_resolve(payload: str, payload_file: str, out_file: str, user: str) -> None:
+    """Preview which speaker each embedding would bind to, without storing anything."""
+    store, sp = _get_speakers()
+    data = _load_payload(payload, payload_file)
+    results = []
+    for t in _parse_turns(data, user):
+        if t.embedding is None:
+            results.append({"started_at": t.started_at, "error": "no embedding"})
+            continue
+        match, score, binding = sp.match(t.embedding, user_id=user, speech_s=t.speech_s)
+        results.append({"started_at": t.started_at, "speech_s": t.speech_s,
+                        "label": match["label"] if match else None,
+                        "score": round(score, 4), "binding": binding})
+    _emit({"resolved": results, "n": len(results)}, out_file)
+    store.close()
+
+
+@speakers.command("list")
+@click.option("--status", default="", help="active | pending | archived")
+@click.option("--user", default="")
+def speakers_list(status: str, user: str) -> None:
+    """List speakers as JSON, loudest first."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.list_speakers(user_id=user, status=status), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("get")
+@click.argument("label")
+@click.option("--user", default="")
+def speakers_get(label: str, user: str) -> None:
+    """Get one speaker as JSON (follows merge tombstones)."""
+    store, sp = _get_speakers()
+    row = sp.get(sp.resolve_label(label, user), user)
+    click.echo(json.dumps(row, ensure_ascii=False) if row else json.dumps({"error": "not found"}))
+    store.close()
+
+
+@speakers.command("name")
+@click.argument("label")
+@click.argument("display_name")
+@click.option("--confidence", default=1.0, help="<1 means this is a proposal, not a confirmation.")
+@click.option("--evidence", default="", help="What the name was inferred from.")
+@click.option("--no-kg", is_flag=True, help="Skip the knowledge-graph alias.")
+@click.option("--user", default="")
+def speakers_name(label: str, display_name: str, confidence: float, evidence: str,
+                  no_kg: bool, user: str) -> None:
+    """Bind a person to a voice. A confirmed name also becomes a KG alias, which
+    rewrites existing triples — so facts recorded under `spk_003` follow the name."""
+    store, sp = _get_speakers()
+    result = sp.name(sp.resolve_label(label, user), display_name, user_id=user,
+                     confidence=confidence, evidence=evidence)
+    if not result.get("error") and confidence >= 1.0 and not no_kg:
+        kg = _get_library_kg()
+        kg.add_alias(label, display_name)
+        kg.close()
+        result["kg_alias"] = True
+    click.echo(json.dumps(result, ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("promote")
+@click.option("--user", default="")
+def speakers_promote(user: str) -> None:
+    """Promote pending speakers that recur across days; expire the ones that never grew."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.promote(user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("merge-candidates")
+@click.option("--user", default="")
+def speakers_merge_candidates(user: str) -> None:
+    """Speaker pairs similar enough to propose merging (never auto-applied)."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.merge_candidates(user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("merge")
+@click.argument("from_label")
+@click.argument("into_label")
+@click.option("--reason", default="")
+@click.option("--dry-run", is_flag=True)
+@click.option("--user", default="")
+def speakers_merge(from_label: str, into_label: str, reason: str, dry_run: bool, user: str) -> None:
+    """Merge one speaker into another. Reversible — turn embeddings are kept."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.merge(from_label, into_label, user_id=user, reason=reason,
+                                   dry_run=dry_run), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("split")
+@click.argument("label")
+@click.option("--dry-run", is_flag=True)
+@click.option("--user", default="")
+def speakers_split(label: str, dry_run: bool, user: str) -> None:
+    """Split one speaker into two by re-clustering its turns."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.split(label, user_id=user, dry_run=dry_run), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("rebuild")
+@click.argument("label")
+@click.option("--user", default="")
+def speakers_rebuild(label: str, user: str) -> None:
+    """Recompute a speaker's centroid and stats from its turns."""
+    store, sp = _get_speakers()
+    row = sp.get(sp.resolve_label(label, user), user)
+    if not row:
+        click.echo(json.dumps({"error": "not found"}))
+    else:
+        click.echo(json.dumps(sp.rebuild(row["id"]), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("forget")
+@click.argument("label")
+@click.option("--dry-run", is_flag=True)
+@click.option("--user", default="")
+def speakers_forget(label: str, dry_run: bool, user: str) -> None:
+    """Erase a person and every embedding of them. Callers must also anonymize
+    `@<label>` references in already-generated text."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.forget(label, user_id=user, dry_run=dry_run), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("stats")
+@click.option("--user", default="")
+def speakers_stats(user: str) -> None:
+    """Gallery counts as JSON."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.stats(user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("manual")
+@click.option("--json", "as_json", is_flag=True, default=True, help="(always JSON)")
+@click.option("--user", default="")
+def speakers_manual(as_json: bool, user: str) -> None:
+    """Self-description for an agent: what this namespace is for, its coverage,
+    current thresholds, health, and what maintenance it currently wants."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.manual(user_id=user), ensure_ascii=False))
     store.close()

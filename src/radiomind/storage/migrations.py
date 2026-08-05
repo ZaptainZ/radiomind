@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 6
+CURRENT_SCHEMA_VERSION = 7
 
 _MIGRATIONS: list[tuple[int, Callable]] = []
 
@@ -240,3 +240,113 @@ def _add_lifelog(conn) -> None:
         "ON lifelog_episodes(user_id, date, start_clock)"
     )
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ll_day_natural ON lifelog_day_profiles(user_id, date)")
+
+
+@register(version=7)
+def _add_speakers(conn) -> None:
+    """Speaker identity (声纹身份) + absolute timestamps for the life log.
+
+    `speaker_turns` is the SOURCE OF TRUTH: one row per speech turn, holding the
+    voice embedding forever. `speakers.id` is only a mutable pointer, and both
+    `speaker_exemplars` and `speaker_centroids` are derived caches that can be
+    rebuilt from the turns at any time. That is what makes merge/split reversible
+    — storing centroids alone would make a wrong merge unrecoverable.
+    """
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speaker_turns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            started_at REAL NOT NULL,
+            ended_at REAL NOT NULL,
+            date TEXT NOT NULL DEFAULT '',
+            tz TEXT NOT NULL DEFAULT '',
+            embedding BLOB NOT NULL,
+            model_id TEXT NOT NULL DEFAULT '',
+            dim INTEGER NOT NULL DEFAULT 0,
+            speech_s REAL NOT NULL DEFAULT 0,
+            quality REAL NOT NULL DEFAULT 0,
+            region_type TEXT NOT NULL DEFAULT 'conversation',
+            speaker_id INTEGER,
+            confidence REAL NOT NULL DEFAULT 0,
+            binding TEXT NOT NULL DEFAULT 'unknown',
+            episode_id INTEGER,
+            source_file TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'active',
+            user_id TEXT NOT NULL DEFAULT '',
+            created_at REAL NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speakers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            label TEXT NOT NULL,
+            display_name TEXT NOT NULL DEFAULT '',
+            name_confidence REAL NOT NULL DEFAULT 0,
+            name_evidence TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'pending',
+            is_wearer INTEGER NOT NULL DEFAULT 0,
+            first_seen_at REAL NOT NULL DEFAULT 0,
+            last_seen_at REAL NOT NULL DEFAULT 0,
+            turn_count INTEGER NOT NULL DEFAULT 0,
+            total_speech_s REAL NOT NULL DEFAULT 0,
+            days_seen INTEGER NOT NULL DEFAULT 0,
+            model_id TEXT NOT NULL DEFAULT '',
+            user_id TEXT NOT NULL DEFAULT '',
+            created_at REAL NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speaker_exemplars (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            speaker_id INTEGER NOT NULL,
+            turn_id INTEGER NOT NULL,
+            embedding BLOB NOT NULL,
+            model_id TEXT NOT NULL DEFAULT '',
+            speech_s REAL NOT NULL DEFAULT 0,
+            added_at REAL NOT NULL
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speaker_centroids (
+            speaker_id INTEGER PRIMARY KEY,
+            centroid BLOB NOT NULL,
+            model_id TEXT NOT NULL DEFAULT '',
+            dim INTEGER NOT NULL DEFAULT 0,
+            n_exemplars INTEGER NOT NULL DEFAULT 0,
+            rebuilt_at REAL NOT NULL
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speaker_merges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            old_speaker_id INTEGER NOT NULL,
+            old_label TEXT NOT NULL DEFAULT '',
+            new_speaker_id INTEGER NOT NULL,
+            merged_at REAL NOT NULL,
+            reason TEXT NOT NULL DEFAULT ''
+        )"""
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_spk_turn_speaker ON speaker_turns(speaker_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_spk_turn_date ON speaker_turns(date)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_spk_turn_user ON speaker_turns(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_spk_ex_speaker ON speaker_exemplars(speaker_id)")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spk_label ON speakers(user_id, label)")
+    # A turn is uniquely keyed by (user, source recording, start) — re-running the
+    # audio tool over the same file must not duplicate turns.
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_spk_turn_natural "
+        "ON speaker_turns(user_id, source_file, started_at)"
+    )
+
+    # Life log gains absolute time. `start_clock`/`end_clock` stay as display
+    # fields; clock strings alone can't express a recording that crosses midnight.
+    for col, decl in (
+        ("started_at", "REAL NOT NULL DEFAULT 0"),
+        ("ended_at", "REAL NOT NULL DEFAULT 0"),
+        ("tz", "TEXT NOT NULL DEFAULT ''"),
+    ):
+        try:
+            conn.execute(f"ALTER TABLE lifelog_episodes ADD COLUMN {col} {decl}")
+        except Exception:
+            pass  # column already present (re-run on a partially migrated DB)
