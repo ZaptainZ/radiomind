@@ -1568,7 +1568,10 @@ def _put_episode(ll, data: dict, user: str):
     from radiomind.storage.lifelog import LifelogEpisode
     ep = LifelogEpisode(
         date=data.get("date", ""), start_clock=data.get("start", data.get("start_clock", "")),
-        end_clock=data.get("end", data.get("end_clock", "")), activity=data.get("activity", ""),
+        end_clock=data.get("end", data.get("end_clock", "")),
+        started_at=float(data.get("started_at", 0) or 0),
+        ended_at=float(data.get("ended_at", 0) or 0), tz=data.get("tz", ""),
+        activity=data.get("activity", ""),
         participants=data.get("participants", []), topics=data.get("topics", []),
         media=data.get("media", []), summary=data.get("summary", ""),
         user_id=data.get("user_id", user), metadata=data.get("metadata", {}),
@@ -1619,8 +1622,11 @@ def lifelog_put_rollup(payload: str, user: str) -> None:
     data = json.loads(payload) if payload else {}
     date = data.get("date", "")
     ep_ids = []
+    tz = data.get("tz", "")
     for ep in data.get("episodes", []):
         ep.setdefault("date", date)
+        if tz:
+            ep.setdefault("tz", tz)
         eid, dup = _put_episode(ll, ep, user)
         ep_ids.append({"id": eid, "duplicate": dup})
     day_id = None

@@ -39,6 +39,11 @@ class LifelogEpisode:
     date: str = ""
     start_clock: str = ""
     end_clock: str = ""
+    # Absolute time (epoch) is authoritative; the clock strings are for display.
+    # A recording that runs past midnight has no valid clock representation.
+    started_at: float = 0.0
+    ended_at: float = 0.0
+    tz: str = ""
     activity: str = ""
     participants: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
@@ -88,11 +93,13 @@ class LifelogStore:
         ttext = _topics_text(ep.topics, ep.media)
         cur = self._conn.execute(
             """INSERT INTO lifelog_episodes
-               (date, start_clock, end_clock, activity, participants, topics, topics_text,
+               (date, start_clock, end_clock, started_at, ended_at, tz, activity,
+                participants, topics, topics_text,
                 media, summary, content_hash, status, user_id, created_at, metadata)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                ep.date, ep.start_clock, ep.end_clock, ep.activity,
+                ep.date, ep.start_clock, ep.end_clock,
+                ep.started_at, ep.ended_at, ep.tz, ep.activity,
                 json.dumps(ep.participants, ensure_ascii=False),
                 json.dumps(ep.topics, ensure_ascii=False), ttext,
                 json.dumps(ep.media, ensure_ascii=False), ep.summary, chash,
@@ -200,7 +207,9 @@ class LifelogStore:
                 continue
             results.append({
                 "id": ep["id"], "date": ep["date"], "start_clock": ep["start_clock"],
-                "end_clock": ep["end_clock"], "activity": ep["activity"],
+                "end_clock": ep["end_clock"], "started_at": ep.get("started_at", 0),
+                "ended_at": ep.get("ended_at", 0), "tz": ep.get("tz", ""),
+                "activity": ep["activity"],
                 "participants": ep["participants"], "topics": ep["topics"],
                 "summary": ep["summary"],
             })
