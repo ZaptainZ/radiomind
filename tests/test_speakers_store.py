@@ -109,7 +109,10 @@ def test_gray_binding_does_not_become_an_exemplar(sp, rng):
     sp.put_turns([turn(utterance(rng, a, jitter=0.0), t=100.0)], user_id="z")
     before = len(sp._exemplars(sp.get("spk_001", "z")["id"]))
 
-    gray = normalize(0.68 * a + 0.75 * voice(rng))   # lands between t_low and t_high
+    # Aim at the middle of the configured gray band rather than a fixed mix, so
+    # the test keeps testing the band after a recalibration moves it.
+    target = (sp.policy.t_low + sp.policy.t_high) / 2
+    gray = normalize(target * a + np.sqrt(1 - target**2) * voice(rng))
     match, score, binding = sp.match(gray, user_id="z", speech_s=6.0)
     if binding != "gray":
         pytest.skip(f"synthetic vector landed in '{binding}' at {score:.3f}, not the gray band")

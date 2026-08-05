@@ -77,12 +77,29 @@ def cosine(a: np.ndarray, b: np.ndarray) -> float:
 
 @dataclass
 class MatchPolicy:
-    """Every number here is a placeholder until calibrated on real audio."""
+    """Calibrated 2026-08-05 against `3dspeaker_campplus_zh` on real recordings
+    (see RadioMind `logs/2026-08-05-calibration-run1-cc.md`). Owner-labelled clips
+    separated cleanly: confirmed impostors topped out at 0.31, the lowest confirmed
+    same-speaker segment sat at 0.39.
 
-    t_high: float = 0.72          # >= : bind, and may become an exemplar
-    t_low: float = 0.62           # <  : bind nothing, goes to the pending pool
-    wearer_t_high: float = 0.75   # the wearer's own voice varies far less (close-talk mic)
-    wearer_t_low: float = 0.65
+    These numbers belong to that embedding model. Swapping models invalidates them,
+    which is what `calibrated_for` records.
+    """
+
+    t_high: float = 0.50          # >= : bind, and may become an exemplar
+    t_low: float = 0.35           # <  : bind nothing, goes to the pending pool
+    # t_high sits well above the 0.39 floor on purpose: a segment containing the
+    # wearer AND a second person measured 0.44, and such mixtures must never
+    # become exemplars. Binding still happens in the gray band; only the gallery
+    # is protected.
+    #
+    # The wearer gets NO stricter threshold. The close-talk-mic assumption ("their
+    # own voice varies less") is false for a worn recorder: the same person
+    # measured 0.21–0.90 across skateboarding wind noise and restaurant babble —
+    # a wider spread than anyone else's.
+    wearer_t_high: float = 0.50
+    wearer_t_low: float = 0.35
+    calibrated_for: str = "3dspeaker_campplus_zh"
     min_speech_s: float = 1.5           # below this an embedding is noise, no decision
     min_new_id_speech_s: float = 3.0    # below this may match, never create an identity
     exemplar_min_speech_s: float = 3.0
@@ -647,11 +664,14 @@ class SpeakerStore:
                          "turns": st["turns"]},
             "policy": {k: getattr(self.policy, k) for k in MatchPolicy.__dataclass_fields__},
             "calibration": {
-                "calibrated": False,
-                "note": "thresholds are model properties, not task properties — the shipped "
-                        "defaults are placeholders. Calibrate t_high/t_low from labelled "
-                        "recordings (EER point ±0.05), and bias high: a split is visible and "
-                        "reversible, a merge is silent and destroys the centroid.",
+                "calibrated": bool(self.policy.calibrated_for
+                                   and self.policy.calibrated_for in (st["model_id"] or "")),
+                "calibrated_for": self.policy.calibrated_for,
+                "gallery_model": st["model_id"],
+                "note": "thresholds are a property of the embedding model, not of the task. "
+                        "They hold only while the gallery model matches `calibrated_for`; "
+                        "swapping models requires re-measuring from labelled recordings. "
+                        "Bias high: a split is visible and reversible, a merge is silent.",
             },
             "health": {
                 "ok": st["turns"] == 0 or st["turns_bound"] > 0,
