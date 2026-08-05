@@ -99,7 +99,9 @@ class MatchPolicy:
     # a wider spread than anyone else's.
     wearer_t_high: float = 0.50
     wearer_t_low: float = 0.35
-    calibrated_for: str = "3dspeaker_campplus_zh"
+    # The exact weights the thresholds were measured against, including the file
+    # fingerprint — different weights are a different measuring instrument.
+    calibrated_for: str = "3dspeaker_speech_campplus_sv_zh-cn_16k-common@f682b514"
     min_speech_s: float = 1.5           # below this an embedding is noise, no decision
     min_new_id_speech_s: float = 3.0    # below this may match, never create an identity
     exemplar_min_speech_s: float = 3.0
@@ -646,6 +648,33 @@ class SpeakerStore:
         return {"turns": turns, "turns_bound": bound, "speakers": by_status,
                 "model_id": model, "dim": dim}
 
+    def export_known(self, user_id: str = "", status: tuple[str, ...] = ("active",)) -> dict[str, Any]:
+        """The gallery in the shape the audio tool consumes.
+
+        Centroids only — the tool gets just enough to route a recording (which
+        stretches are the wearer talking) and never enough to hold an identity.
+        """
+        model_id, dim = self.gallery_model(user_id)
+        out = []
+        for sp in self._speakers(user_id, statuses=status):
+            c = self._centroid(sp["id"])
+            if c is None:
+                continue
+            out.append({"label": sp["label"], "display_name": sp["display_name"],
+                        "is_wearer": bool(sp["is_wearer"]),
+                        "centroid": encode_embedding(c)})
+        return {"model_id": model_id, "dim": dim, "speakers": out}
+
+    def set_wearer(self, label: str, user_id: str = "") -> dict[str, Any]:
+        """Mark which speaker is the wearer. Exactly one per user."""
+        sp = self.get(label, user_id)
+        if not sp:
+            return {"error": f"unknown speaker {label}"}
+        self._conn.execute("UPDATE speakers SET is_wearer=0 WHERE user_id=?", (user_id,))
+        self._conn.execute("UPDATE speakers SET is_wearer=1, status='active' WHERE id=?", (sp["id"],))
+        self._conn.commit()
+        return {"label": label, "is_wearer": True}
+
     def manual(self, user_id: str = "") -> dict[str, Any]:
         """Machine-readable self-description, for an agent deciding whether and how
         to use this namespace (same contract shape as other self-describing tools)."""
@@ -665,7 +694,7 @@ class SpeakerStore:
             "policy": {k: getattr(self.policy, k) for k in MatchPolicy.__dataclass_fields__},
             "calibration": {
                 "calibrated": bool(self.policy.calibrated_for
-                                   and self.policy.calibrated_for in (st["model_id"] or "")),
+                                   and self.policy.calibrated_for == (st["model_id"] or "")),
                 "calibrated_for": self.policy.calibrated_for,
                 "gallery_model": st["model_id"],
                 "note": "thresholds are a property of the embedding model, not of the task. "

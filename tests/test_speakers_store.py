@@ -209,6 +209,27 @@ def test_forget_erases_every_trace(sp, rng):
     assert sp.get("spk_001", "z") is None
 
 
+def test_export_gives_the_tool_centroids_only(sp, rng):
+    """What the audio tool receives: enough to route a recording, never enough to
+    decide who someone is."""
+    a, b = voice(rng), voice(rng)
+    for i in range(3):
+        sp.put_turns([turn(utterance(rng, a), t=100.0 + i)], user_id="z")
+        sp.put_turns([turn(utterance(rng, b), t=200.0 + i)], user_id="z")
+    sp.set_wearer("spk_001", user_id="z")
+    sp.promote(user_id="z")
+
+    payload = sp.export_known(user_id="z", status=("active", "pending"))
+    assert payload["model_id"] == MODEL and payload["dim"] == DIM
+    wearer = [s for s in payload["speakers"] if s["is_wearer"]]
+    assert len(wearer) == 1 and wearer[0]["label"] == "spk_001"
+    # centroid round-trips as a usable unit vector
+    from radiomind.storage.speakers import decode_embedding
+    v = decode_embedding(wearer[0]["centroid"])
+    assert len(v) == DIM and abs(float(np.linalg.norm(v)) - 1.0) < 1e-5
+    assert "embedding" not in wearer[0] and "turns" not in wearer[0]
+
+
 def test_manual_reports_policy_and_uncalibrated_state(sp):
     m = sp.manual(user_id="z")
     assert m["namespace"] == "speakers"

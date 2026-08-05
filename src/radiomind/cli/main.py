@@ -2011,6 +2011,36 @@ def speakers_name(label: str, display_name: str, confidence: float, evidence: st
     store.close()
 
 
+@speakers.command("export")
+@click.option("--out-file", default="", help="Write here instead of stdout (centroids are bulky).")
+@click.option("--all", "all_status", is_flag=True, help="Include pending speakers too.")
+@click.option("--user", default="")
+def speakers_export(out_file: str, all_status: bool, user: str) -> None:
+    """Export the gallery for the audio tool: {model_id, dim, speakers:[{label, is_wearer,
+    centroid}]}. Centroids only — enough to route a recording, never enough to hold identity."""
+    store, sp = _get_speakers()
+    status = ("active", "pending") if all_status else ("active",)
+    payload = sp.export_known(user_id=user, status=status)
+    text = json.dumps(payload, ensure_ascii=False)
+    if out_file:
+        Path(out_file).write_text(text)
+        click.echo(json.dumps({"out_file": out_file, "speakers": len(payload["speakers"]),
+                               "model_id": payload["model_id"]}, ensure_ascii=False))
+    else:
+        click.echo(text)
+    store.close()
+
+
+@speakers.command("set-wearer")
+@click.argument("label")
+@click.option("--user", default="")
+def speakers_set_wearer(label: str, user: str) -> None:
+    """Mark which speaker is the wearer (exactly one per user)."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.set_wearer(sp.resolve_label(label, user), user_id=user), ensure_ascii=False))
+    store.close()
+
+
 @speakers.command("promote")
 @click.option("--user", default="")
 def speakers_promote(user: str) -> None:
