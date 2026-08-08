@@ -28,3 +28,6 @@ bench/end_to_end/**/*.checkpoint.jsonl
 
 # Local agent config.
 .codex/
+
+# 同上：checkpoint 产物不进版本库（原规则只写了 .checkpoint.jsonl，漏了 .ckpt.jsonl 这个拼法）
+bench/end_to_end/**/*.ckpt.jsonl
