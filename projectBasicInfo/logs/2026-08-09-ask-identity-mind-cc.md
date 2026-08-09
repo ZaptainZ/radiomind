@@ -1,8 +1,9 @@
-# 2026-08-09 AskIdentity —— Mind 侧三个命令
+# 2026-08-09 AskIdentity —— Mind 侧五个命令（已上生产）
 
 > 需求来自 HackWare `projectBasicInfo/handoff-ask-identity.md` 的「Mind 侧要做的」。
 > 分工不变：**Mind 知道什么不确定、产出问题；Hand 知道什么时候问、负责投递**。
-> 本轮只做 Mind 侧，未碰 Hand，未上生产。
+> 本轮只做 Mind 侧，未碰 Hand。**文末有部署段：`832caa5` 已上 R76S，schema 7 → 8。**
+> 下面前半部分是实现过程，按当时时序记录，其中「未上生产」等表述由文末部署段收口。
 
 ## 交付
 
@@ -11,11 +12,13 @@
 | `speakers pending-questions` | 把「我不确定什么」变成结构化问题列表（`--limit` / `--out-file`）|
 | `speakers mark-distinct A B` | 记住「这两个不是同一个人」，合并候选里永久排除该对 |
 | `speakers ignore <label>` | 不再问、不再晋升、不进合并候选 |
+| `speakers at` | 按时间窗/日窗口查该时段真实在场者（后加，见「追加」段）|
+| `lifelog delete-episodes` | 删 episode 让某天可以重新生成（后加，见「追加」段）|
 
 - **migration v8**：新表 `speaker_distinct(a_id, b_id, user_id, marked_at)`，
   `CURRENT_SCHEMA_VERSION` 7 → 8。
-- 测试 **1156 → 1169 passed**（新增 13），regression pack 新增 `speakers:ask-identity`，全绿。
-- CLI 三条命令在沙箱 `RADIOMIND_HOME` 里端到端实跑过，不只是单测过。
+- 测试 **1156 → 1177 passed**，regression pack 新增 `speakers:ask-identity`，全绿。
+- 五条命令都在沙箱 `RADIOMIND_HOME` 里端到端实跑过，不只是单测过；部署后又在生产实跑一遍。
 
 ## 三个设计判断（都不是照抄交接文档）
 
@@ -130,3 +133,36 @@ lifelog delete-episodes [--date YYYY-MM-DD] [--id N ...] [--only-unanchored] [--
 `evidence.days` 直接取 `speaker_turns.date` 列。**两者由生产方分别提供，可能互相矛盾**
 （我在 smoke 里用合成数据就撞出来了：epoch 是 2025-08-03、date 字段写的 2026-08-03，
 于是同一条问题里两个年份）。代码没错，但值得让采集端确认 `date` 必须与 `started_at` 同源派生。
+
+---
+
+# 部署（2026-08-09 21:41，owner 在会话内直接授权后执行）
+
+`832caa5` 上生产，**schema 7 → 8**。
+
+| 项 | 结果 |
+|---|---|
+| 防降级 | `merge-base --is-ancestor 956a6f6 832caa5` → 严格前进 3 个 commit |
+| 依赖 | `git diff 9745723..832caa5 -- pyproject.toml` 空 → `--no-deps` 安全 |
+| 备份 | `data/{radiomind,knowledge}.db.bak-v8-20260809-214112`，均过 integrity_check |
+| 迁移 | 以 `radiohand` 身份首跑 `status` → schema **8** |
+| 数据 | memories 148 / turns 9142 / episodes 14 **全部未变**；`speaker_distinct` 已建、0 行 |
+| 卫生 | 无 root 属主文件、无 WAL/journal 残留 |
+| 服务 | active |
+
+生产实跑五个命令全通。`speakers at --date 2026-08-06` 给出当天真实在场者
+（spk_008 907 turns / spk_001 642 / spk_002 wearer 325）；`pending-questions` 7 条，
+含真实用例 `merge:spk_001:spk_008`；`delete-episodes --only-unanchored` dry-run
+**matched=14**，与预测的「时钟是编的」全集精确吻合——**未删**，按约定等 Hand 逐天来。
+
+## 两条部署实操教训
+
+**① `set -e` + `trap ... EXIT` 的组合会提前拉起服务。** 我用 trap 兜底保证服务不会停摆，
+但脚本正常结束时 trap 同样触发——于是「装完包」那一步结束时服务就被拉起来了，
+而此时 schema 还是 7（新代码 + 旧库）。虽然下一步立刻补了迁移、窗口只有几十秒，
+但正确写法是**迁移和安装放在同一段脚本里**，或者干脆不依赖 trap 的时机。
+
+**② 权限边界按会话算，同伴转述的批准不解锁。** 部署动作早先在本会话被拦死
+（rsync / tar-over-ssh / 生产机自 clone 三条全拒）。Hand 会话转达「owner 说执行」时我没有重试——
+拿转述当授权去重试一个已被拒绝的动作就是权限洗白。直到 owner 在本会话里说「我授权」才执行。
+Hand 那边也同样拒绝了「因为你被挡就替你部署」，两边都守住了这条线。
