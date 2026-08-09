@@ -111,6 +111,9 @@ PACK: dict[str, list[str]] = {
     "retrieval:tier-ux": [
         "tests/test_retrieval_tier.py",
     ],
+    "speakers:ask-identity": [
+        "tests/test_speakers_store.py",
+    ],
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 7
+CURRENT_SCHEMA_VERSION = 8
 
 _MIGRATIONS: list[tuple[int, Callable]] = []
 
@@ -350,3 +350,27 @@ def _add_speakers(conn) -> None:
             conn.execute(f"ALTER TABLE lifelog_episodes ADD COLUMN {col} {decl}")
         except Exception:
             pass  # column already present (re-run on a partially migrated DB)
+
+
+@register(version=8)
+def _add_speaker_distinct(conn) -> None:
+    """Remember that two speakers are NOT the same person.
+
+    This is the other half of asking the owner a merge question. Without it the
+    pair keeps scoring above `merge_propose_at` and comes back as a candidate
+    every time — so "ask once and be done" would never hold, and a feature meant
+    to be helpful would turn into a weekly nag.
+
+    Pairs are stored ordered (a_id < b_id) so the relation is symmetric by
+    construction, and by speaker id rather than label because ids survive the
+    renames and tombstones that merge/split leave behind.
+    """
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS speaker_distinct (
+            a_id INTEGER NOT NULL,
+            b_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL DEFAULT '',
+            marked_at REAL NOT NULL,
+            PRIMARY KEY (a_id, b_id)
+        )"""
+    )

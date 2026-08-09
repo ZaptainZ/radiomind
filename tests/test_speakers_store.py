@@ -236,3 +236,226 @@ def test_manual_reports_policy_and_uncalibrated_state(sp):
     assert {"division_of_labor", "coverage", "policy", "health", "maintenance"} <= m.keys()
     assert m["calibration"]["calibrated"] is False   # shipped thresholds are placeholders
     assert "t_high" in m["policy"]
+
+
+# --- asking the owner (AskIdentity) -------------------------------------------
+
+def establish(sp, rng, base, *, src, t0):
+    """Feed enough turns across two days that `promote` accepts this as a person."""
+    for i in range(6):
+        sp.put_turns([turn(utterance(rng, base), t=t0 + i, date="2026-08-03", src=src)],
+                     user_id="z")
+    for i in range(6):
+        sp.put_turns([turn(utterance(rng, base), t=t0 + 500 + i, date="2026-08-04", src=src)],
+                     user_id="z")
+
+
+def twins(sp, rng):
+    """Two ACTIVE identities that sound like the same person.
+
+    This state is reachable in production when each was minted at a moment the
+    other was not in the matching pool — how spk_008 and spk_001 ended up 0.888
+    apart on the real gallery. Here the first is parked while the second forms,
+    so every turn still travels the real matching path.
+    """
+    base = voice(rng)
+    establish(sp, rng, base, src="a.wav", t0=100.0)
+    park(sp, "spk_001")
+    establish(sp, rng, base, src="b.wav", t0=9000.0)
+    sp._conn.execute("UPDATE speakers SET status='pending' WHERE user_id='z' AND label='spk_001'")
+    sp.promote(user_id="z")
+    return base, "spk_001", "spk_002"
+
+
+def park(sp, label, status="archived"):
+    """Hide one identity from the matching pool so turns land on the other."""
+    sp._conn.execute(
+        "UPDATE speakers SET status=? WHERE user_id='z' AND label=?", (status, label))
+
+
+def test_twins_are_proposed_as_a_merge(sp, rng):
+    """The fixture itself must reproduce the real situation, or the rest proves nothing."""
+    _base, a, b = twins(sp, rng)
+    for label in (a, b):
+        assert sp.get(label, "z")["status"] == "active"
+    cands = sp.merge_candidates(user_id="z")
+    assert len(cands) == 1 and {cands[0]["a"], cands[0]["b"]} == {a, b}
+
+
+def test_mark_distinct_stops_the_pair_coming_back(sp, rng):
+    """Without this the owner is asked the same question every scan."""
+    _base, a, b = twins(sp, rng)
+    assert sp.merge_candidates(user_id="z")
+
+    out = sp.mark_distinct(b, a, user_id="z")          # answered in either order
+    assert out["distinct"] is True
+    assert sp.merge_candidates(user_id="z") == []
+    assert not [q for q in sp.pending_questions(user_id="z")["questions"]
+                if q["kind"] == "merge"]
+
+
+def test_mark_distinct_rejects_nonsense(sp, rng):
+    _base, a, _ = twins(sp, rng)
+    assert "error" in sp.mark_distinct(a, a, user_id="z")
+    assert "error" in sp.mark_distinct(a, "spk_404", user_id="z")
+
+
+def test_questions_never_reach_into_the_pending_pool(sp, rng):
+    """Pending is where strangers land; asking the owner to name one is harassment."""
+    _base, a, _ = twins(sp, rng)
+    stranger = voice(rng)
+    sp.put_turns([turn(utterance(rng, stranger), t=70000.0, src="c.wav")], user_id="z")
+    passer_by = "spk_003"
+    assert sp.get(passer_by, "z")["status"] == "pending"
+
+    qs = sp.pending_questions(user_id="z")["questions"]
+    assert qs, "the twins should still raise questions"
+    assert all(passer_by not in q["subjects"] for q in qs)
+
+
+def test_questions_carry_coordinates_not_audio(sp, rng):
+    """Recordings stay on the capture machine; a question says where to listen."""
+    twins(sp, rng)
+    q = next(q for q in sp.pending_questions(user_id="z")["questions"] if q["kind"] == "merge")
+    assert q["clips"], "a merge question without a listenable moment is unanswerable"
+    for clip in q["clips"]:
+        assert {"label", "source_file", "started_at", "ended_at"} <= clip.keys()
+        assert "embedding" not in clip and "audio" not in clip
+        assert isinstance(clip["started_at"], float)
+    assert q["evidence"]["contexts"], "the owner needs wall-clock context to answer"
+
+
+def test_question_ids_are_stable_so_a_restart_re_asks_nothing(sp, rng):
+    twins(sp, rng)
+    first = [q["id"] for q in sp.pending_questions(user_id="z")["questions"]]
+    second = [q["id"] for q in sp.pending_questions(user_id="z")["questions"]]
+    assert first == second and len(set(first)) == len(first)
+
+
+def test_merge_question_applies_into_the_established_identity(sp, rng):
+    """The label already used in generated text must be the one that survives."""
+    base, a, b = twins(sp, rng)
+    park(sp, a)                       # so the extra speech lands on b, not on a
+    for i in range(4):
+        sp.put_turns([turn(utterance(rng, base), t=20000.0 + i, date="2026-08-05",
+                           src="c.wav")], user_id="z")
+    park(sp, a, status="active")
+    assert sp.get(b, "z")["total_speech_s"] > sp.get(a, "z")["total_speech_s"]
+
+    q = next(q for q in sp.pending_questions(user_id="z")["questions"] if q["kind"] == "merge")
+    assert q["subjects"] == [a, b]    # the quieter identity is the one that gets absorbed
+    assert q["apply"]["same"] == f"speakers merge {a} {b}"
+    assert q["apply"]["diff"] == f"speakers mark-distinct {a} {b}"
+    assert q["id"] == f"merge:{a}:{b}"
+
+
+def test_named_people_are_not_asked_about_again(sp, rng):
+    _base, a, b = twins(sp, rng)
+    assert {q["id"] for q in sp.pending_questions(user_id="z")["questions"]} >= {
+        f"name:{a}", f"name:{b}"}
+    sp.name(a, "明月", user_id="z")
+    assert f"name:{a}" not in {q["id"] for q in sp.pending_questions(user_id="z")["questions"]}
+
+
+def test_ignored_people_are_never_asked_about_or_promoted(sp, rng):
+    _base, a, b = twins(sp, rng)
+    sp.ignore(b, user_id="z")
+    qs = sp.pending_questions(user_id="z")["questions"]
+    assert all(b not in q["subjects"] for q in qs)
+    assert sp.merge_candidates(user_id="z") == []
+    assert sp.get(b, "z")["status"] == "ignored"
+
+
+def test_ignoring_someone_still_recognises_them(sp, rng):
+    """The point of `ignore` is silence, not amnesia. If an ignored voice stopped
+    matching, their next turn would mint a fresh identity and the nagging would
+    start over under a new label."""
+    base = voice(rng)
+    establish(sp, rng, base, src="a.wav", t0=100.0)
+    sp.promote(user_id="z")
+    sp.ignore("spk_001", user_id="z")
+    before = sp.get("spk_001", "z")["turn_count"]
+
+    sp.put_turns([turn(utterance(rng, base), t=60000.0, src="d.wav")], user_id="z")
+    assert sp.get("spk_001", "z")["turn_count"] == before + 1
+    assert sp.get("spk_002", "z") is None, "an ignored person must not respawn as a new id"
+
+
+def test_ignore_refuses_the_wearer(sp, rng):
+    establish(sp, rng, voice(rng), src="a.wav", t0=100.0)
+    sp.set_wearer("spk_001", user_id="z")
+    assert "error" in sp.ignore("spk_001", user_id="z")
+    assert sp.get("spk_001", "z")["status"] == "active"
+
+
+def test_present_between_answers_who_was_in_the_room(sp, rng):
+    """Where an episode's participants should come from — voice identity survives
+    across transcript chunks, invented speaker names do not."""
+    a, b = voice(rng), voice(rng)
+    for i in range(6):
+        sp.put_turns([turn(utterance(rng, a), t=1000.0 + i * 30, src="m.wav")], user_id="z")
+    for i in range(6):
+        sp.put_turns([turn(utterance(rng, b), t=5000.0 + i * 30, src="m.wav")], user_id="z")
+    sp._conn.execute("UPDATE speakers SET status='active' WHERE user_id='z'")
+
+    early = sp.present_between(900.0, 1300.0, user_id="z")
+    assert [p["label"] for p in early["present"]] == ["spk_001"]
+    both = sp.present_between(900.0, 6000.0, user_id="z")
+    assert {p["label"] for p in both["present"]} == {"spk_001", "spk_002"}
+    assert both["present"][0]["speech_s"] >= both["present"][-1]["speech_s"]  # loudest first
+
+
+def test_present_between_falls_back_to_a_whole_day(sp, rng):
+    """Real episodes carry the clock string "不确定" and started_at = 0, so an
+    epoch-only query would answer nothing for exactly the ones that need it."""
+    for i in range(4):
+        sp.put_turns([turn(utterance(rng, voice(rng)), t=1000.0 + i * 30,
+                           date="2026-08-06", src="m.wav")], user_id="z")
+    sp._conn.execute("UPDATE speakers SET status='active' WHERE user_id='z'")
+    assert sp.present_between(user_id="z", date="2026-08-06")["present"]
+    assert sp.present_between(user_id="z", date="2026-08-07")["present"] == []
+
+
+def test_present_between_counts_what_it_could_not_attribute(sp, rng):
+    """A caller must be able to tell "nobody else was there" from "I couldn't tell"."""
+    a = voice(rng)
+    sp.put_turns([turn(utterance(rng, a), t=1000.0, src="m.wav")], user_id="z")
+    sp._conn.execute("UPDATE speakers SET status='active' WHERE user_id='z'")
+    # a turn too short to bind to anyone still happened in the room
+    sp.put_turns([turn(utterance(rng, voice(rng)), t=1100.0, speech_s=1.0, src="m.wav")],
+                 user_id="z")
+    out = sp.present_between(900.0, 2000.0, user_id="z")
+    assert [p["label"] for p in out["present"]] == ["spk_001"]
+    assert out["unbound_turns"] == 1
+
+
+def test_present_between_leaves_the_television_out(sp, rng):
+    tv = voice(rng)
+    sp.put_turns([turn(utterance(rng, tv), t=1000.0, region="media", src="m.wav")], user_id="z")
+    out = sp.present_between(900.0, 2000.0, user_id="z")
+    assert out["present"] == [] and out["unbound_turns"] == 0
+
+
+def test_a_schema_7_database_upgrades_in_place(sp, rng):
+    """Production is already living at v7 with real turns in it, so v8 has to be an
+    addition on top of existing data — not something that only works on a fresh DB."""
+    from radiomind.storage.migrations import CURRENT_SCHEMA_VERSION, apply_migrations
+
+    establish(sp, rng, voice(rng), src="a.wav", t0=100.0)
+    before = sp.stats(user_id="z")["turns"]
+
+    # Rewind to the shape a v7 deployment is in, then migrate forward again.
+    sp._conn.execute("DROP TABLE speaker_distinct")
+    sp._conn.execute("UPDATE schema_version SET version=7")
+    sp._conn.commit()
+
+    assert apply_migrations(sp._conn) == CURRENT_SCHEMA_VERSION >= 8
+    assert sp.stats(user_id="z")["turns"] == before, "migration must not touch the turns"
+    assert sp.mark_distinct("spk_001", "spk_001", user_id="z")["error"]  # table is usable
+
+
+def test_forget_also_drops_the_distinct_pairs(sp, rng):
+    _base, a, b = twins(sp, rng)
+    sp.mark_distinct(a, b, user_id="z")
+    sp.forget(a, user_id="z")
+    assert sp._conn.execute("SELECT COUNT(*) FROM speaker_distinct").fetchone()[0] == 0

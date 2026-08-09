@@ -83,6 +83,57 @@ class LifelogStore:
         ).fetchone()
         return row[0] if row else None
 
+    def delete_episodes(self, date: str = "", ids: list[int] | None = None,
+                        only_unanchored: bool = False, user_id: str = "",
+                        dry_run: bool = True) -> dict[str, Any]:
+        """Remove episodes so a day can be regenerated from scratch.
+
+        Exists because re-running a rollup does NOT repair a bad episode. Dedup is
+        keyed on `(user, date, start_clock)`, so a re-run either collides and is
+        silently discarded as a duplicate, or lands on a different clock string and
+        is inserted ALONGSIDE the wrong row. Either way the bad data survives, and
+        repairing it needs a real delete first.
+
+        `lifelog_episodes_fts` is a manually maintained shadow table — deleting rows
+        with raw SQL leaves orphaned index entries and search starts returning
+        episodes that no longer exist. That is why this lives here rather than in a
+        caller's SQL.
+
+        `only_unanchored` selects the episodes whose absolute time was never filled
+        in (`started_at = 0`), which is exactly the cohort a "the times were made up"
+        repair wants to drop.
+
+        Defaults to `dry_run=True`: deleting a day of narrative is not something to
+        do by accident.
+        """
+        where, params = ["user_id=?"], [user_id]
+        if date:
+            where.append("date=?"); params.append(date)
+        if ids:
+            where.append(f"id IN ({','.join('?' * len(ids))})"); params += list(ids)
+        if only_unanchored:
+            where.append("started_at=0")
+        clause = " AND ".join(where)
+
+        rows = self._conn.execute(
+            f"SELECT id, date, start_clock, activity FROM lifelog_episodes WHERE {clause} "
+            f"ORDER BY date, id", params).fetchall()
+        matched = [{"id": r[0], "date": r[1], "start_clock": r[2], "activity": r[3]}
+                   for r in rows]
+        if dry_run or not matched:
+            return {"matched": len(matched), "episodes": matched, "deleted": 0,
+                    "dry_run": dry_run}
+
+        eids = [m["id"] for m in matched]
+        q = ",".join("?" * len(eids))
+        # FTS first: an orphaned index entry is worse than an orphaned row, because
+        # it is invisible until search returns something that no longer exists.
+        self._conn.execute(f"DELETE FROM lifelog_episodes_fts WHERE rowid IN ({q})", eids)
+        self._conn.execute(f"DELETE FROM lifelog_episodes WHERE id IN ({q})", eids)
+        self._conn.commit()
+        return {"matched": len(matched), "episodes": matched, "deleted": len(eids),
+                "dry_run": False}
+
     def put_episode(self, ep: LifelogEpisode, dedup: bool = True) -> tuple[int, bool]:
         """Insert an episode. Returns (id, was_duplicate). Dedup on (user, date, start)."""
         if dedup:

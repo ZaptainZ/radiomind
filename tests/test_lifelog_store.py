@@ -75,3 +75,41 @@ def test_day_profile_upsert(store):
 def test_stats(store):
     store.put_episode(_ep())
     assert store.stats("zaptain")["episodes"] == 1
+
+
+def test_rerunning_a_rollup_does_not_repair_a_bad_episode(store):
+    """Why deleting has to exist: dedup makes a re-run a no-op, so corrected
+    content is silently dropped and the wrong episode survives."""
+    store.put_episode(_ep(summary="模型编的内容"))
+    eid, dup = store.put_episode(_ep(summary="重跑后的正确内容"))
+    assert dup is True
+    assert store.get_episode(eid)["summary"] == "模型编的内容"
+
+
+def test_delete_episodes_is_a_dry_run_unless_told_otherwise(store):
+    store.put_episode(_ep())
+    out = store.delete_episodes(date="2026-08-03", user_id="zaptain")
+    assert out["matched"] == 1 and out["deleted"] == 0 and out["dry_run"] is True
+    assert store.stats("zaptain")["episodes"] == 1
+
+
+def test_delete_episodes_keeps_search_from_returning_ghosts(store):
+    """The FTS shadow table is maintained by hand — a raw SQL delete would leave
+    search returning episodes that no longer exist."""
+    store.put_episode(_ep())
+    assert store.search_episodes("戒指", user_id="zaptain")
+    out = store.delete_episodes(date="2026-08-03", user_id="zaptain", dry_run=False)
+    assert out["deleted"] == 1
+    assert store.search_episodes("戒指", user_id="zaptain") == []
+    assert store.stats("zaptain")["episodes"] == 0
+
+
+def test_delete_episodes_can_target_the_ones_whose_time_was_guessed(store):
+    """`started_at = 0` is exactly the cohort of a "the clock times were made up"
+    repair — production had 14 of 14 in that state."""
+    store.put_episode(_ep(start_clock="不确定", end_clock="不确定"))
+    store.put_episode(_ep(start_clock="09:00", started_at=1754200000.0))
+    out = store.delete_episodes(only_unanchored=True, user_id="zaptain", dry_run=False)
+    assert out["deleted"] == 1
+    left = store.search_episodes("", user_id="zaptain")
+    assert [e["start_clock"] for e in left] == ["09:00"]

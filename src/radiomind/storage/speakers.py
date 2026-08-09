@@ -33,11 +33,28 @@ import json
 import sqlite3
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import numpy as np
 
 DAY_S = 86400.0
+
+
+def clock(epoch: float, tz: str = "") -> str:
+    """Render a turn's absolute time the way a person would say it.
+
+    The store otherwise keeps time as epoch + a `tz` string and leaves display to
+    the caller, but a question shown to the owner needs wall-clock context to be
+    answerable at all ("上周三晚上在饭馆" beats an epoch). Clips keep the raw
+    epoch alongside, so nothing is lost to the formatting.
+    """
+    try:
+        zone = ZoneInfo(tz) if tz else timezone.utc
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = timezone.utc
+    return datetime.fromtimestamp(epoch, zone).strftime("%Y-%m-%d %H:%M")
 
 
 # --- vectors ------------------------------------------------------------------
@@ -195,7 +212,13 @@ class SpeakerStore:
         if speech_s and speech_s < pol.min_speech_s:
             return None, 0.0, "unknown"
 
-        people = candidates if candidates is not None else self._speakers(user_id)
+        # `ignored` speakers stay in the matching pool on purpose. Dropping them
+        # would not make the passer-by go away — their next turn would simply fail
+        # to match and mint a fresh pending identity, which is exactly the nagging
+        # `ignore` exists to stop. They are excluded from questions and promotion,
+        # not from recognition.
+        people = candidates if candidates is not None else self._speakers(
+            user_id, statuses=("active", "pending", "ignored"))
         if not people:
             return None, 0.0, "unknown"
 
@@ -497,14 +520,22 @@ class SpeakerStore:
 
     def merge_candidates(self, user_id: str = "") -> list[dict[str, Any]]:
         """Pairs similar enough to be worth PROPOSING a merge. Never auto-applied:
-        a wrong merge is silent and unrecoverable from the centroid alone."""
+        a wrong merge is silent and unrecoverable from the centroid alone.
+
+        Only `active` speakers are compared — the pending pool is full of
+        passers-by, and proposing merges among strangers is noise, not insight.
+        Pairs the owner has already told apart are excluded.
+        """
         people = self._speakers(user_id, statuses=("active",))
+        known_distinct = self._distinct_ids(user_id)
         out = []
         for i, a in enumerate(people):
             ca = self._centroid(a["id"])
             if ca is None:
                 continue
             for b in people[i + 1:]:
+                if self._pair_key(a["id"], b["id"]) in known_distinct:
+                    continue
                 cb = self._centroid(b["id"])
                 if cb is None:
                     continue
@@ -512,6 +543,52 @@ class SpeakerStore:
                 if s >= self.policy.merge_propose_at:
                     out.append({"a": a["label"], "b": b["label"], "similarity": round(s, 4)})
         return sorted(out, key=lambda x: -x["similarity"])
+
+    @staticmethod
+    def _pair_key(a_id: int, b_id: int) -> tuple[int, int]:
+        """Order a pair so the relation is symmetric however it was asked."""
+        return (a_id, b_id) if a_id <= b_id else (b_id, a_id)
+
+    def _distinct_ids(self, user_id: str = "") -> set[tuple[int, int]]:
+        rows = self._conn.execute(
+            "SELECT a_id, b_id FROM speaker_distinct WHERE user_id=?", (user_id,)).fetchall()
+        return {(r[0], r[1]) for r in rows}
+
+    def mark_distinct(self, a_label: str, b_label: str, user_id: str = "") -> dict[str, Any]:
+        """Record the owner's "no, those are two different people".
+
+        The answer has to outlive the question: these two centroids will stay
+        similar forever, so without this the same pair resurfaces on every scan.
+        """
+        a = self.get(self.resolve_label(a_label, user_id), user_id)
+        b = self.get(self.resolve_label(b_label, user_id), user_id)
+        if not a:
+            return {"error": f"unknown speaker {a_label}"}
+        if not b:
+            return {"error": f"unknown speaker {b_label}"}
+        if a["id"] == b["id"]:
+            return {"error": "a speaker cannot be distinct from itself", "label": a["label"]}
+        x, y = self._pair_key(a["id"], b["id"])
+        self._conn.execute(
+            "INSERT OR REPLACE INTO speaker_distinct (a_id, b_id, user_id, marked_at) "
+            "VALUES (?,?,?,?)", (x, y, user_id, time.time()))
+        self._conn.commit()
+        return {"a": a["label"], "b": b["label"], "distinct": True}
+
+    def ignore(self, label: str, user_id: str = "") -> dict[str, Any]:
+        """"Don't bother recording this person" — never asked about, never promoted.
+
+        Their turns keep resolving to this identity (see `match`), so an ignored
+        regular stays recognised instead of fragmenting into new pending ids.
+        """
+        sp = self.get(self.resolve_label(label, user_id), user_id)
+        if not sp:
+            return {"error": f"unknown speaker {label}"}
+        if sp["is_wearer"]:
+            return {"error": "refusing to ignore the wearer", "label": sp["label"]}
+        self._conn.execute("UPDATE speakers SET status='ignored' WHERE id=?", (sp["id"],))
+        self._conn.commit()
+        return {"label": sp["label"], "status": "ignored"}
 
     def split(self, label: str, user_id: str = "", dry_run: bool = False) -> dict[str, Any]:
         """Re-cluster one speaker's turns into two (seeded by the two least similar
@@ -599,6 +676,8 @@ class SpeakerStore:
         self._conn.execute(
             "DELETE FROM speaker_merges WHERE old_speaker_id=? OR new_speaker_id=?",
             (sp["id"], sp["id"]))
+        self._conn.execute(
+            "DELETE FROM speaker_distinct WHERE a_id=? OR b_id=?", (sp["id"], sp["id"]))
         self._conn.execute("DELETE FROM speakers WHERE id=?", (sp["id"],))
         self._conn.commit()
         return {"label": label, "turns_deleted": n, "forgotten": True}
@@ -644,7 +723,7 @@ class SpeakerStore:
         model, dim = self.gallery_model(user_id)
         by_status = {s: c.execute(
             "SELECT COUNT(*) FROM speakers WHERE user_id=? AND status=?", (user_id, s)).fetchone()[0]
-            for s in ("active", "pending", "archived")}
+            for s in ("active", "pending", "archived", "ignored")}
         return {"turns": turns, "turns_bound": bound, "speakers": by_status,
                 "model_id": model, "dim": dim}
 
@@ -674,6 +753,166 @@ class SpeakerStore:
         self._conn.execute("UPDATE speakers SET is_wearer=1, status='active' WHERE id=?", (sp["id"],))
         self._conn.commit()
         return {"label": label, "is_wearer": True}
+
+    def present_between(self, started_at: float = 0.0, ended_at: float = 0.0,
+                        user_id: str = "", date: str = "",
+                        include_pending: bool = False,
+                        min_speech_s: float = 0.0) -> dict[str, Any]:
+        """Who was actually in the room during a stretch of time.
+
+        Exists so that whoever writes an episode never has to invent participants.
+        A transcription model renames speakers from scratch in every chunk — its
+        "speaker A" in one chunk is a different person from "speaker A" in the
+        next — so a summary built over many chunks lists everyone it ever saw
+        (one real episode ended up with 85 participants). Voice identity is the
+        only thing that survives across chunks, and it lives here.
+
+        Give a `date` when the episode has no absolute window: several real
+        episodes carry the clock string "不确定" and `started_at = 0`, and a
+        whole-day answer beats a fabricated one.
+
+        `unbound_turns` is reported rather than hidden — it says how much speech
+        in the window could NOT be attributed, so the caller can tell a short
+        list from a confident one.
+        """
+        statuses = ("active", "pending") if include_pending else ("active",)
+        where = ["t.user_id=?", "t.status='active'", "t.region_type!='media'"]
+        params: list[Any] = [user_id]
+        if started_at or ended_at:
+            # overlap, not containment: a turn straddling the boundary was present
+            where.append("t.started_at < ? AND t.ended_at > ?")
+            params += [ended_at if ended_at else float("inf"), started_at]
+        if date:
+            where.append("t.date=?")
+            params.append(date)
+        clause = " AND ".join(where)
+
+        q = ",".join("?" * len(statuses))
+        rows = self._conn.execute(
+            f"""SELECT s.label, s.display_name, s.is_wearer, s.status,
+                       COUNT(*), COALESCE(SUM(t.speech_s),0),
+                       MIN(t.started_at), MAX(t.ended_at)
+                FROM speaker_turns t JOIN speakers s ON s.id=t.speaker_id
+                WHERE {clause} AND s.status IN ({q})
+                GROUP BY s.id HAVING COALESCE(SUM(t.speech_s),0) >= ?
+                ORDER BY 6 DESC""",
+            (*params, *statuses, min_speech_s),
+        ).fetchall()
+        unbound = self._conn.execute(
+            f"SELECT COUNT(*) FROM speaker_turns t WHERE {clause} AND t.speaker_id IS NULL",
+            params).fetchone()[0]
+
+        return {
+            "window": {"from": started_at, "to": ended_at, "date": date},
+            "present": [{"label": r[0], "display_name": r[1], "is_wearer": bool(r[2]),
+                         "status": r[3], "turns": r[4], "speech_s": round(r[5], 1),
+                         "first_at": r[6], "last_at": r[7]} for r in rows],
+            "unbound_turns": unbound,
+        }
+
+    # --- questions ----------------------------------------------------------
+
+    def _turn_facets(self, speaker_id: int, clips: int = 2) -> dict[str, Any]:
+        """The evidence a person needs to recognise who is being asked about:
+        which days, how much talking, and where to find a listenable moment."""
+        rows = self._conn.execute(
+            """SELECT source_file, started_at, ended_at, speech_s, date, tz
+               FROM speaker_turns
+               WHERE speaker_id=? AND status='active' AND region_type!='media'
+               ORDER BY speech_s DESC""", (speaker_id,)).fetchall()
+        days = sorted({r[4] for r in rows if r[4]})
+        return {
+            "days": days,
+            "turns": len(rows),
+            "speech_s": round(sum(r[3] for r in rows), 1),
+            # Longest turns first: the clearest thing this person ever said is the
+            # best three seconds to play back.
+            "clips": [{"source_file": r[0], "started_at": r[1], "ended_at": r[2],
+                       "speech_s": round(r[3], 1), "tz": r[5]} for r in rows[:clips]],
+            "contexts": [clock(r[1], r[5]) for r in rows[:clips]],
+        }
+
+    def pending_questions(self, user_id: str = "", limit: int = 20) -> dict[str, Any]:
+        """What this namespace is unsure about, as questions the owner can answer
+        in one tap. Mind decides WHAT is worth asking; the caller decides WHEN.
+
+        Two rules make this a feature rather than a nuisance:
+
+        - **Only `active` speakers are ever asked about.** The pending pool is
+          mostly strangers picked up in public — one restaurant evening minted two
+          identities with 600+ turns each — and asking the owner to name a passer-by
+          is harassment, not help.
+        - **Clips carry coordinates, never audio.** The recordings stay on the
+          capture machine; a question says where to listen, and whoever delivers it
+          cuts the audio locally if it is needed at all.
+
+        Every question carries its own `apply` map, so the deliverer can turn a
+        button press into the right write without understanding any of the
+        semantics. Ids are stable so a restart re-asks nothing.
+        """
+        questions: list[dict[str, Any]] = []
+
+        for cand in self.merge_candidates(user_id):
+            a = self.get(cand["a"], user_id)
+            b = self.get(cand["b"], user_id)
+            if not a or not b:
+                continue
+            # Merge the quieter identity INTO the more established one, so the
+            # label that already appears in generated text is the one that lives on.
+            src, dst = ((a, b) if (a["total_speech_s"], a["id"])
+                        <= (b["total_speech_s"], b["id"]) else (b, a))
+            fa, fb = self._turn_facets(src["id"]), self._turn_facets(dst["id"])
+            questions.append({
+                "id": f"merge:{src['label']}:{dst['label']}",
+                "kind": "merge",
+                "subjects": [src["label"], dst["label"]],
+                "confidence": cand["similarity"],
+                "evidence": {
+                    "days": sorted(set(fa["days"]) | set(fb["days"])),
+                    "turns": fa["turns"] + fb["turns"],
+                    "speech_s": round(fa["speech_s"] + fb["speech_s"], 1),
+                    "contexts": fa["contexts"] + fb["contexts"],
+                    "by_subject": {src["label"]: fa, dst["label"]: fb},
+                },
+                "question": "这两段是同一个人吗？",
+                "options": [{"key": "same", "label": "是"},
+                            {"key": "diff", "label": "不是"},
+                            {"key": "unsure", "label": "听不出"}],
+                "clips": ([{"label": src["label"], **c} for c in fa["clips"]]
+                          + [{"label": dst["label"], **c} for c in fb["clips"]]),
+                "apply": {
+                    "same": f"speakers merge {src['label']} {dst['label']}",
+                    "diff": f"speakers mark-distinct {src['label']} {dst['label']}",
+                },
+            })
+
+        # Someone who has been around for days and is still a number is worth a
+        # name. Loudest first — the people you actually live with come before the
+        # ones you merely passed.
+        for sp in sorted(self._speakers(user_id, statuses=("active",)),
+                         key=lambda s: -s["total_speech_s"]):
+            if sp["display_name"] or sp["is_wearer"]:
+                continue
+            f = self._turn_facets(sp["id"])
+            questions.append({
+                "id": f"name:{sp['label']}",
+                "kind": "name",
+                "subjects": [sp["label"]],
+                "confidence": 0.0,
+                "evidence": {"days": f["days"], "turns": f["turns"],
+                             "speech_s": f["speech_s"], "contexts": f["contexts"]},
+                "question": "这个人是谁？",
+                # No options: a name is open text. `apply` is a template — the one
+                # place a deliverer must substitute rather than execute verbatim.
+                "options": [],
+                "answer_type": "text",
+                "clips": [{"label": sp["label"], **c} for c in f["clips"]],
+                "apply": {"text": f"speakers name {sp['label']} {{answer}}",
+                          "skip": f"speakers ignore {sp['label']}"},
+            })
+
+        return {"questions": questions[:limit], "total": len(questions),
+                "truncated": len(questions) > limit}
 
     def manual(self, user_id: str = "") -> dict[str, Any]:
         """Machine-readable self-description, for an agent deciding whether and how
@@ -719,4 +958,10 @@ class SpeakerStore:
         if cands:
             out.append({"why": f"{len(cands)} speaker pair(s) look like the same person",
                         "command": f"radiomind speakers merge {cands[0]['b']} {cands[0]['a']} --dry-run"})
+        unnamed = sum(1 for s in self._speakers(user_id, statuses=("active",))
+                      if not s["display_name"] and not s["is_wearer"])
+        if cands or unnamed:
+            out.append({"why": "there are things only the owner can answer "
+                               "(same person? who is this?)",
+                        "command": "radiomind speakers pending-questions"})
         return out

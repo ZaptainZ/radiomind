@@ -1683,6 +1683,30 @@ def lifelog_day(date: str, user: str) -> None:
     store.close()
 
 
+@lifelog.command("delete-episodes")
+@click.option("--date", default="", help="Limit to one day (YYYY-MM-DD).")
+@click.option("--id", "ids", multiple=True, type=int, help="Specific episode ids.")
+@click.option("--only-unanchored", is_flag=True,
+              help="Only episodes whose absolute time was never filled in (started_at=0) "
+                   "— the cohort whose clock times were guessed.")
+@click.option("--yes", is_flag=True, help="Actually delete. Without it this is a dry run.")
+@click.option("--user", default="")
+def lifelog_delete_episodes(date: str, ids: tuple, only_unanchored: bool,
+                            yes: bool, user: str) -> None:
+    """Delete episodes so a day can be regenerated.
+
+    Needed because re-running a rollup does NOT repair a bad episode: dedup is
+    keyed on (user, date, start_clock), so a re-run is either silently discarded
+    as a duplicate or inserted alongside the wrong row. Keeps the FTS shadow table
+    in sync, which raw SQL would not. Dry run unless you pass --yes.
+    """
+    store, ll = _get_lifelog()
+    click.echo(json.dumps(ll.delete_episodes(
+        date=date, ids=list(ids), only_unanchored=only_unanchored,
+        user_id=user, dry_run=not yes), ensure_ascii=False))
+    store.close()
+
+
 @lifelog.command("stats")
 @click.option("--user", default="")
 def lifelog_stats(user: str) -> None:
@@ -2056,6 +2080,82 @@ def speakers_merge_candidates(user: str) -> None:
     """Speaker pairs similar enough to propose merging (never auto-applied)."""
     store, sp = _get_speakers()
     click.echo(json.dumps(sp.merge_candidates(user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("pending-questions")
+@click.option("--limit", default=20, show_default=True,
+              help="Cap the list; the caller decides how many to actually ask.")
+@click.option("--out-file", default="", help="Write the JSON here instead of stdout.")
+@click.option("--user", default="")
+def speakers_pending_questions(limit: int, out_file: str, user: str) -> None:
+    """Things only the owner can answer, as structured questions.
+
+    Active speakers only (the pending pool is strangers), and clips carry time
+    coordinates rather than audio — the recordings never leave the capture machine.
+    Each question ships an `apply` map so the deliverer can act on a button press
+    without understanding the semantics.
+    """
+    store, sp = _get_speakers()
+    payload = sp.pending_questions(user_id=user, limit=limit)
+    if out_file:
+        Path(out_file).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        click.echo(json.dumps({"out_file": out_file, "questions": len(payload["questions"]),
+                               "total": payload["total"]}, ensure_ascii=False))
+    else:
+        click.echo(json.dumps(payload, ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("at")
+@click.option("--from", "from_ts", type=float, default=0.0,
+              help="Window start as an epoch second.")
+@click.option("--to", "to_ts", type=float, default=0.0, help="Window end as an epoch second.")
+@click.option("--date", default="", help="Whole-day window (YYYY-MM-DD). Use this when the "
+                                         "episode has no absolute time — several real ones don't.")
+@click.option("--include-pending", is_flag=True,
+              help="Also list unpromoted identities (strangers), not just established people.")
+@click.option("--min-speech-s", type=float, default=0.0,
+              help="Drop anyone who barely spoke in the window.")
+@click.option("--user", default="")
+def speakers_at(from_ts: float, to_ts: float, date: str, include_pending: bool,
+                min_speech_s: float, user: str) -> None:
+    """Who was actually present during a stretch of time.
+
+    Meant for whoever writes an episode: take participants from here instead of
+    from a transcript. A transcription model invents speaker names per chunk, so
+    the same person becomes several and a multi-chunk summary lists them all.
+    `unbound_turns` reports the speech that could not be attributed, so a short
+    list is distinguishable from a confident one.
+    """
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.present_between(
+        started_at=from_ts, ended_at=to_ts, user_id=user, date=date,
+        include_pending=include_pending, min_speech_s=min_speech_s), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("mark-distinct")
+@click.argument("a_label")
+@click.argument("b_label")
+@click.option("--user", default="")
+def speakers_mark_distinct(a_label: str, b_label: str, user: str) -> None:
+    """Record that two speakers are NOT the same person, so the pair stops being
+    proposed for merging. This is what makes asking once enough."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.mark_distinct(a_label, b_label, user_id=user), ensure_ascii=False))
+    store.close()
+
+
+@speakers.command("ignore")
+@click.argument("label")
+@click.option("--user", default="")
+def speakers_ignore(label: str, user: str) -> None:
+    """Stop caring about this person: never asked about, never promoted, never a
+    merge candidate. Their turns still resolve here, so they stay recognised
+    instead of coming back as a new identity."""
+    store, sp = _get_speakers()
+    click.echo(json.dumps(sp.ignore(label, user_id=user), ensure_ascii=False))
     store.close()
 
 
