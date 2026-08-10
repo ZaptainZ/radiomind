@@ -357,6 +357,50 @@ def test_named_people_are_not_asked_about_again(sp, rng):
     assert f"name:{a}" not in {q["id"] for q in sp.pending_questions(user_id="z")["questions"]}
 
 
+def test_name_candidates_turn_the_question_into_a_tap(sp, rng):
+    """The point of harvesting names: an open question costs a keyboard, a
+    yes/no one costs a tap."""
+    _base, a, _b = twins(sp, rng)
+    sp.set_name_candidates(a, [
+        {"name": "明月", "confidence": 0.6, "strong": True, "support": 2,
+         "episodes": [1, 2], "days": ["2026-08-03"]},
+    ], user_id="z")
+
+    q = next(q for q in sp.pending_questions(user_id="z")["questions"]
+             if q["id"] == f"name:{a}")
+    assert [o["key"] for o in q["options"]] == ["明月", "other", "skip"]
+    assert q["apply"]["明月"] == f"speakers name {a} 明月"
+    assert q["apply"]["skip"] == f"speakers ignore {a}"
+    assert "{answer}" in q["apply"]["other"], "free text must still be possible"
+    assert q["answer_type"] == "choice_or_text"
+    assert q["evidence"]["name_candidates"][0]["episodes"] == [1, 2]
+
+
+def test_a_weak_candidate_is_recorded_but_never_a_button(sp, rng):
+    """Someone merely discussed while this speaker happened to be around. Offering
+    them as a tap target invites a mis-tap that writes the wrong name — but the
+    owner may still recognise the name, so the evidence keeps it."""
+    _base, a, _b = twins(sp, rng)
+    sp.set_name_candidates(a, [
+        {"name": "庆松", "confidence": 0.3, "strong": False, "support": 1,
+         "episodes": [3], "days": ["2026-08-04"]},
+    ], user_id="z")
+
+    q = next(q for q in sp.pending_questions(user_id="z")["questions"]
+             if q["id"] == f"name:{a}")
+    assert [o["key"] for o in q["options"]] == ["skip"]   # no name button, no "都不是"
+    assert "庆松" not in q["apply"]
+    assert q["answer_type"] == "text"
+    assert q["evidence"]["name_candidates"][0]["name"] == "庆松"
+
+
+def test_naming_someone_retires_their_question(sp, rng):
+    _base, a, _b = twins(sp, rng)
+    sp.set_name_candidates(a, [{"name": "明月", "confidence": 0.6, "strong": True}], user_id="z")
+    sp.name(a, "明月", user_id="z")
+    assert f"name:{a}" not in {q["id"] for q in sp.pending_questions(user_id="z")["questions"]}
+
+
 def test_ignored_people_are_never_asked_about_or_promoted(sp, rng):
     _base, a, b = twins(sp, rng)
     sp.ignore(b, user_id="z")

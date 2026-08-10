@@ -2135,6 +2135,103 @@ def speakers_at(from_ts: float, to_ts: float, date: str, include_pending: bool,
     store.close()
 
 
+# --- name hints (称呼线索) ----------------------------------------------------
+# Harvest name candidates from the life log so "who is this?" becomes a tap
+# instead of a keyboard. Host-thinks, same shape as `lifelog consolidate`:
+# `prepare` hands out the prompt, the caller's LLM answers, `apply` counts and
+# stores. Deciding what is a personal name is semantic and belongs to the model;
+# deciding whose name it is, is arithmetic and stays in RadioMind.
+
+@speakers.group("name-hints")
+def speakers_name_hints() -> None:
+    """称呼线索 — propose names for unnamed speakers from what the life log heard."""
+
+
+@speakers_name_hints.command("prepare")
+@click.option("--max-episodes", default=200, show_default=True,
+              help="Cap on episodes pulled into the prompt.")
+@click.option("--out-file", default="", help="Write the JSON here instead of stdout.")
+@click.option("--user", default="")
+def speakers_name_hints_prepare(max_episodes: int, out_file: str, user: str) -> None:
+    """Build the name-extraction prompt. Returns {"prompt","system",...} as JSON —
+    the caller runs its own LLM on `prompt`, then passes the reply to `apply`.
+
+    Only the "which words are personal names" half goes to the model. Whose name
+    it is gets counted from `participants` afterwards, so the reply stays a short
+    list that is easy to check.
+    """
+    from radiomind.refinement import name_hints as nh
+
+    store, ll = _get_lifelog()
+    material = nh.build_material(ll, user_id=user, limit=max_episodes)
+    payload = {"n_episodes": material["count"], "system": nh.SYSTEM,
+               "prompt": nh.build_prompt(material) if material["count"] else ""}
+    if not material["count"]:
+        payload["note"] = "no episodes with summaries — nothing to read names out of"
+    _emit(payload, out_file)
+    store.close()
+
+
+@speakers_name_hints.command("apply")
+@click.option("--payload", default="", help='LLM reply, or {"names": [...]} directly.')
+@click.option("--payload-file", default="", help="Read that reply from a file.")
+@click.option("--max-episodes", default=200, show_default=True)
+@click.option("--user", default="")
+def speakers_name_hints_apply(payload: str, payload_file: str, max_episodes: int,
+                              user: str) -> None:
+    """Count each name against every unnamed active speaker and store the winners
+    as candidates. Writes proposals only — `display_name` is never set here,
+    because being talked about and being present are different things."""
+    from pathlib import Path as _Path
+
+    from radiomind.refinement import name_hints as nh
+
+    text = _Path(payload_file).read_text(encoding="utf-8") if payload_file else payload
+    names = nh.parse_response(text)
+    if not names:
+        click.echo(json.dumps({"names_in": 0, "stored": {},
+                               "note": "no usable names in the reply"}, ensure_ascii=False))
+        return
+    store, sp = _get_speakers()
+    from radiomind.storage.lifelog import LifelogStore
+
+    ll = LifelogStore(store.conn)
+    click.echo(json.dumps(nh.apply_names(names, sp=sp, ll=ll, user_id=user,
+                                         limit=max_episodes), ensure_ascii=False))
+    store.close()
+
+
+@speakers_name_hints.command("auto")
+@click.option("--max-episodes", default=200, show_default=True)
+@click.option("--timeout", default=180, show_default=True, help="Seconds for the LLM call.")
+@click.option("--user", default="")
+def speakers_name_hints_auto(max_episodes: int, timeout: int, user: str) -> None:
+    """prepare → LLM → apply in one call, when this host happens to have an LLM.
+    The bare CLI on R76S does not; use prepare/apply there."""
+    from radiomind.refinement import name_hints as nh
+
+    llm = _consolidate_llm(timeout=timeout)
+    if llm is None:
+        click.echo(json.dumps(
+            {"error": "no LLM reachable on this host — use `prepare` + `apply`"},
+            ensure_ascii=False))
+        return
+    store, sp = _get_speakers()
+    from radiomind.storage.lifelog import LifelogStore
+
+    ll = LifelogStore(store.conn)
+    material = nh.build_material(ll, user_id=user, limit=max_episodes)
+    if not material["count"]:
+        click.echo(json.dumps({"error": "no episodes with summaries"}, ensure_ascii=False))
+        store.close()
+        return
+    reply = llm.generate(nh.build_prompt(material), system=nh.SYSTEM)
+    names = nh.parse_response(reply)
+    click.echo(json.dumps(nh.apply_names(names, sp=sp, ll=ll, user_id=user,
+                                         limit=max_episodes), ensure_ascii=False))
+    store.close()
+
+
 @speakers.command("mark-distinct")
 @click.argument("a_label")
 @click.argument("b_label")

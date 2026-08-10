@@ -114,6 +114,9 @@ PACK: dict[str, list[str]] = {
     "speakers:ask-identity": [
         "tests/test_speakers_store.py",
     ],
+    "speakers:name-hints": [
+        "tests/test_name_hints.py",
+    ],
     "training:diversity-narrow": [
         "tests/test_diversity_narrow.py",
     ],

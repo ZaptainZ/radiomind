@@ -810,6 +810,33 @@ class SpeakerStore:
             "unbound_turns": unbound,
         }
 
+    # --- name candidates ------------------------------------------------------
+
+    def set_name_candidates(self, label: str, candidates: list[dict[str, Any]],
+                            user_id: str = "") -> dict[str, Any]:
+        """Store name PROPOSALS for a speaker. Never touches `display_name`.
+
+        Being talked about and being in the room are different things, so a
+        candidate is only ever an option to offer the owner — the naming itself
+        stays a deliberate act.
+        """
+        sp = self.get(self.resolve_label(label, user_id), user_id)
+        if not sp:
+            return {"error": f"unknown speaker {label}"}
+        meta = json.loads(sp["metadata"] or "{}")
+        meta["name_candidates"] = candidates
+        self._conn.execute("UPDATE speakers SET metadata=? WHERE id=?",
+                           (json.dumps(meta, ensure_ascii=False), sp["id"]))
+        self._conn.commit()
+        return {"label": sp["label"], "candidates": [c["name"] for c in candidates]}
+
+    @staticmethod
+    def _name_candidates(sp: dict[str, Any]) -> list[dict[str, Any]]:
+        try:
+            return json.loads(sp.get("metadata") or "{}").get("name_candidates", []) or []
+        except (json.JSONDecodeError, AttributeError):
+            return []
+
     # --- questions ----------------------------------------------------------
 
     def _turn_facets(self, speaker_id: int, clips: int = 2) -> dict[str, Any]:
@@ -894,21 +921,46 @@ class SpeakerStore:
             if sp["display_name"] or sp["is_wearer"]:
                 continue
             f = self._turn_facets(sp["id"])
+            label = sp["label"]
+            # Candidates turn this from "type a name" into "tap one" — the whole
+            # point of harvesting them (see refinement/name_hints.py). They stay
+            # proposals: "都不是" is always available and never pre-selected.
+            cands = self._name_candidates(sp)
+            # Only candidates we would stand behind become tap targets. A weak
+            # co-occurrence (someone discussed once while this speaker happened to
+            # be around) still gets recorded as evidence below, because the owner
+            # may recognise it — but offering it as a button invites a mis-tap that
+            # writes the wrong name, and it dilutes the one good guess.
+            strong = [c for c in cands if c.get("strong")]
+            options = [{"key": c["name"], "label": c["name"]} for c in strong]
+            apply_map = {c["name"]: f"speakers name {label} {c['name']}" for c in strong}
+            if options:
+                options.append({"key": "other", "label": "都不是"})
+            options.append({"key": "skip", "label": "不用记这个人"})
+            # `other`/`text` is a template — the one place a deliverer must
+            # substitute rather than execute verbatim.
+            apply_map["other"] = apply_map["text"] = f"speakers name {label} {{answer}}"
+            apply_map["skip"] = f"speakers ignore {label}"
+
+            evidence = {"days": f["days"], "turns": f["turns"],
+                        "speech_s": f["speech_s"], "contexts": f["contexts"]}
+            if cands:
+                # Provenance, so the owner can see what the guess rests on rather
+                # than being asked to trust it.
+                evidence["name_candidates"] = cands
             questions.append({
-                "id": f"name:{sp['label']}",
+                "id": f"name:{label}",
                 "kind": "name",
-                "subjects": [sp["label"]],
-                "confidence": 0.0,
-                "evidence": {"days": f["days"], "turns": f["turns"],
-                             "speech_s": f["speech_s"], "contexts": f["contexts"]},
+                "subjects": [label],
+                "confidence": max((c["confidence"] for c in strong), default=0.0),
+                "evidence": evidence,
                 "question": "这个人是谁？",
-                # No options: a name is open text. `apply` is a template — the one
-                # place a deliverer must substitute rather than execute verbatim.
-                "options": [],
-                "answer_type": "text",
-                "clips": [{"label": sp["label"], **c} for c in f["clips"]],
-                "apply": {"text": f"speakers name {sp['label']} {{answer}}",
-                          "skip": f"speakers ignore {sp['label']}"},
+                "options": options,
+                # Still accepts free text even when options exist — the candidates
+                # are a shortcut, not the full set of possible answers.
+                "answer_type": "choice_or_text" if strong else "text",
+                "clips": [{"label": label, **c} for c in f["clips"]],
+                "apply": apply_map,
             })
 
         return {"questions": questions[:limit], "total": len(questions),
