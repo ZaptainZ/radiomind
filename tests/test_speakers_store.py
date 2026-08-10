@@ -349,6 +349,42 @@ def test_merge_question_applies_into_the_established_identity(sp, rng):
     assert q["id"] == f"merge:{a}:{b}"
 
 
+def test_the_wearer_survives_a_merge_however_little_they_said(sp, rng):
+    """The wearer is an anchor the owner set by hand and the audio pipeline reads:
+    with no wearer centroid in the exported gallery, conversation and ambient media
+    stop being separable and the owner vanishes from every future participants list.
+    Direction must not be decided by a speech-time tally."""
+    base, a, b = twins(sp, rng)
+    park(sp, a)                        # the extra speech lands on b, so a is quieter
+    for i in range(4):
+        sp.put_turns([turn(utterance(rng, base), t=30000.0 + i, date="2026-08-05",
+                           src="d.wav")], user_id="z")
+    park(sp, a, status="active")
+    sp.set_wearer(a, user_id="z")      # ...and the quieter one is the wearer
+    assert sp.get(a, "z")["total_speech_s"] < sp.get(b, "z")["total_speech_s"]
+
+    q = next(q for q in sp.pending_questions(user_id="z")["questions"] if q["kind"] == "merge")
+    assert q["apply"]["same"] == f"speakers merge {b} {a}", "the wearer must be the survivor"
+
+    out = sp.merge(b, a, user_id="z")
+    assert out["turns_moved"] > 0
+    assert sp.get(a, "z")["is_wearer"] == 1
+
+
+def test_merging_the_wearer_away_still_keeps_a_wearer(sp, rng):
+    """Belt to the direction rule's braces: whatever a caller asks for, the flag
+    must not evaporate — `speakers merge` is executed straight off a button press,
+    with no confirmation step in between."""
+    _base, a, b = twins(sp, rng)
+    sp.set_wearer(a, user_id="z")
+    out = sp.merge(a, b, user_id="z")          # absorb the wearer on purpose
+    assert out["wearer_moved_to"] == b
+    assert sp.get(b, "z")["is_wearer"] == 1
+    assert sp.get(a, "z")["is_wearer"] == 0
+    wearers = [s for s in sp.list_speakers(user_id="z") if s["is_wearer"]]
+    assert len(wearers) == 1 and wearers[0]["label"] == b
+
+
 def test_named_people_are_not_asked_about_again(sp, rng):
     _base, a, b = twins(sp, rng)
     assert {q["id"] for q in sp.pending_questions(user_id="z")["questions"]} >= {

@@ -491,7 +491,14 @@ class SpeakerStore:
     def merge(self, from_label: str, into_label: str, user_id: str = "",
               reason: str = "", dry_run: bool = False) -> dict[str, Any]:
         """Repoint every turn, then rebuild. Reversible precisely because the turn
-        embeddings were kept."""
+        embeddings were kept.
+
+        If the absorbed identity was the wearer, the survivor becomes the wearer.
+        Losing that flag is not a cosmetic loss: the exported gallery would carry
+        no wearer centroid, so the audio tool could no longer tell conversation
+        from ambient media, and the owner would silently vanish from every future
+        episode's participants.
+        """
         a = self.get(from_label, user_id)
         b = self.get(into_label, user_id)
         if not a or not b:
@@ -512,11 +519,19 @@ class SpeakerStore:
                                            merged_at, reason) VALUES (?,?,?,?,?)""",
             (a["id"], a["label"], b["id"], time.time(), reason),
         )
-        self._conn.execute("UPDATE speakers SET status='archived' WHERE id=?", (a["id"],))
+        self._conn.execute("UPDATE speakers SET status='archived', is_wearer=0 WHERE id=?",
+                           (a["id"],))
+        wearer_moved = bool(a["is_wearer"]) and not b["is_wearer"]
+        if wearer_moved:
+            self._conn.execute("UPDATE speakers SET is_wearer=1, status='active' WHERE id=?",
+                               (b["id"],))
         self._reseed_exemplars(b["id"])
         self.rebuild(b["id"])
         self._conn.commit()
-        return {"from": from_label, "into": into_label, "turns_moved": n}
+        out = {"from": from_label, "into": into_label, "turns_moved": n}
+        if wearer_moved:
+            out["wearer_moved_to"] = into_label
+        return out
 
     def merge_candidates(self, user_id: str = "") -> list[dict[str, Any]]:
         """Pairs similar enough to be worth PROPOSING a merge. Never auto-applied:
@@ -888,6 +903,12 @@ class SpeakerStore:
             # label that already appears in generated text is the one that lives on.
             src, dst = ((a, b) if (a["total_speech_s"], a["id"])
                         <= (b["total_speech_s"], b["id"]) else (b, a))
+            # ...except that the wearer always survives, however little they said.
+            # They are an anchor the owner set by hand and the audio pipeline reads
+            # (no wearer centroid → conversation and ambient media stop being
+            # separable), so the direction cannot be left to a speech-time tally.
+            if src["is_wearer"]:
+                src, dst = dst, src
             fa, fb = self._turn_facets(src["id"]), self._turn_facets(dst["id"])
             questions.append({
                 "id": f"merge:{src['label']}:{dst['label']}",
