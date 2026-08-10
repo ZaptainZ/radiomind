@@ -539,3 +539,37 @@ def test_forget_also_drops_the_distinct_pairs(sp, rng):
     sp.mark_distinct(a, b, user_id="z")
     sp.forget(a, user_id="z")
     assert sp._conn.execute("SELECT COUNT(*) FROM speaker_distinct").fetchone()[0] == 0
+
+
+def test_merging_into_an_already_merged_label_follows_the_tombstone(sp, rng):
+    """Two questions can share a subject, and a button press executes a command
+    composed before the other one was answered. If spk_008 was already absorbed,
+    "merge spk_001 into spk_008" must land on whoever spk_008 became — otherwise
+    a thousand turns get repointed onto an archived identity and vanish from the
+    gallery."""
+    a, b, c = voice(rng), voice(rng), voice(rng)
+    for i in range(3):
+        sp.put_turns([turn(utterance(rng, a), t=100.0 + i, src="a.wav")], user_id="z")
+        sp.put_turns([turn(utterance(rng, b), t=200.0 + i, src="b.wav")], user_id="z")
+        sp.put_turns([turn(utterance(rng, c), t=300.0 + i, src="c.wav")], user_id="z")
+    sp._conn.execute("UPDATE speakers SET status='active' WHERE user_id='z'")
+
+    sp.merge("spk_002", "spk_003", user_id="z")        # spk_002 becomes spk_003
+    out = sp.merge("spk_001", "spk_002", user_id="z")  # a stale question fires
+
+    assert sp.get("spk_003", "z")["turn_count"] == 9, "everything must land on the survivor"
+    assert out["into"] == "spk_003"
+    assert sp.get("spk_001", "z")["status"] == "archived"
+
+
+def test_answering_the_same_merge_twice_is_not_an_error(sp, rng):
+    """A duplicate tap, or two questions that turn out to say the same thing,
+    should report "already done" rather than fail — the owner pressed a button."""
+    a, b = voice(rng), voice(rng)
+    for i in range(3):
+        sp.put_turns([turn(utterance(rng, a), t=100.0 + i, src="a.wav")], user_id="z")
+        sp.put_turns([turn(utterance(rng, b), t=200.0 + i, src="b.wav")], user_id="z")
+    sp.merge("spk_002", "spk_001", user_id="z")
+    out = sp.merge("spk_002", "spk_001", user_id="z")
+    assert out["already_merged"] is True and out["turns_moved"] == 0
+    assert sp.get("spk_001", "z")["turn_count"] == 6

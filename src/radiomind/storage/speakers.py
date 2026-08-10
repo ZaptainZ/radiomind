@@ -499,12 +499,23 @@ class SpeakerStore:
         from ambient media, and the owner would silently vanish from every future
         episode's participants.
         """
+        # Follow tombstones on BOTH sides. A merge command is often composed long
+        # before it runs — a question sitting in a chat, answered after a different
+        # merge already moved one of its subjects — and repointing turns onto an
+        # identity that has since been archived would drop them out of the gallery
+        # entirely. "X is Y" plus "Y is Z" means X is Z.
+        from_label = self.resolve_label(from_label, user_id)
+        into_label = self.resolve_label(into_label, user_id)
         a = self.get(from_label, user_id)
         b = self.get(into_label, user_id)
         if not a or not b:
             return {"error": "unknown speaker label"}
         if a["id"] == b["id"]:
-            return {"error": "cannot merge a speaker into itself"}
+            # Both sides already resolved to the same person: the answer this
+            # command carries has effectively been applied. Say so rather than
+            # failing, because the caller pressed a button and deserves a result.
+            return {"from": from_label, "into": into_label, "turns_moved": 0,
+                    "already_merged": True}
         n = self._conn.execute(
             "SELECT COUNT(*) FROM speaker_turns WHERE speaker_id=?", (a["id"],)).fetchone()[0]
         if dry_run:
